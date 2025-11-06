@@ -80,14 +80,14 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 ### Authentication Implementation
 
-- [ ] T032 [P] Create app/(auth)/login/page.tsx with email/password login form
-- [ ] T033 [P] Create app/(auth)/register/page.tsx with registration form including organization creation
-- [ ] T034 Create app/api/auth/register/route.ts POST endpoint to create user + organization + user_organization link
-- [ ] T035 Create app/api/auth/login/route.ts POST endpoint using Supabase Auth signInWithPassword
-- [ ] T036 Create app/api/auth/logout/route.ts POST endpoint using Supabase Auth signOut
-- [ ] T037 Create app/api/auth/me/route.ts GET endpoint returning user profile and organizations
-- [ ] T038 Create hooks/use-auth.ts custom hook for authentication state management
-- [ ] T039 Create hooks/use-organization.ts custom hook for current organization context and switching
+- [x] T032 [P] Create app/(auth)/login/page.tsx with email/password login form
+- [x] T033 [P] Create app/(auth)/register/page.tsx with registration form including organization creation
+- [x] T034 Create app/api/auth/register/route.ts POST endpoint to create user + organization + user_organization link
+- [x] T035 Create app/api/auth/login/route.ts POST endpoint using Supabase Auth signInWithPassword
+- [x] T036 Create app/api/auth/logout/route.ts POST endpoint using Supabase Auth signOut
+- [x] T037 Create app/api/auth/me/route.ts GET endpoint returning user profile and organizations
+- [x] T038 Create hooks/use-auth.ts custom hook for authentication state management
+- [x] T039 Create hooks/use-organization.ts custom hook for current organization context and switching
 
 ### Organization Management Implementation
 
