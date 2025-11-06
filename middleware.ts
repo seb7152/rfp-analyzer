@@ -1,5 +1,5 @@
-import { type NextRequest } from "next/server"
-import { updateSession } from "@/lib/supabase/middleware"
+import { type NextRequest } from "next/server";
+import { updateSession } from "@/lib/supabase/middleware";
 
 /**
  * Next.js middleware for authentication and session management
@@ -8,10 +8,10 @@ import { updateSession } from "@/lib/supabase/middleware"
  */
 export async function middleware(request: NextRequest) {
   // Refresh session for all requests
-  return await updateSession(request)
+  return await updateSession(request);
 }
 
 export const config = {
-  // Protect dashboard and API routes
-  matcher: ["/dashboard/:path*", "/api/:path*"],
-}
+  // Protect dashboard routes only (not API auth routes which need to be public)
+  matcher: ["/dashboard/:path*"],
+};
