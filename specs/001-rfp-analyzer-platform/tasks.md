@@ -55,18 +55,18 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 - [x] T017 [P] Create types/supplier.ts with Supplier type definitions
 - [x] T018 [P] Create types/response.ts with Response, ResponseUpdate type definitions
 - [x] T019 [P] Create types/user.ts with User, UserWithRole, OrganizationWithRole type definitions
-- [ ] T020 Create app/middleware.ts with authentication check for protected routes using Supabase Auth
-- [ ] T021 Create lib/constants.ts with enum values (statuses, roles, access levels)
-- [ ] T022 Install @tanstack/react-query for data fetching and caching
-- [ ] T023 Create app/providers.tsx with QueryClientProvider wrapper for React Query
-- [ ] T024 [P] Install and initialize shadcn/ui button component in components/ui/button.tsx
-- [ ] T025 [P] Install and initialize shadcn/ui input component in components/ui/input.tsx
-- [ ] T026 [P] Install and initialize shadcn/ui textarea component in components/ui/textarea.tsx
-- [ ] T027 [P] Install and initialize shadcn/ui badge component in components/ui/badge.tsx
-- [ ] T028 [P] Install and initialize shadcn/ui scroll-area component in components/ui/scroll-area.tsx
-- [ ] T029 [P] Install and initialize shadcn/ui tabs component in components/ui/tabs.tsx
-- [ ] T030 [P] Install and initialize shadcn/ui toggle-group component in components/ui/toggle-group.tsx
-- [ ] T031 [P] Install and initialize shadcn/ui breadcrumb component in components/ui/breadcrumb.tsx
+- [x] T020 Create app/middleware.ts with authentication check for protected routes using Supabase Auth
+- [x] T021 Create lib/constants.ts with enum values (statuses, roles, access levels)
+- [x] T022 Install @tanstack/react-query for data fetching and caching
+- [x] T023 Create app/providers.tsx with QueryClientProvider wrapper for React Query
+- [x] T024 [P] Install and initialize shadcn/ui button component in components/ui/button.tsx
+- [x] T025 [P] Install and initialize shadcn/ui input component in components/ui/input.tsx
+- [x] T026 [P] Install and initialize shadcn/ui textarea component in components/ui/textarea.tsx
+- [x] T027 [P] Install and initialize shadcn/ui badge component in components/ui/badge.tsx
+- [x] T028 [P] Install and initialize shadcn/ui scroll-area component in components/ui/scroll-area.tsx
+- [x] T029 [P] Install and initialize shadcn/ui tabs component in components/ui/tabs.tsx
+- [x] T030 [P] Install and initialize shadcn/ui toggle-group component in components/ui/toggle-group.tsx
+- [x] T031 [P] Install and initialize shadcn/ui breadcrumb component in components/ui/breadcrumb.tsx
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
