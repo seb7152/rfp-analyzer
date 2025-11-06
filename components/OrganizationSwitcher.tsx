@@ -1,16 +1,20 @@
-"use client"
+"use client";
 
-import { useOrganization } from "@/hooks/use-organization"
-import { Button } from "@/components/ui/button"
-import { ChevronDown, Plus } from "lucide-react"
-import { useState } from "react"
+import { useOrganization } from "@/hooks/use-organization";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, Plus } from "lucide-react";
+import { useState } from "react";
 
 export function OrganizationSwitcher() {
-  const { currentOrganization, organizations, switchOrganization } = useOrganization()
-  const [isOpen, setIsOpen] = useState(false)
+  const { currentOrganization, organizations, switchOrganization } =
+    useOrganization();
+  const [isOpen, setIsOpen] = useState(false);
 
+  // Show loading state
   if (!currentOrganization) {
-    return null
+    return (
+      <div className="h-9 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+    );
   }
 
   return (
@@ -32,8 +36,8 @@ export function OrganizationSwitcher() {
               <button
                 key={org.id}
                 onClick={() => {
-                  switchOrganization(org.id)
-                  setIsOpen(false)
+                  switchOrganization(org.id);
+                  setIsOpen(false);
                 }}
                 className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-800 ${
                   org.id === currentOrganization.id
@@ -62,5 +66,5 @@ export function OrganizationSwitcher() {
         </div>
       )}
     </div>
-  )
+  );
 }

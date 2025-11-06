@@ -9,9 +9,23 @@ import { useState } from "react";
 import Link from "next/link";
 
 export function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, isLoading, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  // Show loading skeleton or empty navbar while loading
+  if (isLoading) {
+    return (
+      <nav className="sticky top-0 z-40 border-b bg-white dark:bg-slate-900 shadow-sm">
+        <div className="flex items-center justify-between px-6 py-3">
+          <div className="text-lg font-bold">RFP Analyzer</div>
+          <div className="flex items-center gap-4">
+            <div className="h-9 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   if (!user) {
     return null;
