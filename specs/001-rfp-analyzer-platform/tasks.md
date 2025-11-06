@@ -91,13 +91,13 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 ### Organization Management Implementation
 
-- [ ] T040 [P] Create app/api/organizations/route.ts with GET (list user's orgs) and POST (create org)
-- [ ] T041 Create app/api/organizations/[organizationId]/route.ts with GET (org details) and PUT (update org)
-- [ ] T042 Create app/api/organizations/[organizationId]/members/route.ts GET endpoint for organization members list
-- [ ] T043 Create app/api/organizations/[organizationId]/invite/route.ts POST endpoint to invite user to organization
-- [ ] T044 Create app/api/organizations/[organizationId]/members/[userId]/route.ts DELETE and PATCH for member management
-- [ ] T045 Create components/OrganizationSwitcher.tsx dropdown component for switching between user's organizations
-- [ ] T046 Create components/Navbar.tsx with organization switcher, theme toggle, and user profile menu
+- [x] T040 [P] Create app/api/organizations/route.ts with GET (list user's orgs) and POST (create org)
+- [x] T041 Create app/api/organizations/[organizationId]/route.ts with GET (org details) and PUT (update org)
+- [x] T042 Create app/api/organizations/[organizationId]/members/route.ts GET endpoint for organization members list
+- [x] T043 Create app/api/organizations/[organizationId]/invite/route.ts POST endpoint to invite user to organization
+- [x] T044 Create app/api/organizations/[organizationId]/members/[userId]/route.ts DELETE and PATCH for member management
+- [x] T045 Create components/OrganizationSwitcher.tsx dropdown component for switching between user's organizations
+- [x] T046 Create components/Navbar.tsx with organization switcher, theme toggle, and user profile menu
 
 **Checkpoint**: Authentication and organization management complete - users can register, log in, and work within organization boundaries
 
