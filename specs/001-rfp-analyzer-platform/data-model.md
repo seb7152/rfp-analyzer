@@ -13,70 +13,198 @@ This document defines the database schema for the RFP Analyzer Platform. The mod
 ## Entity-Relationship Diagram
 
 ```
-┌─────────────┐
-│     RFP     │
-└──────┬──────┘
-       │
-       │ 1:N
-       │
-       ├─────────────────┐
-       │                 │
-       ▼                 ▼
-┌──────────────┐   ┌──────────┐
-│ Requirement  │   │ Supplier │
-│ (hierarchical)│   └─────┬────┘
-└──────┬───────┘         │
-       │                 │
-       │ self-ref        │
-       │ parent_id       │
-       │                 │
-       ▼                 │
-┌──────────────┐         │
-│ Requirement  │         │
-│  (child)     │         │
-└──────┬───────┘         │
-       │                 │
-       └─────────┬───────┘
-                 │
-                 │ N:M via Response
-                 │
-                 ▼
-           ┌──────────┐
-           │ Response │
-           └──────────┘
+┌──────────────────┐
+│  Organization    │
+└────────┬─────────┘
+         │
+         │ 1:N
+         │
+         ├────────────────────┬──────────────────┐
+         │                    │                  │
+         ▼                    ▼                  ▼
+┌──────────────┐      ┌──────────┐      ┌──────────────────┐
+│     User     │      │   RFP    │      │ User-Org Link    │
+└──────┬───────┘      └────┬─────┘      │ (role assignment)│
+       │                   │            └──────────────────┘
+       │                   │ 1:N
+       │                   │
+       │                   ├─────────────────┐
+       │                   │                 │
+       │                   ▼                 ▼
+       │            ┌──────────────┐   ┌──────────┐
+       │            │ Requirement  │   │ Supplier │
+       │            │ (hierarchical)│   └─────┬────┘
+       │            └──────┬───────┘         │
+       │                   │                 │
+       │                   │ self-ref        │
+       │                   │ parent_id       │
+       │                   │                 │
+       │                   ▼                 │
+       │            ┌──────────────┐         │
+       │            │ Requirement  │         │
+       │            │  (child)     │         │
+       │            └──────┬───────┘         │
+       │                   │                 │
+       │                   └─────────┬───────┘
+       │                             │
+       │                             │ N:M via Response
+       │                             │
+       │                             ▼
+       │                       ┌──────────┐
+       └───────────────────────┤ Response │ (last_modified_by)
+                               └──────────┘
 ```
 
 ---
 
 ## Tables
 
-### 1. `rfps`
+### 1. `organizations`
+
+Represents a company or business unit using the platform (multi-tenant isolation).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique identifier |
+| `name` | TEXT | NOT NULL | Organization name (e.g., "Acme Corp", "Acme - IT Division") |
+| `slug` | VARCHAR(100) | UNIQUE, NOT NULL | URL-friendly identifier (e.g., "acme-corp") |
+| `settings` | JSONB | DEFAULT '{}'::jsonb | Organization-specific settings and configuration |
+| `subscription_tier` | VARCHAR(50) | DEFAULT 'free' | Enum: 'free', 'pro', 'enterprise' |
+| `max_users` | INTEGER | DEFAULT 10 | Maximum users allowed (based on subscription) |
+| `max_rfps` | INTEGER | DEFAULT 5 | Maximum active RFPs allowed |
+| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Creation timestamp |
+| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Last update timestamp |
+
+**Indexes**:
+- Primary key on `id`
+- Unique index on `slug`
+- Index on `subscription_tier`
+
+**Validation Rules**:
+- `name` cannot be empty
+- `slug` must be unique, lowercase, alphanumeric with hyphens only
+- `subscription_tier` must be one of: 'free', 'pro', 'enterprise'
+- `max_users` and `max_rfps` must be positive integers
+
+---
+
+### 2. `users`
+
+Represents authenticated users. Linked to Supabase Auth `auth.users` table.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | UUID | PRIMARY KEY, REFERENCES auth.users(id) | Supabase Auth user ID |
+| `email` | TEXT | UNIQUE, NOT NULL | User email (synced from auth.users) |
+| `full_name` | TEXT | | User's full name |
+| `avatar_url` | TEXT | | Profile picture URL |
+| `preferences` | JSONB | DEFAULT '{}'::jsonb | User preferences (theme, language, etc.) |
+| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Account creation timestamp |
+| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Last profile update |
+
+**Indexes**:
+- Primary key on `id` (references auth.users)
+- Unique index on `email`
+
+**Validation Rules**:
+- `email` must be valid email format
+- `id` must exist in `auth.users` (foreign key constraint)
+
+**Note**: This extends Supabase's built-in `auth.users` table with application-specific profile data.
+
+---
+
+### 3. `user_organizations`
+
+Links users to organizations with role-based access control (many-to-many).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique identifier |
+| `user_id` | UUID | NOT NULL, REFERENCES users(id) ON DELETE CASCADE | User being assigned |
+| `organization_id` | UUID | NOT NULL, REFERENCES organizations(id) ON DELETE CASCADE | Organization user belongs to |
+| `role` | VARCHAR(20) | NOT NULL, DEFAULT 'evaluator' | Enum: 'admin', 'evaluator', 'viewer' |
+| `joined_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | When user joined organization |
+| `invited_by` | UUID | REFERENCES users(id) | User who sent the invitation |
+
+**Indexes**:
+- Primary key on `id`
+- Composite unique index on `(user_id, organization_id)` - one role per user per org
+- Index on `organization_id` for fetching org members
+- Index on `user_id` for fetching user's organizations
+
+**Validation Rules**:
+- `role` must be one of: 'admin', 'evaluator', 'viewer'
+- Cannot have duplicate `(user_id, organization_id)` pairs
+
+**Role Permissions**:
+- **admin**: Full access - manage organization, invite users, create/delete RFPs, assign evaluators
+- **evaluator**: Can evaluate assigned RFPs, add comments, change scores/statuses
+- **viewer**: Read-only access to assigned RFPs, cannot modify evaluations
+
+---
+
+### 4. `rfp_user_assignments`
+
+Links users to specific RFPs for granular access control within an organization.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique identifier |
+| `rfp_id` | UUID | NOT NULL, REFERENCES rfps(id) ON DELETE CASCADE | RFP being assigned |
+| `user_id` | UUID | NOT NULL, REFERENCES users(id) ON DELETE CASCADE | User being assigned |
+| `access_level` | VARCHAR(20) | NOT NULL, DEFAULT 'evaluator' | Enum: 'owner', 'evaluator', 'viewer' |
+| `assigned_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Assignment timestamp |
+| `assigned_by` | UUID | REFERENCES users(id) | User who made the assignment |
+
+**Indexes**:
+- Primary key on `id`
+- Composite unique index on `(rfp_id, user_id)` - one assignment per RFP-user pair
+- Index on `rfp_id` for fetching RFP team members
+- Index on `user_id` for fetching user's assigned RFPs
+
+**Validation Rules**:
+- `access_level` must be one of: 'owner', 'evaluator', 'viewer'
+- User must be member of same organization as RFP
+- Cannot have duplicate `(rfp_id, user_id)` pairs
+
+**Access Level Permissions**:
+- **owner**: Full control - edit RFP, assign evaluators, delete RFP
+- **evaluator**: Can evaluate responses, add comments, change scores
+- **viewer**: Read-only access, cannot modify evaluations
+
+---
+
+### 5. `rfps`
 
 Represents a single Request for Proposal (procurement process).
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique identifier |
+| `organization_id` | UUID | NOT NULL, REFERENCES organizations(id) ON DELETE CASCADE | Owner organization |
 | `title` | TEXT | NOT NULL | RFP name (e.g., "Infrastructure Cloud 2025") |
 | `description` | TEXT | | Detailed RFP description |
 | `status` | VARCHAR(20) | NOT NULL, DEFAULT 'in_progress' | Enum: 'in_progress', 'completed', 'archived' |
-| `organization_id` | UUID | | Future: Link to organization for multi-tenant (V2) |
 | `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Creation timestamp |
 | `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Last update timestamp |
-| `created_by` | VARCHAR(255) | | Future: User ID who created (V2) |
+| `created_by` | UUID | NOT NULL, REFERENCES users(id) | User who created the RFP |
 
 **Indexes**:
 - Primary key on `id`
+- Index on `organization_id` for filtering by organization
 - Index on `status` for filtering active RFPs
-- Index on `organization_id` (for V2 multi-tenant)
+- Index on `created_by` for user activity tracking
 
 **Validation Rules**:
 - `status` must be one of: 'in_progress', 'completed', 'archived'
 - `title` cannot be empty
+- `organization_id` must reference valid organization
+- `created_by` must be member of the organization
 
 ---
 
-### 2. `requirements`
+### 6. `requirements`
 
 Represents evaluable criteria in a 4-level hierarchy (Domain → Category → Subcategory → Requirement).
 
@@ -136,7 +264,7 @@ ORDER BY path;
 
 ---
 
-### 3. `suppliers`
+### 7. `suppliers`
 
 Represents vendors responding to an RFP.
 
@@ -163,7 +291,7 @@ Represents vendors responding to an RFP.
 
 ---
 
-### 4. `responses`
+### 8. `responses`
 
 Represents a single supplier's answer to a specific requirement. Core evaluation entity.
 
@@ -181,7 +309,7 @@ Represents a single supplier's answer to a specific requirement. Core evaluation
 | `is_checked` | BOOLEAN | NOT NULL, DEFAULT false | Completion checkbox state |
 | `manual_comment` | TEXT | | Evaluator's comments |
 | `question` | TEXT | | Evaluator's questions/doubts |
-| `last_modified_by` | VARCHAR(255) | | Future: User ID who last edited (V2) |
+| `last_modified_by` | UUID | REFERENCES users(id) | User who last modified this response |
 | `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Creation timestamp |
 | `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Last update timestamp |
 
@@ -214,7 +342,7 @@ any status + is_checked = false (evaluator unchecks)
 
 ---
 
-### 5. `response_audit` (Future: V2)
+### 9. `response_audit`
 
 Audit log for tracking changes to response evaluations.
 
@@ -225,7 +353,7 @@ Audit log for tracking changes to response evaluations.
 | `field_name` | VARCHAR(50) | NOT NULL | Field changed (e.g., 'manual_score', 'status') |
 | `old_value` | TEXT | | Previous value |
 | `new_value` | TEXT | | New value |
-| `modified_by` | VARCHAR(255) | NOT NULL | User who made change |
+| `modified_by` | UUID | NOT NULL, REFERENCES users(id) | User who made change |
 | `modified_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Change timestamp |
 
 **Indexes**:
@@ -241,11 +369,32 @@ Audit log for tracking changes to response evaluations.
 
 ### One-to-Many
 
+- **Organization → RFPs**: One organization has many RFPs  
+  `organizations.id ← rfps.organization_id`
+
+- **Organization → User-Org Links**: One organization has many user memberships  
+  `organizations.id ← user_organizations.organization_id`
+
+- **User → User-Org Links**: One user can belong to many organizations  
+  `users.id ← user_organizations.user_id`
+
+- **User → RFP-User Assignments**: One user can be assigned to many RFPs  
+  `users.id ← rfp_user_assignments.user_id`
+
+- **User → Created RFPs**: One user creates many RFPs  
+  `users.id ← rfps.created_by`
+
+- **User → Modified Responses**: One user modifies many responses  
+  `users.id ← responses.last_modified_by`
+
 - **RFP → Requirements**: One RFP has many requirements  
   `rfps.id ← requirements.rfp_id`
 
 - **RFP → Suppliers**: One RFP has many suppliers  
   `rfps.id ← suppliers.rfp_id`
+
+- **RFP → RFP-User Assignments**: One RFP has many assigned users  
+  `rfps.id ← rfp_user_assignments.rfp_id`
 
 - **Requirement → Child Requirements**: One requirement has many children (self-referential)  
   `requirements.id ← requirements.parent_id`
@@ -257,6 +406,12 @@ Audit log for tracking changes to response evaluations.
   `suppliers.id ← responses.supplier_id`
 
 ### Many-to-Many
+
+- **Users ↔ Organizations**: Via `user_organizations` table  
+  One user can belong to multiple organizations, one organization has multiple users
+
+- **Users ↔ RFPs**: Via `rfp_user_assignments` table  
+  One user can be assigned to multiple RFPs, one RFP can have multiple assigned users
 
 - **Requirements ↔ Suppliers**: Via `responses` table  
   One requirement answered by many suppliers, one supplier answers many requirements
@@ -461,9 +616,23 @@ ORDER BY level;
 
 ## Migrations
 
-### Migration 001: Initial Schema
+### Migration 001: Initial Schema with Multi-Tenant Support
 
 **File**: `supabase/migrations/001_initial_schema.sql`
+
+⚠️ **Updated**: The migration has been updated to include multi-tenant support with organizations, users, and RLS policies. See [migrations-multi-tenant.sql](./migrations-multi-tenant.sql) for the complete schema.
+
+**Key Changes**:
+- Added `organizations` table for multi-tenant isolation
+- Added `users` table extending Supabase Auth
+- Added `user_organizations` for role-based access (admin/evaluator/viewer)
+- Added `rfp_user_assignments` for granular RFP access control
+- Updated `rfps` table with `organization_id` and `created_by` (UUID references)
+- Updated `responses` table with `last_modified_by` (UUID reference)
+- Added `response_audit` table for change tracking
+- Enabled Row Level Security (RLS) on all tables
+- Added RLS policies for organization-based data isolation
+- Added helper functions for user permissions
 
 ```sql
 -- Enable UUID extension

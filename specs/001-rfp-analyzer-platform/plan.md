@@ -30,19 +30,25 @@ The RFP Analyzer Platform enables evaluation teams to compare and score supplier
 - Handle 10,000+ character response texts
 
 **Constraints**: 
-- No authentication/multi-user access control in MVP (deferred to V2)
-- No real-time collaborative editing (last-write-wins approach)
+- Multi-tenant from day 1: Organization-based data isolation with Row Level Security (RLS)
+- User authentication via Supabase Auth (email/password, OAuth providers)
+- Role-based access control: admin, evaluator, viewer roles per organization
+- RFP-level access control: assign specific evaluators to RFPs
+- No real-time collaborative editing (last-write-wins approach for MVP)
 - No PDF parsing or AI analysis in-app (handled by N8N)
 - No mobile optimization in MVP (desktop-first)
 - Dark mode support mandatory
 - Must work with pre-processed data from N8N workflows
 
 **Scale/Scope**: 
-- 2-3 concurrent evaluators per organization
-- 4-5 RFPs per year
+- Multiple organizations (companies/business units) in single database
+- 10-50 users per organization (free tier: 10 users)
+- 2-3 concurrent evaluators per RFP
+- 5-20 active RFPs per organization (free tier: 5 RFPs)
 - 50-200 requirements per RFP
 - 4-10 suppliers per RFP
 - 200-2000 total responses per RFP evaluation
+- Support for consultant users belonging to multiple organizations
 
 ## Constitution Check
 

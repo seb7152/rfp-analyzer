@@ -422,6 +422,408 @@ SELECT * FROM requirement_tree ORDER BY level, position;
 
 ---
 
+## Multi-Tenant Architecture Research
+
+### Decision 8: Organization-Based Multi-Tenancy with Row Level Security
+
+**Decision**: Implement multi-tenant architecture from day 1 using organization-based isolation with PostgreSQL Row Level Security (RLS)
+
+**Rationale**:
+- **Business requirement**: Support multiple companies/business units in single database
+- **Data isolation**: Each organization sees only their data, enforced at database level
+- **Scalability**: Single database instance scales to many organizations
+- **Cost efficiency**: Shared infrastructure vs separate database per tenant
+- **Security**: RLS provides defense-in-depth vs application-level checks
+- **Consultant support**: Users can belong to multiple organizations (many-to-many)
+- **Future subscription tiers**: Free tier (10 users, 5 RFPs) vs paid tiers
+
+**Alternatives considered**:
+- **Separate databases per tenant**: Higher cost, complex backups, harder to manage
+- **Application-level filtering**: Less secure, prone to bugs, no defense-in-depth
+- **Schema-based multi-tenancy**: More complex migrations, limited PostgreSQL features
+
+**Validation**: PostgreSQL RLS is production-proven, Supabase has excellent RLS support
+
+---
+
+### Pattern 5: Supabase Auth with Email/Password + OAuth
+
+**Decision**: Use Supabase Auth for user authentication from MVP launch
+
+**Rationale**:
+- **Built-in security**: Password hashing, JWT tokens, refresh token rotation
+- **OAuth providers**: Google, Microsoft ready for V2 enterprise SSO
+- **User management**: Built-in user CRUD, email verification, password reset
+- **Session management**: Automatic token refresh, secure cookie storage
+- **TypeScript SDK**: Type-safe auth calls (signUp, signIn, signOut)
+- **RLS integration**: auth.uid() function available in RLS policies
+- **No backend code**: Auth handled by Supabase, not custom code
+
+**Implementation**:
+```typescript
+// Sign up
+const { data, error } = await supabase.auth.signUp({
+  email: 'user@example.com',
+  password: 'secure-password',
+  options: {
+    data: { full_name: 'John Doe' }
+  }
+})
+
+// Sign in
+const { data, error } = await supabase.auth.signInWithPassword({
+  email: 'user@example.com',
+  password: 'secure-password'
+})
+
+// OAuth (future)
+const { data, error } = await supabase.auth.signInWithOAuth({
+  provider: 'google'
+})
+```
+
+---
+
+### Pattern 6: Three-Level Access Control Model
+
+**Decision**: Implement three-level access control:
+1. **Organization level**: User-to-organization with roles (admin, evaluator, viewer)
+2. **RFP level**: User-to-RFP assignments with access levels (owner, evaluator, viewer)
+3. **Database level**: RLS policies enforce both organization and RFP access
+
+**Rationale**:
+- **Granularity**: Organization admins can assign specific evaluators to specific RFPs
+- **Flexibility**: Consultants can evaluate in multiple organizations
+- **Security**: Database-level enforcement prevents data leaks
+- **Audit trail**: Track who accessed/modified what at user level (not anonymous)
+
+**Role definitions**:
+- **Organization Admin**: Manage users, create RFPs, assign evaluators
+- **Organization Evaluator**: Evaluate assigned RFPs, create requirements
+- **Organization Viewer**: Read-only access to organization's RFPs
+
+**RFP access levels**:
+- **Owner**: Full control (edit RFP metadata, assign users, delete RFP)
+- **Evaluator**: Score responses, update statuses, add comments
+- **Viewer**: Read-only access to specific RFP
+
+---
+
+### Pattern 7: Row Level Security (RLS) Policy Architecture
+
+**Decision**: Implement RLS policies for all tables with helper functions
+
+**Rationale**:
+- **Defense-in-depth**: Application bugs won't leak data across organizations
+- **Centralized logic**: Access rules defined once in database, not per query
+- **Performance**: PostgreSQL optimizes RLS policies, adds minimal overhead
+- **Testable**: Can unit test policies with different user contexts
+
+**RLS Policy Structure**:
+
+```sql
+-- Helper function: Get user's organizations
+CREATE OR REPLACE FUNCTION get_user_organizations(user_uuid UUID)
+RETURNS TABLE(organization_id UUID, role VARCHAR) AS $$
+  SELECT organization_id, role 
+  FROM user_organizations 
+  WHERE user_id = user_uuid;
+$$ LANGUAGE SQL STABLE;
+
+-- Helper function: Check if user is org admin
+CREATE OR REPLACE FUNCTION user_is_org_admin(user_uuid UUID, org_id UUID)
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM user_organizations
+    WHERE user_id = user_uuid 
+      AND organization_id = org_id 
+      AND role = 'admin'
+  );
+$$ LANGUAGE SQL STABLE;
+
+-- Organizations table: Users see only their organizations
+CREATE POLICY "Users can view their organizations"
+  ON organizations FOR SELECT
+  USING (
+    id IN (SELECT organization_id FROM get_user_organizations(auth.uid()))
+  );
+
+-- RFPs table: Users see only RFPs from their organizations
+CREATE POLICY "Users can view organization RFPs"
+  ON rfps FOR SELECT
+  USING (
+    organization_id IN (
+      SELECT organization_id FROM get_user_organizations(auth.uid())
+    )
+  );
+
+-- RFPs table: Only assigned users can update
+CREATE POLICY "Assigned users can update RFPs"
+  ON rfps FOR UPDATE
+  USING (
+    id IN (
+      SELECT rfp_id FROM rfp_user_assignments
+      WHERE user_id = auth.uid() 
+        AND access_level IN ('owner', 'evaluator')
+    )
+  );
+```
+
+**Performance considerations**:
+- Index on user_organizations(user_id, organization_id)
+- Index on rfp_user_assignments(user_id, rfp_id)
+- Cache results of get_user_organizations() per transaction
+- RLS adds ~5-10ms per query (acceptable for MVP scale)
+
+---
+
+### Pattern 8: JWT Custom Claims for Organization Context
+
+**Decision**: Store current organization ID in JWT custom claims for faster RLS checks
+
+**Rationale**:
+- **Performance**: Avoid joins in every RLS policy
+- **Current context**: User selects "active organization" in UI
+- **Token refresh**: Organization context refreshed on org switch
+- **RLS access**: auth.jwt() ->> 'organization_id' in policies
+
+**Implementation**:
+```sql
+-- RLS policy using JWT claim
+CREATE POLICY "Users see current org data"
+  ON rfps FOR SELECT
+  USING (
+    organization_id::text = auth.jwt() ->> 'organization_id'
+  );
+```
+
+**Limitations**:
+- User can only work in one organization at a time in UI
+- Switching organizations requires token refresh (acceptable UX)
+- Consultants working across orgs must switch context explicitly
+
+---
+
+### Decision 9: Subscription Tier Management
+
+**Decision**: Implement subscription tiers at organization level with soft limits
+
+**Rationale**:
+- **Monetization**: Free tier (10 users, 5 RFPs), paid tiers (unlimited)
+- **Graceful degradation**: Soft limits warn before hard blocking
+- **Database-enforced**: Limits stored in organizations.max_users, max_rfps
+- **API validation**: Check limits before creating users/RFPs
+
+**Tier structure**:
+- **Free**: 10 users, 5 active RFPs, community support
+- **Pro** (future): 50 users, 20 active RFPs, email support
+- **Enterprise** (future): Unlimited users/RFPs, SSO, priority support
+
+**Implementation**:
+```sql
+-- Organizations table includes tier limits
+CREATE TABLE organizations (
+  ...
+  subscription_tier VARCHAR(50) DEFAULT 'free',
+  max_users INTEGER DEFAULT 10,
+  max_rfps INTEGER DEFAULT 5,
+  ...
+);
+
+-- API route checks before creating RFP
+const org = await supabase
+  .from('organizations')
+  .select('max_rfps')
+  .eq('id', orgId)
+  .single();
+
+const activeRfps = await supabase
+  .from('rfps')
+  .select('id', { count: 'exact' })
+  .eq('organization_id', orgId)
+  .eq('status', 'active');
+
+if (activeRfps.count >= org.max_rfps) {
+  return res.status(403).json({ error: 'RFP limit reached. Upgrade plan.' });
+}
+```
+
+---
+
+## Authentication Flow Research
+
+### User Registration & Organization Onboarding
+
+**Research**: Multi-tenant SaaS onboarding patterns
+
+**Key Findings**:
+- First user creates organization during signup
+- Subsequent users invited by admin via email invitation
+- Invitation contains organization context + unique token
+- Accept invitation creates user-organization link
+- Consultants can belong to multiple organizations
+
+**Registration flow**:
+1. User signs up with email/password
+2. User creates organization (name, slug)
+3. System creates user record + organization + user_organization link with admin role
+4. User redirected to dashboard with organization context
+
+**Invitation flow**:
+1. Admin enters invitee email + role in settings
+2. System creates invitation record with token
+3. Email sent with invitation link: /accept-invite?token=xxx
+4. Invitee clicks link, signs up (or signs in if existing user)
+5. System creates user_organization link for new org
+6. User can switch between organizations in navbar dropdown
+
+---
+
+### Session Management & Token Refresh
+
+**Research**: Supabase Auth session handling
+
+**Key Findings**:
+- Access token expires after 1 hour (configurable)
+- Refresh token used to get new access token automatically
+- Supabase client handles refresh transparently
+- Session persisted in localStorage (browser) or secure cookie (SSR)
+- Expired sessions redirect to login page
+
+**Implementation**:
+```typescript
+// Middleware to check auth on protected routes
+export async function middleware(request: NextRequest) {
+  const supabase = createMiddlewareClient({ req: request });
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (!session) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+  
+  return NextResponse.next();
+}
+
+// Apply to protected routes
+export const config = {
+  matcher: ['/dashboard/:path*', '/api/:path*']
+};
+```
+
+---
+
+### Organization Switching UX
+
+**Research**: Multi-tenant UX patterns
+
+**Key Findings**:
+- Dropdown in navbar shows available organizations
+- Switching organization reloads dashboard with new context
+- Current organization stored in localStorage + JWT claim
+- Breadcrumb shows current organization name
+- Avoid context confusion: Clear "You are viewing [Org Name]" indicator
+
+**Implementation**:
+```typescript
+// Organization context provider
+const OrganizationContext = createContext<{
+  currentOrg: Organization | null;
+  switchOrg: (orgId: string) => Promise<void>;
+}>(null);
+
+const switchOrg = async (orgId: string) => {
+  // Update JWT claim
+  await supabase.auth.updateUser({
+    data: { organization_id: orgId }
+  });
+  
+  // Refresh session to get new token
+  await supabase.auth.refreshSession();
+  
+  // Update local state
+  setCurrentOrg(orgs.find(o => o.id === orgId));
+  
+  // Reload dashboard data
+  router.refresh();
+};
+```
+
+---
+
+## Security Best Practices for Multi-Tenant
+
+### Preventing Cross-Tenant Data Leaks
+
+**Research**: Multi-tenant security anti-patterns
+
+**Key Findings**:
+- **Never trust client**: Always validate organization_id on server
+- **RLS is mandatory**: Application-level checks are insufficient
+- **Test with multiple tenants**: Create test orgs, ensure isolation
+- **Audit RLS policies**: Review all policies before production
+- **Foreign keys enforce integrity**: CASCADE deletes prevent orphans
+
+**Testing checklist**:
+- [ ] User A cannot see User B's organizations
+- [ ] User A cannot see RFPs from User B's organization
+- [ ] User A cannot update RFPs in User B's organization (even with RFP ID)
+- [ ] API routes reject requests with mismatched organization_id
+- [ ] Switching organizations clears cached data from previous org
+
+---
+
+### Database Migration Strategy
+
+**Research**: Zero-downtime multi-tenant migrations
+
+**Key Findings**:
+- Single migration creates all tables + RLS policies
+- Seed script creates test organizations for development
+- Backup before enabling RLS in production
+- RLS can be enabled per table incrementally
+- Use transaction for schema + RLS changes
+
+**Migration file structure**:
+```sql
+-- 001_multi_tenant_foundation.sql
+BEGIN;
+
+-- 1. Create extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- 2. Create tables (organizations first, then users, then rfps)
+CREATE TABLE organizations (...);
+CREATE TABLE users (...);
+CREATE TABLE user_organizations (...);
+CREATE TABLE rfp_user_assignments (...);
+CREATE TABLE rfps (...);
+-- ... other tables
+
+-- 3. Create indexes
+CREATE INDEX idx_user_organizations_user ON user_organizations(user_id);
+CREATE INDEX idx_rfp_user_assignments_user ON rfp_user_assignments(user_id);
+-- ... other indexes
+
+-- 4. Enable RLS
+ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rfps ENABLE ROW LEVEL SECURITY;
+-- ... other tables
+
+-- 5. Create helper functions
+CREATE FUNCTION get_user_organizations(...);
+CREATE FUNCTION user_is_org_admin(...);
+
+-- 6. Create RLS policies
+CREATE POLICY "Users view own orgs" ON organizations FOR SELECT ...;
+CREATE POLICY "Users view org RFPs" ON rfps FOR SELECT ...;
+-- ... other policies
+
+COMMIT;
+```
+
+---
+
 ## Open Questions Resolved
 
 ### Q: Should we implement real-time subscriptions for multi-user updates?

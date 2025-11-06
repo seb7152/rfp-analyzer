@@ -214,15 +214,34 @@ Users need to toggle between dark mode and light mode to match their environment
 - **FR-032**: System MUST accept response data with attributes: requirementId, supplierId, responseText, aiScore (0-5), aiComment, status
 - **FR-033**: System MUST handle missing or incomplete data gracefully (e.g., missing AI scores, empty response text)
 
+#### Multi-Tenant & Access Control
+- **FR-034**: System MUST support multiple organizations (companies or business units) in a single database instance
+- **FR-035**: System MUST isolate RFP data by organization - users can only access RFPs belonging to their organization
+- **FR-036**: System MUST support user authentication and maintain user sessions
+- **FR-037**: System MUST assign users to specific organizations with role-based access
+- **FR-038**: System MUST support multiple users per organization with different access levels (admin, evaluator, viewer)
+- **FR-039**: System MUST allow organization admins to invite users to their organization
+- **FR-040**: System MUST allow assignment of specific evaluators to individual RFPs for access control
+- **FR-041**: System MUST track which user created/modified each RFP, requirement, and response evaluation
+- **FR-042**: System MUST prevent cross-organization data access through database-level Row Level Security (RLS) policies
+
 ### Key Entities *(include if feature involves data)*
 
-- **RFP (Request for Proposal)**: Represents a single procurement process with a unique identifier, title, description, creation date, and organizational owner. Contains a hierarchical structure of requirements and a list of participating suppliers. Status tracks whether evaluation is in progress, completed, or archived.
+- **Organization**: Represents a company or business unit using the platform. Contains: unique ID, name, settings/configuration, subscription tier, and creation date. Provides multi-tenant isolation - all RFPs, users, and data are scoped to an organization. Supports multiple business units within a company as separate organizations.
 
-- **Requirement**: Represents a single evaluable criterion within the RFP, organized in a 4-level hierarchy (Domain/Category/Subcategory/Requirement). Contains: unique ID (e.g., "REQ-001"), title, multi-line description, contextual background (3-4 paragraphs), weight (decimal 0-1 representing importance), level (1-4), and optional parentId for hierarchy. Leaf nodes (level 4) are the actual evaluable requirements.
+- **User**: Represents an authenticated user of the platform. Contains: unique ID, email, name, authentication credentials (managed by Supabase Auth), and profile information. Users belong to one or more organizations with specific roles (admin, evaluator, viewer). Users can be assigned to specific RFPs within their organization.
 
-- **Supplier**: Represents a vendor responding to the RFP. Contains: unique ID, name, and optional contact information. Each supplier submits responses to multiple requirements. Typically 4-10 suppliers per RFP.
+- **User-Organization Assignment**: Links users to organizations with role-based access control. Contains: user ID, organization ID, role (admin/evaluator/viewer), and join date. One user can belong to multiple organizations (e.g., consultant working with multiple clients). Role determines permissions within the organization.
 
-- **Response**: Represents a single supplier's answer to a specific requirement. Contains: unique ID, requirementId (foreign key), supplierId (foreign key), full response text, AI-generated score (0-5), AI-generated commentary, manual score (0-5, optional), compliance status (pending/pass/partial/fail), completion checkbox state (boolean), evaluator comments, and evaluator questions/doubts. The relationship is: one requirement + one supplier = one response.
+- **RFP (Request for Proposal)**: Represents a single procurement process with a unique identifier, title, description, creation date, and organizational owner. Contains a hierarchical structure of requirements and a list of participating suppliers. Status tracks whether evaluation is in progress, completed, or archived. Belongs to exactly one organization and can have assigned evaluators for access control.
+
+- **RFP-User Assignment**: Links evaluators to specific RFPs for granular access control. Contains: RFP ID, user ID, access level (owner/evaluator/viewer), and assignment date. Only assigned users can view/edit the RFP. Enables collaboration control within an organization.
+
+- **Requirement**: Represents a single evaluable criterion within the RFP, organized in a 4-level hierarchy (Domain/Category/Subcategory/Requirement). Contains: unique ID (e.g., "REQ-001"), title, multi-line description, contextual background (3-4 paragraphs), weight (decimal 0-1 representing importance), level (1-4), and optional parentId for hierarchy. Leaf nodes (level 4) are the actual evaluable requirements. Inherits organization from parent RFP.
+
+- **Supplier**: Represents a vendor responding to the RFP. Contains: unique ID, name, and optional contact information. Each supplier submits responses to multiple requirements. Typically 4-10 suppliers per RFP. Inherits organization from parent RFP.
+
+- **Response**: Represents a single supplier's answer to a specific requirement. Contains: unique ID, requirementId (foreign key), supplierId (foreign key), full response text, AI-generated score (0-5), AI-generated commentary, manual score (0-5, optional), compliance status (pending/pass/partial/fail), completion checkbox state (boolean), evaluator comments, and evaluator questions/doubts. Tracks last_modified_by user ID for audit trail. The relationship is: one requirement + one supplier = one response. Inherits organization from parent RFP.
 
 - **Evaluation Session**: Represents the work session of an evaluator. Tracks: user identifier, current RFP, currently selected requirement, theme preference (light/dark), and sidebar expansion state. Maintains local state for unsaved changes during navigation.
 
@@ -247,9 +266,9 @@ Users need to toggle between dark mode and light mode to match their environment
 
 - **External Processing**: AI scoring and commentary are generated externally (via N8N) and provided as complete data. The application treats AI scores as read-only inputs.
 
-- **Single RFP Context**: The MVP focuses on evaluating one RFP at a time. Multi-RFP management and switching between RFPs is considered a V2 feature.
+- **Single RFP Context**: The UI focuses on evaluating one RFP at a time. Multi-RFP dashboard and switching is considered a V2 feature.
 
-- **User Management**: Authentication and multi-user access control are out of scope for MVP. The platform assumes a small team (2-3 evaluators) with shared access and trust model.
+- **User Management**: User authentication and organization-based multi-tenancy are implemented from the start using Supabase Auth. This ensures scalability and proper data isolation for multiple companies/BUs.
 
 - **Data Persistence**: All evaluation data (manual scores, comments, statuses) is saved to a backend database. The specification assumes a reliable persistence layer exists but does not define the specific technology.
 

@@ -17,6 +17,12 @@ servers:
     description: Production
 
 tags:
+  - name: Auth
+    description: Authentication and session management endpoints
+  - name: Organizations
+    description: Organization management endpoints
+  - name: Users
+    description: User management and invitation endpoints
   - name: RFPs
     description: RFP management endpoints
   - name: Requirements
@@ -27,6 +33,644 @@ tags:
     description: Supplier response evaluation endpoints
 
 paths:
+  # ============================================
+  # Authentication Endpoints
+  # ============================================
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register new user and create organization
+      description: |
+        Creates a new user account and optionally their first organization.
+        First user in an organization becomes admin by default.
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - fullName
+                - organizationName
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                fullName:
+                  type: string
+                organizationName:
+                  type: string
+                  description: Name of the organization to create
+                organizationSlug:
+                  type: string
+                  pattern: "^[a-z0-9-]+$"
+                  description: URL-friendly slug (auto-generated if not provided)
+      responses:
+        "201":
+          description: User and organization created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/User"
+                  organization:
+                    $ref: "#/components/schemas/Organization"
+                  session:
+                    type: object
+                    description: Auth session details
+        "400":
+          description: Invalid input or email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      description: Authenticates user and returns session token
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/User"
+                  organizations:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Organization"
+                  session:
+                    type: object
+                    description: Auth session details
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout current user
+      description: Invalidates the current session
+      operationId: logout
+      responses:
+        "200":
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user profile
+      description: Returns authenticated user's profile and organizations
+      operationId: getMe
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/User"
+                  organizations:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OrganizationWithRole"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ============================================
+  # Organization Endpoints
+  # ============================================
+  /organizations:
+    get:
+      tags: [Organizations]
+      summary: Get user's organizations
+      description: Returns all organizations the authenticated user belongs to
+      operationId: getOrganizations
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Organizations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  organizations:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OrganizationWithRole"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      tags: [Organizations]
+      summary: Create new organization
+      description: Creates a new organization with the current user as admin
+      operationId: createOrganization
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                slug:
+                  type: string
+                  pattern: "^[a-z0-9-]+$"
+      responses:
+        "201":
+          description: Organization created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "400":
+          description: Invalid input or slug already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /organizations/{organizationId}:
+    get:
+      tags: [Organizations]
+      summary: Get organization details
+      description: Returns detailed information about a specific organization
+      operationId: getOrganization
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Organization retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "403":
+          description: User not member of this organization
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Organization not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    put:
+      tags: [Organizations]
+      summary: Update organization
+      description: Updates organization details (admin only)
+      operationId: updateOrganization
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                settings:
+                  type: object
+      responses:
+        "200":
+          description: Organization updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "403":
+          description: User is not organization admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /organizations/{organizationId}/members:
+    get:
+      tags: [Users]
+      summary: Get organization members
+      description: Returns all users in the organization with their roles
+      operationId: getOrganizationMembers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Members retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  members:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/UserWithRole"
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      limit:
+                        type: integer
+                        description: Max users allowed for this org's subscription tier
+
+  /organizations/{organizationId}/invite:
+    post:
+      tags: [Users]
+      summary: Invite user to organization
+      description: Sends an email invitation to join the organization (admin only)
+      operationId: inviteUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - role
+              properties:
+                email:
+                  type: string
+                  format: email
+                role:
+                  type: string
+                  enum: [admin, evaluator, viewer]
+      responses:
+        "201":
+          description: Invitation sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  invitationId:
+                    type: string
+                    format: uuid
+        "403":
+          description: User is not organization admin or user limit reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /organizations/{organizationId}/members/{userId}:
+    delete:
+      tags: [Users]
+      summary: Remove user from organization
+      description: Removes a user from the organization (admin only)
+      operationId: removeOrganizationMember
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: User removed successfully
+        "403":
+          description: User is not organization admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    patch:
+      tags: [Users]
+      summary: Update user role in organization
+      description: Changes a user's role in the organization (admin only)
+      operationId: updateMemberRole
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role
+              properties:
+                role:
+                  type: string
+                  enum: [admin, evaluator, viewer]
+      responses:
+        "200":
+          description: Role updated successfully
+        "403":
+          description: User is not organization admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ============================================
+  # RFP User Assignment Endpoints
+  # ============================================
+  /rfps/{rfpId}/assignments:
+    get:
+      tags: [RFPs]
+      summary: Get RFP user assignments
+      description: Returns all users assigned to this RFP with their access levels
+      operationId: getRFPAssignments
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: rfpId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Assignments retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  assignments:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RFPUserAssignment"
+
+    post:
+      tags: [RFPs]
+      summary: Assign user to RFP
+      description: Assigns a user to this RFP with specific access level (owner/evaluator only)
+      operationId: assignUserToRFP
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: rfpId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - accessLevel
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                accessLevel:
+                  type: string
+                  enum: [owner, evaluator, viewer]
+      responses:
+        "201":
+          description: User assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RFPUserAssignment"
+        "403":
+          description: User does not have permission to manage assignments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /rfps/{rfpId}/assignments/{userId}:
+    delete:
+      tags: [RFPs]
+      summary: Remove user assignment from RFP
+      description: Removes a user's access to this RFP (owner only)
+      operationId: removeRFPAssignment
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: rfpId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Assignment removed successfully
+        "403":
+          description: User is not RFP owner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ============================================
+  # RFP Endpoints (with multi-tenant context)
+  # ============================================
+  /rfps:
+    get:
+      tags: [RFPs]
+      summary: Get all RFPs for current organization
+      description: Returns RFPs accessible by the authenticated user in their current organization context
+      operationId: getRFPs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizationId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, in_progress, completed, archived]
+      responses:
+        "200":
+          description: RFPs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rfps:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RFP"
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      limit:
+                        type: integer
+                        description: Max RFPs allowed for this org's subscription tier
+
+    post:
+      tags: [RFPs]
+      summary: Create new RFP
+      description: Creates a new RFP in the current organization (admin/evaluator only)
+      operationId: createRFP
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - organizationId
+                - title
+              properties:
+                organizationId:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "201":
+          description: RFP created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RFP"
+        "403":
+          description: User does not have permission or RFP limit reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /rfps/{rfpId}:
     get:
       tags: [RFPs]
@@ -42,18 +686,18 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RFP'
-        '404':
+                $ref: "#/components/schemas/RFP"
+        "404":
           description: RFP not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /rfps/{rfpId}/requirements:
     get:
@@ -87,7 +731,7 @@ paths:
             type: boolean
             default: false
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
@@ -97,7 +741,7 @@ paths:
                   requirements:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Requirement'
+                      $ref: "#/components/schemas/Requirement"
                   meta:
                     type: object
                     properties:
@@ -107,12 +751,12 @@ paths:
                         type: object
                         additionalProperties:
                           type: integer
-        '404':
+        "404":
           description: RFP not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /rfps/{rfpId}/suppliers:
     get:
@@ -129,7 +773,7 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
@@ -139,18 +783,18 @@ paths:
                   suppliers:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Supplier'
+                      $ref: "#/components/schemas/Supplier"
                   meta:
                     type: object
                     properties:
                       total:
                         type: integer
-        '404':
+        "404":
           description: RFP not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /rfps/{rfpId}/responses:
     get:
@@ -190,7 +834,7 @@ paths:
             type: string
             enum: [pending, pass, partial, fail]
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
@@ -200,7 +844,7 @@ paths:
                   responses:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Response'
+                      $ref: "#/components/schemas/Response"
                   meta:
                     type: object
                     properties:
@@ -210,12 +854,12 @@ paths:
                         type: object
                         additionalProperties:
                           type: integer
-        '404':
+        "404":
           description: RFP not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /requirements/{requirementId}:
     get:
@@ -234,7 +878,7 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
@@ -242,7 +886,7 @@ paths:
                 type: object
                 properties:
                   requirement:
-                    $ref: '#/components/schemas/Requirement'
+                    $ref: "#/components/schemas/Requirement"
                   breadcrumb:
                     type: array
                     description: Hierarchical path from root to this requirement
@@ -267,12 +911,12 @@ paths:
                         type: integer
                       isComplete:
                         type: boolean
-        '404':
+        "404":
           description: Requirement not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /responses/{responseId}:
     get:
@@ -289,18 +933,18 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Response'
-        '404':
+                $ref: "#/components/schemas/Response"
+        "404":
           description: Response not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
     put:
       tags: [Responses]
@@ -322,29 +966,178 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResponseUpdate'
+              $ref: "#/components/schemas/ResponseUpdate"
       responses:
-        '200':
+        "200":
           description: Response updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Response'
-        '400':
+                $ref: "#/components/schemas/Response"
+        "400":
           description: Invalid input
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '404':
+                $ref: "#/components/schemas/Error"
+        "404":
           description: Response not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase Auth JWT token
+
   schemas:
+    # ============================================
+    # Authentication & User Schemas
+    # ============================================
+    User:
+      type: object
+      required:
+        - id
+        - email
+        - fullName
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User ID (references Supabase auth.users)
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        avatarUrl:
+          type: string
+          format: uri
+          nullable: true
+        preferences:
+          type: object
+          nullable: true
+          description: User preferences (theme, notifications, etc.)
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Organization:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - subscriptionTier
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "TechCorp Inc."
+        slug:
+          type: string
+          pattern: "^[a-z0-9-]+$"
+          example: "techcorp-inc"
+        settings:
+          type: object
+          nullable: true
+          description: Organization-specific settings
+        subscriptionTier:
+          type: string
+          enum: [free, pro, enterprise]
+          default: free
+        maxUsers:
+          type: integer
+          description: Maximum users allowed
+          example: 10
+        maxRfps:
+          type: integer
+          description: Maximum active RFPs allowed
+          example: 5
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    OrganizationWithRole:
+      allOf:
+        - $ref: "#/components/schemas/Organization"
+        - type: object
+          required:
+            - role
+          properties:
+            role:
+              type: string
+              enum: [admin, evaluator, viewer]
+              description: User's role in this organization
+
+    UserWithRole:
+      allOf:
+        - $ref: "#/components/schemas/User"
+        - type: object
+          required:
+            - role
+            - joinedAt
+          properties:
+            role:
+              type: string
+              enum: [admin, evaluator, viewer]
+            joinedAt:
+              type: string
+              format: date-time
+              description: When user joined this organization
+
+    RFPUserAssignment:
+      type: object
+      required:
+        - id
+        - rfpId
+        - userId
+        - accessLevel
+        - assignedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        rfpId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        user:
+          $ref: "#/components/schemas/User"
+          description: Populated user object (when joined)
+        accessLevel:
+          type: string
+          enum: [owner, evaluator, viewer]
+          description: User's access level for this specific RFP
+        assignedBy:
+          type: string
+          format: uuid
+          nullable: true
+          description: User ID who created this assignment
+        assignedAt:
+          type: string
+          format: date-time
+
+    # ============================================
+    # RFP & Requirements Schemas
+    # ============================================
     RFP:
       type: object
       required:
@@ -373,8 +1166,11 @@ components:
         organizationId:
           type: string
           format: uuid
-          nullable: true
-          description: Organization ID (future multi-tenant support)
+          description: Organization ID (required for multi-tenant isolation)
+        createdBy:
+          type: string
+          format: uuid
+          description: User ID who created the RFP
         createdAt:
           type: string
           format: date-time
@@ -383,10 +1179,6 @@ components:
           type: string
           format: date-time
           description: Last update timestamp
-        createdBy:
-          type: string
-          nullable: true
-          description: User who created the RFP (future auth support)
 
     Requirement:
       type: object
@@ -466,7 +1258,7 @@ components:
           type: array
           description: Child requirements (for nested tree structure)
           items:
-            $ref: '#/components/schemas/Requirement'
+            $ref: "#/components/schemas/Requirement"
 
     Supplier:
       type: object
@@ -583,8 +1375,9 @@ components:
           readOnly: true
         lastModifiedBy:
           type: string
+          format: uuid
           nullable: true
-          description: User who last modified (future auth support)
+          description: User ID who last modified this response
         createdAt:
           type: string
           format: date-time
@@ -594,7 +1387,7 @@ components:
           format: date-time
           description: Last update timestamp
         supplier:
-          $ref: '#/components/schemas/Supplier'
+          $ref: "#/components/schemas/Supplier"
           description: Populated supplier object (when joined)
 
     ResponseUpdate:
