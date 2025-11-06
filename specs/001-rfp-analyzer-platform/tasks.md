@@ -46,11 +46,11 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T011 Run supabase/migrations/migrations-multi-tenant.sql to create all 9 database tables with RLS policies
-- [ ] T012 Create lib/supabase/client.ts with Supabase client initialization (browser client)
-- [ ] T013 Create lib/supabase/server.ts with Supabase server client for API routes and Server Components
-- [ ] T014 Generate TypeScript types from Supabase schema in lib/supabase/types.ts using Supabase CLI
-- [ ] T015 Create types/rfp.ts with RFP, Organization type definitions
+- [x] T011 Run supabase/migrations/migrations-multi-tenant.sql to create all 9 database tables with RLS policies
+- [x] T012 Create lib/supabase/client.ts with Supabase client initialization (browser client)
+- [x] T013 Create lib/supabase/server.ts with Supabase server client for API routes and Server Components
+- [x] T014 Generate TypeScript types from Supabase schema in lib/supabase/types.ts using Supabase CLI
+- [x] T015 Create types/rfp.ts with RFP, Organization type definitions
 - [ ] T016 [P] Create types/requirement.ts with Requirement type definitions including hierarchy
 - [ ] T017 [P] Create types/supplier.ts with Supplier type definitions
 - [ ] T018 [P] Create types/response.ts with Response, ResponseUpdate type definitions

@@ -1,262 +1,182 @@
-# RFP Analyzer Platform
+# RFP Analyzer - Mockup Interface
 
-> Plateforme d'analyse et de comparaison des réponses des fournisseurs aux appels d'offres (RFP)
+Mockup interactif de la plateforme d'analyse de réponses à appels d'offres (RFP).
 
-[![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green?logo=supabase)](https://supabase.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.x-38bdf8?logo=tailwind-css)](https://tailwindcss.com/)
+## 📋 Aperçu
 
-## 📋 Vue d'ensemble
+Ce mockup démontre l'interface principale de l'application RFP Analyzer avec:
 
-RFP Analyzer est une application web full-stack qui permet aux équipes d'évaluation de :
-- 📂 **Explorer** une hiérarchie structurée d'exigences (4 niveaux)
-- 🔍 **Comparer** les réponses de 4-10 fournisseurs côte à côte
-- ⭐ **Noter** et évaluer manuellement chaque réponse
-- 💬 **Commenter** et poser des questions sur les réponses
-- 📊 **Suivre** la progression de l'évaluation
-- 🌓 **Basculer** entre mode clair et sombre
+- **Sidebar hiérarchique** : Navigation arborescente des exigences avec recherche
+- **Navbar** : Onglets de navigation (Configuration, Comparaison, Réponses) + thème jour/nuit
+- **Vue comparative** : Affichage côte à côte des réponses des fournisseurs par exigence
+- **Breadcrumb** : Navigation hiérarchique de l'exigence sélectionnée
+- **Pagination** : Navigation rapide entre les exigences
+- **Tableau extensible** : Détails complets des réponses (scores, commentaires, questions)
 
-### Cas d'usage
-
-- **Équipes d'évaluation** : 2-3 évaluateurs travaillant sur 4-5 RFP par an
-- **Volume** : 50-200 exigences par RFP, 4-10 fournisseurs
-- **Workflow** : Analyse comparative avec scoring manuel et commentaires
-
-## 🚀 Démarrage rapide
-
-### Prérequis
-
-- Node.js 18+ 
-- npm 9+
-- Compte Supabase (gratuit)
-
-### Installation
-
-```bash
-# Cloner le repository
-git clone https://github.com/seb7152/rfp-analyzer.git
-cd rfp-analyzer
-
-# Installer les dépendances
-npm install
-
-# Configurer l'environnement
-cp .env.example .env.local
-# Ajouter vos clés Supabase dans .env.local
-
-# Lancer les migrations
-npm run migrate
-
-# Seed des données de développement (optionnel)
-npm run seed
-
-# Démarrer le serveur de développement
-npm run dev
-```
-
-Ouvrez [http://localhost:3000](http://localhost:3000) dans votre navigateur.
-
-📖 **Guide complet** : [specs/001-rfp-analyzer-platform/quickstart.md](specs/001-rfp-analyzer-platform/quickstart.md)
-
-## 🏗️ Architecture
-
-### Stack technique
-
-**Frontend**
-- Next.js 14 (App Router)
-- React 18
-- TypeScript 5.x
-- Tailwind CSS 3.x
-- shadcn/ui components
-- TanStack Query (React Query)
-
-**Backend**
-- Next.js API Routes
-- Supabase (PostgreSQL 15+)
-- Supabase JS Client 2.x
-
-**Tests**
-- Jest + React Testing Library (unit)
-- Playwright (E2E)
-
-**Déploiement**
-- Vercel (frontend + API)
-- Supabase Cloud (database)
-
-### Structure du projet
-
-```
-rfp-analyzer/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   └── dashboard/         # Interface principale
-├── components/            # Composants React
-│   ├── ui/               # shadcn/ui primitives
-│   ├── Navbar.tsx        # Navigation
-│   ├── Sidebar.tsx       # Arbre des exigences
-│   └── ComparisonView.tsx # Vue comparative
-├── lib/                   # Utilitaires
-│   └── supabase/         # Client Supabase
-├── specs/                 # Documentation du projet
-│   └── 001-rfp-analyzer-platform/
-│       ├── spec.md       # Spécification fonctionnelle
-│       ├── plan.md       # Plan d'implémentation
-│       ├── data-model.md # Schéma de base de données
-│       └── contracts/    # API contracts (OpenAPI)
-└── mockup/               # Prototype fonctionnel
-```
-
-## 📚 Documentation
-
-### Spécifications
-
-- **[spec.md](specs/001-rfp-analyzer-platform/spec.md)** - Spécification fonctionnelle complète
-  - 7 user stories (P1-P3)
-  - 33 exigences fonctionnelles
-  - 10 critères de succès
-  
-- **[plan.md](specs/001-rfp-analyzer-platform/plan.md)** - Plan d'implémentation
-  - Contexte technique détaillé
-  - Structure du projet
-  - Décisions architecturales
-
-- **[data-model.md](specs/001-rfp-analyzer-platform/data-model.md)** - Modèle de données
-  - Schéma PostgreSQL complet
-  - Migrations SQL
-  - Requêtes communes
-
-- **[research.md](specs/001-rfp-analyzer-platform/research.md)** - Recherche technique
-  - Décisions technologiques justifiées
-  - Patterns architecturaux
-  - Optimisations de performance
-
-- **[quickstart.md](specs/001-rfp-analyzer-platform/quickstart.md)** - Guide développeur
-  - Installation pas à pas
-  - Configuration Supabase
-  - Troubleshooting
-
-- **[contracts/api.yaml](specs/001-rfp-analyzer-platform/contracts/api.yaml)** - API OpenAPI 3.0
-  - 7 endpoints REST
-  - Schémas de données
-  - Exemples de requêtes/réponses
-
-### Mockup
-
-Un prototype fonctionnel est disponible dans `/mockup` :
+## 🚀 Installation
 
 ```bash
 cd mockup
 npm install
+```
+
+## 🏃 Démarrage
+
+```bash
 npm run dev
 ```
 
-Le mockup démontre :
-- Navigation hiérarchique (4 niveaux)
-- Vue comparative des réponses
-- Système de notation (étoiles)
-- Badges de statut (Conforme/Partiel/Non conforme)
-- Mode sombre/clair
-- Design responsive
+Accédez à `http://localhost:3000/dashboard` dans votre navigateur.
 
-## 🎯 Fonctionnalités principales
+## 📁 Structure du projet
 
-### ✅ MVP (Version 1.0)
-
-- [x] Navigation hiérarchique des exigences (4 niveaux)
-- [x] Recherche et filtrage en temps réel
-- [x] Vue comparative des réponses fournisseurs
-- [x] Notation manuelle (0-5 étoiles)
-- [x] Statuts d'évaluation (Pending/Pass/Partial/Fail)
-- [x] Commentaires et questions par réponse
-- [x] Suivi de progression (checkboxes)
-- [x] Pagination entre exigences
-- [x] Mode sombre/clair
-- [x] Contexte RFP collapsible
-
-### 🚧 Prochaines versions (V2+)
-
-- [ ] Authentification utilisateurs (Supabase Auth)
-- [ ] Gestion multi-tenant (RLS)
-- [ ] Collaboration temps réel
-- [ ] Historique des modifications (audit trail)
-- [ ] Export Excel des analyses
-- [ ] Modification des pondérations
-- [ ] Dashboard de synthèse
-- [ ] Graphiques comparatifs
-- [ ] Visionneuse PDF intégrée
-- [ ] Optimisation mobile
-
-## 🧪 Tests
-
-```bash
-# Tests unitaires
-npm run test
-
-# Tests unitaires en mode watch
-npm run test:watch
-
-# Tests E2E
-npm run test:e2e
-
-# Couverture
-npm run test:coverage
+```
+mockup/
+├── components/
+│   ├── Navbar.tsx              # Barre de navigation avec onglets et thème
+│   ├── Sidebar.tsx             # Sidebar avec arborescence des exigences
+│   ├── ComparisonView.tsx      # Vue principale de comparaison
+│   └── ui/                     # Composants shadcn/ui
+│       ├── button.tsx
+│       ├── input.tsx
+│       ├── badge.tsx
+│       ├── textarea.tsx
+│       ├── tabs.tsx
+│       ├── breadcrumb.tsx
+│       ├── pagination.tsx
+│       └── table.tsx
+├── pages/
+│   └── dashboard.tsx           # Page principale
+├── lib/
+│   ├── fake-data.ts           # Données factices pour le mockup
+│   └── utils.ts               # Utilitaires (cn, etc)
+├── package.json
+├── tsconfig.json
+└── next.config.js
 ```
 
-## 🚢 Déploiement
+## 🎨 Fonctionnalités du Mockup
 
-### Vercel (Recommandé)
+### Sidebar
+- **Recherche** : Filtrez les exigences par ID ou titre
+- **Arborescence** : Navigation hiérarchique sur 4 niveaux
+- **Sélection** : Clic sur une exigence pour afficher les détails
 
-1. Connecter le repository GitHub à Vercel
-2. Configurer les variables d'environnement :
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-3. Déployer automatiquement sur push
+### Vue Comparative
+- **Breadcrumb** : Montre le chemin de navigation (Domaine > Catégorie > Sous-catégorie > Exigence)
+- **Pagination** : Naviguez rapidement entre les exigences
+- **Pondération** : Affichage du poids de l'exigence
+- **Contexte** : Description et contexte du cahier des charges
+- **Tableau extensible** :
+  - Lignes par fournisseur
+  - Score IA (non-modifiable, grisé)
+  - Étoiles de rating visuelles
+  - Score manuel (modifiable)
+  - Status badge (Pass/Partial/Fail/Pending)
+  - Expansion pour voir détails complets
 
-### Checklist pré-déploiement
+### Détails étendus
+- Réponse complète du fournisseur
+- Commentaire IA
+- Champ pour score manuel
+- Champ pour commentaire utilisateur
+- Champ pour questions/doutes
 
-- [ ] Tous les tests passent
-- [ ] Build réussit : `npm run build`
-- [ ] Variables d'environnement configurées
-- [ ] Migrations appliquées sur Supabase prod
-- [ ] Lighthouse score > 90
+### Thème
+- Toggle jour/nuit dans la navbar
+- Style Vercel noir et blanc
+- Dark mode avec Tailwind CSS
 
-## 🤝 Contribution
+## 📊 Données Factices
 
-### Workflow Git
+Le mockup utilise des données structurées:
 
-```bash
-# Créer une branche feature
-git checkout -b feature/ma-fonctionnalite
-
-# Committer avec des messages descriptifs
-git commit -m "feat: ajouter filtrage par statut"
-
-# Pousser et créer une PR
-git push origin feature/ma-fonctionnalite
+```
+- 3 domaines
+- 6 catégories
+- 8 sous-catégories
+- 8 exigences (niveau 4)
+- 4 fournisseurs
+- 32 réponses (8 exigences × 4 fournisseurs)
 ```
 
-### Standards de code
+Chaque réponse a:
+- Texte de réponse
+- Score IA (0-5)
+- Commentaire IA
+- Status d'analyse
+- Champs modifiables (score manuel, commentaires, questions)
 
-- TypeScript strict mode
-- ESLint + Prettier
-- Tests pour les nouvelles fonctionnalités
-- Documentation des décisions techniques
+## 🔧 Technologies
 
-## 📝 Licence
+- **Next.js 14** : Framework React
+- **React 18** : Librairie UI
+- **Tailwind CSS** : Styling
+- **shadcn/ui** : Composants UI
+- **Lucide React** : Icônes
+- **TypeScript** : Typage statique
 
-Ce projet est sous licence [MIT](LICENSE).
+## 📝 Notes de conception
 
-## 👥 Équipe
+### UX Decisions
+1. **Sidebar collapsible** : Permet de maximiser l'espace de contenu
+2. **Expansion des lignes** : Voir détails sans quitter l'exigence
+3. **Étoiles de rating** : Visuel simple et intuitif pour les scores
+4. **Breadcrumb** : Contexte constant de la navigation
+5. **Pagination** : Naviger entre les exigences sans scroller le sidebar
 
-Développé avec ❤️ pour optimiser les processus d'évaluation RFP.
+### Couleurs et Styling
+- **Vercel-style** : Noir (#000), blanc (#fff), gris neutre
+- **Semantic colors** : Rouge pour les erreurs, vert pour les succès, jaune pour les avertissements
+- **Dark mode** : Mode nuit complet avec contraste approprié
 
-## 📞 Support
+## 🎯 Points de Brainstorm à adresser
 
-- **Documentation** : [specs/001-rfp-analyzer-platform/](specs/001-rfp-analyzer-platform/)
-- **Issues** : [GitHub Issues](https://github.com/seb7152/rfp-analyzer/issues)
+1. **Disposition du PDF viewer** :
+   - Panel côté droit?
+   - Modal overlay?
+   - Nouvel onglet?
+
+2. **Vue "Fiche Fournisseur"** :
+   - Synthèse par fournisseur
+   - Scores pondérés par domaine
+   - Comparaison visuelle
+
+3. **Dashboard de synthèse** :
+   - Tableau comparatif tous fournisseurs
+   - Tri/filtres
+   - Export Excel
+
+4. **Édition des pondérations** :
+   - V2 feature
+   - Interface de gestion
+
+5. **Interactions avancées** :
+   - Drag & drop pour réorganiser?
+   - Bulk actions sur les réponses?
+   - Collaboration temps réel?
+
+## 📌 Prochaines étapes
+
+1. ✅ Mockup statique (actuellement)
+2. ⬜ Intégration PDF viewer (react-pdf)
+3. ⬜ Onglet "Fiche Fournisseur"
+4. ⬜ Onglet "Dashboard Synthèse"
+5. ⬜ Backend API (Next.js routes)
+6. ⬜ Intégration Supabase
+7. ⬜ Intégration N8N workflows
+8. ⬜ Authentification
+
+## 🤝 Feedback & Amélioration
+
+Pour améliorer le mockup:
+- Testez la navigation et l'UX
+- Vérifiez les proportions et espacements
+- Suggérez des ajustements de couleurs/typographie
+- Identifiez les données manquantes
+- Proposez des interactions additionnelles
 
 ---
 
-**Status** : 🚧 En développement actif | **Version** : 0.1.0-alpha
+**Créé le:** 2025-11-05  
+**Version du mockup:** 0.1.0
