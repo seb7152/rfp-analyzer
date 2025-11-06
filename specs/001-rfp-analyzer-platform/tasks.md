@@ -51,10 +51,10 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 - [x] T013 Create lib/supabase/server.ts with Supabase server client for API routes and Server Components
 - [x] T014 Generate TypeScript types from Supabase schema in lib/supabase/types.ts using Supabase CLI
 - [x] T015 Create types/rfp.ts with RFP, Organization type definitions
-- [ ] T016 [P] Create types/requirement.ts with Requirement type definitions including hierarchy
-- [ ] T017 [P] Create types/supplier.ts with Supplier type definitions
-- [ ] T018 [P] Create types/response.ts with Response, ResponseUpdate type definitions
-- [ ] T019 [P] Create types/user.ts with User, UserWithRole, OrganizationWithRole type definitions
+- [x] T016 [P] Create types/requirement.ts with Requirement type definitions including hierarchy
+- [x] T017 [P] Create types/supplier.ts with Supplier type definitions
+- [x] T018 [P] Create types/response.ts with Response, ResponseUpdate type definitions
+- [x] T019 [P] Create types/user.ts with User, UserWithRole, OrganizationWithRole type definitions
 - [ ] T020 Create app/middleware.ts with authentication check for protected routes using Supabase Auth
 - [ ] T021 Create lib/constants.ts with enum values (statuses, roles, access levels)
 - [ ] T022 Install @tanstack/react-query for data fetching and caching
