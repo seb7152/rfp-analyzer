@@ -1,0 +1,649 @@
+openapi: 3.0.3
+info:
+  title: RFP Analyzer Platform API
+  description: |
+    REST API for the RFP Analyzer Platform. Provides endpoints for fetching RFP data,
+    requirements hierarchy, supplier responses, and updating evaluation data.
+
+    All endpoints are implemented as Next.js API routes.
+  version: 1.0.0
+  contact:
+    name: RFP Analyzer Team
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development
+  - url: https://rfp-analyzer.vercel.app/api
+    description: Production
+
+tags:
+  - name: RFPs
+    description: RFP management endpoints
+  - name: Requirements
+    description: Requirements hierarchy endpoints
+  - name: Suppliers
+    description: Supplier information endpoints
+  - name: Responses
+    description: Supplier response evaluation endpoints
+
+paths:
+  /rfps/{rfpId}:
+    get:
+      tags: [RFPs]
+      summary: Get RFP details
+      description: Fetches basic information about a specific RFP
+      operationId: getRFP
+      parameters:
+        - name: rfpId
+          in: path
+          required: true
+          description: UUID of the RFP
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RFP'
+        '404':
+          description: RFP not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /rfps/{rfpId}/requirements:
+    get:
+      tags: [Requirements]
+      summary: Get all requirements for an RFP
+      description: |
+        Fetches the complete hierarchical tree of requirements (4 levels) for an RFP.
+        Returns requirements ordered by hierarchy level and position.
+      operationId: getRequirements
+      parameters:
+        - name: rfpId
+          in: path
+          required: true
+          description: UUID of the RFP
+          schema:
+            type: string
+            format: uuid
+        - name: level
+          in: query
+          required: false
+          description: Filter by hierarchy level (1-4)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 4
+        - name: flat
+          in: query
+          required: false
+          description: Return flat list instead of nested tree
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requirements:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Requirement'
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      levels:
+                        type: object
+                        additionalProperties:
+                          type: integer
+        '404':
+          description: RFP not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /rfps/{rfpId}/suppliers:
+    get:
+      tags: [Suppliers]
+      summary: Get all suppliers for an RFP
+      description: Fetches the list of suppliers participating in this RFP
+      operationId: getSuppliers
+      parameters:
+        - name: rfpId
+          in: path
+          required: true
+          description: UUID of the RFP
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suppliers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Supplier'
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+        '404':
+          description: RFP not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /rfps/{rfpId}/responses:
+    get:
+      tags: [Responses]
+      summary: Get all responses for an RFP
+      description: |
+        Fetches all supplier responses for the entire RFP. Can be filtered by
+        requirement or supplier. Use for bulk operations or summary views.
+      operationId: getResponses
+      parameters:
+        - name: rfpId
+          in: path
+          required: true
+          description: UUID of the RFP
+          schema:
+            type: string
+            format: uuid
+        - name: requirementId
+          in: query
+          required: false
+          description: Filter by specific requirement
+          schema:
+            type: string
+            format: uuid
+        - name: supplierId
+          in: query
+          required: false
+          description: Filter by specific supplier
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          description: Filter by evaluation status
+          schema:
+            type: string
+            enum: [pending, pass, partial, fail]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  responses:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Response'
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      byStatus:
+                        type: object
+                        additionalProperties:
+                          type: integer
+        '404':
+          description: RFP not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /requirements/{requirementId}:
+    get:
+      tags: [Requirements]
+      summary: Get a specific requirement
+      description: |
+        Fetches detailed information about a single requirement, including its
+        breadcrumb path and completion status.
+      operationId: getRequirement
+      parameters:
+        - name: requirementId
+          in: path
+          required: true
+          description: UUID of the requirement
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requirement:
+                    $ref: '#/components/schemas/Requirement'
+                  breadcrumb:
+                    type: array
+                    description: Hierarchical path from root to this requirement
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        externalId:
+                          type: string
+                        title:
+                          type: string
+                        level:
+                          type: integer
+                  completionStatus:
+                    type: object
+                    properties:
+                      totalResponses:
+                        type: integer
+                      checkedResponses:
+                        type: integer
+                      isComplete:
+                        type: boolean
+        '404':
+          description: Requirement not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /responses/{responseId}:
+    get:
+      tags: [Responses]
+      summary: Get a specific response
+      description: Fetches detailed information about a single supplier response
+      operationId: getResponse
+      parameters:
+        - name: responseId
+          in: path
+          required: true
+          description: UUID of the response
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '404':
+          description: Response not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags: [Responses]
+      summary: Update response evaluation
+      description: |
+        Updates evaluator-provided fields for a response: manual score, status,
+        comments, questions, and checkbox state. Used for all evaluation actions.
+      operationId: updateResponse
+      parameters:
+        - name: responseId
+          in: path
+          required: true
+          description: UUID of the response
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResponseUpdate'
+      responses:
+        '200':
+          description: Response updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Response not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    RFP:
+      type: object
+      required:
+        - id
+        - title
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique RFP identifier
+        title:
+          type: string
+          description: RFP name
+          example: "Infrastructure Cloud 2025"
+        description:
+          type: string
+          nullable: true
+          description: Detailed RFP description
+        status:
+          type: string
+          enum: [in_progress, completed, archived]
+          description: Current RFP status
+        organizationId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Organization ID (future multi-tenant support)
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        createdBy:
+          type: string
+          nullable: true
+          description: User who created the RFP (future auth support)
+
+    Requirement:
+      type: object
+      required:
+        - id
+        - rfpId
+        - externalId
+        - title
+        - level
+        - weight
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique requirement identifier
+        rfpId:
+          type: string
+          format: uuid
+          description: Parent RFP ID
+        externalId:
+          type: string
+          description: External identifier from N8N
+          example: "REQ-001"
+        title:
+          type: string
+          description: Requirement name
+          example: "Chiffrement des données en transit (TLS 1.3)"
+        description:
+          type: string
+          nullable: true
+          description: Multi-line description with bullet points
+        context:
+          type: string
+          nullable: true
+          description: Background information (3-4 paragraphs) from RFP document
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Parent requirement ID (null for level 1)
+        level:
+          type: integer
+          minimum: 1
+          maximum: 4
+          description: Hierarchy level (1=Domain, 2=Category, 3=Subcategory, 4=Requirement)
+        weight:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Importance weight (0.0 to 1.0)
+        positionInPdf:
+          type: object
+          nullable: true
+          description: PDF location metadata
+          properties:
+            page:
+              type: integer
+            coordinates:
+              type: object
+        pdfUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Link to PDF document for context
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        children:
+          type: array
+          description: Child requirements (for nested tree structure)
+          items:
+            $ref: '#/components/schemas/Requirement'
+
+    Supplier:
+      type: object
+      required:
+        - id
+        - rfpId
+        - externalId
+        - name
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique supplier identifier
+        rfpId:
+          type: string
+          format: uuid
+          description: Parent RFP ID
+        externalId:
+          type: string
+          description: External identifier from N8N
+          example: "SUP-A"
+        name:
+          type: string
+          description: Supplier company name
+          example: "TechCorp Solutions"
+        contactName:
+          type: string
+          nullable: true
+          description: Contact person name
+        contactEmail:
+          type: string
+          format: email
+          nullable: true
+          description: Contact email address
+        contactPhone:
+          type: string
+          nullable: true
+          description: Contact phone number
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+
+    Response:
+      type: object
+      required:
+        - id
+        - rfpId
+        - requirementId
+        - supplierId
+        - status
+        - isChecked
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique response identifier
+        rfpId:
+          type: string
+          format: uuid
+          description: Parent RFP ID
+        requirementId:
+          type: string
+          format: uuid
+          description: Requirement being answered
+        supplierId:
+          type: string
+          format: uuid
+          description: Supplier providing response
+        responseText:
+          type: string
+          nullable: true
+          description: Full response text from supplier
+        aiScore:
+          type: integer
+          minimum: 0
+          maximum: 5
+          nullable: true
+          description: AI-generated score (0-5 stars)
+        aiComment:
+          type: string
+          nullable: true
+          description: AI-generated analysis commentary
+        manualScore:
+          type: integer
+          minimum: 0
+          maximum: 5
+          nullable: true
+          description: Evaluator's manual score (0-5 stars, null if not set)
+        status:
+          type: string
+          enum: [pending, pass, partial, fail]
+          description: Evaluation status
+        isChecked:
+          type: boolean
+          description: Completion checkbox state
+        manualComment:
+          type: string
+          nullable: true
+          description: Evaluator's comments
+        question:
+          type: string
+          nullable: true
+          description: Evaluator's questions/doubts
+        finalScore:
+          type: integer
+          minimum: 0
+          maximum: 5
+          nullable: true
+          description: Computed field - manual score if set, otherwise AI score
+          readOnly: true
+        lastModifiedBy:
+          type: string
+          nullable: true
+          description: User who last modified (future auth support)
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        supplier:
+          $ref: '#/components/schemas/Supplier'
+          description: Populated supplier object (when joined)
+
+    ResponseUpdate:
+      type: object
+      description: Fields that can be updated by evaluators
+      properties:
+        manualScore:
+          type: integer
+          minimum: 0
+          maximum: 5
+          nullable: true
+          description: Manual score (0-5), null to clear
+        status:
+          type: string
+          enum: [pending, pass, partial, fail]
+          description: Evaluation status
+        isChecked:
+          type: boolean
+          description: Completion checkbox state
+        manualComment:
+          type: string
+          nullable: true
+          description: Evaluator's comments
+        question:
+          type: string
+          nullable: true
+          description: Evaluator's questions/doubts
+      example:
+        manualScore: 5
+        status: "pass"
+        isChecked: true
+        manualComment: "Excellente réponse, certification à jour"
+        question: null
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error type
+          example: "NOT_FOUND"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "RFP not found with id: 123e4567-e89b-12d3-a456-426614174000"
+        details:
+          type: object
+          nullable: true
+          description: Additional error details (validation errors, etc.)
