@@ -1,76 +1,90 @@
 "use client";
 
-import React from "react";
-import { Moon, Sun } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "next-themes";
+import { OrganizationSwitcher } from "./OrganizationSwitcher";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Moon, Sun, LogOut, User } from "lucide-react";
+import { useState } from "react";
+import Link from "next/link";
 
-interface NavbarProps {
-  activeTab: "config" | "comparison" | "responses";
-  onTabChange: (tab: "config" | "comparison" | "responses") => void;
-  theme: "light" | "dark";
-  onThemeChange: (theme: "light" | "dark") => void;
-  rfpName?: string;
-}
+export function Navbar() {
+  const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
-export function Navbar({
-  activeTab,
-  onTabChange,
-  theme,
-  onThemeChange,
-  rfpName = "RFP - Infrastructure Cloud 2025",
-}: NavbarProps) {
-  const tabs = [
-    { id: "config", label: "Configuration" },
-    { id: "comparison", label: "Comparaison" },
-    { id: "responses", label: "Réponses" },
-  ] as const;
+  if (!user) {
+    return null;
+  }
 
   return (
-    <nav className="flex items-center justify-between h-12 px-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
-      {/* Left: Tabs */}
-      <div className="flex items-center gap-6">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => onTabChange(tab.id)}
-            className={`text-sm font-medium transition-colors pb-2 border-b-2 ${
-              activeTab === tab.id
-                ? "border-slate-900 dark:border-white text-slate-900 dark:text-white"
-                : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
-            }`}
+    <nav className="sticky top-0 z-40 border-b bg-white dark:bg-slate-900 shadow-sm">
+      <div className="flex items-center justify-between px-6 py-3">
+        {/* Left: Logo and Organization Switcher */}
+        <div className="flex items-center gap-6">
+          <Link href="/dashboard" className="text-lg font-bold">
+            RFP Analyzer
+          </Link>
+          <OrganizationSwitcher />
+        </div>
+
+        {/* Right: Theme Toggle and User Menu */}
+        <div className="flex items-center gap-4">
+          {/* Theme Toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="w-9 h-9 p-0"
           >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+            {theme === "dark" ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
+          </Button>
 
-      {/* Center: RFP Title */}
-      <div className="absolute left-1/2 -translate-x-1/2">
-        <h1 className="text-sm font-medium text-slate-600 dark:text-slate-400">
-          {rfpName}
-        </h1>
-      </div>
+          {/* User Menu */}
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="flex items-center gap-2"
+            >
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline text-sm">
+                {user.full_name || user.email}
+              </span>
+            </Button>
 
-      {/* Right: Theme toggle + Avatar */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onThemeChange(theme === "light" ? "dark" : "light")}
-          className="w-8 h-8 rounded-md"
-        >
-          {theme === "light" ? (
-            <Moon className="w-4 h-4" />
-          ) : (
-            <Sun className="w-4 h-4" />
-          )}
-        </Button>
+            {isUserMenuOpen && (
+              <div className="absolute right-0 top-full z-50 mt-2 w-[200px] rounded-md border bg-white dark:bg-slate-900 shadow-md">
+                <div className="p-3 border-b">
+                  <div className="text-sm font-semibold">{user.full_name}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {user.email}
+                  </div>
+                </div>
 
-        <Avatar className="h-8 w-8 cursor-pointer">
-          <AvatarImage src="https://github.com/shadcn.png" alt="User" />
-          <AvatarFallback>US</AvatarFallback>
-        </Avatar>
+                <div className="p-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start gap-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950"
+                    onClick={() => {
+                      logout();
+                      setIsUserMenuOpen(false);
+                    }}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Déconnexion</span>
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </nav>
   );

@@ -1,7 +1,8 @@
-"use client"
+"use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { ReactNode } from "react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "next-themes";
+import { ReactNode } from "react";
 
 /**
  * React Query client configuration with optimized defaults
@@ -18,16 +19,21 @@ const queryClient = new QueryClient({
       retry: 1,
     },
   },
-})
+});
 
 /**
- * Providers wrapper for React Query
- * Wrap application with this component to enable data fetching and caching
+ * Providers wrapper for React Query and Theme
+ * Wrap application with this component to enable data fetching, caching, and theme support
  */
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  )
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="light"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </ThemeProvider>
+  );
 }
