@@ -7,31 +7,38 @@ export async function GET() {
 
     // Get current authenticated user
     const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser();
+       data: { user: authUser },
+       error: authError,
+     } = await supabase.auth.getUser();
 
     if (authError) {
-      console.error("Auth error:", authError);
+      console.error("Auth error:", authError)
       return NextResponse.json(
-        { error: "Authentication error", message: authError.message },
-        { status: 401 },
+        { error: "AuthenticationAuthentication errorerror", message: authError.message },
+
+        { status: 401 }
       );
     }
 
     if (!authUser) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Not authenticated" },
+        { status: 401 }
+      )
     }
 
-    // Get user profile
+    console.log("Auth user:", authUser.id)
+
+    // Get user profile - simple select
     const { data: user, error: userError } = await supabase
       .from("users")
       .select("id, email, full_name, avatar_url, created_at, updated_at")
+      .select("*")
       .eq("id", authUser.id)
-      .single();
+      .maybeSingle();
 
     if (userError) {
-      console.error("User fetch error:", userError);
+      console.error("User fetch error:", userError)
       return NextResponse.json(
         { error: "Failed to fetch user profile", message: userError.message },
         { status: 500 },
@@ -39,11 +46,14 @@ export async function GET() {
     }
 
     if (!user) {
+      console.error("User not found:", authUser.id)
       return NextResponse.json(
-        { error: "User profile not found" },
-        { status: 404 },
-      );
+        { error: "User profile not found - please create one by registering" },
+        { status: 404 }
+      )
     }
+
+    console.log("User found:", user.id)
 
     // Get user's organizations
     const { data: userOrgs, error: orgsError } = await supabase
@@ -52,17 +62,25 @@ export async function GET() {
         "role, organizations(id, name, slug, subscription_tier, max_users, max_rfps, settings)",
       )
       .eq("user_id", authUser.id);
+      .select("role, organizations(*)")
+      .eq("user_id", authUser.id)
 
-    if (orgsErrororgsError) {
-      console.error("Organizations fetch error:", orgsError);
-      return NextResponse.json(
-        {
-          error: "Failed to fetch organizations",
-          message: orgsErrororgsError.message,
+    if (orgsError) {
+      console.error("Organizations fetch error:", orgsError)
+      // Return user without organizations if fetch fails
+      return NextResponse.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name,
+          avatar_url: user.avatar_url,
+          created_at: user.created_at,
+          organizations: [],
         },
-        { status: 500 },
-      );
+      })
     }
+
+    console.log("Organizations found:", userOrgs?.length || 0)
 
     return NextResponse.json({
       user: {
@@ -71,15 +89,15 @@ export async function GET() {
         full_name: user.full_name,
         avatar_url: user.avatar_url,
         created_at: user.created_at,
-        organizations: userOrgs(userOrgs || []).map((uo: any) => ({
-          id: uo.organizationsorganizations?.id,
-          name: uo.organizationsorganizations?.name,
-          slug: uo.organizationsorganizations?.slug,
+        organizations: userOrgs(userOrgs || [])(userOrgs || []).map((uo: any) => ({
+          id: uo.organizationsorganizations?organizations?.id,
+          name: uo.organizationsorganizations?organizations?.name,
+          slug: uo.organizationsorganizations?organizations?.slug,
           role: uo.role,
-          subscription_tier: uo.organizationsorganizations?.subscription_tier,
-          max_users: uo.organizationsorganizations?.max_users,
-          max_rfps: uo.organizationsorganizations?.max_rfps,
-          settings: uo.organizationsorganizations?.settings,
+          subscription_tier: uo.organizationsorganizations?organizations?.subscription_tier,
+          max_users: uo.organizationsorganizations?organizations?.max_users,
+          max_rfps: uo.organizationsorganizations?organizations?.max_rfps,
+          settings: uo.organizationsorganizations?organizations?.settings,
         })),
       },
     });
