@@ -6,12 +6,11 @@ import { ChevronDown, Plus } from "lucide-react";
 import { useState } from "react";
 
 export function OrganizationSwitcher() {
-  const { currentOrganization, organizations, switchOrganization } =
-    useOrganization();
+  const { currentOrg, organizations, switchOrganization } = useOrganization();
   const [isOpen, setIsOpen] = useState(false);
 
   // Show loading state
-  if (!currentOrganization) {
+  if (!currentOrg) {
     return (
       <div className="h-9 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
     );
@@ -25,7 +24,7 @@ export function OrganizationSwitcher() {
         onClick={() => setIsOpen(!isOpen)}
         className="w-[200px] justify-between"
       >
-        <span className="truncate">{currentOrganization.name}</span>
+        <span className="truncate">{currentOrg.name}</span>
         <ChevronDown className="h-4 w-4 opacity-50" />
       </Button>
 
@@ -40,7 +39,7 @@ export function OrganizationSwitcher() {
                   setIsOpen(false);
                 }}
                 className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-800 ${
-                  org.id === currentOrganization.id
+                  org.id === currentOrg.id
                     ? "bg-slate-100 dark:bg-slate-800 font-semibold"
                     : ""
                 }`}

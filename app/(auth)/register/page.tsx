@@ -12,7 +12,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [fullName, setFullName] = useState("")
-  const [organizationName, setOrganizationName] = useState("")
+  const [organizationCode, setOrganizationCode] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -40,7 +40,7 @@ export default function RegisterPage() {
         throw new Error("Échec de création du compte")
       }
 
-      // Call API to create organization and link user
+      // Call API to link user to organization
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,13 +48,13 @@ export default function RegisterPage() {
           userId: authData.user.id,
           email,
           fullName,
-          organizationName,
+          organizationCode,
         }),
       })
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.message || "Erreur lors de la création de l'organisation")
+        throw new Error(data.message || "Erreur lors de l'ajout à l'organisation")
       }
 
       // Redirect to dashboard
@@ -130,19 +130,21 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="organizationName">Nom de l'organisation</Label>
+              <Label htmlFor="organizationCode">Code d'organisation</Label>
               <Input
-                id="organizationName"
-                name="organizationName"
+                id="organizationCode"
+                name="organizationCode"
                 type="text"
                 required
-                value={organizationName}
-                onChange={(e) => setOrganizationName(e.target.value)}
-                placeholder="Mon Entreprise"
+                pattern="[0-9]{10}"
+                maxLength={10}
+                value={organizationCode}
+                onChange={(e) => setOrganizationCode(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                placeholder="Entrez le code à 10 chiffres"
                 disabled={loading}
               />
               <p className="text-xs text-gray-500">
-                Vous pourrez inviter d'autres utilisateurs plus tard
+                Code à 10 chiffres fourni par votre organisation
               </p>
             </div>
 

@@ -1,93 +1,87 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useAuth } from "./use-auth"
+import { useState, useEffect } from "react";
+import { useAuth } from "./use-auth";
 
-interface Organization {
-  id: string
-  name: string
-  slug: string
-  role: "admin" | "evaluator" | "viewer"
-  subscription_tier: "free" | "pro" | "enterprise"
-  max_users: number
-  max_rfps: number
-  settings: Record<string, unknown> | null
-}
-
-const CURRENT_ORG_KEY = "current_organization_id"
+const CURRENT_ORG_KEY = "current_organization_id";
 
 export function useOrganization() {
-  const { user } = useAuth()
-  const [currentOrgId, setCurrentOrgId] = useState<string | null>(null)
+  const { user, isLoading: userLoading } = useAuth();
+  const [currentOrgId, setCurrentOrgId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Initialize current organization from localStorage on mount
   useEffect(() => {
     if (user?.organizations && user.organizations.length > 0) {
-      const storedOrgId = localStorage.getItem(CURRENT_ORG_KEY)
+      const storedOrgId = localStorage.getItem(CURRENT_ORG_KEY);
 
       // Check if stored org is valid for this user
-      const validOrg = user.organizations.find(org => org.id === storedOrgId)
+      const validOrg = user.organizations.find((org) => org.id === storedOrgId);
 
       if (validOrg) {
-        setCurrentOrgId(validOrg.id)
+        setCurrentOrgId(validOrg.id);
       } else {
         // Default to first organization
-        const firstOrg = user.organizations[0]
-        setCurrentOrgId(firstOrg.id)
-        localStorage.setItem(CURRENT_ORG_KEY, firstOrg.id)
+        const firstOrg = user.organizations[0];
+        setCurrentOrgId(firstOrg.id);
+        localStorage.setItem(CURRENT_ORG_KEY, firstOrg.id);
       }
+      setIsLoading(false);
+    } else if (!userLoading) {
+      // User loading is done but no organizations
+      setIsLoading(false);
     }
-  }, [user])
+  }, [user, userLoading]);
 
-  const currentOrganization = user?.organizations?.find(
-    org => org.id === currentOrgId
-  ) || null
+  const currentOrg =
+    user?.organizations?.find((org) => org.id === currentOrgId) || null;
 
   const switchOrganization = (organizationId: string) => {
-    const org = user?.organizations?.find(o => o.id === organizationId)
+    const org = user?.organizations?.find((o) => o.id === organizationId);
 
     if (!org) {
-      throw new Error("Organization not found")
+      throw new Error("Organization not found");
     }
 
-    setCurrentOrgId(organizationId)
-    localStorage.setItem(CURRENT_ORG_KEY, organizationId)
-  }
+    setCurrentOrgId(organizationId);
+    localStorage.setItem(CURRENT_ORG_KEY, organizationId);
+  };
 
   const hasPermission = (permission: string): boolean => {
-    if (!currentOrganization) return false
+    if (!currentOrg) return false;
 
-    const role = currentOrganization.role
+    const role = currentOrg.role;
 
     // Admin has all permissions
-    if (role === "admin") return true
+    if (role === "admin") return true;
 
-    // Evaluator permissions
+    // Member permissions
     if (role === "evaluator") {
-      return ["create_rfp", "view_analytics"].includes(permission)
+      return ["view_rfp", "evaluate_rfp"].includes(permission);
     }
 
     // Viewer has no special permissions
-    return false
-  }
+    return false;
+  };
 
-  const isAdmin = currentOrganization?.role === "admin"
-  const isEvaluator = currentOrganization?.role === "evaluator"
-  const isViewer = currentOrganization?.role === "viewer"
+  const isAdmin = currentOrg?.role === "admin";
+  const isMember = currentOrg?.role === "evaluator";
+  const isViewer = currentOrg?.role === "viewer";
 
   return {
-    currentOrganization,
+    currentOrg,
     organizations: user?.organizations || [],
     switchOrganization,
     hasPermission,
     isAdmin,
-    isEvaluator,
+    isMember,
     isViewer,
+    isLoading,
     canManageOrganization: isAdmin,
     canInviteUsers: isAdmin,
-    canCreateRFP: isAdmin || isEvaluator,
+    canCreateRFP: isAdmin || isMember,
     canDeleteRFP: isAdmin,
     canAssignEvaluators: isAdmin,
-    canViewAnalytics: isAdmin || isEvaluator,
-  }
+    canViewAnalytics: isAdmin || isMember,
+  };
 }

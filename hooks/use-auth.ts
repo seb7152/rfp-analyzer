@@ -14,6 +14,7 @@ interface User {
     id: string;
     name: string;
     slug: string;
+    organization_code: string;
     role: "admin" | "evaluator" | "viewer";
     subscription_tier: "free" | "pro" | "enterprise";
     max_users: number;

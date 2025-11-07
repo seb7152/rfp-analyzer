@@ -111,10 +111,10 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 ### Database API for Requirements
 
-- [x] T047 Create lib/supabase/queries.ts with getRequirements() function using recursive CTE for hierarchy
-- [x] T048 Add getRequirementBreadcrumb() function to queries.ts for hierarchical path lookup
-- [x] T049 Create app/api/rfps/[rfpId]/requirements/route.ts GET endpoint returning hierarchical requirements tree
-- [x] T050 Create app/api/requirements/[requirementId]/route.ts GET endpoint with requirement details and breadcrumb
+- [ ] T047 Create lib/supabase/queries.ts with getRequirements() function using recursive CTE for hierarchy
+- [ ] T048 Add getRequirementBreadcrumb() function to queries.ts for hierarchical path lookup
+- [ ] T049 Create app/api/rfps/[rfpId]/requirements/route.ts GET endpoint returning hierarchical requirements tree
+- [ ] T050 Create app/api/requirements/[requirementId]/route.ts GET endpoint with requirement details and breadcrumb
 
 ### Requirements Tree Component
 
@@ -129,27 +129,16 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 ### Requirement Display Component
 
-- [x] T051 [P] [US1] Create components/Sidebar.tsx with collapsible sidebar container and search input
-- [x] T052 [US1] Create components/RequirementTree.tsx component with recursive rendering of 4-level hierarchy
-- [x] T053 [US1] Implement expand/collapse logic in RequirementTree with local state per node
-- [x] T054 [US1] Add "Expand All" and "Collapse All" buttons to Sidebar component header
-- [x] T055 [US1] Implement real-time search filtering in RequirementTree by ID and title text
-- [x] T056 [US1] Add visual hierarchy indicators (indentation, chevron icons) to RequirementTree nodes
-- [x] T057 [US1] Implement selected requirement highlighting in RequirementTree with active state
-- [x] T058 [US1] Create hooks/use-requirements.ts with React Query for requirements data fetching and caching
-
-### Requirement Details Display
-
-- [x] T059 [P] [US1] Create components/RequirementHeader.tsx displaying ID, title, breadcrumb, and completion badge
-- [x] T060 [P] [US1] Create components/RequirementDetails.tsx showing description with bullet point rendering
-- [x] T061 [US1] Add weight percentage display to RequirementDetails component
-- [x] T062 [US1] Create collapsible context section in RequirementDetails with expand/collapse state
+- [ ] T059 [P] [US1] Create components/RequirementHeader.tsx displaying ID, title, breadcrumb, and completion badge
+- [ ] T060 [P] [US1] Create components/RequirementDetails.tsx showing description with bullet point rendering
+- [ ] T061 [US1] Add weight percentage display to RequirementDetails component
+- [ ] T062 [US1] Create collapsible context section in RequirementDetails with expand/collapse state
 
 ### Dashboard Integration
 
-- [x] T063 [US1] Create app/dashboard/page.tsx main evaluation dashboard with Sidebar + main content area
-- [x] T064 [US1] Implement requirement selection handler passing selected requirement to main view
-- [x] T065 [US1] Add loading skeletons for Sidebar and main content using Tailwind animation classes
+- [ ] T063 [US1] Create app/dashboard/page.tsx main evaluation dashboard with Sidebar + main content area
+- [ ] T064 [US1] Implement requirement selection handler passing selected requirement to main view
+- [ ] T065 [US1] Add loading skeletons for Sidebar and main content using Tailwind animation classes
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - users can navigate and view all requirements
 

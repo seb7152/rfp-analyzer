@@ -3,40 +3,30 @@ import { createClient } from "@/lib/supabase/server"
 
 /**
  * POST /api/auth/register
- * Creates user profile, organization, and links them together
+ * Links user to existing organization using organization code
+ * Does NOT create a new organization - users must have the code from their organization
  */
 export async function POST(request: Request) {
   try {
-    const { userId, email, fullName, organizationName } = await request.json()
+    const { userId, email, fullName, organizationCode } = await request.json()
 
     // Validate required fields
-    if (!userId || !email || !fullName || !organizationName) {
+    if (!userId || !email || !fullName || !organizationCode) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       )
     }
 
-    const supabase = await createClient()
-
-    // Generate organization slug from name
-    const slug = organizationName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-
-    // Check if slug already exists
-    const { data: existingOrg } = await supabase
-      .from("organizations")
-      .select("slug")
-      .eq("slug", slug)
-      .single()
-
-    let finalSlug = slug
-    if (existingOrg) {
-      // Add random suffix if slug exists
-      finalSlug = `${slug}-${Math.random().toString(36).substring(2, 7)}`
+    // Validate organization code format (10 digits)
+    if (!/^\d{10}$/.test(organizationCode)) {
+      return NextResponse.json(
+        { error: "Invalid organization code", message: "Code must be exactly 10 digits" },
+        { status: 400 }
+      )
     }
+
+    const supabase = await createClient()
 
     // 1. Create user profile
     const { error: userError } = await supabase.from("users").insert({
@@ -53,41 +43,42 @@ export async function POST(request: Request) {
       )
     }
 
-    // 2. Create organization
-    const { data: organization, error: orgError } = await supabase
+    // 2. Find organization by code
+    const { data: organization, error: orgLookupError } = await supabase
       .from("organizations")
-      .insert({
-        name: organizationName,
-        slug: finalSlug,
-        subscription_tier: "free",
-        max_users: 10,
-        max_rfps: 5,
-      })
-      .select()
+      .select("id, name, slug")
+      .eq("organization_code", organizationCode)
       .single()
 
-    if (orgError) {
-      console.error("Organization creation error:", orgError)
+    if (orgLookupError) {
+      console.error("Organization lookup error:", orgLookupError)
       return NextResponse.json(
-        { error: "Failed to create organization", message: orgError.message },
-        { status: 500 }
+        { error: "Organization not found", message: `No organization found with code ${organizationCode}` },
+        { status: 404 }
       )
     }
 
-    // 3. Link user to organization as admin
+    if (!organization) {
+      return NextResponse.json(
+        { error: "Organization not found", message: `No organization found with code ${organizationCode}` },
+        { status: 404 }
+      )
+    }
+
+    // 3. Link user to organization with member role (not admin)
     const { error: linkError } = await supabase
       .from("user_organizations")
       .insert({
         user_id: userId,
         organization_id: organization.id,
-        role: "admin",
+        role: "member", // New users join as members, not admins
       })
 
     if (linkError) {
       console.error("User-organization link error:", linkError)
       return NextResponse.json(
         {
-          error: "Failed to link user to organization",
+          error: "Failed to join organization",
           message: linkError.message,
         },
         { status: 500 }

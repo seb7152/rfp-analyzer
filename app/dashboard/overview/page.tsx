@@ -24,14 +24,10 @@ import {
   Users,
   Zap,
   Shield,
-  Plus,
 } from "lucide-react";
 import Link from "next/link";
-import { CreateRFPDialog } from "@/components/CreateRFPDialog";
-import { RFPsTable } from "@/components/RFPsTable";
-import { useRFPs } from "@/hooks/use-rfps";
 
-export default function DashboardPage() {
+export default function DashboardOverviewPage() {
   const { user, isLoading: authLoading } = useAuth();
   const {
     currentOrg,
@@ -40,12 +36,6 @@ export default function DashboardPage() {
     isLoading: orgLoading,
   } = useOrganization();
   const [copiedCode, setCopiedCode] = useState(false);
-  const [showCreateRFP, setShowCreateRFP] = useState(false);
-  const {
-    rfps,
-    isLoading: rfpsLoading,
-    refetch: refetchRFPs,
-  } = useRFPs(currentOrg?.id || null);
 
   if (authLoading || orgLoading) {
     return (
@@ -126,7 +116,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-12">
         <header className="flex flex-col gap-6 rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
                 Dashboard
@@ -139,23 +129,12 @@ export default function DashboardPage() {
                 RFP.
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              {isAdmin && currentOrg && (
-                <Button
-                  onClick={() => setShowCreateRFP(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white inline-flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Create RFP
-                </Button>
-              )}
-              {roleBadge && RoleIcon && (
-                <Badge className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                  <RoleIcon className="h-3 w-3" />
-                  {roleBadge.label}
-                </Badge>
-              )}
-            </div>
+            {roleBadge && RoleIcon && (
+              <Badge className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                <RoleIcon className="h-3 w-3" />
+                {roleBadge.label}
+              </Badge>
+            )}
           </div>
 
           <div className="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-6 text-slate-900 shadow-sm dark:border-slate-800 dark:from-slate-900 dark:to-slate-950 dark:text-white lg:flex-row lg:items-center lg:justify-between">
@@ -509,53 +488,7 @@ export default function DashboardPage() {
             </div>
           </TabsContent>
         </Tabs>
-
-        {/* RFPs Table */}
-        <div className="mt-10">
-          <RFPsTable
-            rfps={rfps}
-            isLoading={rfpsLoading}
-            onDelete={async (rfpId) => {
-              if (
-                !confirm(
-                  "Are you sure you want to delete this RFP? This action cannot be undone.",
-                )
-              ) {
-                return;
-              }
-
-              try {
-                const response = await fetch(`/api/rfps/${rfpId}`, {
-                  method: "DELETE",
-                });
-
-                if (!response.ok) {
-                  const error = await response.json();
-                  alert(`Failed to delete RFP: ${error.error}`);
-                  return;
-                }
-
-                refetchRFPs();
-              } catch (error) {
-                console.error("Delete error:", error);
-                alert("Failed to delete RFP. Please try again.");
-              }
-            }}
-          />
-        </div>
       </div>
-
-      {/* Create RFP Dialog */}
-      {showCreateRFP && currentOrg && (
-        <CreateRFPDialog
-          organizationId={currentOrg.id}
-          onClose={() => setShowCreateRFP(false)}
-          onSuccess={() => {
-            setShowCreateRFP(false);
-            refetchRFPs();
-          }}
-        />
-      )}
     </div>
   );
 }

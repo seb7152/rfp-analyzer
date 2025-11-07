@@ -1,23 +1,20 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
-type Params = Promise<{ organizationId: string }>
+type Params = Promise<{ organizationId: string }>;
 
-export async function GET(
-  request: Request,
-  { params }: { params: Params }
-) {
+export async function GET(_request: Request, { params }: { params: Params }) {
   try {
-    const { organizationId } = await params
-    const supabase = await createClient()
+    const { organizationId } = await params;
+    const supabase = await createClient();
 
     // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Not authenticated" },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     // Verify user belongs to this organization
@@ -26,13 +23,10 @@ export async function GET(
       .select("role")
       .eq("user_id", user.id)
       .eq("organization_id", organizationId)
-      .single()
+      .single();
 
     if (memberError || !membership) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Get organization details
@@ -40,13 +34,13 @@ export async function GET(
       .from("organizations")
       .select("*")
       .eq("id", organizationId)
-      .single()
+      .single();
 
     if (orgError || !organization) {
       return NextResponse.json(
         { error: "Organization not found" },
-        { status: 404 }
-      )
+        { status: 404 },
+      );
     }
 
     return NextResponse.json({
@@ -54,33 +48,30 @@ export async function GET(
         ...organization,
         userRole: membership.role,
       },
-    })
+    });
   } catch (error: any) {
-    console.error("Get organization error:", error)
+    console.error("Get organization error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 }
-    )
+      { status: 500 },
+    );
   }
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Params }
-) {
+export async function PUT(request: Request, { params }: { params: Params }) {
   try {
-    const { organizationId } = await params
-    const { name, settings } = await request.json()
+    const { organizationId } = await params;
+    const { name, settings } = await request.json();
 
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Not authenticated" },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     // Verify user is admin in this organization
@@ -89,13 +80,13 @@ export async function PUT(
       .select("role")
       .eq("user_id", user.id)
       .eq("organization_id", organizationId)
-      .single()
+      .single();
 
     if (memberError || !membership || membership.role !== "admin") {
       return NextResponse.json(
         { error: "Only admins can update organization" },
-        { status: 403 }
-      )
+        { status: 403 },
+      );
     }
 
     // Update organization
@@ -108,24 +99,27 @@ export async function PUT(
       })
       .eq("id", organizationId)
       .select()
-      .single()
+      .single();
 
     if (updateError) {
       return NextResponse.json(
-        { error: "Failed to update organization", message: updateError.message },
-        { status: 500 }
-      )
+        {
+          error: "Failed to update organization",
+          message: updateError.message,
+        },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
       success: true,
       organization,
-    })
+    });
   } catch (error: any) {
-    console.error("Update organization error:", error)
+    console.error("Update organization error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 }
-    )
+      { status: 500 },
+    );
   }
 }

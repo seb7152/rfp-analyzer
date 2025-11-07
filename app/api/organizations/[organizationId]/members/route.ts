@@ -1,23 +1,20 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
-type Params = Promise<{ organizationId: string }>
+type Params = Promise<{ organizationId: string }>;
 
-export async function GET(
-  request: Request,
-  { params }: { params: Params }
-) {
+export async function GET(_request: Request, { params }: { params: Params }) {
   try {
-    const { organizationId } = await params
-    const supabase = await createClient()
+    const { organizationId } = await params;
+    const supabase = await createClient();
 
     // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Not authenticated" },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     // Verify user belongs to this organization
@@ -26,19 +23,17 @@ export async function GET(
       .select("role")
       .eq("user_id", user.id)
       .eq("organization_id", organizationId)
-      .single()
+      .single();
 
     if (memberError || !membership) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Get organization members
     const { data: members, error: membersError } = await supabase
       .from("user_organizations")
-      .select(`
+      .select(
+        `
         id,
         role,
         joined_at,
@@ -48,15 +43,16 @@ export async function GET(
           full_name,
           avatar_url
         )
-      `)
+      `,
+      )
       .eq("organization_id", organizationId)
-      .order("joined_at", { ascending: false })
+      .order("joined_at", { ascending: false });
 
     if (membersError) {
       return NextResponse.json(
         { error: "Failed to fetch members", message: membersError.message },
-        { status: 500 }
-      )
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
@@ -69,12 +65,12 @@ export async function GET(
         joined_at: m.joined_at,
         membershipId: m.id,
       })),
-    })
+    });
   } catch (error: any) {
-    console.error("Get members error:", error)
+    console.error("Get members error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 }
-    )
+      { status: 500 },
+    );
   }
 }
