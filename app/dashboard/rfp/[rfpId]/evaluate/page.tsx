@@ -33,8 +33,8 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   // Redirect if not authenticated
   if (authLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-900">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-900 dark:text-slate-50" />
       </div>
     );
   }
@@ -45,25 +45,24 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-slate-950 text-slate-50">
+    <div className="flex h-screen flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
       {/* Header */}
-      <div className="border-b border-slate-800 bg-slate-900 px-6 py-4">
+      <div className="border-b border-slate-200 bg-white/80 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/60">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => router.back()}
-              className="text-slate-400 hover:text-slate-50"
             >
               <ChevronLeft className="h-4 w-4" />
               Back
             </Button>
             <div>
-              <h1 className="text-xl font-bold text-slate-50">
+              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50">
                 RFP Evaluation
               </h1>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Navigate and evaluate requirements
               </p>
             </div>
@@ -74,7 +73,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar with Tree */}
-        <div className="w-80 border-r border-slate-800 bg-slate-900">
+        <div className="w-80 border-r border-slate-200 bg-white/50 dark:border-slate-800 dark:bg-slate-900/40">
           <Sidebar
             rfpId={params.rfpId}
             selectedRequirementId={selectedRequirementId}
@@ -83,15 +82,15 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
         </div>
 
         {/* Details Panel */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950">
           {!selectedRequirementId ? (
             <div className="flex h-full items-center justify-center">
-              <Card className="border-slate-700 bg-slate-800 text-center">
-                <div className="p-12">
-                  <p className="text-lg text-slate-300">
+              <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+                <div className="p-12 text-center">
+                  <p className="text-lg text-slate-700 dark:text-slate-300">
                     Select a requirement from the left sidebar to view details
                   </p>
-                  <p className="mt-2 text-sm text-slate-400">
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                     Use search to find requirements by ID or title
                   </p>
                 </div>

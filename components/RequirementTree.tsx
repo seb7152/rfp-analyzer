@@ -36,17 +36,10 @@ export function RequirementTree({
           <div key={req.id}>
             {/* Requirement Node */}
             <Button
-              variant="ghost"
+              variant={isSelected ? "default" : "ghost"}
               size="sm"
               onClick={() => onSelectRequirement(req.id)}
-              className={`w-full justify-start px-2 py-1.5 h-auto text-left text-sm font-normal
-                ${
-                  isSelected
-                    ? "bg-blue-900/50 text-blue-100 hover:bg-blue-800/50"
-                    : "text-slate-300 hover:bg-slate-800/50 hover:text-slate-100"
-                }
-                transition-colors duration-150
-              `}
+              className="w-full justify-start px-2 py-1.5 h-auto text-left text-sm font-normal"
               style={{ paddingLeft: `${indentPixels + 8}px` }}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -57,13 +50,13 @@ export function RequirementTree({
                       e.stopPropagation();
                       onToggleNode(req.id);
                     }}
-                    className="flex-shrink-0 p-0 hover:bg-slate-700/30 rounded transition-colors"
+                    className="flex-shrink-0 p-0 hover:opacity-70 transition-opacity"
                     aria-label={isExpanded ? "Collapse" : "Expand"}
                   >
                     {isExpanded ? (
-                      <ChevronDown className="w-4 h-4 text-slate-400" />
+                      <ChevronDown className="w-4 h-4" />
                     ) : (
-                      <ChevronRight className="w-4 h-4 text-slate-400" />
+                      <ChevronRight className="w-4 h-4" />
                     )}
                   </button>
                 ) : (
@@ -74,10 +67,10 @@ export function RequirementTree({
                 {/* Requirement ID and Title */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-slate-200 flex-shrink-0">
+                    <span className="font-semibold flex-shrink-0">
                       {req.requirement_id_external}
                     </span>
-                    <span className="text-slate-300 truncate">{req.title}</span>
+                    <span className="truncate">{req.title}</span>
                   </div>
                 </div>
               </div>

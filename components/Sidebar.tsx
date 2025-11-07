@@ -87,41 +87,39 @@ export function Sidebar({
 
   return (
     <div
-      className={`flex flex-col h-full bg-slate-900 text-white border-r border-slate-800 ${className}`}
+      className={`flex flex-col h-full bg-white/50 text-slate-900 border-r border-slate-200 dark:bg-slate-900/40 dark:text-slate-50 dark:border-slate-800 ${className}`}
     >
       {/* Header */}
-      <div className="flex-shrink-0 border-b border-slate-800 p-4 space-y-3">
-        <h2 className="text-lg font-semibold text-white">Requirements</h2>
+      <div className="flex-shrink-0 border-b border-slate-200 dark:border-slate-800 p-4 space-y-3">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Requirements</h2>
 
         {/* Search Input */}
         <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
           <Input
             placeholder="Search by ID or title..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 bg-slate-800 border-slate-700 text-white placeholder-slate-400"
+            className="pl-8"
           />
         </div>
 
         {/* Expand/Collapse Buttons */}
         <div className="flex gap-2">
           <Button
-            variant="outline"
+            variant="secondary"
             size="sm"
             onClick={handleExpandAll}
-            className={`flex-1 bg-slate-800 border-slate-700 text-slate-100 hover:bg-slate-700 ${
-              expandAll ? "bg-slate-700" : ""
-            }`}
+            className="flex-1"
           >
             <ChevronDown className="w-4 h-4 mr-1" />
             Expand All
           </Button>
           <Button
-            variant="outline"
+            variant="secondary"
             size="sm"
             onClick={handleCollapseAll}
-            className="flex-1 bg-slate-800 border-slate-700 text-slate-100 hover:bg-slate-700"
+            className="flex-1"
           >
             <ChevronUp className="w-4 h-4 mr-1" />
             Collapse All
@@ -132,13 +130,13 @@ export function Sidebar({
       {/* Requirements Tree */}
       <div className="flex-1 overflow-hidden">
         {isLoading ? (
-          <div className="p-4 text-slate-400">Loading requirements...</div>
+          <div className="p-4 text-slate-500 dark:text-slate-400">Loading requirements...</div>
         ) : error ? (
-          <div className="p-4 text-red-400">
+          <div className="p-4 text-red-600 dark:text-red-400">
             Error loading requirements: {error.message}
           </div>
         ) : filteredRequirements.length === 0 ? (
-          <div className="p-4 text-slate-400">
+          <div className="p-4 text-slate-500 dark:text-slate-400">
             {searchQuery
               ? "No requirements matching your search"
               : "No requirements found"}
