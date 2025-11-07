@@ -58,17 +58,17 @@ export function CreateRFPDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <Card className="w-full max-w-md border-slate-700 bg-slate-800">
+      <Card className="w-full max-w-md rounded-2xl border border-slate-200 bg-white/90 shadow-lg dark:border-slate-800 dark:bg-slate-900/60">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Create New RFP</CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardTitle className="text-slate-900 dark:text-slate-50">Create New RFP</CardTitle>
+            <CardDescription className="text-slate-500 dark:text-slate-400">
               Add a new Request for Proposal
             </CardDescription>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-200"
+            className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
           >
             <X className="h-5 w-5" />
           </button>
@@ -77,7 +77,7 @@ export function CreateRFPDialog({
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-200">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 RFP Title *
               </label>
               <Input
@@ -85,13 +85,12 @@ export function CreateRFPDialog({
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g., Cloud Migration 2025"
                 disabled={isLoading}
-                className="bg-slate-700 border-slate-600 text-slate-50 placeholder-slate-500"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-200">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Description (Optional)
               </label>
               <textarea
@@ -99,13 +98,13 @@ export function CreateRFPDialog({
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Add any additional details about this RFP..."
                 disabled={isLoading}
-                className="w-full min-h-24 p-3 rounded-lg border border-slate-600 bg-slate-700 text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full min-h-24 p-3 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             {error && (
-              <div className="flex items-start gap-3 rounded-lg border border-red-500 bg-red-950 p-3">
-                <p className="text-sm text-red-200">{error}</p>
+              <div className="flex items-start gap-3 rounded border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3">
+                <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
               </div>
             )}
 
@@ -115,7 +114,6 @@ export function CreateRFPDialog({
                 variant="outline"
                 onClick={onClose}
                 disabled={isLoading}
-                className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
               >
                 Cancel
               </Button>
