@@ -114,13 +114,14 @@ export function CreateRFPDialog({
                 variant="outline"
                 onClick={onClose}
                 disabled={isLoading}
+                className="flex-1"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={!title.trim() || isLoading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                className="flex-1"
               >
                 {isLoading ? (
                   <>
