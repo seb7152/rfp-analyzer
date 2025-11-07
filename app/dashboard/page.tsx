@@ -24,7 +24,6 @@ import {
   Users,
   Zap,
   Shield,
-  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { CreateRFPDialog } from "@/components/CreateRFPDialog";
@@ -139,23 +138,12 @@ export default function DashboardPage() {
                 RFP.
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              {isAdmin && currentOrg && (
-                <Button
-                  onClick={() => setShowCreateRFP(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white inline-flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Create RFP
-                </Button>
-              )}
-              {roleBadge && RoleIcon && (
-                <Badge className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                  <RoleIcon className="h-3 w-3" />
-                  {roleBadge.label}
-                </Badge>
-              )}
-            </div>
+            {roleBadge && RoleIcon && (
+              <Badge className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                <RoleIcon className="h-3 w-3" />
+                {roleBadge.label}
+              </Badge>
+            )}
           </div>
 
           <div className="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-6 text-slate-900 shadow-sm dark:border-slate-800 dark:from-slate-900 dark:to-slate-950 dark:text-white lg:flex-row lg:items-center lg:justify-between">
@@ -238,6 +226,15 @@ export default function DashboardPage() {
                 <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
                   {item.hint}
                 </p>
+                {item.label === "Appels d'offres" && isAdmin && (
+                  <button
+                    onClick={() => setShowCreateRFP(true)}
+                    className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-slate-700 transition hover:text-slate-900 dark:text-slate-200 dark:hover:text-white"
+                  >
+                    Créer un RFP
+                    <ArrowUpRight className="h-4 w-4" />
+                  </button>
+                )}
                 {item.href && (
                   <Link
                     href={item.href}
