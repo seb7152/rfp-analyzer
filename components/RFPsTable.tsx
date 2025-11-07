@@ -25,9 +25,18 @@ export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { bg: string; text: string }> = {
-      in_progress: { bg: "bg-blue-950", text: "text-blue-200" },
-      completed: { bg: "bg-green-950", text: "text-green-200" },
-      archived: { bg: "bg-slate-800", text: "text-slate-300" },
+      in_progress: {
+        bg: "bg-blue-100 dark:bg-blue-950",
+        text: "text-blue-700 dark:text-blue-200",
+      },
+      completed: {
+        bg: "bg-green-100 dark:bg-green-950",
+        text: "text-green-700 dark:text-green-200",
+      },
+      archived: {
+        bg: "bg-slate-200 dark:bg-slate-800",
+        text: "text-slate-700 dark:text-slate-300",
+      },
     };
 
     const variant = variants[status] || variants.in_progress;
@@ -48,14 +57,17 @@ export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
 
   if (isLoading) {
     return (
-      <Card className="border-slate-700 bg-slate-800">
+      <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
         <CardHeader>
           <CardTitle>RFPs</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-12 bg-slate-700" />
+              <Skeleton
+                key={i}
+                className="h-12 bg-slate-200 dark:bg-slate-700"
+              />
             ))}
           </div>
         </CardContent>
@@ -65,17 +77,17 @@ export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
 
   if (rfps.length === 0) {
     return (
-      <Card className="border-slate-700 bg-slate-800">
+      <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
         <CardHeader>
           <CardTitle>RFPs</CardTitle>
-          <CardDescription className="text-slate-400">
+          <CardDescription className="text-slate-500 dark:text-slate-400">
             No RFPs created yet
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <FileText className="h-12 w-12 text-slate-600 mb-4" />
-            <p className="text-slate-400">
+            <FileText className="h-12 w-12 text-slate-400 dark:text-slate-600 mb-4" />
+            <p className="text-slate-600 dark:text-slate-400">
               Create your first RFP to get started
             </p>
           </div>
@@ -85,17 +97,17 @@ export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
   }
 
   return (
-    <Card className="border-slate-700 bg-slate-800">
+    <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
       <CardHeader>
         <CardTitle>RFPs</CardTitle>
-        <CardDescription className="text-slate-400">
+        <CardDescription className="text-slate-500 dark:text-slate-400">
           {rfps.length} RFP{rfps.length > 1 ? "s" : ""} in your organization
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-slate-300">
-            <thead className="border-b border-slate-700 text-xs uppercase text-slate-400">
+          <table className="w-full text-sm text-slate-700 dark:text-slate-300">
+            <thead className="border-b border-slate-200 text-xs uppercase text-slate-600 dark:border-slate-700 dark:text-slate-400">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Title</th>
                 <th className="px-4 py-3 text-left font-medium">Status</th>
@@ -103,24 +115,26 @@ export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
               {rfps.map((rfp) => (
                 <tr
                   key={rfp.id}
-                  className="hover:bg-slate-700/50 transition-colors"
+                  className="hover:bg-slate-100/50 transition-colors dark:hover:bg-slate-800/50"
                 >
                   <td className="px-4 py-3">
                     <div>
-                      <p className="font-medium text-slate-50">{rfp.title}</p>
+                      <p className="font-medium text-slate-900 dark:text-slate-50">
+                        {rfp.title}
+                      </p>
                       {rfp.description && (
-                        <p className="text-xs text-slate-500 truncate mt-1">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-1">
                           {rfp.description}
                         </p>
                       )}
                     </div>
                   </td>
                   <td className="px-4 py-3">{getStatusBadge(rfp.status)}</td>
-                  <td className="px-4 py-3 text-slate-400">
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                     {formatDate(rfp.created_at)}
                   </td>
                   <td className="px-4 py-3">
@@ -131,7 +145,7 @@ export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
                         onClick={() =>
                           router.push(`/dashboard/rfp/${rfp.id}/evaluate`)
                         }
-                        className="text-blue-400 hover:text-blue-300 hover:bg-slate-700"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-slate-800"
                         title="View RFP"
                       >
                         <Eye className="h-4 w-4" />
@@ -142,7 +156,7 @@ export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
                         onClick={() =>
                           router.push(`/dashboard/rfp/${rfp.id}/import`)
                         }
-                        className="text-amber-400 hover:text-amber-300 hover:bg-slate-700"
+                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-100 dark:text-amber-400 dark:hover:text-amber-300 dark:hover:bg-slate-800"
                         title="Import/Edit data"
                       >
                         <Edit2 className="h-4 w-4" />
@@ -151,7 +165,7 @@ export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
                         size="sm"
                         variant="ghost"
                         onClick={() => onDelete?.(rfp.id)}
-                        className="text-red-400 hover:text-red-300 hover:bg-slate-700"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-slate-800"
                         title="Delete RFP"
                       >
                         <Trash2 className="h-4 w-4" />
