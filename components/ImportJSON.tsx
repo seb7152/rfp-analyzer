@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -79,6 +78,12 @@ export function ImportJSON({
     }
   };
 
+  const handleCopyExample = () => {
+    if (example) {
+      navigator.clipboard.writeText(example);
+    }
+  };
+
   const handleImport = async () => {
     if (!isValidJSON) {
       setError("Invalid JSON format");
@@ -98,42 +103,44 @@ export function ImportJSON({
         body: JSON.stringify({ json: jsonContent }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        setError(data.error || "Import failed");
+        const errorData = await response.json();
+        setError(
+          errorData.error ||
+            `Import failed with status ${response.status}`
+        );
         return;
       }
 
-      setSuccess(data.message || "Import successful");
+      const result = await response.json();
+      setSuccess(result.message || "Import successful!");
       setJsonContent("");
-      onSuccess?.();
+      setIsValidJSON(false);
+
+      setTimeout(() => {
+        onSuccess?.();
+      }, 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Import failed");
+      setError(
+        err instanceof Error ? err.message : "An error occurred during import"
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCopyExample = () => {
-    if (example) {
-      navigator.clipboard.writeText(example);
-    }
-  };
-
   return (
-    <Card className="border-slate-700 bg-slate-800">
+    <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
-        <CardDescription className="text-slate-400">
+        <CardDescription className="text-slate-500 dark:text-slate-400">
           {description}
         </CardDescription>
       </CardHeader>
-
-      <CardContent className="space-y-6">
-        {/* JSON Textarea */}
+      <CardContent className="space-y-4">
+        {/* JSON Input */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-200">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             JSON Data
           </label>
           <textarea
@@ -141,12 +148,12 @@ export function ImportJSON({
             onChange={handleJsonChange}
             onPaste={handleJsonPaste}
             placeholder="Paste your JSON here... (will auto-format)"
-            className={`w-full h-64 p-4 rounded-lg border bg-slate-700 text-slate-50 font-mono text-sm placeholder-slate-500 ${
+            className={`w-full h-64 p-3 rounded border font-mono text-sm bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 placeholder-slate-400 dark:placeholder-slate-500 ${
               jsonContent && !isValidJSON
                 ? "border-red-500"
                 : isValidJSON
                   ? "border-green-500"
-                  : "border-slate-600"
+                  : "border-slate-200 dark:border-slate-700"
             } focus:outline-none focus:ring-2 focus:ring-blue-500`}
           />
         </div>
@@ -158,12 +165,12 @@ export function ImportJSON({
               {isValidJSON ? (
                 <>
                   <CheckCircle className="h-5 w-5 text-green-500" />
-                  <span className="text-sm text-green-400">Valid JSON</span>
+                  <span className="text-sm text-green-600 dark:text-green-400">Valid JSON</span>
                 </>
               ) : (
                 <>
                   <AlertCircle className="h-5 w-5 text-red-500" />
-                  <span className="text-sm text-red-400">Invalid JSON</span>
+                  <span className="text-sm text-red-600 dark:text-red-400">Invalid JSON</span>
                 </>
               )}
             </div>
@@ -172,67 +179,64 @@ export function ImportJSON({
 
         {/* Error Alert */}
         {error && (
-          <div className="flex items-start gap-3 rounded-lg border border-red-500 bg-red-950 p-4">
-            <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-red-200">{error}</p>
+          <div className="flex items-start gap-3 rounded border border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30 p-3">
+            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
           </div>
         )}
 
         {/* Success Alert */}
         {success && (
-          <div className="flex items-start gap-3 rounded-lg border border-green-500 bg-green-950 p-4">
-            <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-green-200">{success}</p>
+          <div className="flex items-start gap-3 rounded border border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-950/30 p-3">
+            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-green-700 dark:text-green-200">{success}</p>
           </div>
         )}
 
         {/* Example */}
         {example && (
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-200">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Example JSON
             </label>
-            <div className="rounded-lg bg-slate-900 p-4">
-              <pre className="overflow-x-auto text-xs text-slate-300 font-mono">
+            <div className="rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3">
+              <pre className="overflow-x-auto text-xs text-slate-700 dark:text-slate-300 font-mono">
                 {example}
               </pre>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
+            <button
               onClick={handleCopyExample}
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded border border-slate-200 dark:border-slate-700"
             >
-              <Copy className="h-4 w-4 mr-2" />
+              <Copy className="h-4 w-4" />
               Copy Example
-            </Button>
+            </button>
           </div>
         )}
 
         {/* Actions */}
-        <div className="flex gap-3">
-          <Button
+        <div className="flex gap-2">
+          <button
             onClick={handleFormatJSON}
-            variant="outline"
             disabled={!jsonContent}
-            className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed rounded border border-slate-200 dark:border-slate-700"
           >
             Format JSON
-          </Button>
-          <Button
+          </button>
+          <button
             onClick={handleImport}
             disabled={!isValidJSON || isLoading}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded border border-blue-600 flex items-center gap-2"
           >
             {isLoading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 Importing...
               </>
             ) : (
               "Import"
             )}
-          </Button>
+          </button>
         </div>
       </CardContent>
     </Card>
