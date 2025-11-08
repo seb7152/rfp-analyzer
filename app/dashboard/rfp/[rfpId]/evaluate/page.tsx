@@ -3,10 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
-import { useRequirement } from "@/hooks/use-requirements";
+import { useRequirements } from "@/hooks/use-requirements";
 import { Sidebar } from "@/components/Sidebar";
-import { RequirementHeader } from "@/components/RequirementHeader";
-import { RequirementDetails } from "@/components/RequirementDetails";
+import { ComparisonView } from "@/components/ComparisonView";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ChevronLeft, Loader2 } from "lucide-react";
@@ -24,11 +23,8 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
     string | null
   >(null);
 
-  const {
-    requirement: selectedRequirement,
-    breadcrumb,
-    isLoading: selectedLoading,
-  } = useRequirement(selectedRequirementId);
+  const { requirements: allRequirements, isLoading: requirementsLoading } =
+    useRequirements(params.rfpId);
 
   // Redirect if not authenticated
   if (authLoading) {
@@ -50,11 +46,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
       <div className="border-b border-slate-200 bg-white/80 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/60">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.back()}
-            >
+            <Button variant="ghost" size="sm" onClick={() => router.back()}>
               <ChevronLeft className="h-4 w-4" />
               Back
             </Button>
@@ -82,7 +74,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
         </div>
 
         {/* Details Panel */}
-        <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950">
+        <div className="flex-1 overflow-hidden bg-slate-50 dark:bg-slate-950">
           {!selectedRequirementId ? (
             <div className="flex h-full items-center justify-center">
               <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
@@ -96,20 +88,17 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                 </div>
               </Card>
             </div>
-          ) : (
-            <div className="space-y-6 p-6">
-              <RequirementHeader
-                requirement={selectedRequirement || null}
-                breadcrumb={breadcrumb || []}
-                isComplete={false}
-                isLoading={selectedLoading}
-              />
-
-              <RequirementDetails
-                requirement={selectedRequirement || null}
-                isLoading={selectedLoading}
-              />
+          ) : requirementsLoading ? (
+            <div className="flex h-full items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-slate-900 dark:text-slate-50" />
             </div>
+          ) : (
+            <ComparisonView
+              selectedRequirementId={selectedRequirementId}
+              allRequirements={allRequirements}
+              onRequirementChange={setSelectedRequirementId}
+              rfpId={params.rfpId}
+            />
           )}
         </div>
       </div>

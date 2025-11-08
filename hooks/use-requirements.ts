@@ -6,6 +6,49 @@ import type {
   RequirementWithChildren,
 } from "@/lib/supabase/types";
 
+export interface TreeNode {
+  id: string;
+  type: "category" | "requirement";
+  code: string;
+  title: string;
+  level: number;
+  children?: TreeNode[];
+}
+
+/**
+ * Hook for fetching combined tree structure (categories + requirements)
+ * Returns hierarchical tree with categories as parent nodes
+ */
+export function useRequirementsTree(rfpId: string | null) {
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["requirements-tree", rfpId],
+    queryFn: async () => {
+      if (!rfpId) {
+        return [];
+      }
+
+      const response = await fetch(`/api/rfps/${rfpId}/tree`, {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch tree: ${response.statusText}`);
+      }
+
+      return response.json() as Promise<TreeNode[]>;
+    },
+    enabled: !!rfpId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  return {
+    tree: data || [],
+    isLoading,
+    error,
+    refetch,
+  };
+}
+
 /**
  * Hook for fetching and managing requirements data with React Query
  * Handles caching, loading states, and error handling automatically
@@ -112,6 +155,55 @@ export function flattenRequirementTree(
 
   traverse(requirements);
   return result;
+}
+
+/**
+ * Hook for fetching requirements for a specific category with their status
+ */
+export function useCategoryRequirements(
+  rfpId: string | null,
+  categoryId: string | null,
+) {
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["category-requirements", rfpId, categoryId],
+    queryFn: async () => {
+      if (!rfpId || !categoryId) {
+        return [];
+      }
+
+      const response = await fetch(
+        `/api/rfps/${rfpId}/categories/${categoryId}/requirements`,
+        {
+          credentials: "include",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch category requirements: ${response.statusText}`,
+        );
+      }
+
+      return response.json() as Promise<
+        Array<{
+          id: string;
+          requirement_id_external: string;
+          title: string;
+          description: string | null;
+          status: "pass" | "partial" | "fail" | "pending";
+        }>
+      >;
+    },
+    enabled: !!rfpId && !!categoryId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  return {
+    requirements: data || [],
+    isLoading,
+    error,
+    refetch,
+  };
 }
 
 /**

@@ -1,17 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ChevronRight,
   ChevronLeft,
   ChevronDown,
   CheckCircle2,
-  AlertCircle,
-  Star,
-  ChevronUp,
-  Copy,
-  Zap,
   Clock,
+  Loader2,
+  AlertTriangle,
+  ExternalLink,
 } from "lucide-react";
 import {
   Breadcrumb,
@@ -22,11 +20,21 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Badge } from "@/components/ui/badge";
-import { StatusSwitch } from "@/components/ui/status-switch";
-import { RoundCheckbox } from "@/components/ui/round-checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { SupplierResponseCard } from "@/components/SupplierResponseCard";
+import {
+  useCategoryRequirements,
+  useRequirementsTree,
+} from "@/hooks/use-requirements";
+import type { TreeNode } from "@/hooks/use-requirements";
 import {
   Requirement,
   Response,
@@ -40,23 +48,65 @@ interface ComparisonViewProps {
   selectedRequirementId: string;
   allRequirements: Requirement[];
   onRequirementChange: (id: string) => void;
+  rfpId?: string;
+}
+
+interface ResponseState {
+  [responseId: string]: {
+    expanded: boolean;
+    manualScore: number;
+    status: "pass" | "partial" | "fail" | "pending";
+    isChecked: boolean;
+    manualComment: string;
+    question: string;
+  };
 }
 
 export function ComparisonView({
   selectedRequirementId,
   allRequirements,
   onRequirementChange,
+  rfpId,
 }: ComparisonViewProps) {
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [contextExpanded, setContextExpanded] = useState(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [responses] = useState<Response[]>(generateResponses());
-  const [manualScores, setManualScores] = useState<Record<string, number>>({});
-  const [comments, setComments] = useState<Record<string, string>>({});
-  const [statuses, setStatuses] = useState<
-    Record<string, "pass" | "partial" | "fail" | "pending">
-  >({});
-  const [responseChecks, setResponseChecks] = useState<Record<string, boolean>>(
-    {},
+  const [responseStates, setResponseStates] = useState<ResponseState>({});
+
+  // Fetch the tree to determine if selected item is a category
+  const { tree } = useRequirementsTree(rfpId || null);
+
+  // Find the selected node in the tree to check its type
+  const isCategory = useMemo(() => {
+    if (!selectedRequirementId || !tree.length) return false;
+
+    const findNode = (nodes: TreeNode[], targetId: string): TreeNode | null => {
+      for (const node of nodes) {
+        if (node.id === targetId) {
+          return node;
+        }
+        if (node.children) {
+          const result = findNode(node.children, targetId);
+          if (result) return result;
+        }
+      }
+      return null;
+    };
+
+    const node = findNode(tree, selectedRequirementId);
+    return node?.type === "category";
+  }, [selectedRequirementId, tree]);
+
+  // Fetch category requirements if a category is selected
+  const {
+    requirements: categoryRequirements,
+    isLoading: categoryLoading,
+    error: categoryError,
+  } = useCategoryRequirements(
+    rfpId || null,
+    isCategory ? selectedRequirementId : null,
   );
 
   const requirement = getRequirementById(
@@ -68,6 +118,40 @@ export function ComparisonView({
     (r) => r.requirementId === selectedRequirementId,
   );
 
+  // Build breadcrumb path with codes from tree
+  const breadcrumbPath = useMemo(() => {
+    if (!selectedRequirementId || !tree.length || isCategory) return [];
+
+    const findPathWithCodes = (
+      nodes: TreeNode[],
+      targetId: string,
+      path: Array<{ id: string; code: string; title: string }> = [],
+    ): Array<{ id: string; code: string; title: string }> | null => {
+      for (const node of nodes) {
+        const currentPath = [
+          ...path,
+          { id: node.id, code: node.code, title: node.title },
+        ];
+
+        if (node.id === targetId) {
+          return currentPath;
+        }
+
+        if (node.children) {
+          const result = findPathWithCodes(
+            node.children,
+            targetId,
+            currentPath,
+          );
+          if (result) return result;
+        }
+      }
+      return null;
+    };
+
+    return findPathWithCodes(tree, selectedRequirementId) || [];
+  }, [selectedRequirementId, tree, isCategory]);
+
   // Pagination
   const flatReqs = allRequirements.filter((r) => r.level === 4);
   const currentIndex = flatReqs.findIndex(
@@ -77,52 +161,158 @@ export function ComparisonView({
 
   const goToRequirement = (index: number) => {
     if (index >= 0 && index < flatReqs.length) {
-      onRequirementChange(flatReqs[index].id);
+      setIsLoading(true);
+      setError(null);
+      // Simulate loading delay
+      setTimeout(() => {
+        onRequirementChange(flatReqs[index].id);
+        setIsLoading(false);
+      }, 300);
     }
   };
 
-  const toggleRow = (supplierId: string) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(supplierId)) {
-      newExpanded.delete(supplierId);
-    } else {
-      newExpanded.add(supplierId);
-    }
-    setExpandedRows(newExpanded);
+  const updateResponseState = (
+    responseId: string,
+    updates: Partial<ResponseState[string]>,
+  ) => {
+    setResponseStates((prev) => ({
+      ...prev,
+      [responseId]: {
+        ...prev[responseId],
+        ...updates,
+      },
+    }));
   };
 
-  const getStatusBadge = (response: Response) => {
-    const status = statuses[response.id] ?? "pending";
-
-    return status === "pass" ? (
-      <Badge className="bg-green-500 px-3 py-1.5">
-        <CheckCircle2 className="w-4 h-4 mr-1.5" />
-        Conforme
-      </Badge>
-    ) : status === "partial" ? (
-      <Badge className="bg-blue-500 px-3 py-1.5">
-        <Zap className="w-4 h-4 mr-1.5" />
-        Partiel
-      </Badge>
-    ) : status === "fail" ? (
-      <Badge className="bg-red-500 px-3 py-1.5">
-        <AlertCircle className="w-4 h-4 mr-1.5" />
-        Non conforme
-      </Badge>
-    ) : (
-      <Badge variant="outline" className="px-3 py-1.5">
-        <Clock className="w-4 h-4 mr-1.5" />
-        Attente
-      </Badge>
-    );
-  };
   // Check if all responses for current requirement are checked
   const allResponsesChecked =
     requirementResponses.length > 0 &&
-    requirementResponses.every((r) => responseChecks[r.id]);
+    requirementResponses.every((r) => responseStates[r.id]?.isChecked ?? false);
+
+  // If a category is selected, show requirements table
+  if (isCategory) {
+    return (
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+            Exigences de la catégorie
+          </h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+            Vue d'ensemble des exigences et de leur statut
+          </p>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-6">
+          {categoryLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            </div>
+          ) : categoryError ? (
+            <div className="text-center py-12">
+              <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+              <p className="text-slate-600 dark:text-slate-400">
+                Erreur lors du chargement des exigences
+              </p>
+            </div>
+          ) : categoryRequirements.length === 0 ? (
+            <div className="text-center py-12">
+              <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
+              <p className="text-slate-600 dark:text-slate-400">
+                Aucune exigence trouvée pour cette catégorie
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[150px]">Code</TableHead>
+                    <TableHead className="w-[250px]">Nom</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="w-[160px]">Statut</TableHead>
+                    <TableHead className="w-[80px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {categoryRequirements.map((req) => (
+                    <TableRow
+                      key={req.id}
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800"
+                    >
+                      <TableCell className="font-medium">
+                        {req.requirement_id_external}
+                      </TableCell>
+                      <TableCell className="font-medium">{req.title}</TableCell>
+                      <TableCell className="text-slate-500 dark:text-slate-500 text-xs">
+                        <div className="line-clamp-2">
+                          {req.description || (
+                            <span className="italic text-slate-400">
+                              Aucune description
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {req.status === "pass" && (
+                          <Badge className="bg-green-500 text-white px-3 py-1.5 text-sm font-medium">
+                            <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                            Validé
+                          </Badge>
+                        )}
+                        {req.status === "partial" && (
+                          <Badge className="bg-amber-500 text-white px-3 py-1.5 text-sm font-medium">
+                            <Clock className="w-4 h-4 mr-1.5" />
+                            Partiel
+                          </Badge>
+                        )}
+                        {req.status === "fail" && (
+                          <Badge className="bg-red-500 text-white px-3 py-1.5 text-sm font-medium">
+                            <AlertTriangle className="w-4 h-4 mr-1.5" />
+                            Échoué
+                          </Badge>
+                        )}
+                        {req.status === "pending" && (
+                          <Badge
+                            variant="outline"
+                            className="px-3 py-1.5 text-sm font-medium"
+                          >
+                            <Clock className="w-4 h-4 mr-1.5" />
+                            En attente
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onRequirementChange(req.id)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (!requirement) {
-    return <div className="p-6">Exigence non trouvée</div>;
+    return (
+      <div className="p-6 text-center">
+        <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
+        <p className="text-slate-600 dark:text-slate-400">
+          Exigence non trouvée
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -131,17 +321,17 @@ export function ComparisonView({
       <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
         <Breadcrumb>
           <BreadcrumbList>
-            {path.map((item, idx) => (
+            {breadcrumbPath.map((item, idx) => (
               <React.Fragment key={item.id}>
                 {idx > 0 && <BreadcrumbSeparator />}
-                {idx === path.length - 1 ? (
+                {idx === breadcrumbPath.length - 1 ? (
                   <BreadcrumbPage className="text-slate-900 dark:text-white font-medium">
-                    {item.id}
+                    {item.code}
                   </BreadcrumbPage>
                 ) : (
                   <BreadcrumbItem>
                     <BreadcrumbLink className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                      {item.id}
+                      {item.code}
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                 )}
@@ -151,7 +341,7 @@ export function ComparisonView({
         </Breadcrumb>
       </div>
 
-      {/* Header with simple pagination */}
+      {/* Header with pagination */}
       <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -172,18 +362,42 @@ export function ComparisonView({
                 </Badge>
               )}
             </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
-              {requirement.description}
-            </p>
+            <div className="relative">
+              <p
+                className={`text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap ${
+                  !descriptionExpanded ? "line-clamp-5" : ""
+                }`}
+              >
+                {requirement.description}
+              </p>
+              {requirement.description &&
+                requirement.description.split("\n").length > 5 && (
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() =>
+                        setDescriptionExpanded(!descriptionExpanded)
+                      }
+                      className="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                    >
+                      {descriptionExpanded ? "Voir moins" : "Voir plus"}
+                      <ChevronDown
+                        className={`w-3 h-3 transition-transform ${
+                          descriptionExpanded ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                  </div>
+                )}
+            </div>
           </div>
 
-          {/* Simple pagination - chevrons only */}
+          {/* Pagination controls */}
           <div className="flex items-center gap-2 ml-6 flex-shrink-0">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => goToRequirement(currentIndex - 1)}
-              disabled={currentIndex === 0}
+              disabled={currentIndex === 0 || isLoading}
               className="h-8 w-8"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -195,7 +409,7 @@ export function ComparisonView({
               variant="ghost"
               size="icon"
               onClick={() => goToRequirement(currentIndex + 1)}
-              disabled={currentIndex === totalPages - 1}
+              disabled={currentIndex === totalPages - 1 || isLoading}
               className="h-8 w-8"
             >
               <ChevronRight className="w-4 h-4" />
@@ -214,9 +428,9 @@ export function ComparisonView({
             Contexte du cahier des charges
           </span>
           {contextExpanded ? (
-            <ChevronUp className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-          ) : (
             <ChevronDown className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-slate-600 dark:text-slate-400 rotate-0" />
           )}
         </button>
 
@@ -232,221 +446,87 @@ export function ComparisonView({
         )}
       </div>
 
-      {/* Comparison Table */}
-      <div className="flex-1 overflow-auto p-6">
-        <div className="space-y-2">
-          {suppliersData.map((supplier) => {
-            const response = requirementResponses.find(
-              (r) => r.supplierId === supplier.id,
-            );
-            if (!response) return null;
+      {/* Main content area */}
+      <div className="flex-1 overflow-auto">
+        {isLoading && (
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          </div>
+        )}
 
-            const isExpanded = expandedRows.has(supplier.id);
-            // const finalScore = manualScores[response.id] ?? response.aiScore;
+        {error && (
+          <div className="p-6 text-center">
+            <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+            <p className="text-slate-600 dark:text-slate-400">{error}</p>
+          </div>
+        )}
 
-            return (
-              <div
-                key={supplier.id}
-                className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden"
-              >
-                {/* Main row */}
-                <div className="flex items-center gap-4 p-4 bg-white dark:bg-slate-950">
-                  {/* Expand button */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleRow(supplier.id)}
-                    className="flex-shrink-0"
-                  >
-                    {isExpanded ? (
-                      <ChevronDown className="w-4 h-4" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4" />
-                    )}
-                  </Button>
-
-                  {/* Checkbox - left side */}
-                  <RoundCheckbox
-                    checked={responseChecks[response.id] ?? false}
-                    onChange={(checked) =>
-                      setResponseChecks({
-                        ...responseChecks,
-                        [response.id]: checked,
-                      })
-                    }
-                  />
-
-                  {/* Supplier name */}
-                  <div className="font-medium text-slate-900 dark:text-white text-sm flex-shrink-0 w-44">
-                    {supplier.name}
-                  </div>
-
-                  {/* Response text excerpt */}
-                  <div className="flex-1 text-xs text-slate-600 dark:text-slate-400 line-clamp-2 max-w-xl">
-                    {response.responseText}
-                  </div>
-
-                  {/* Stars and score - center right */}
-                  <div
-                    className="flex items-center gap-2 cursor-pointer flex-shrink-0 w-48"
-                    title="Cliquez pour changer le score"
-                  >
-                    <div className="flex gap-1 flex-1">
-                      {[1, 2, 3, 4, 5].map((i) => {
-                        const currentScore =
-                          manualScores[response.id] ?? response.aiScore;
-                        const isFilled =
-                          manualScores[response.id] === 0
-                            ? false
-                            : i <= currentScore;
-                        return (
-                          <button
-                            key={i}
-                            onClick={() => {
-                              if (currentScore === i) {
-                                // If clicking the current score, toggle to 0
-                                setManualScores({
-                                  ...manualScores,
-                                  [response.id]: 0,
-                                });
-                              } else {
-                                // Otherwise set the new score
-                                setManualScores({
-                                  ...manualScores,
-                                  [response.id]: i,
-                                });
-                              }
-                            }}
-                            className="p-1 hover:opacity-80 transition-opacity"
-                          >
-                            <Star
-                              className={`w-5 h-5 ${
-                                isFilled
-                                  ? "fill-yellow-400 text-yellow-400"
-                                  : "text-slate-300 dark:text-slate-600"
-                              }`}
-                            />
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 w-9 text-center flex-shrink-0">
-                      {manualScores[response.id] === 0
-                        ? "0"
-                        : (manualScores[response.id] ?? response.aiScore)}
-                      /5
-                    </span>
-                  </div>
-
-                  {/* Status badge - right side */}
-                  <div className="flex-shrink-0 w-40 flex justify-end">
-                    {getStatusBadge(response)}
-                  </div>
-                </div>
-
-                {/* Expanded details */}
-                {isExpanded && (
-                  <div className="border-t border-slate-200 dark:border-slate-800 p-4 bg-slate-50 dark:bg-slate-900/50">
-                    <div className="flex gap-4 min-h-64">
-                      {/* Left: Response text (2/3 width) */}
-                      <div className="flex-1 flex flex-col basis-2/3">
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
-                          Réponse complète
-                        </div>
-                        <textarea
-                          readOnly
-                          value={response.responseText}
-                          className="flex-1 px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm text-slate-700 dark:text-slate-300 resize"
-                        />
-                      </div>
-
-                      {/* Right: Status and AI comment (1/3 width) */}
-                      <div className="flex-1 basis-1/3 flex flex-col space-y-4">
-                        {/* Status switch */}
-                        <div>
-                          <div className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
-                            Statut
-                          </div>
-                          <StatusSwitch
-                            value={statuses[response.id] ?? "pending"}
-                            onChange={(newStatus) => {
-                              setStatuses({
-                                ...statuses,
-                                [response.id]: newStatus,
-                              });
-                              // Auto-check when status is set
-                              if (newStatus !== "pending") {
-                                setResponseChecks({
-                                  ...responseChecks,
-                                  [response.id]: true,
-                                });
-                              }
-                            }}
-                          />
-                        </div>
-
-                        {/* AI comment */}
-                        <div className="flex flex-col flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                              Commentaire IA
-                            </span>
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(
-                                  response.aiComment,
-                                );
-                              }}
-                              className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition-colors"
-                              title="Copier le commentaire"
-                            >
-                              <Copy className="w-3 h-3 text-slate-600 dark:text-slate-400" />
-                            </button>
-                          </div>
-                          <ScrollArea className="flex-1 rounded border border-slate-200 dark:border-slate-700">
-                            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed p-3">
-                              {response.aiComment}
-                            </p>
-                          </ScrollArea>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bottom: Reviewer comments (full width) */}
-                    <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-                      <div>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
-                          Votre commentaire
-                        </div>
-                        <Textarea
-                          value={comments[response.id] ?? ""}
-                          onChange={(e) =>
-                            setComments({
-                              ...comments,
-                              [response.id]: e.target.value,
-                            })
-                          }
-                          placeholder="Ajoutez vos observations..."
-                          className="text-sm h-24"
-                        />
-                      </div>
-
-                      <div>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
-                          Questions / Doutes
-                        </div>
-                        <Textarea
-                          placeholder="Posez vos questions..."
-                          className="text-sm h-24"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
+        {!isLoading && !error && (
+          <div className="p-6">
+            {requirementResponses.length === 0 ? (
+              <div className="text-center py-12">
+                <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
+                <p className="text-slate-600 dark:text-slate-400">
+                  Aucune réponse de fournisseur disponible
+                </p>
               </div>
-            );
-          })}
-        </div>
+            ) : (
+              <div className="space-y-2">
+                {suppliersData.map((supplier) => {
+                  const response = requirementResponses.find(
+                    (r) => r.supplierId === supplier.id,
+                  );
+                  if (!response) return null;
+
+                  const state = responseStates[response.id] || {
+                    expanded: false,
+                    manualScore: 0,
+                    status: "pending" as const,
+                    isChecked: false,
+                    manualComment: "",
+                    question: "",
+                  };
+
+                  return (
+                    <SupplierResponseCard
+                      key={response.id}
+                      supplierId={supplier.id}
+                      supplierName={supplier.name}
+                      responseId={response.id}
+                      responseText={response.responseText}
+                      aiScore={response.aiScore}
+                      aiComment={response.aiComment}
+                      status={state.status}
+                      isChecked={state.isChecked}
+                      manualScore={state.manualScore}
+                      manualComment={state.manualComment}
+                      questionText={state.question}
+                      isExpanded={state.expanded}
+                      onExpandChange={(expanded) =>
+                        updateResponseState(response.id, { expanded })
+                      }
+                      onStatusChange={(status) =>
+                        updateResponseState(response.id, { status })
+                      }
+                      onCheckChange={(isChecked) =>
+                        updateResponseState(response.id, { isChecked })
+                      }
+                      onScoreChange={(manualScore) =>
+                        updateResponseState(response.id, { manualScore })
+                      }
+                      onCommentChange={(manualComment) =>
+                        updateResponseState(response.id, { manualComment })
+                      }
+                      onQuestionChange={(question) =>
+                        updateResponseState(response.id, { question })
+                      }
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
