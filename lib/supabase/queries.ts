@@ -551,16 +551,17 @@ export async function importSuppliers(
 /**
  * Calculate RFP completion percentage
  * Returns percentage of responses marked as checked (is_checked = true)
- * across all requirements in the RFP
+ * Only counts responses for leaf requirements (level 4)
  */
 export async function getRFPCompletionPercentage(
   rfpId: string,
 ): Promise<number> {
   const supabase = await createServerClient();
 
+  // Get all responses for leaf requirements only (level 4)
   const { data, error } = await supabase
     .from("responses")
-    .select("id, is_checked", { count: "exact" })
+    .select("id, is_checked, requirement_id")
     .eq("rfp_id", rfpId);
 
   if (error) {
@@ -570,14 +571,40 @@ export async function getRFPCompletionPercentage(
     );
   }
 
-  const responses = (data || []) as Array<{ id: string; is_checked: boolean }>;
-  const total = responses.length;
+  const responses = (data || []) as Array<{
+    id: string;
+    is_checked: boolean;
+    requirement_id: string;
+  }>;
+
+  // Filter to only include responses for level 4 requirements
+  const { data: leafRequirements, error: reqError } = await supabase
+    .from("requirements")
+    .select("id")
+    .eq("rfp_id", rfpId)
+    .eq("level", 4);
+
+  if (reqError) {
+    console.error("Error fetching leaf requirements:", reqError);
+    throw new Error(
+      `Failed to fetch requirements for completion: ${reqError.message}`,
+    );
+  }
+
+  const leafReqIds = new Set((leafRequirements || []).map((r: any) => r.id));
+
+  // Filter responses to only those for leaf requirements
+  const leafResponses = responses.filter((r) =>
+    leafReqIds.has(r.requirement_id),
+  );
+
+  const total = leafResponses.length;
 
   if (total === 0) {
     return 0; // No responses = 0% complete
   }
 
-  const checked = responses.filter((r) => r.is_checked).length;
+  const checked = leafResponses.filter((r) => r.is_checked).length;
   const percentage = Math.round((checked / total) * 100);
 
   return percentage;
