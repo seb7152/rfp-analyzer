@@ -1,6 +1,6 @@
 # Tasks: RFP Analyzer Platform
 
-**Input**: Design documents from `/specs/001-rfp-analyzer-platform/`  
+**Input**: Design documents from `/specs/001-rfp-analyzer-platform/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/api.yaml
 
 **Tests**: Tests are NOT explicitly requested in the feature specification. Test tasks are excluded per specification guidelines.
@@ -161,6 +161,8 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 **Independent Test**: Select a requirement and view 4-10 supplier responses in list format showing name, preview, AI score, and status badge. Expand any response to view full text and AI commentary. All responses remain aligned for comparison.
 
+**⚠️ Testing Prerequisite**: Before testing this user story, you must import supplier responses data. Use the import endpoint at `/api/rfps/[rfpId]/responses/import` with response data including supplier information, AI scores, and commentary.
+
 ### Database API for Responses
 
 - [x] T066 Create app/api/rfps/[rfpId]/responses/route.ts GET endpoint with optional requirementId filter
@@ -182,8 +184,8 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 ### AI Score Display
 
-- [ ] T079 [P] [US2] Create components/StarRating.tsx component displaying 1-5 stars as read-only (AI score)
-- [ ] T080 [US2] Add AI score badge with "AI: X/5" format in SupplierResponseCard collapsed view
+- [x] T079 [P] [US2] Create components/StarRating.tsx component displaying 1-5 stars initialized with AI score but that can be updated by reviewer
+- [x] T080 [US2] Add AI score badge with "X/5" format in SupplierResponseCard collapsed view
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work - users can navigate requirements and compare all supplier responses
 
