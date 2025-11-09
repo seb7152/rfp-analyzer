@@ -118,14 +118,14 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 ### Requirements Tree Component
 
-- [ ] T051 [P] [US1] Create components/Sidebar.tsx with collapsible sidebar container and search input
-- [ ] T052 [US1] Create components/RequirementTree.tsx component with recursive rendering of 4-level hierarchy
-- [ ] T053 [US1] Implement expand/collapse logic in RequirementTree with local state per node
-- [ ] T054 [US1] Add "Expand All" and "Collapse All" buttons to Sidebar component header
-- [ ] T055 [US1] Implement real-time search filtering in RequirementTree by ID and title text
-- [ ] T056 [US1] Add visual hierarchy indicators (indentation, chevron icons) to RequirementTree nodes
-- [ ] T057 [US1] Implement selected requirement highlighting in RequirementTree with active state
-- [ ] T058 [US1] Create hooks/use-requirements.ts with React Query for requirements data fetching and caching
+- [x] T051 [P] [US1] Create components/Sidebar.tsx with collapsible sidebar container and search input
+- [x] T052 [US1] Create components/RequirementTree.tsx component with recursive rendering of 4-level hierarchy
+- [x] T053 [US1] Implement expand/collapse logic in RequirementTree with local state per node
+- [x] T054 [US1] Add "Expand All" and "Collapse All" buttons to Sidebar component header
+- [x] T055 [US1] Implement real-time search filtering in RequirementTree by ID and title text
+- [x] T056 [US1] Add visual hierarchy indicators (indentation, chevron icons) to RequirementTree nodes
+- [x] T057 [US1] Implement selected requirement highlighting in RequirementTree with active state
+- [x] T058 [US1] Create hooks/use-requirements.ts with React Query for requirements data fetching and caching
 
 ### Requirement Display Component
 
@@ -163,22 +163,22 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 ### Database API for Responses
 
-- [ ] T066 Create app/api/rfps/[rfpId]/responses/route.ts GET endpoint with optional requirementId filter
-- [ ] T067 Create app/api/responses/[responseId]/route.ts GET endpoint for single response details
-- [ ] T068 Add getResponsesForRequirement() function to lib/supabase/queries.ts with supplier join
-- [ ] T069 Create hooks/use-responses.ts with React Query for responses data fetching
+- [x] T066 Create app/api/rfps/[rfpId]/responses/route.ts GET endpoint with optional requirementId filter
+- [x] T067 Create app/api/responses/[responseId]/route.ts GET endpoint for single response details
+- [x] T068 Add getResponsesForRequirement() function to lib/supabase/queries.ts with supplier join
+- [x] T069 Create hooks/use-responses.ts with React Query for responses data fetching
 
 ### Supplier Comparison View
 
-- [ ] T070 [P] [US2] Create components/ComparisonView.tsx container component for supplier response list
-- [ ] T071 [US2] Create components/SupplierResponseCard.tsx with collapsed view showing name, preview (2 lines), AI score, status badge
-- [ ] T072 [US2] Implement expand/collapse toggle in SupplierResponseCard with chevron icon animation
-- [ ] T073 [US2] Add expanded view in SupplierResponseCard with full response text in scrollable textarea
-- [ ] T074 [US2] Display AI commentary in expanded view with scrollable area and proper formatting
-- [ ] T075 [US2] Add "Copy" button for AI commentary using navigator.clipboard API
-- [ ] T076 [US2] Implement vertical alignment of supplier cards for easy comparison
-- [ ] T077 [US2] Add loading and error states to ComparisonView for async data loading
-- [ ] T078 [US2] Handle edge case: Display "No supplier responses available" when responses array is empty
+- [x] T070 [P] [US2] Create components/ComparisonView.tsx container component for supplier response list
+- [x] T071 [US2] Create components/SupplierResponseCard.tsx with collapsed view showing name, preview (2 lines), AI score, status badge
+- [x] T072 [US2] Implement expand/collapse toggle in SupplierResponseCard with chevron icon animation
+- [x] T073 [US2] Add expanded view in SupplierResponseCard with full response text in scrollable textarea
+- [x] T074 [US2] Display AI commentary in expanded view with scrollable area and proper formatting
+- [x] T075 [US2] Add "Copy" button for AI commentary using navigator.clipboard API
+- [x] T076 [US2] Implement vertical alignment of supplier cards for easy comparison
+- [x] T077 [US2] Add loading and error states to ComparisonView for async data loading
+- [x] T078 [US2] Handle edge case: Display "No supplier responses available" when responses array is empty
 
 ### AI Score Display
 

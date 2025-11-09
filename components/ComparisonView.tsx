@@ -464,11 +464,31 @@ export function ComparisonView({
         {!isLoading && !error && (
           <div className="p-6">
             {requirementResponses.length === 0 ? (
-              <div className="text-center py-12">
-                <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
-                <p className="text-slate-600 dark:text-slate-400">
-                  Aucune réponse de fournisseur disponible
-                </p>
+              <div className="flex h-full items-center justify-center">
+                <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 p-12 text-center max-w-md">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+                    <svg
+                      className="h-8 w-8 text-slate-400 dark:text-slate-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                  </div>
+                  <p className="text-lg font-medium text-slate-900 dark:text-slate-50 mb-2">
+                    Aucune réponse disponible
+                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Les fournisseurs n'ont pas encore soumis de réponses pour
+                    cette exigence
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="space-y-2">
