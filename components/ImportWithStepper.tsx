@@ -418,6 +418,72 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
               height={250}
             />
 
+            {/* Preview table for categories */}
+            {categoriesValid && categoriesJson.trim() && (
+              <div className="space-y-3">
+                <h3 className="font-semibold">
+                  Aperçu (
+                  {(() => {
+                    try {
+                      return JSON.parse(categoriesJson.trim()).length;
+                    } catch {
+                      return 0;
+                    }
+                  })()}
+                  )
+                </h3>
+                <div className="rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50 dark:bg-slate-900">
+                        <TableHead>Code</TableHead>
+                        <TableHead>Titre</TableHead>
+                        <TableHead>Nom court</TableHead>
+                        <TableHead className="text-right">Niveau</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(() => {
+                        try {
+                          const categories = JSON.parse(categoriesJson.trim());
+                          return categories.map(
+                            (
+                              category: {
+                                code: string;
+                                title: string;
+                                short_name?: string;
+                                level: number;
+                              },
+                              idx: number,
+                            ) => (
+                              <TableRow key={idx}>
+                                <TableCell className="font-mono text-xs">
+                                  {category.code}
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                  {category.title}
+                                </TableCell>
+                                <TableCell className="text-sm text-slate-600 dark:text-slate-400">
+                                  {category.short_name || "—"}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <span className="inline-flex items-center gap-1 text-sm">
+                                    {category.level}
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            ),
+                          );
+                        } catch {
+                          return null;
+                        }
+                      })()}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -499,6 +565,74 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
               className="rounded border border-slate-300 dark:border-slate-700"
               height={250}
             />
+
+            {/* Preview table for requirements */}
+            {requirementsValid && requirementsJson.trim() && (
+              <div className="space-y-3">
+                <h3 className="font-semibold">
+                  Aperçu (
+                  {(() => {
+                    try {
+                      return JSON.parse(requirementsJson.trim()).length;
+                    } catch {
+                      return 0;
+                    }
+                  })()}
+                  )
+                </h3>
+                <div className="rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50 dark:bg-slate-900">
+                        <TableHead>Code</TableHead>
+                        <TableHead>Titre</TableHead>
+                        <TableHead>Catégorie</TableHead>
+                        <TableHead className="text-right">Poids</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(() => {
+                        try {
+                          const requirements = JSON.parse(
+                            requirementsJson.trim(),
+                          );
+                          return requirements.map(
+                            (
+                              requirement: {
+                                code: string;
+                                title: string;
+                                category_name: string;
+                                weight: number;
+                              },
+                              idx: number,
+                            ) => (
+                              <TableRow key={idx}>
+                                <TableCell className="font-mono text-xs">
+                                  {requirement.code}
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                  {requirement.title}
+                                </TableCell>
+                                <TableCell className="text-sm text-slate-600 dark:text-slate-400">
+                                  {requirement.category_name}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <span className="inline-flex items-center gap-1 text-sm">
+                                    {requirement.weight}
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            ),
+                          );
+                        } catch {
+                          return null;
+                        }
+                      })()}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-2">
               <Button

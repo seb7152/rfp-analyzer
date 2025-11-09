@@ -1,0 +1,158 @@
+{
+  "requirements": [
+    {
+      "code": "R - 1",
+      "title": "Commitment to Full Scope Coverage",
+      "description": "The Service Provider shall explicitly confirm its ability and commitment to deliver the full scope of support activities.",
+      "weight": 1,
+      "category_name": "Scope and Service Coverage"
+    },
+    {
+      "code": "R - 2",
+      "title": "Documentation Management",
+      "description": "The Service Provider shall maintain a centralized and continuously updated knowledge base.",
+      "weight": 1,
+      "category_name": "Scope and Service Coverage"
+    },
+    {
+      "code": "R - 3",
+      "title": "Service Coverage Periods",
+      "description": "The Service Provider shall be able to ensure support coverage during the required periods.",
+      "weight": 1,
+      "category_name": "Scope and Service Coverage"
+    },
+    {
+      "code": "R - 4",
+      "title": "Supported Languages",
+      "description": "Support services shall be provided in both French and English.",
+      "weight": 1,
+      "category_name": "Scope and Service Coverage"
+    },
+    {
+      "code": "R - 5",
+      "title": "Service Model",
+      "description": "The Service Provider shall describe in detail its operating model.",
+      "weight": 1,
+      "category_name": "Target Delivey Model"
+    },
+    {
+      "code": "R - 6",
+      "title": "Flexibility of the Model",
+      "description": "The Service Provider shall demonstrate the ability to dynamically adjust its support capacity.",
+      "weight": 1,
+      "category_name": "Target Delivey Model"
+    },
+    {
+      "code": "R - 7",
+      "title": "Governance Structure",
+      "description": "Clear governance structure and reporting lines.",
+      "weight": 0.8,
+      "category_name": "Target Delivey Model"
+    },
+    {
+      "code": "R - 8",
+      "title": "Workforce Stability",
+      "description": "The Service Provider shall ensure workforce stability and the preservation of operational knowledge throughout the delivery of support services.",
+      "weight": 1,
+      "category_name": "Target Delivey Model"
+    },
+    {
+      "code": "R - 9",
+      "title": "Organizational Structure",
+      "description": "The Service Provider must provide a detailed description of its account management and oversight structure.",
+      "weight": 1,
+      "category_name": "Target Delivey Model"
+    },
+    {
+      "code": "R - 10",
+      "title": "Governance",
+      "description": "The Service Provider must formally confirm adherence to the minimum governance structure outlined above.",
+      "weight": 1,
+      "category_name": "Target Delivey Model"
+    },
+    {
+      "code": "R - 11",
+      "title": "Reporting",
+      "description": "The Service Provider shall define and implement a structured reporting approach to monitor the performance.",
+      "weight": 1,
+      "category_name": "Target Delivey Model"
+    },
+    {
+      "code": "R - 12",
+      "title": "Tooling",
+      "description": "The Service Provider must agree to use Accor's accounts and tooling as the primary operational environment.",
+      "weight": 1,
+      "category_name": "Target Delivey Model"
+    },
+    {
+      "code": "R - 13",
+      "title": "Continuous Service Improvement",
+      "description": "The Service Provider shall implement a proactive continuous improvement approach throughout the contract duration.",
+      "weight": 1,
+      "category_name": "Continuous Improvement, Innovation & Automation"
+    },
+    {
+      "code": "R - 14",
+      "title": "Innovation and Automation",
+      "description": "The Service Provider shall remain up to date with relevant technological evolutions and AI tools.",
+      "weight": 1,
+      "category_name": "Continuous Improvement, Innovation & Automation"
+    },
+    {
+      "code": "R - 15",
+      "title": "Compliance with Service Levels",
+      "description": "The Service Level Agreements represent the minimum expected service levels.",
+      "weight": 1,
+      "category_name": "SLAs, KPIs & Performance Monitoring"
+    },
+    {
+      "code": "R - 16",
+      "title": "Modification of Service Levels",
+      "description": "Service levels may evolve but only through enhancement, not reduction.",
+      "weight": 1,
+      "category_name": "SLAs, KPIs & Performance Monitoring"
+    },
+    {
+      "code": "R - 17",
+      "title": "Service Penalty Models",
+      "description": "A penalty system will be applied in case of SLA breaches.",
+      "weight": 1,
+      "category_name": "SLAs, KPIs & Performance Monitoring"
+    },
+    {
+      "code": "R - 18",
+      "title": "Transition",
+      "description": "The Service Provider shall propose a structured transition methodology.",
+      "weight": 1,
+      "category_name": "Transition & Reversibility"
+    },
+    {
+      "code": "R - 19",
+      "title": "Risk Management",
+      "description": "The Service Provider must proactively manage risks to minimize disruptions.",
+      "weight": 1,
+      "category_name": "Transition & Reversibility"
+    },
+    {
+      "code": "R - 20",
+      "title": "Reversibility",
+      "description": "The Contractor shall detail the reversibility approach and associated activities.",
+      "weight": 1,
+      "category_name": "Transition & Reversibility"
+    },
+    {
+      "code": "R - 21",
+      "title": "Objectives of the Pricing Model",
+      "description": "The pricing model must enable cost optimization, quality-driven performance, and scalability.",
+      "weight": 1,
+      "category_name": "Pricing Model"
+    },
+    {
+      "code": "R - 22",
+      "title": "Productivity Gains",
+      "description": "Productivity gains shall be periodically assessed and reflected in the pricing model.",
+      "weight": 1,
+      "category_name": "Pricing Model"
+    }
+  ]
+}

@@ -1,0 +1,134 @@
+[
+  {
+    "catégorie": "Scope and Service Coverage",
+    "numéro": "R - 1",
+    "titre": "Commitment to Full  Scope Coverage",
+    "exigence": "The Service Provider shall explicitly confirm its ability and commitment to deliver the full scope of support activities categorized under Level 1 (L1) and Level 1.5 (L1.5), as outlined in the present specification, to ensure continuity of the current support service.\n\nIn addition to handling L1 and L1.5 tickets, the Service Provider is also expected to support all recurring monitoring, administrative, and closing tasks, whether they are tracked through the ITSM tool or not. These activities are considered an integral part of the support scope and are critical to the stability and efficiency of business operations, , including the implementation of remediation actions based on monitoring outcomes and alerts."
+  },
+  {
+    "catégorie": "Scope and Service Coverage",
+    "numéro": "R - 2",
+    "titre": "Documentation Management",
+    "exigence": "The Service Provider shall maintain a centralized and continuously updated knowledge base throughout the duration of the contract. This knowledge base must notably cover common issues, step-by-step procedures for handling service requests, and technical resolution workflows, and must be fully aligned with Accor’s documentation standards.\n\nIn addition, the Service Provider is expected to provide and maintain comprehensive documentation for all support processes, including escalation paths, which must be accessible to both Accor internal teams and the Provider’s support staff. \n\nExisting Accor documentation will be made available at the beginning of the contract and must be reviewed, validated, and updated by the Service Provider during the transition phase. All documentation developed or maintained as part of the service remains the exclusive property of Accor."
+  },
+  {
+    "catégorie": "Scope and Service Coverage",
+    "numéro": "R - 3",
+    "titre": "Serivce Coverage  Periods",
+    "exigence": "The Service Provider shall be able to ensure support coverage during the following periods:\n             •   Option 1 – Standard Business Hours: Monday to Friday from 08:00 AM to 07:00 PM CET.\n             •   Option 2 – Extended Business Hours: Monday to Friday from 08:00 AM to 09:00 PM CET.\n\t \nIn addition to the standard or extended coverage options, the Service Provider must also ensure mandatory coverage during closure, from J+3 to J+4, up to 11:59 PM CET, regardless of the selected daily support window — with J being the last day of the month, excluding French public holidays. In any case, the Service Provider will have to refer to the Accor closure calendar.\n \nUpon Accor’s request, an additional time slot may be requested during the contract period According to needs.\n\nService Providers may challenge or propose alternative coverage windows if they believe a different support timeframe would be more operationally efficient or cost-effective, provided that business continuity and service quality are not compromised. All alternative proposals must be clearly justified in the response."
+  },
+  {
+    "catégorie": "Scope and Service Coverage",
+    "numéro": "R - 4",
+    "titre": "Supported Languages",
+    "exigence": "Support services shall be provided in both French and English, depending on the scenarios below, to ensure effective communication with end-users across different regions. English is the official language of the governance and service management.\n\nThe Service Provider must consider two successive scenarios for language coverage throughout the contract lifecycle, to ensure a smooth and user-friendly transition for end-users:\n             •   Scenario 1 – Transitional Phase (expected to last between 6 months and 1 year)\n                   o  L1 support is delivered in English, and must ensure a high standard of communication, both in clarity and professionalism.\n                   o  L1.5 support is provided in French, as more the level complexity handled may require more frequent and direct interaction with  end-users via chat, voice, or \n                       ServiceNow. Spoken and written French is mandatory for L1.5 resources in this phase.\n\n             •   Scenario 2 – Target Operating Model\n                   o  L1 and L1.5 support activities are delivered in English\n                   o  L1 and L1.5 resources must ensure a high standard of communication in English, both written and spoken.\n\nThe transition from Scenario 1 to Scenario 2 will be gradual and aligned with Accor's change management strategy to ensure business continuity and minimal disruption.\n\nThe Service Provider must also explain how language proficiency is assessed and maintained across its delivery teams (e.g., training, recruitment criteria, quality checks)."
+  },
+  {
+    "catégorie": "Target Delivey Model",
+    "numéro": "R - 5",
+    "titre": "Service Model",
+    "exigence": "The Service Provider shall describe in detail its operating model for delivering Level 1 & 1.5 support services on Oracle EBS. This must include its overall approach and methodology, as well as the location(s) of the delivery center(s) from which the services will be provided, ensuring alignment with Accor’s organizational, geographical, and business context.\n\nThe proposal must at least specify:\n             •   The delivery centers that will be involved,\n             •   How the model ensures coverage of expected time zones (for both service coverage period options), language needs (for both \n                   support language scenarios), and service continuity,\n             •   And how it responds to the operational and technical requirements detailed in this section.\n\nThe model proposed should demonstrate flexibility, scalability, and alignment with Accor’s support workflows and quality expectations.\n\nThe Service Provider shall also justify the suitability of its delivery footprint, based on Accor’s needs, and acknowledge that Accor may indicate location preferences during the contract finalization phase, to which the Service Provider shall demonstrate its ability to adapt."
+  },
+  {
+    "catégorie": "Target Delivey Model",
+    "numéro": "R - 6",
+    "titre": "Flexibility of the Model",
+    "exigence": "The Service Provider shall demonstrate the ability to dynamically adjust its support capacity to accommodate volume fluctuations, including both peak periods (e.g., month-end closings) and lower-activity phases. This elasticity is considered a standard component of the service and must not result in additional costs or penalties.\n\nTo meet this requirement, the Service Provider is expected to:\n             •   Maintain a bench or standby pool of trained resources capable of absorbing temporary or planned workload increases,\n             •   Leverage shared resource models where applicable, provided that quality and responsiveness are maintained.\n\nThe Service Provider shall describe in its proposal how resource scalability is managed and how it is reflected in the pricing model."
+  },
+  {
+    "catégorie": "Target Delivey Model",
+    "numéro": "R - 7",
+    "titre": "Oracle E-Business Suite (EBS) Expertise",
+    "exigence": "The Service Provider must demonstrate its relevant Oracle E-Business Suite experience and expertise, particulary that of the delivery centers and resources assigned to provide Level 1 and Level 1.5 support services.\n\nThis includes :\n             •   Proven prior exposure to Oracle EBS, specifically version R12.2, in large-scale or multinational environments,\n             •   Number of Oracle EBS consultants at the global level and especially for the delivery center(s) considered,\n             •   In-depth understanding of the functional flows and modules in scope (the supported modules),\n             •   Ability to accurately recognize, classify, and manage incidents and service requests according to predefined support scripts or \n                   workflows,\n             •   Capability to differentiate between functional and technical issues to ensure proper escalation processes,\n             •   Relevant training, certifications, partnerships and enablement initiatives to maintain and enhance Oracle EBS expertise."
+  },
+  {
+    "catégorie": "Target Delivey Model",
+    "numéro": "R - 8",
+    "titre": "Workforce Stability",
+    "exigence": "The Service Provider shall ensure workforce stability and the preservation of operational knowledge throughout the delivery of support services.\n\nTo maintain service quality, business continuity, and consistent user experience, the Service Provider will detail:\n             •   The turnover rate for Level 1 support resources within the proposed delivery hubs.\n             •   The staffing composition (sub-contractors, freelance, employees).\n             •   The process in place to ensure onboarding and knowledge transfer in the event of resource changes.\n             •   The retention strategy and means used to ensure continuity and minimize turnover and knowledge loss.\n\nWhile Accor acknowledges that some turnover is inevitable, the Service Provider is expected to favor a delivery model that promotes resource stability and ensures continuity, particularly for roles requiring close alignment with Accor’s processes and user community."
+  },
+  {
+    "catégorie": "Target Delivey Model",
+    "numéro": "R - 9",
+    "titre": "Organizational Structure",
+    "exigence": "The Service Provider must provide a detailed description of its account management and oversight structure, clearly identifying the roles responsible for overall service supervision, relationship management, and performance monitoring.\nThis must include, at a minimum:\n             •   The Account Manager and Service Delivery Manager,\n             •   Their respective scopes and responsibilities,\n             •   Their positioning within the organization and reporting lines,\n             •   The mechanisms put in place to ensure effective governance, communication, and issue escalation with Accor."
+  },
+  {
+    "catégorie": "Target Delivey Model",
+    "numéro": "R - 10",
+    "titre": "Governance",
+    "exigence": "The Service Provider must formally confirm adherence to the minimum governance structure outlined above. \n\nThis includes full participation in the required committees, delivery of agreed reporting, and implementation of escalation and communication processes as described.\n\nThe Service Provider will describe the different committees planned, specifying the participants, frequency, and deliverables with a RACI matrix."
+  },
+  {
+    "catégorie": "Target Delivey Model",
+    "numéro": "R - 11",
+    "titre": "Reporting",
+    "exigence": "The Service Provider shall define and implement a structured reporting approach to monitor the performance of Level 1 and Level 1.5 support activities. \n\nThis includes producing and sharing regular reports aligned with SLA and KPI requirements (please refer to corresponding sections), as well as ad hoc reports when needed, as listed previously and in accordance with reporting expectations mentioned. \n\nThe Service Provider shall also propose improvements to automate and optimize reporting processes. Examples of dashboards  must be included in the proposal."
+  },
+  {
+    "catégorie": "Target Delivey Model",
+    "numéro": "R - 12",
+    "titre": "Tooling",
+    "exigence": "The Service Provider must agree to use Accor’s accounts and tooling as the primary operational environment for support services.\n             •   The Service Provider is required to operate directly within the tools provided by Accor,\n             •   At a minimum, if direct usage is not feasible, the Service Provider must interface with Accor’s ServiceNow ITSM platform, and any other specified tools required for \n                  day-to-day support operations,\n             •   The Service Provider must ensure that all interactions (tickets, documentation, communication, reporting) are traceable and accessible within the Accor \n                   environment"
+  },
+  {
+    "catégorie": "Continuous Improvement, Innovation & Automation",
+    "numéro": "R - 13",
+    "titre": "Continuous Service  Improvement",
+    "exigence": "The Service Provider shall implement a proactive continuous improvement approach throughout the contract duration. \nThis includes, at minimum:\n             •   Regular analysis of performance indicators, incident root causes, and user feedback\n             •   Implementation of action plans regarding recurrent incidents\n             •   Identification and correction of process inefficiencies."
+  },
+  {
+    "catégorie": "Continuous Improvement, Innovation & Automation",
+    "numéro": "R - 14",
+    "titre": "Innovation and Automation",
+    "exigence": "The Service Provider shall remain up to date with relevant technological evolutions, industry best practices, and service enhancements that could improve the quality, maintainability, or cost-efficiency of support services delivered to Accor. \n\nThe Service Provider must demonstrate his expertise in automation and artificial intelligence (AI) tools applicable to service operations, including the use of generative AI to improve ticket handling, user experience, and support efficiency.\nDuring the contract duration, the Service Provider shall:\n             •   Identify and propose automation initiatives aimed at reducing the volume of low-value or repetitive tasks within the support scope.\n             •   Ensure that such initiatives generate measurable benefits in responsiveness, service quality, and/or cost-effectiveness.\n\nIn response to the RFP, the Service Provider must:\n             •   Describe in its proposal concrete use cases where AI and automation were successfully applied in similar contexts.\n             •   Share feedback and return on experience (REX) from those use cases, including demonstrated value.\n             •   Provide its AI roadmap regarding Application management services improvement."
+  },
+  {
+    "catégorie": "SLAs, KPIs & Performance Monitoring",
+    "numéro": "R - 15",
+    "titre": "Compliance with Service  Levels",
+    "exigence": "The Service Level Agreements Appendix (Appendix 3) summarizes all contractual SLAs. These SLAs represent the minimum expected service levels.\n\nThe Contractor must indicate their acceptance or rejection of each SLA requested by Accor within the Service Level Agreements Appendix (Appendix 3), provide comments to justify their position, and may propose their own standard SLAs as part of their response in the appendix."
+  },
+  {
+    "catégorie": "SLAs, KPIs & Performance Monitoring",
+    "numéro": "R - 16",
+    "titre": "Modification of  Service Levels",
+    "exigence": "The Service Level indicators expected Accor may evolve during the Contract execution, with the possibility for either the Service Provider or Accor to propose improvements to the Service Levels.\n\nHowever, such evolutions shall only result in enhanced service levels. The SLA levels defined in this RFP constitute a minimum baseline, and no degradation or reduction in service levels will be accepted."
+  },
+  {
+    "catégorie": "SLAs, KPIs & Performance Monitoring",
+    "numéro": "R - 17",
+    "titre": "Service Penalty Models",
+    "exigence": "A penalty system will be applied in case of SLA breaches to trigger corrective actions and ensure contractual performance. Distinct penalty models apply for incidents and service requests, as described previously. Penalties are summarized in the Service Level Agreements Appendix (Appendix 3).\n\nThe Service Provider shall detail in its response the processes and tools used to monitor SLA compliance and provide monthly performance reports."
+  },
+  {
+    "catégorie": "Transition & Reversibility",
+    "numéro": "R - 18",
+    "titre": "Transition",
+    "exigence": "The Service Provider shall propose a structured transition methodology to ensure a smooth and secure handover. This approach must cover all key steps expected by Accor: Assessment, Knowledge Transfer, Shadowing, Reverse Shadowing, Handover, and Sign-off. \n\nThe overall transition duration is expected to be 3 months.\n\nThe approach should include indicative timelines, required resources, and risk mitigation actions.\nA detailed Transition Plan will be validated by Accor and will serve as the execution and monitoring framework for this phase. An initial version of this plan may be included in the Service Provider’s response to the RFP. The awarded Service Provider will have to submit a detailed Transition Plan within 15 business days following the contract award.\n\nThe Service Provider must also provide details of the costs associated with each transition phase. These costs must cover all phases necessary to ensure a seamless handover of the support services."
+  },
+  {
+    "catégorie": "Transition & Reversibility",
+    "numéro": "R - 19",
+    "titre": "Risk Management",
+    "exigence": "The Service Provider must proactively manage risks to minimize disruptions during the transition phase. Therefore, the Service Provider must implement a comprehensive risk management approach throughout the transition phase to minimize operational disruptions. \nThis includes, at minimum:\n             •   Risk analysis and Mitigation\n             •   Contingency planning\n             •   Ongoing monitoring and reporting \n             \nThe approach shall ensure proactive identification and management of risks to support a smooth and controlled transition."
+  },
+  {
+    "catégorie": "Transition & Reversibility",
+    "numéro": "R - 20",
+    "titre": "Reversibility",
+    "exigence": "The Contractor shall detail the reversibility approach and associated activities in the proposal, including the pricing of the service. \n\nThe activities listed in the section below are presented as the minimum expected scope.\n\nThe Contractor commits to a reversibility period of up to six (6) months. This duration represents the maximum time allocated for the reversibility, and may be adjusted based on actual needs."
+  },
+  {
+    "catégorie": "Pricing Model",
+    "numéro": "R - 21",
+    "titre": "Objectives of the  Pricing Model",
+    "exigence": "The pricing model to be implemented must enable:\n             •   Cost Optimization and Predictability\n             •   Quality-driven Performance\n             •   Scalability and Flexibility\n\nThe Service Provider must propose a flexible and tailored pricing model, aligned with Accor’s specific needs, such as adjusting to workloads peaks, and the strategic objectives defined just above. The model should provide a transparent cost breakdown, detailing components such as human resources, support tools, training, knowledge base maintenance, and service management overhead.\n\nFurthermore, the model shall be subject to review and potential adjustment at the end of the first year of service, to ensure its continued alignment with observed activity levels, performance outcomes, and value expectations as defined in the economic model.\n\nPricing must account for the multi-regional nature of Accor operations and be presented in Euros (excl. VAT)."
+  },
+  {
+    "catégorie": "Pricing Model",
+    "numéro": "R - 22",
+    "titre": "Productivity Gains",
+    "exigence": "Outside of any modification to the scope of Services, the Services themselves, or the Service Levels, the conditions for service delivery depend on two main factors:\n             •   The expertise of the Service Provider,\n             •   The state of the technologies implemented.\n\nRegarding the first point, the development by the Service Provider of its expertise (technical level of personnel, mastery of Accor’s specific environment, improvement of the Service Provider’s internal methods and tools, industrialization, automation) is a contractual obligation. Accor will benefit from this in terms of service quality (e.g., reduction of backlog, reduction of resolution time, etc.). The Service Provider will benefit from productivity gains thus achieved in terms of financial results (reduction of FTEs, elimination of tickets, etc.).\n\nOver the contract duration, these gains shall be periodically assessed and reflected in the pricing model through cost reductions, even in the absence of changes to the service scope or levels.\n\nRegarding the second point, Accor and the Service Provider, within the framework of the committees:\n             •   Will analyze the effects on service delivery conditions of the implementation of innovation and automation projects,\n             •   Will agree on the cost consequences of the identified improvements to the services.\n\nOver the contract duration, the Service Provider shall document and present the effects of such improvements. A mutual agreement shall be reached on the financial translation of these benefits, to ensure fair and transparent cost evolution over the contract term."
+  }
+]
