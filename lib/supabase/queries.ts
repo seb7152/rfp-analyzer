@@ -551,7 +551,7 @@ export async function importSuppliers(
 /**
  * Calculate RFP completion percentage
  * Returns percentage of responses marked as checked (is_checked = true)
- * Only counts responses for leaf requirements (level 4)
+ * Only counts responses for leaf requirements (requirements without children)
  */
 export async function getRFPCompletionPercentage(
   rfpId: string,
@@ -577,21 +577,32 @@ export async function getRFPCompletionPercentage(
     requirement_id: string;
   }>;
 
-  // Filter to only include responses for level 4 requirements
-  const { data: leafRequirements, error: reqError } = await supabase
+  // Get all requirements to identify leaf nodes (requirements without children)
+  const { data: requirements, error: reqError } = await supabase
     .from("requirements")
-    .select("id")
-    .eq("rfp_id", rfpId)
-    .eq("level", 4);
+    .select("id, parent_id")
+    .eq("rfp_id", rfpId);
 
   if (reqError) {
-    console.error("Error fetching leaf requirements:", reqError);
+    console.error("Error fetching requirements:", reqError);
     throw new Error(
       `Failed to fetch requirements for completion: ${reqError.message}`,
     );
   }
 
-  const leafReqIds = new Set((leafRequirements || []).map((r: any) => r.id));
+  const allRequirements = (requirements || []) as Array<{
+    id: string;
+    parent_id: string | null;
+  }>;
+
+  // Identify leaf requirements (those that are not parents of other requirements)
+  const parentIds = new Set(
+    allRequirements.filter((r) => r.parent_id !== null).map((r) => r.parent_id),
+  );
+
+  const leafReqIds = new Set(
+    allRequirements.filter((r) => !parentIds.has(r.id)).map((r) => r.id),
+  );
 
   // Filter responses to only those for leaf requirements
   const leafResponses = responses.filter((r) =>
