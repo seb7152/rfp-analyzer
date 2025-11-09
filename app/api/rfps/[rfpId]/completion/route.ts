@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getRFPCompletionPercentage } from "@/lib/supabase/queries";
 
 /**
@@ -12,8 +12,7 @@ import { getRFPCompletionPercentage } from "@/lib/supabase/queries";
  *   - 200: { percentage: number (0-100) }
  *   - 400: Invalid RFP ID or missing parameters
  *   - 401: User not authenticated
- *   - 403: User does not have access to this RFP
- *   - 404: RFP not found
+ *   - 404: RFP not found (or no access)
  *   - 500: Server error
  */
 export async function GET(
@@ -24,61 +23,30 @@ export async function GET(
     const { rfpId } = params;
 
     if (!rfpId || typeof rfpId !== "string") {
-      return NextResponse.json(
-        { error: "Invalid RFP ID" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid RFP ID" }, { status: 400 });
     }
 
-    // Check authentication and access
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // Use server client with RLS - will automatically check user access
+    const supabase = await createServerClient();
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    // Verify user has access to this RFP
+    // Try to fetch the RFP - RLS will prevent access if user doesn't have permission
     const { data: rfp, error: rfpError } = await supabase
       .from("rfps")
-      .select("id, organization_id")
+      .select("id")
       .eq("id", rfpId)
       .single();
 
     if (rfpError || !rfp) {
       return NextResponse.json(
-        { error: "RFP not found" },
+        { error: "RFP not found or access denied" },
         { status: 404 },
-      );
-    }
-
-    // Check if user is in the organization
-    const { data: orgUser } = await supabase
-      .from("user_organization")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("organization_id", rfp.organization_id)
-      .single();
-
-    if (!orgUser) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 },
       );
     }
 
     // Get completion percentage
     const percentage = await getRFPCompletionPercentage(rfpId);
 
-    return NextResponse.json(
-      { percentage },
-      { status: 200 },
-    );
+    return NextResponse.json({ percentage }, { status: 200 });
   } catch (error) {
     console.error("Error getting RFP completion:", error);
     return NextResponse.json(
