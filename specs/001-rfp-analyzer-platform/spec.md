@@ -341,6 +341,31 @@ Users need to toggle between dark mode and light mode to match their environment
 
 ---
 
+### User Story 8 - Trigger AI Analysis for Supplier Responses (Priority: P2)
+
+Evaluators need to trigger AI analysis for supplier responses that were imported without AI scores, allowing on-demand analysis from within the application.
+
+**Why this priority**: While AI analysis can be done externally via N8N, providing in-app triggering improves workflow efficiency and reduces context switching. This is a productivity enhancement that doesn't block core evaluation functionality.
+
+**Independent Test**: From the RFP dashboard, select responses without AI analysis, click "Analyze with AI" action button, and verify that the analysis is queued. After processing, AI scores and commentary should appear in the comparison view. Delivers value through streamlined workflow.
+
+**Acceptance Scenarios**:
+
+1. **Given** an RFP has imported responses without AI analysis, **When** the evaluator views the dashboard table, **Then** they see an "Analyze with AI" action button for that RFP
+2. **Given** the evaluator clicks "Analyze with AI", **When** the analysis is triggered, **Then** the system sends a webhook to N8N with RFP and response IDs, and shows a "Processing..." status
+3. **Given** AI analysis is in progress, **When** the evaluator views responses, **Then** they see a loading indicator and can continue working on other requirements
+4. **Given** AI analysis completes, **When** the evaluator refreshes or returns to the responses, **Then** AI scores and commentary are displayed alongside manual evaluation fields
+5. **Given** some responses already have AI analysis, **When** triggering analysis, **Then** only responses without `ai_score` and `ai_comment` are processed (skip already analyzed)
+
+**Technical Approach**:
+- Dashboard action button triggers POST `/api/rfps/[rfpId]/analyze`
+- Backend webhook to N8N workflow with payload: `{ rfpId, responseIds[] }`
+- N8N processes each response and updates via PUT `/api/responses/[responseId]`
+- Real-time updates via polling or optimistic UI updates
+- Track analysis status in database (pending/processing/completed/failed)
+
+---
+
 ### Edge Cases
 
 - What happens when a requirement has zero supplier responses (no one bid on this requirement)?

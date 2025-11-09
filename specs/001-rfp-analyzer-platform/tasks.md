@@ -290,7 +290,60 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 ---
 
-## Phase 9: User Story 6 - View Requirement Context from RFP Document (Priority: P3)
+## Phase 9: User Story 8 - Trigger AI Analysis for Supplier Responses (Priority: P2)
+
+**Goal**: Enable evaluators to trigger AI analysis for supplier responses from the dashboard, processing responses that were imported without AI scores
+
+**Independent Test**: From RFP dashboard, click "Analyze with AI" action for an RFP with responses lacking AI analysis. Verify webhook is sent to N8N, status shows "Processing", and after completion, AI scores and commentary appear in comparison view.
+
+**⚠️ Prerequisites**: 
+- N8N webhook endpoint configured and accessible
+- Environment variable `N8N_WEBHOOK_URL` set in .env.local
+- Responses imported without `ai_score` and `ai_comment` for testing
+
+### AI Analysis API
+
+- [ ] T126 Create app/api/rfps/[rfpId]/analyze/route.ts POST endpoint to trigger AI analysis
+- [ ] T127 Implement response filtering to select only responses where ai_score IS NULL and ai_comment IS NULL
+- [ ] T128 Add validation to ensure user has evaluator/owner access to the RFP
+- [ ] T129 Create webhook payload with structure: { rfpId, responseIds[], callbackUrl }
+- [ ] T130 Send POST request to N8N_WEBHOOK_URL with response data and requirement context
+- [ ] T131 Add error handling for webhook failures with retry logic (max 3 attempts)
+- [ ] T132 Return analysis job status with responseIds being processed
+- [ ] T133 Create app/api/rfps/[rfpId]/analyze/status/route.ts GET endpoint for polling status
+
+### Analysis Status Tracking
+
+- [ ] T134 [P] Add analysis_status JSONB column to rfps table in new migration
+- [ ] T135 Store analysis metadata: { jobId, startedAt, completedAt, totalResponses, processedResponses, status }
+- [ ] T136 Update analysis_status when job starts (status: 'processing')
+- [ ] T137 Create endpoint to receive N8N callback updates via PUT /api/rfps/[rfpId]/analyze/callback
+- [ ] T138 Validate callback signature/token to prevent unauthorized updates
+- [ ] T139 Update analysis_status when job completes or fails
+
+### Dashboard UI Integration
+
+- [ ] T140 [P] [US8] Add "Analyze with AI" action button to RFP dashboard table
+- [ ] T141 [US8] Show button only for RFPs with responses lacking AI analysis
+- [ ] T142 [US8] Implement loading state with spinner when analysis is triggered
+- [ ] T143 [US8] Display processing status badge (e.g., "AI Analysis: 45/100 responses processed")
+- [ ] T144 [US8] Add success/error toast notifications for analysis completion
+- [ ] T145 [US8] Implement polling mechanism to refresh status every 5 seconds during processing
+- [ ] T146 [US8] Disable "Analyze with AI" button while analysis is in progress
+- [ ] T147 [US8] Add confirmation dialog: "Analyze X responses with AI? This may take several minutes."
+
+### Response View Updates
+
+- [ ] T148 [P] [US8] Show loading skeleton for AI score/comment while analysis is processing
+- [ ] T149 [US8] Display "AI analysis in progress..." message in SupplierResponseCard
+- [ ] T150 [US8] Auto-refresh responses when analysis status changes to completed
+- [ ] T151 [US8] Handle partial completion (some responses analyzed, others failed)
+
+**Checkpoint**: AI analysis can be triggered from dashboard - evaluators can process responses on-demand and see real-time progress
+
+---
+
+## Phase 10: User Story 6 - View Requirement Context from RFP Document (Priority: P3)
 
 **Goal**: Provide access to original RFP context explaining requirement background
 
@@ -298,19 +351,19 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 ### Context Display
 
-- [ ] T126 [P] [US6] Create components/ContextSection.tsx with collapsible header and content area
-- [ ] T127 [US6] Implement expand/collapse animation using Tailwind transitions
-- [ ] T128 [US6] Display context text with proper paragraph formatting (3-4 paragraphs)
-- [ ] T129 [US6] Add "Open in PDF" button linking to pdfUrl field from requirement data
-- [ ] T130 [US6] Handle missing context gracefully with "No context available" message
-- [ ] T131 [US6] Implement scroll-to-context behavior when expanding from collapsed state
-- [ ] T132 [US6] Store collapse/expand preference in local storage per user
+- [ ] T152 [P] [US6] Create components/ContextSection.tsx with collapsible header and content area
+- [ ] T153 [US6] Implement expand/collapse animation using Tailwind transitions
+- [ ] T154 [US6] Display context text with proper paragraph formatting (3-4 paragraphs)
+- [ ] T155 [US6] Add "Open in PDF" button linking to pdfUrl field from requirement data
+- [ ] T156 [US6] Handle missing context gracefully with "No context available" message
+- [ ] T157 [US6] Implement scroll-to-context behavior when expanding from collapsed state
+- [ ] T158 [US6] Store collapse/expand preference in local storage per user
 
 ### PDF Integration
 
-- [ ] T133 [US6] Add PDF URL validation and security check in requirement display logic
-- [ ] T134 [US6] Open PDF in new tab with proper window.open() configuration
-- [ ] T135 [US6] Handle missing pdfUrl by disabling "Open in PDF" button with tooltip
+- [ ] T159 [US6] Add PDF URL validation and security check in requirement display logic
+- [ ] T160 [US6] Open PDF in new tab with proper window.open() configuration
+- [ ] T161 [US6] Handle missing pdfUrl by disabling "Open in PDF" button with tooltip
 
 **Checkpoint**: Context feature complete - evaluators can access RFP background information when needed
 
@@ -324,22 +377,22 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 ### Theme Toggle Implementation
 
-- [ ] T136 [P] [US7] Create components/ThemeToggle.tsx with sun/moon icon button
-- [ ] T137 [US7] Integrate next-themes useTheme hook for theme state management
-- [ ] T138 [US7] Implement theme toggle handler switching between 'light' and 'dark' modes
-- [ ] T139 [US7] Add theme toggle button to Navbar component in top-right corner
-- [ ] T140 [US7] Persist theme preference to localStorage via next-themes
+- [ ] T162 [P] [US7] Create components/ThemeToggle.tsx with sun/moon icon button
+- [ ] T163 [US7] Integrate next-themes useTheme hook for theme state management
+- [ ] T164 [US7] Implement theme toggle handler switching between 'light' and 'dark' modes
+- [ ] T165 [US7] Add theme toggle button to Navbar component in top-right corner
+- [ ] T166 [US7] Persist theme preference to localStorage via next-themes
 
 ### Dark Mode Styling
 
-- [ ] T141 [P] [US7] Audit all components for dark: variant classes in Tailwind
-- [ ] T142 [US7] Update Sidebar with dark:bg-slate-900 for consistent dark appearance
-- [ ] T143 [US7] Update ComparisonView cards with dark:bg-slate-800 backgrounds
-- [ ] T144 [US7] Update RequirementHeader breadcrumb with dark mode text colors
-- [ ] T145 [US7] Update StatusSwitch badges with proper dark mode contrast
-- [ ] T146 [US7] Update all textareas and inputs with dark mode styling
-- [ ] T147 [US7] Verify dark mode contrast ratios meet WCAG AA standards (4.5:1 for text)
-- [ ] T148 [US7] Test theme switching with all UI components visible to catch edge cases
+- [ ] T167 [P] [US7] Audit all components for dark: variant classes in Tailwind
+- [ ] T168 [US7] Update Sidebar with dark:bg-slate-900 for consistent dark appearance
+- [ ] T169 [US7] Update ComparisonView cards with dark:bg-slate-800 backgrounds
+- [ ] T170 [US7] Update RequirementHeader breadcrumb with dark mode text colors
+- [ ] T171 [US7] Update StatusSwitch badges with proper dark mode contrast
+- [ ] T172 [US7] Update all textareas and inputs with dark mode styling
+- [ ] T173 [US7] Verify dark mode contrast ratios meet WCAG AA standards (4.5:1 for text)
+- [ ] T174 [US7] Test theme switching with all UI components visible to catch edge cases
 
 **Checkpoint**: Theme switching complete - application supports both light and dark modes throughout
 
@@ -353,18 +406,18 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 ### RFP Assignment API
 
-- [ ] T149 Create app/api/rfps/[rfpId]/assignments/route.ts with GET (list assignments) and POST (assign user)
-- [ ] T150 Create app/api/rfps/[rfpId]/assignments/[userId]/route.ts DELETE endpoint to remove assignment
-- [ ] T151 Add RLS policy check in assignments routes to verify requester is owner/admin
-- [ ] T152 Update app/api/rfps/route.ts GET to filter RFPs by user assignments via join query
+- [ ] T175 Create app/api/rfps/[rfpId]/assignments/route.ts with GET (list assignments) and POST (assign user)
+- [ ] T176 Create app/api/rfps/[rfpId]/assignments/[userId]/route.ts DELETE endpoint to remove assignment
+- [ ] T177 Add RLS policy check in assignments routes to verify requester is owner/admin
+- [ ] T178 Update app/api/rfps/route.ts GET to filter RFPs by user assignments via join query
 
 ### RFP Assignment UI
 
-- [ ] T153 [P] Create components/RFPAssignmentModal.tsx for assigning users to RFP
-- [ ] T154 Create components/RFPAssignmentList.tsx displaying current assignments with access levels
-- [ ] T155 Implement user search/select dropdown in RFPAssignmentModal with organization members
-- [ ] T156 Add access level selector (owner/evaluator/viewer) in RFPAssignmentModal
-- [ ] T157 Add "Manage Access" button to RFP dashboard for owners/admins
+- [ ] T179 [P] Create components/RFPAssignmentModal.tsx for assigning users to RFP
+- [ ] T180 Create components/RFPAssignmentList.tsx displaying current assignments with access levels
+- [ ] T181 Implement user search/select dropdown in RFPAssignmentModal with organization members
+- [ ] T182 Add access level selector (owner/evaluator/viewer) in RFPAssignmentModal
+- [ ] T183 Add "Manage Access" button to RFP dashboard for owners/admins
 - [ ] T158 Implement assignment creation with validation and error handling
 - [ ] T159 Implement assignment removal with confirmation dialog
 
