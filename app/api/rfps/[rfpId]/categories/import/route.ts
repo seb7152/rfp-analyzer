@@ -36,6 +36,7 @@ export async function POST(
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
+    // Normalize data (validator returns { categories: [...] })
     const data = validation.data as ImportCategoriesRequest;
 
     // Check user has access to RFP

@@ -31,7 +31,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertTriangle, CheckCircle2, Plus, Trash2, Copy } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Plus,
+  Trash2,
+  Copy,
+} from "lucide-react";
 
 interface ImportWithStepperProps {
   rfpId: string;
@@ -62,10 +69,14 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
   // Step 1: Structure
   const [categoriesJson, setCategoriesJson] = useState<string>("");
   const [categoriesValid, setCategoriesValid] = useState(false);
+  const [existingCategories, setExistingCategories] = useState<string[]>([]);
 
   // Step 2: Requirements
   const [requirementsJson, setRequirementsJson] = useState<string>("");
   const [requirementsValid, setRequirementsValid] = useState(false);
+  const [existingRequirements, setExistingRequirements] = useState<string[]>(
+    [],
+  );
 
   // Step 3: Suppliers
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -84,12 +95,72 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
   const [responsesImportedBySupplier, setResponsesImportedBySupplier] =
     useState<{ [key: string]: boolean }>({});
 
-  // Load existing suppliers when reaching step 3
+  // Load existing categories, requirements, and suppliers at appropriate steps
   useEffect(() => {
-    if (currentStep === 3) {
+    if (currentStep === 2) {
+      loadExistingCategories();
+    } else if (currentStep === 3) {
       loadExistingSuppliers();
+    } else if (currentStep === 4) {
+      loadExistingRequirements();
     }
   }, [currentStep]);
+
+  const loadExistingCategories = async () => {
+    try {
+      const response = await fetch(`/api/rfps/${rfpId}/tree`);
+      if (!response.ok) return;
+
+      const treeData = await response.json();
+      // Extract all category titles from the tree (including nested ones)
+      const titles: string[] = [];
+
+      const extractTitles = (nodes: any[]) => {
+        for (const node of nodes) {
+          if (node.type === "category") {
+            titles.push(node.title);
+            if (node.children) {
+              extractTitles(
+                node.children.filter((c: any) => c.type === "category"),
+              );
+            }
+          }
+        }
+      };
+
+      extractTitles(treeData);
+      setExistingCategories(titles);
+    } catch (err) {
+      console.error("Failed to load existing categories:", err);
+    }
+  };
+
+  const loadExistingRequirements = async () => {
+    try {
+      const response = await fetch(`/api/rfps/${rfpId}/tree`);
+      if (!response.ok) return;
+
+      const treeData = await response.json();
+      // Extract all requirement codes from the tree
+      const codes: string[] = [];
+
+      const extractRequirements = (nodes: any[]) => {
+        for (const node of nodes) {
+          if (node.type === "requirement") {
+            codes.push(node.code);
+          }
+          if (node.children) {
+            extractRequirements(node.children);
+          }
+        }
+      };
+
+      extractRequirements(treeData);
+      setExistingRequirements(codes);
+    } catch (err) {
+      console.error("Failed to load existing requirements:", err);
+    }
+  };
 
   const loadExistingSuppliers = async () => {
     try {
@@ -118,6 +189,18 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
     try {
       JSON.parse(json.trim());
       return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const validateRequirementsJSON = (json: string): boolean => {
+    if (json.trim() === "") return false;
+    try {
+      const data = JSON.parse(json.trim());
+      // Accept either direct array or { requirements: [...] }
+      const requirements = Array.isArray(data) ? data : data.requirements || [];
+      return Array.isArray(requirements) && requirements.length > 0;
     } catch {
       return false;
     }
@@ -377,10 +460,20 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
               <pre>
                 {`[
   {
+    "id": "DOM1",
     "code": "DOM1",
     "title": "Domaine 1",
     "short_name": "D1",
-    "level": 1
+    "level": 1,
+    "parent_id": null
+  },
+  {
+    "id": "DOM1.1",
+    "code": "DOM1.1",
+    "title": "Sous-domaine",
+    "short_name": "SD1",
+    "level": 2,
+    "parent_id": "DOM1"
   }
 ]`}
               </pre>
@@ -389,7 +482,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                 size="sm"
                 onClick={() =>
                   handleCopyExample(
-                    `[{"code":"DOM1","title":"Domaine 1","short_name":"D1","level":1}]`,
+                    `[{"id":"DOM1","code":"DOM1","title":"Domaine 1","short_name":"D1","level":1,"parent_id":null},{"id":"DOM1.1","code":"DOM1.1","title":"Sous-domaine","short_name":"SD1","level":2,"parent_id":"DOM1"}]`,
                   )
                 }
                 className="mt-2 text-xs"
@@ -438,7 +531,6 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                       <TableRow className="bg-slate-50 dark:bg-slate-900">
                         <TableHead>Code</TableHead>
                         <TableHead>Titre</TableHead>
-                        <TableHead>Nom court</TableHead>
                         <TableHead className="text-right">Niveau</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -451,8 +543,8 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                               category: {
                                 code: string;
                                 title: string;
-                                short_name?: string;
                                 level: number;
+                                order?: number;
                               },
                               idx: number,
                             ) => (
@@ -461,15 +553,16 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                   {category.code}
                                 </TableCell>
                                 <TableCell className="font-medium">
-                                  {category.title}
-                                </TableCell>
-                                <TableCell className="text-sm text-slate-600 dark:text-slate-400">
-                                  {category.short_name || "—"}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <span className="inline-flex items-center gap-1 text-sm">
-                                    {category.level}
+                                  <span
+                                    style={{
+                                      paddingLeft: `${(category.level - 1) * 1.25}rem`,
+                                    }}
+                                  >
+                                    {category.title}
                                   </span>
+                                </TableCell>
+                                <TableCell className="text-right text-sm">
+                                  {category.level}
                                 </TableCell>
                               </TableRow>
                             ),
@@ -527,8 +620,14 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
   {
     "code": "REQ001",
     "title": "Exigence 1",
-    "weight": 100,
-    "category_name": "DOM1"
+    "weight": 0.8,
+    "category_name": "Functionnal requirements"
+  },
+  {
+    "code": "REQ002",
+    "title": "Exigence 2",
+    "weight": 0.6,
+    "category_name": "Required solution capabilities"
   }
 ]`}
               </pre>
@@ -537,7 +636,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                 size="sm"
                 onClick={() =>
                   handleCopyExample(
-                    `[{"code":"REQ001","title":"Exigence 1","weight":100,"category_name":"DOM1"}]`,
+                    `[{"code":"REQ001","title":"Exigence 1","weight":0.8,"category_name":"Functionnal requirements"},{"code":"REQ002","title":"Exigence 2","weight":0.6,"category_name":"Required solution capabilities"}]`,
                   )
                 }
                 className="mt-2 text-xs"
@@ -549,13 +648,12 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
 
             <CodeEditor
               value={requirementsJson}
-              onChange={(e) =>
-                handleJsonChange(
-                  e.target.value,
-                  setRequirementsJson,
-                  setRequirementsValid,
-                )
-              }
+              onChange={(e) => {
+                setRequirementsJson(e.target.value);
+                setRequirementsValid(validateRequirementsJSON(e.target.value));
+                setError(null);
+                setSuccess(null);
+              }}
               language="json"
               placeholder="Collez votre JSON ici..."
               style={{
@@ -573,7 +671,11 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                   Aperçu (
                   {(() => {
                     try {
-                      return JSON.parse(requirementsJson.trim()).length;
+                      const data = JSON.parse(requirementsJson.trim());
+                      const requirements = Array.isArray(data)
+                        ? data
+                        : data.requirements || [];
+                      return requirements.length;
                     } catch {
                       return 0;
                     }
@@ -593,9 +695,11 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                     <TableBody>
                       {(() => {
                         try {
-                          const requirements = JSON.parse(
-                            requirementsJson.trim(),
-                          );
+                          const data = JSON.parse(requirementsJson.trim());
+                          // Normalize: accept either direct array or { requirements: [...] }
+                          const requirements = Array.isArray(data)
+                            ? data
+                            : data.requirements || [];
                           return requirements.map(
                             (
                               requirement: {
@@ -605,24 +709,37 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                 weight: number;
                               },
                               idx: number,
-                            ) => (
-                              <TableRow key={idx}>
-                                <TableCell className="font-mono text-xs">
-                                  {requirement.code}
-                                </TableCell>
-                                <TableCell className="font-medium">
-                                  {requirement.title}
-                                </TableCell>
-                                <TableCell className="text-sm text-slate-600 dark:text-slate-400">
-                                  {requirement.category_name}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <span className="inline-flex items-center gap-1 text-sm">
-                                    {requirement.weight}
-                                  </span>
-                                </TableCell>
-                              </TableRow>
-                            ),
+                            ) => {
+                              const categoryExists =
+                                existingCategories.includes(
+                                  requirement.category_name,
+                                );
+                              return (
+                                <TableRow key={idx}>
+                                  <TableCell className="font-mono text-xs">
+                                    {requirement.code}
+                                  </TableCell>
+                                  <TableCell className="font-medium">
+                                    {requirement.title}
+                                  </TableCell>
+                                  <TableCell className="text-sm text-slate-600 dark:text-slate-400">
+                                    <div className="flex items-center gap-2">
+                                      <span>{requirement.category_name}</span>
+                                      {categoryExists ? (
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                                      ) : (
+                                        <XCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <span className="inline-flex items-center gap-1 text-sm">
+                                      {requirement.weight}
+                                    </span>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            },
                           );
                         } catch {
                           return null;
@@ -943,7 +1060,11 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                               Aperçu (
                               {(() => {
                                 try {
-                                  return JSON.parse(json.trim()).length;
+                                  const data = JSON.parse(json.trim());
+                                  const responses = Array.isArray(data)
+                                    ? data
+                                    : data.responses || [];
+                                  return responses.length;
                                 } catch {
                                   return 0;
                                 }
@@ -964,7 +1085,10 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                 <TableBody>
                                   {(() => {
                                     try {
-                                      const responses = JSON.parse(json.trim());
+                                      const data = JSON.parse(json.trim());
+                                      const responses = Array.isArray(data)
+                                        ? data
+                                        : data.responses || [];
                                       return responses.map(
                                         (
                                           response: {
@@ -973,34 +1097,51 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                             ai_score?: number;
                                           },
                                           idx: number,
-                                        ) => (
-                                          <TableRow key={idx}>
-                                            <TableCell className="font-mono text-xs">
-                                              {response.requirement_id_external}
-                                            </TableCell>
-                                            <TableCell className="text-sm text-slate-600 dark:text-slate-400 truncate max-w-xs">
-                                              {response.response_text?.substring(
-                                                0,
-                                                50,
-                                              )}
-                                              {response.response_text?.length >
-                                              50
-                                                ? "..."
-                                                : ""}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                              {response.ai_score ? (
-                                                <span className="inline-flex items-center gap-1 text-sm font-semibold">
-                                                  {response.ai_score}/5
-                                                </span>
-                                              ) : (
-                                                <span className="text-slate-400">
-                                                  —
-                                                </span>
-                                              )}
-                                            </TableCell>
-                                          </TableRow>
-                                        ),
+                                        ) => {
+                                          const requirementExists =
+                                            existingRequirements.includes(
+                                              response.requirement_id_external,
+                                            );
+                                          return (
+                                            <TableRow key={idx}>
+                                              <TableCell className="font-mono text-xs">
+                                                <div className="flex items-center gap-2">
+                                                  <span>
+                                                    {
+                                                      response.requirement_id_external
+                                                    }
+                                                  </span>
+                                                  {requirementExists ? (
+                                                    <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                                                  ) : (
+                                                    <XCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+                                                  )}
+                                                </div>
+                                              </TableCell>
+                                              <TableCell className="text-sm text-slate-600 dark:text-slate-400 truncate max-w-xs">
+                                                {response.response_text?.substring(
+                                                  0,
+                                                  50,
+                                                )}
+                                                {response.response_text
+                                                  ?.length > 50
+                                                  ? "..."
+                                                  : ""}
+                                              </TableCell>
+                                              <TableCell className="text-right">
+                                                {response.ai_score ? (
+                                                  <span className="inline-flex items-center gap-1 text-sm font-semibold">
+                                                    {response.ai_score}/5
+                                                  </span>
+                                                ) : (
+                                                  <span className="text-slate-400">
+                                                    —
+                                                  </span>
+                                                )}
+                                              </TableCell>
+                                            </TableRow>
+                                          );
+                                        },
                                       );
                                     } catch {
                                       return null;

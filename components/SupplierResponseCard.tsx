@@ -9,6 +9,8 @@ import {
   Copy,
   Zap,
   Clock,
+  Check,
+  Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,11 +32,15 @@ export interface SupplierResponseCardProps {
   manualScore?: number;
   manualComment?: string;
   questionText?: string;
+  isSaving?: boolean;
+  showSaved?: boolean;
   onStatusChange?: (status: "pending" | "pass" | "partial" | "fail") => void;
   onCheckChange?: (checked: boolean) => void;
   onScoreChange?: (score: number) => void;
   onCommentChange?: (comment: string) => void;
   onQuestionChange?: (question: string) => void;
+  onCommentBlur?: () => void;
+  onQuestionBlur?: () => void;
   isExpanded?: boolean;
   onExpandChange?: (expanded: boolean) => void;
 }
@@ -51,11 +57,15 @@ export function SupplierResponseCard({
   manualScore,
   manualComment = "",
   questionText = "",
+  isSaving = false,
+  showSaved = false,
   onStatusChange,
   onCheckChange,
   onScoreChange,
   onCommentChange,
   onQuestionChange,
+  onCommentBlur,
+  onQuestionBlur,
   isExpanded = false,
   onExpandChange,
 }: SupplierResponseCardProps) {
@@ -128,22 +138,26 @@ export function SupplierResponseCard({
           {responseText}
         </div>
 
-        {/* Manual score (interactive stars) */}
-        <div className="flex-shrink-0">
+        {/* Final score - prominently displayed with manual score (interactive stars) */}
+        <div className="flex-shrink-0 flex flex-col items-end gap-1">
           <StarRating
             score={manualScore ?? 0}
             interactive={true}
             onScoreChange={onScoreChange}
             size="md"
             showLabel={true}
+            isManual={manualScore !== undefined && manualScore !== null}
           />
-        </div>
-
-        {/* AI score badge */}
-        <div className="flex-shrink-0 w-20">
-          <Badge variant="secondary" className="px-2 py-1 text-xs whitespace-nowrap">
-            IA: {aiScore}/5
-          </Badge>
+          {/* Show which score is being displayed */}
+          {manualScore !== undefined && manualScore !== null ? (
+            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+              Score manuel
+            </span>
+          ) : (
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              Score IA: {aiScore}/5
+            </span>
+          )}
         </div>
 
         {/* Status badge - right side */}
@@ -215,12 +229,28 @@ export function SupplierResponseCard({
           {/* Bottom: Reviewer comments (full width) */}
           <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
             <div>
-              <div className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
-                Votre commentaire
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                  Votre commentaire
+                </span>
+                {/* Save status indicator */}
+                {isSaving && (
+                  <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Enregistrement...
+                  </span>
+                )}
+                {showSaved && !isSaving && (
+                  <span className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 animate-in fade-in duration-200">
+                    <Check className="w-3 h-3" />
+                    Enregistré
+                  </span>
+                )}
               </div>
               <Textarea
                 value={manualComment}
                 onChange={(e) => onCommentChange?.(e.target.value)}
+                onBlur={() => onCommentBlur?.()}
                 placeholder="Ajoutez vos observations..."
                 className="text-sm h-24"
               />
@@ -233,6 +263,7 @@ export function SupplierResponseCard({
               <Textarea
                 value={questionText}
                 onChange={(e) => onQuestionChange?.(e.target.value)}
+                onBlur={() => onQuestionBlur?.()}
                 placeholder="Posez vos questions..."
                 className="text-sm h-24"
               />

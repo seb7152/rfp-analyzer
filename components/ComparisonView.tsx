@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback, useRef } from "react";
 import {
   ChevronRight,
   ChevronLeft,
@@ -35,6 +35,7 @@ import {
   useRequirementsTree,
 } from "@/hooks/use-requirements";
 import { useResponses } from "@/hooks/use-responses";
+import { useResponseMutation } from "@/hooks/use-response-mutation";
 import type { TreeNode } from "@/hooks/use-requirements";
 import {
   Requirement,
@@ -58,6 +59,8 @@ interface ResponseState {
     isChecked: boolean;
     manualComment: string;
     question: string;
+    isSaving: boolean;
+    showSaved: boolean;
   };
 }
 
@@ -72,6 +75,12 @@ export function ComparisonView({
   const [contextExpanded, setContextExpanded] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [responseStates, setResponseStates] = useState<ResponseState>({});
+
+  // Initialize mutation hook for persisting changes
+  const mutation = useResponseMutation();
+
+  // Timers for hiding "Saved" indicator
+  const savedTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
   // Fetch the tree to determine if selected item is a category
   const { tree } = useRequirementsTree(rfpId || null);
@@ -189,7 +198,9 @@ export function ComparisonView({
   const updateResponseState = (
     responseId: string,
     updates: Partial<ResponseState[string]>,
+    immediate: boolean = false,
   ) => {
+    // Update local state immediately for UI responsiveness
     setResponseStates((prev) => ({
       ...prev,
       [responseId]: {
@@ -197,6 +208,92 @@ export function ComparisonView({
         ...updates,
       },
     }));
+
+    // Persist to database (optimistic update handled by mutation hook)
+    const dbUpdates: Record<string, any> = {};
+    if (updates.manualScore !== undefined)
+      dbUpdates.manual_score = updates.manualScore;
+    if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if (updates.isChecked !== undefined)
+      dbUpdates.is_checked = updates.isChecked;
+    if (updates.manualComment !== undefined)
+      dbUpdates.manual_comment = updates.manualComment;
+    if (updates.question !== undefined) dbUpdates.question = updates.question;
+
+    // Only call mutation if we have actual DB fields to update
+    if (Object.keys(dbUpdates).length > 0) {
+      // Check if this update includes comment fields
+      const isCommentUpdate =
+        updates.manualComment !== undefined || updates.question !== undefined;
+
+      // For comment fields, only save on blur (immediate flag)
+      // For other fields (score, status, checkbox), save immediately
+      if (isCommentUpdate && !immediate) {
+        // Don't save on onChange for comments, wait for blur
+        return;
+      } else {
+        // Immediate update for:
+        // - non-comment fields (score, status, checkbox)
+        // - comment fields with immediate flag (onBlur)
+
+        // Show saving indicator when API call starts
+        setResponseStates((prev) => ({
+          ...prev,
+          [responseId]: {
+            ...prev[responseId],
+            isSaving: true,
+          },
+        }));
+
+        mutation.mutate(
+          {
+            responseId,
+            ...dbUpdates,
+          },
+          {
+            onSuccess: () => {
+              // Show "Saved" indicator
+              setResponseStates((prev) => ({
+                ...prev,
+                [responseId]: {
+                  ...prev[responseId],
+                  isSaving: false,
+                  showSaved: true,
+                },
+              }));
+
+              // Clear existing timer
+              if (savedTimers.current[responseId]) {
+                clearTimeout(savedTimers.current[responseId]);
+              }
+
+              // Hide "Saved" after 2 seconds
+              savedTimers.current[responseId] = setTimeout(() => {
+                setResponseStates((prev) => ({
+                  ...prev,
+                  [responseId]: {
+                    ...prev[responseId],
+                    showSaved: false,
+                  },
+                }));
+                delete savedTimers.current[responseId];
+              }, 2000);
+            },
+            onError: () => {
+              // Hide saving indicator on error
+              setResponseStates((prev) => ({
+                ...prev,
+                [responseId]: {
+                  ...prev[responseId],
+                  isSaving: false,
+                  showSaved: false,
+                },
+              }));
+            },
+          },
+        );
+      }
+    }
   };
 
   // Check if all responses for current requirement are checked
@@ -537,8 +634,10 @@ export function ComparisonView({
                     manualScore: response.manual_score || 0,
                     status: (response.status || "pending") as const,
                     isChecked: response.is_checked || false,
-                    manualComment: "",
-                    question: "",
+                    manualComment: response.manual_comment || "",
+                    question: response.question || "",
+                    isSaving: false,
+                    showSaved: false,
                   };
 
                   return (
@@ -553,10 +652,10 @@ export function ComparisonView({
                       status={state.status}
                       isChecked={state.isChecked}
                       manualScore={state.manualScore}
-                      manualComment={
-                        response.manual_comment || state.manualComment
-                      }
-                      questionText={response.question || state.question}
+                      manualComment={state.manualComment}
+                      questionText={state.question}
+                      isSaving={state.isSaving}
+                      showSaved={state.showSaved}
                       isExpanded={state.expanded}
                       onExpandChange={(expanded) =>
                         updateResponseState(response.id, { expanded })
@@ -575,6 +674,20 @@ export function ComparisonView({
                       }
                       onQuestionChange={(question) =>
                         updateResponseState(response.id, { question })
+                      }
+                      onCommentBlur={() =>
+                        updateResponseState(
+                          response.id,
+                          { manualComment: state.manualComment },
+                          true,
+                        )
+                      }
+                      onQuestionBlur={() =>
+                        updateResponseState(
+                          response.id,
+                          { question: state.question },
+                          true,
+                        )
                       }
                     />
                   );

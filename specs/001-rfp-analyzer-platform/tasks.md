@@ -199,43 +199,43 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 ### Response Update API
 
-- [ ] T081 Create app/api/responses/[responseId]/route.ts PUT endpoint accepting ResponseUpdate payload
-- [ ] T082 Implement validation in PUT route for score (0-5), status enum, and required fields
-- [ ] T083 Add RLS policy check in PUT route to ensure user has evaluator/owner access to the RFP
-- [ ] T084 Update last_modified_by field with current user ID in PUT route
-- [ ] T085 Create hooks/use-response-mutation.ts with React Query useMutation for optimistic updates
+- [x] T081 Create app/api/responses/[responseId]/route.ts PUT endpoint accepting ResponseUpdate payload
+- [x] T082 Implement validation in PUT route for score (0-5), status enum, and required fields
+- [x] T083 Add RLS policy check in PUT route to ensure user has evaluator/owner access to the RFP
+- [x] T084 Update last_modified_by field with current user ID in PUT route
+- [x] T085 Create hooks/use-response-mutation.ts with React Query useMutation for optimistic updates
 
 ### Manual Scoring UI
 
-- [ ] T086 [P] [US3] Enhance components/StarRating.tsx to support interactive mode for manual scoring
-- [ ] T087 [US3] Implement click handler on stars to set manual score (1-5) with visual feedback
-- [ ] T088 [US3] Add "click again to reset" behavior when clicking currently selected star
-- [ ] T089 [US3] Display manual score as "X/5" with distinct styling from AI score
-- [ ] T090 [US3] Show final score (manual if set, else AI) prominently in SupplierResponseCard
+- [x] T086 [P] [US3] Enhance components/StarRating.tsx to support interactive mode for manual scoring
+- [x] T087 [US3] Implement click handler on stars to set manual score (1-5) with visual feedback
+- [x] T088 [US3] Add "click again to reset" behavior when clicking currently selected star
+- [x] T089 [US3] Display manual score as "X/5" with distinct styling from AI score
+- [x] T090 [US3] Show final score (manual if set, else AI) prominently in SupplierResponseCard
 
 ### Status & Completion Controls
 
-- [ ] T091 [P] [US3] Create components/StatusSwitch.tsx using ToggleGroup with 4 options (Pending/Pass/Partial/Fail)
-- [ ] T092 [US3] Add semantic icons to StatusSwitch (Clock, CheckCircle, Zap, XCircle) using Lucide React
-- [ ] T093 [US3] Implement color coding for each status (gray, green, blue, red) with dark mode support
-- [ ] T094 [US3] Add response completion checkbox to SupplierResponseCard header
-- [ ] T095 [P] [US3] Create components/RoundCheckbox.tsx with custom round styling and dashed border
-- [ ] T096 [US3] Implement auto-check behavior: when status changes to non-Pending, check the checkbox automatically
-- [ ] T097 [US3] Update requirement completion badge in RequirementHeader when all responses checked
+- [x] T091 [P] [US3] Create components/StatusSwitch.tsx using ToggleGroup with 4 options (Pending/Pass/Partial/Fail)
+- [x] T092 [US3] Add semantic icons to StatusSwitch (Clock, CheckCircle, Zap, XCircle) using Lucide React
+- [x] T093 [US3] Implement color coding for each status (gray, green, blue, red) with dark mode support
+- [x] T094 [US3] Add response completion checkbox to SupplierResponseCard header
+- [x] T095 [P] [US3] Create components/RoundCheckbox.tsx with custom round styling and dashed border
+- [x] T096 [US3] Implement auto-check behavior: when status changes to non-Pending, check the checkbox automatically
+- [x] T097 [US3] Update requirement completion badge in RequirementHeader when all responses checked
 
 ### Comment Fields
 
-- [ ] T098 [P] [US3] Add "Your Comment" textarea to expanded SupplierResponseCard view
-- [ ] T099 [P] [US3] Add "Questions / Doubts" textarea to expanded SupplierResponseCard view
-- [ ] T100 [US3] Implement auto-save debounced (500ms) for textarea changes using React hooks
+- [x] T098 [P] [US3] Add "Your Comment" textarea to expanded SupplierResponseCard view
+- [x] T099 [P] [US3] Add "Questions / Doubts" textarea to expanded SupplierResponseCard view
+- [x] T100 [US3] Implement save on blur for textarea changes using React hooks
 - [ ] T101 [US3] Add character count indicator to textareas if length > 500 characters
 
 ### Persistence & Optimistic Updates
 
-- [ ] T102 [US3] Implement optimistic UI updates in use-response-mutation for instant feedback
-- [ ] T103 [US3] Add error handling and rollback logic if API call fails
+- [x] T102 [US3] Implement optimistic UI updates in use-response-mutation for instant feedback
+- [x] T103 [US3] Add error handling and rollback logic if API call fails
 - [ ] T104 [US3] Show toast notification on successful save and error states
-- [ ] T105 [US3] Verify data persistence by navigating away and returning to requirement
+- [x] T105 [US3] Verify data persistence by navigating away and returning to requirement
 
 **Checkpoint**: MVP is COMPLETE - users can view requirements, compare responses, and perform full evaluation workflow
 
@@ -296,7 +296,7 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 **Independent Test**: From RFP dashboard, click "Analyze with AI" action for an RFP with responses lacking AI analysis. Verify webhook is sent to N8N, status shows "Processing", and after completion, AI scores and commentary appear in comparison view.
 
-**⚠️ Prerequisites**: 
+**⚠️ Prerequisites**:
 - N8N webhook endpoint configured and accessible
 - Environment variable `N8N_WEBHOOK_URL` set in .env.local
 - Responses imported without `ai_score` and `ai_comment` for testing

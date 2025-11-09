@@ -45,9 +45,16 @@ export function validateCategoriesRequest(
 
   const req = data as Record<string, unknown>;
 
-  if (!Array.isArray(req.categories)) return false;
+  // Accept either direct array or wrapped in categories object
+  const categoriesArray = Array.isArray(req)
+    ? (req as unknown[])
+    : Array.isArray(req.categories)
+      ? req.categories
+      : null;
 
-  return req.categories.every(validateCategoryPayload);
+  return (
+    categoriesArray !== null && categoriesArray.every(validateCategoryPayload)
+  );
 }
 
 export function validateCategoriesJSON(jsonString: string): {
@@ -58,7 +65,12 @@ export function validateCategoriesJSON(jsonString: string): {
   try {
     const data = JSON.parse(jsonString);
 
-    if (!validateCategoriesRequest(data)) {
+    // Normalize to { categories: [...] } format
+    const normalizedData: ImportCategoriesRequest = Array.isArray(data)
+      ? { categories: data }
+      : data;
+
+    if (!validateCategoriesRequest(normalizedData)) {
       return {
         valid: false,
         error:
@@ -67,9 +79,9 @@ export function validateCategoriesJSON(jsonString: string): {
     }
 
     // Additional validation: check parent_id references
-    const categoryIds = new Set(data.categories.map((c) => c.id));
+    const categoryIds = new Set(normalizedData.categories.map((c) => c.id));
 
-    for (const category of data.categories) {
+    for (const category of normalizedData.categories) {
       if (category.parent_id && !categoryIds.has(category.parent_id)) {
         return {
           valid: false,
@@ -93,7 +105,7 @@ export function validateCategoriesJSON(jsonString: string): {
       }
     }
 
-    return { valid: true, data };
+    return { valid: true, data: normalizedData };
   } catch (error) {
     return {
       valid: false,
@@ -154,9 +166,16 @@ export function validateRequirementsRequest(
 
   const req = data as Record<string, unknown>;
 
+  // Accept either direct array or wrapped in requirements object
+  const requirementsArray = Array.isArray(req)
+    ? (req as unknown[])
+    : Array.isArray(req.requirements)
+      ? req.requirements
+      : null;
+
   const hasValidRequirements =
-    Array.isArray(req.requirements) &&
-    req.requirements.every(validateRequirementPayload);
+    requirementsArray !== null &&
+    requirementsArray.every(validateRequirementPayload);
 
   const hasValidSuppliers =
     req.suppliers === undefined ||
@@ -177,27 +196,32 @@ export function validateRequirementsJSON(
   try {
     const data = JSON.parse(jsonString);
 
-    if (!validateRequirementsRequest(data)) {
+    // Normalize to { requirements: [...] } format
+    const normalizedData: ImportRequirementsRequest = Array.isArray(data)
+      ? { requirements: data }
+      : data;
+
+    if (!validateRequirementsRequest(normalizedData)) {
       return {
         valid: false,
         error:
-          "Invalid requirements format. Check required fields: id, title, weight (0-1), category_name. Optional: code, description, suppliers array",
+          "Invalid requirements format. Check required fields: code, title, weight (0-1), category_name. Optional: id, description",
       };
     }
 
     // Check that all referenced categories exist
     const categorySet = new Set(availableCategories);
 
-    for (const requirement of data.requirements) {
+    for (const requirement of normalizedData.requirements) {
       if (!categorySet.has(requirement.category_name)) {
         return {
           valid: false,
-          error: `Requirement "${requirement.id}" references non-existent category "${requirement.category_name}"`,
+          error: `Requirement "${requirement.code}" references non-existent category "${requirement.category_name}"`,
         };
       }
     }
 
-    return { valid: true, data };
+    return { valid: true, data: normalizedData };
   } catch (error) {
     return {
       valid: false,

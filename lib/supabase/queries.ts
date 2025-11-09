@@ -308,6 +308,7 @@ export async function importCategories(
     short_name: string;
     level: number;
     parent_id?: string;
+    order?: number;
   }>,
   userId: string,
 ): Promise<{ success: boolean; count: number; error?: string }> {
@@ -320,12 +321,19 @@ export async function importCategories(
     // Sort categories by level to ensure parents are created first
     const sorted = [...categories].sort((a, b) => a.level - b.level);
 
+    // Auto-increment order for categories without explicit order
+    let currentOrder = 1;
+
     for (const category of sorted) {
       let parentId: string | null = null;
 
       if (category.parent_id && idMapping[category.parent_id]) {
         parentId = idMapping[category.parent_id];
       }
+
+      // Use explicit order if provided, otherwise auto-increment
+      const displayOrder =
+        category.order !== undefined ? category.order : currentOrder;
 
       const { data, error } = await supabase
         .from("categories")
@@ -338,6 +346,7 @@ export async function importCategories(
               short_name: category.short_name,
               level: category.level,
               parent_id: parentId,
+              display_order: displayOrder,
               created_by: userId,
             },
           ],
@@ -355,6 +364,11 @@ export async function importCategories(
       }
 
       idMapping[category.id] = data.id;
+
+      // Only increment if using auto-increment
+      if (category.order === undefined) {
+        currentOrder++;
+      }
     }
 
     return { success: true, count: categories.length };
@@ -402,6 +416,7 @@ export async function importRequirements(
     description?: string;
     weight: number;
     category_name: string;
+    order?: number;
   }>,
   userId: string,
 ): Promise<{ success: boolean; count: number; error?: string }> {
@@ -422,6 +437,8 @@ export async function importRequirements(
       (categories || []).map((c) => [c.title, c.id]),
     );
 
+    // Auto-increment order for requirements without explicit order
+    let currentOrder = 1;
     let upsertedCount = 0;
 
     for (const req of requirements) {
@@ -434,6 +451,9 @@ export async function importRequirements(
         continue;
       }
 
+      // Use explicit order if provided, otherwise auto-increment
+      const displayOrder = req.order !== undefined ? req.order : currentOrder;
+
       const { error } = await supabase.from("requirements").upsert(
         [
           {
@@ -444,6 +464,7 @@ export async function importRequirements(
             weight: req.weight,
             category_id: categoryId,
             level: 4, // Requirements are always level 4
+            display_order: displayOrder,
             created_by: userId,
           },
         ],
@@ -460,6 +481,11 @@ export async function importRequirements(
       }
 
       upsertedCount++;
+
+      // Only increment if using auto-increment
+      if (req.order === undefined) {
+        currentOrder++;
+      }
     }
 
     return { success: true, count: upsertedCount };

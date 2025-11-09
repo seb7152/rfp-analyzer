@@ -117,8 +117,38 @@ export async function GET(
       );
     }
 
-    // Fetch requirements for this category with their status
-    // We need to aggregate the status from all supplier responses
+    // Get all descendant categories (if current category is a parent)
+    const { data: allCategories, error: allCategoriesError } = await supabase
+      .from("categories")
+      .select("id, parent_id")
+      .eq("rfp_id", rfpId);
+
+    if (allCategoriesError) {
+      console.error("Error fetching all categories:", allCategoriesError);
+      return NextResponse.json(
+        { error: "Failed to fetch categories" },
+        { status: 500 },
+      );
+    }
+
+    // Build a map to find all descendants
+    const getDescendantIds = (parentId: string): string[] => {
+      const descendants: string[] = [parentId];
+      const findChildren = (id: string) => {
+        (allCategories || []).forEach((cat: any) => {
+          if (cat.parent_id === id) {
+            descendants.push(cat.id);
+            findChildren(cat.id);
+          }
+        });
+      };
+      findChildren(parentId);
+      return descendants;
+    };
+
+    const descendantCategoryIds = getDescendantIds(categoryId);
+
+    // Fetch requirements for this category and all descendants with their status
     const { data: requirements, error: requirementsError } = await supabase
       .from("requirements")
       .select(
@@ -127,6 +157,7 @@ export async function GET(
         requirement_id_external,
         title,
         description,
+        category_id,
         responses (
           status,
           is_checked
@@ -134,7 +165,7 @@ export async function GET(
       `,
       )
       .eq("rfp_id", rfpId)
-      .eq("category_id", categoryId)
+      .in("category_id", descendantCategoryIds)
       .order("requirement_id_external");
 
     if (requirementsError) {
@@ -145,7 +176,7 @@ export async function GET(
       );
     }
 
-    // Calculate overall status for each requirement
+    // Calculate treatment status for each requirement (based on is_checked)
     const requirementsWithStatus = requirements.map((req: any) => {
       const responses = req.responses || [];
 
@@ -160,10 +191,12 @@ export async function GET(
         };
       }
 
-      // Check if all responses are checked
-      const allChecked = responses.every((r: any) => r.is_checked);
+      // Check how many responses are checked
+      const checkedCount = responses.filter((r: any) => r.is_checked).length;
+      const totalCount = responses.length;
 
-      if (!allChecked) {
+      if (checkedCount === 0) {
+        // No responses checked
         return {
           id: req.id,
           requirement_id_external: req.requirement_id_external,
@@ -171,33 +204,25 @@ export async function GET(
           description: req.description,
           status: "pending" as const,
         };
+      } else if (checkedCount === totalCount) {
+        // All responses checked
+        return {
+          id: req.id,
+          requirement_id_external: req.requirement_id_external,
+          title: req.title,
+          description: req.description,
+          status: "pass" as const,
+        };
+      } else {
+        // Some responses checked, some not
+        return {
+          id: req.id,
+          requirement_id_external: req.requirement_id_external,
+          title: req.title,
+          description: req.description,
+          status: "partial" as const,
+        };
       }
-
-      // If all checked, determine overall status
-      const statuses = responses.map((r: any) => r.status);
-      const hasPass = statuses.includes("pass");
-      const hasFail = statuses.includes("fail");
-      const hasPartial = statuses.includes("partial");
-
-      let overallStatus: "pass" | "partial" | "fail" | "pending" = "pending";
-
-      if (statuses.every((s) => s === "pass")) {
-        overallStatus = "pass";
-      } else if (hasFail) {
-        overallStatus = "fail";
-      } else if (hasPartial) {
-        overallStatus = "partial";
-      } else if (hasPass) {
-        overallStatus = "partial";
-      }
-
-      return {
-        id: req.id,
-        requirement_id_external: req.requirement_id_external,
-        title: req.title,
-        description: req.description,
-        status: overallStatus,
-      };
     });
 
     return NextResponse.json(requirementsWithStatus, { status: 200 });

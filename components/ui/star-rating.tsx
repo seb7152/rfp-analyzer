@@ -25,6 +25,10 @@ export interface StarRatingProps {
    */
   showLabel?: boolean;
   /**
+   * Whether this is a manual score (affects styling)
+   */
+  isManual?: boolean;
+  /**
    * Custom CSS class
    */
   className?: string;
@@ -36,6 +40,7 @@ export function StarRating({
   onScoreChange,
   size = "md",
   showLabel = true,
+  isManual = false,
   className = "",
 }: StarRatingProps) {
   const sizeClasses = {
@@ -70,7 +75,9 @@ export function StarRating({
               onClick={() => handleStarClick(i)}
               disabled={!interactive}
               className={`p-0.5 transition-opacity ${
-                interactive ? "cursor-pointer hover:opacity-80" : "cursor-default"
+                interactive
+                  ? "cursor-pointer hover:opacity-80"
+                  : "cursor-default"
               }`}
               title={
                 interactive
@@ -92,9 +99,15 @@ export function StarRating({
         })}
       </div>
 
-      {/* Score label */}
+      {/* Score label with distinct styling for manual scores */}
       {showLabel && (
-        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+        <span
+          className={`text-sm font-semibold ml-1 ${
+            isManual && score !== null && score !== 0
+              ? "text-blue-600 dark:text-blue-400"
+              : "text-slate-700 dark:text-slate-300"
+          }`}
+        >
           {currentScore}/5
         </span>
       )}
