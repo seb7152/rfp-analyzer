@@ -249,21 +249,21 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 ### Navigation Controls
 
-- [ ] T106 [P] [US4] Create components/RequirementPagination.tsx with previous/next chevron buttons
-- [ ] T107 [US4] Add requirement counter display (X/Y format) showing current position in list
-- [ ] T108 [US4] Implement next button handler to load next requirement with responses
-- [ ] T109 [US4] Implement previous button handler to load previous requirement with responses
-- [ ] T110 [US4] Disable previous button when on first requirement (gray out, cursor not-allowed)
-- [ ] T111 [US4] Disable next button when on last requirement (gray out, cursor not-allowed)
-- [ ] T112 [US4] Update RequirementHeader breadcrumb automatically when navigating
-- [ ] T113 [US4] Preserve scroll position at top when navigating between requirements
+- [x] T106 [P] [US4] Create components/RequirementPagination.tsx with previous/next chevron buttons
+- [x] T107 [US4] Add requirement counter display (X/Y format) showing current position in list
+- [x] T108 [US4] Implement next button handler to load next requirement with responses
+- [x] T109 [US4] Implement previous button handler to load previous requirement with responses
+- [x] T110 [US4] Disable previous button when on first requirement (gray out, cursor not-allowed)
+- [x] T111 [US4] Disable next button when on last requirement (gray out, cursor not-allowed)
+- [x] T112 [US4] Update RequirementHeader breadcrumb automatically when navigating
+- [x] T113 [US4] Preserve scroll position at top when navigating between requirements
 - [ ] T114 [US4] Add keyboard shortcuts (arrow keys) for previous/next navigation
 
 ### Navigation Data Management
 
-- [ ] T115 [US4] Create lib/navigation-utils.ts with functions to get next/previous requirement IDs from tree
-- [ ] T116 [US4] Update hooks/use-requirements.ts to include flat list of requirement IDs in hierarchical order
-- [ ] T117 [US4] Implement navigation history tracking in session storage for back/forward behavior
+- [x] T115 [US4] Create lib/navigation-utils.ts with functions to get next/previous requirement IDs from tree
+- [x] T116 [US4] Update hooks/use-requirements.ts to include flat list of requirement IDs in hierarchical order
+- [x] T117 [US4] Implement navigation history tracking in session storage for back/forward behavior
 
 **Checkpoint**: All P1 and P2 features complete - users have full evaluation workflow with efficient navigation
 

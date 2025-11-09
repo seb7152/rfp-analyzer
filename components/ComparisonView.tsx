@@ -176,8 +176,29 @@ export function ComparisonView({
     return findPathWithCodes(tree, selectedRequirementId) || [];
   }, [selectedRequirementId, tree, isCategory]);
 
-  // Pagination
-  const flatReqs = allRequirements.filter((r) => r.level === 4);
+  // Pagination: Get all leaf requirements in tree order (not hierarchy order)
+  // This ensures pagination matches the sidebar navigation order
+  const flatReqs = useMemo(() => {
+    if (!tree.length) return [];
+
+    const leaves: TreeNode[] = [];
+
+    const traverse = (nodes: TreeNode[]) => {
+      for (const node of nodes) {
+        // Only add leaf requirements (not categories)
+        if (node.type === "requirement" && node.level === 4) {
+          leaves.push(node);
+        }
+        if (node.children && node.children.length > 0) {
+          traverse(node.children);
+        }
+      }
+    };
+
+    traverse(tree);
+    return leaves;
+  }, [tree]);
+
   const currentIndex = flatReqs.findIndex(
     (r) => r.id === selectedRequirementId,
   );
