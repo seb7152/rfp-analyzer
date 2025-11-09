@@ -549,6 +549,41 @@ export async function importSuppliers(
 }
 
 /**
+ * Calculate RFP completion percentage
+ * Returns percentage of responses marked as checked (is_checked = true)
+ * across all requirements in the RFP
+ */
+export async function getRFPCompletionPercentage(
+  rfpId: string,
+): Promise<number> {
+  const supabase = await createServerClient();
+
+  const { data, error } = await supabase
+    .from("responses")
+    .select("id, is_checked", { count: "exact" })
+    .eq("rfp_id", rfpId);
+
+  if (error) {
+    console.error("Error fetching responses for completion:", error);
+    throw new Error(
+      `Failed to fetch responses for completion: ${error.message}`,
+    );
+  }
+
+  const responses = (data || []) as Array<{ id: string; is_checked: boolean }>;
+  const total = responses.length;
+
+  if (total === 0) {
+    return 0; // No responses = 0% complete
+  }
+
+  const checked = responses.filter((r) => r.is_checked).length;
+  const percentage = Math.round((checked / total) * 100);
+
+  return percentage;
+}
+
+/**
  * Fetch all responses for a specific requirement with supplier information
  * Includes supplier details joined with response data
  */

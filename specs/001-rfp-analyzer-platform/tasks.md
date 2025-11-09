@@ -277,14 +277,14 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 
 ### Completion Badge Logic
 
-- [ ] T118 [P] [US5] Create components/CompletionBadge.tsx with two states: complete (green check) and pending (gray clock)
-- [ ] T119 [US5] Add dashed border styling to pending badge to match mockup design
-- [ ] T120 [US5] Implement completion calculation logic: all responses checked = complete
-- [ ] T121 [US5] Display completion badge in RequirementHeader next to title
-- [ ] T122 [US5] Display completion badge in RequirementTree for each requirement node
-- [ ] T123 [US5] Add real-time update of completion badge when response checkbox state changes
-- [ ] T124 [US5] Create database query to calculate completion percentage for entire RFP
-- [ ] T125 [US5] Display overall RFP completion percentage in dashboard header (e.g., "65% Complete")
+- [x] T118 [P] [US5] Create components/CompletionBadge.tsx with two states: complete (green check) and pending (gray clock)
+- [x] T119 [US5] Add dashed border styling to pending badge to match mockup design
+- [x] T120 [US5] Implement completion calculation logic: all responses checked = complete
+- [x] T121 [US5] Display completion badge in RequirementHeader next to title
+- [x] T122 [US5] Display completion badge in RequirementTree for each requirement node
+- [x] T123 [US5] Add real-time update of completion badge when response checkbox state changes
+- [x] T124 [US5] Create database query to calculate completion percentage for entire RFP
+- [x] T125 [US5] Display overall RFP completion percentage in dashboard header (e.g., "65% Complete")
 
 **Checkpoint**: Progress tracking fully functional - evaluators can see completion status at requirement and RFP levels
 
