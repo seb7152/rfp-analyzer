@@ -5,6 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 /**
  * Hook for fetching RFP completion percentage
  * Returns the percentage of responses marked as checked
+ *
+ * Note: Automatically refetches when a response is updated via useResponseMutation
+ * The mutation hook invalidates rfp-completion cache on every response change
  */
 export function useRFPCompletion(rfpId: string | null) {
   const { data, isLoading, error, refetch } = useQuery({
@@ -26,8 +29,7 @@ export function useRFPCompletion(rfpId: string | null) {
       return data.percentage as number;
     },
     enabled: !!rfpId,
-    staleTime: 1000 * 60, // 1 minute
-    refetchInterval: 5000, // Refetch every 5 seconds to keep updated
+    staleTime: Infinity, // Never stale - only refetch when explicitly invalidated
   });
 
   return {

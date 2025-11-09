@@ -180,6 +180,12 @@ export function useResponseMutation(): UseMutationResult<
       queryClient.invalidateQueries({
         queryKey: ["category-requirements"],
       });
+
+      // Invalidate RFP completion percentage whenever a response changes
+      // This ensures the dashboard header percentage updates in real-time
+      queryClient.invalidateQueries({
+        queryKey: ["rfp-completion"],
+      });
     },
   });
 }
