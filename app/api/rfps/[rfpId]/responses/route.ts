@@ -5,17 +5,18 @@ import { getResponsesForRFP } from "@/lib/supabase/queries";
 /**
  * GET /api/rfps/[rfpId]/responses
  * Fetch all responses for an RFP, optionally filtered by requirement
- * 
+ *
  * Query Parameters:
  * - requirementId (optional): Filter responses to a specific requirement
- * 
+ *
  * Returns: Array of responses with supplier information
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  context: { params: Promise<{ rfpId: string }> },
 ) {
   try {
+    const params = await context.params;
     const { rfpId } = params;
     const { searchParams } = new URL(request.url);
     const requirementId = searchParams.get("requirementId") || undefined;
@@ -27,10 +28,7 @@ export async function GET(
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Verify user has access to this RFP
@@ -41,10 +39,7 @@ export async function GET(
       .maybeSingle();
 
     if (rfpError || !rfp) {
-      return NextResponse.json(
-        { error: "RFP not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "RFP not found" }, { status: 404 });
     }
 
     // Fetch responses with supplier information

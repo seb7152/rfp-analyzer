@@ -528,33 +528,35 @@ export async function importSuppliers(
  */
 export async function getResponsesForRequirement(
   requirementId: string,
-): Promise<Array<{
-  id: string;
-  rfp_id: string;
-  requirement_id: string;
-  supplier_id: string;
-  response_text: string | null;
-  ai_score: number | null;
-  ai_comment: string | null;
-  manual_score: number | null;
-  status: "pending" | "pass" | "partial" | "fail";
-  is_checked: boolean;
-  manual_comment: string | null;
-  question: string | null;
-  last_modified_by: string | null;
-  created_at: string;
-  updated_at: string;
-  supplier: {
+): Promise<
+  Array<{
     id: string;
     rfp_id: string;
-    supplier_id_external: string;
-    name: string;
-    contact_name: string | null;
-    contact_email: string | null;
-    contact_phone: string | null;
+    requirement_id: string;
+    supplier_id: string;
+    response_text: string | null;
+    ai_score: number | null;
+    ai_comment: string | null;
+    manual_score: number | null;
+    status: "pending" | "pass" | "partial" | "fail";
+    is_checked: boolean;
+    manual_comment: string | null;
+    question: string | null;
+    last_modified_by: string | null;
     created_at: string;
-  };
-}>> {
+    updated_at: string;
+    supplier: {
+      id: string;
+      rfp_id: string;
+      supplier_id_external: string;
+      name: string;
+      contact_name: string | null;
+      contact_email: string | null;
+      contact_phone: string | null;
+      created_at: string;
+    };
+  }>
+> {
   const supabase = await createServerClient();
 
   const { data, error } = await supabase
@@ -588,8 +590,7 @@ export async function getResponsesForRequirement(
       )
     `,
     )
-    .eq("requirement_id", requirementId)
-    .order("supplier:suppliers.name", { ascending: true });
+    .eq("requirement_id", requirementId);
 
   if (error) {
     console.error("Error fetching responses for requirement:", error);
@@ -607,33 +608,35 @@ export async function getResponsesForRequirement(
 export async function getResponsesForRFP(
   rfpId: string,
   requirementId?: string,
-): Promise<Array<{
-  id: string;
-  rfp_id: string;
-  requirement_id: string;
-  supplier_id: string;
-  response_text: string | null;
-  ai_score: number | null;
-  ai_comment: string | null;
-  manual_score: number | null;
-  status: "pending" | "pass" | "partial" | "fail";
-  is_checked: boolean;
-  manual_comment: string | null;
-  question: string | null;
-  last_modified_by: string | null;
-  created_at: string;
-  updated_at: string;
-  supplier: {
+): Promise<
+  Array<{
     id: string;
     rfp_id: string;
-    supplier_id_external: string;
-    name: string;
-    contact_name: string | null;
-    contact_email: string | null;
-    contact_phone: string | null;
+    requirement_id: string;
+    supplier_id: string;
+    response_text: string | null;
+    ai_score: number | null;
+    ai_comment: string | null;
+    manual_score: number | null;
+    status: "pending" | "pass" | "partial" | "fail";
+    is_checked: boolean;
+    manual_comment: string | null;
+    question: string | null;
+    last_modified_by: string | null;
     created_at: string;
-  };
-}>> {
+    updated_at: string;
+    supplier: {
+      id: string;
+      rfp_id: string;
+      supplier_id_external: string;
+      name: string;
+      contact_name: string | null;
+      contact_email: string | null;
+      contact_phone: string | null;
+      created_at: string;
+    };
+  }>
+> {
   const supabase = await createServerClient();
 
   let query = supabase.from("responses").select(
@@ -672,9 +675,7 @@ export async function getResponsesForRFP(
     query = query.eq("requirement_id", requirementId);
   }
 
-  const { data, error } = await query.order("supplier:suppliers.name", {
-    ascending: true,
-  });
+  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching responses for RFP:", error);
@@ -823,9 +824,7 @@ export async function importResponses(
       ]);
 
       if (insertError) {
-        console.warn(
-          `Failed to insert response: ${insertError.message}`,
-        );
+        console.warn(`Failed to insert response: ${insertError.message}`);
         continue;
       }
 
