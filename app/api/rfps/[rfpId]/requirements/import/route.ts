@@ -67,10 +67,16 @@ export async function POST(
     // Validate JSON format
     const validation = validateRequirementsJSON(body.json, categoryNames);
     if (!validation.valid) {
+      console.error("Requirements validation failed:", validation.error);
+      console.error("Available categories:", categoryNames);
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
     const data = validation.data as ImportRequirementsRequest;
+    console.log("Requirements import - parsed data:", {
+      requirementsCount: data.requirements.length,
+      suppliersCount: data.suppliers?.length || 0,
+    });
 
     // Import suppliers if provided
     let suppliersCount = 0;

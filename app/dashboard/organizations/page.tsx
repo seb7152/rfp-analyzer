@@ -381,7 +381,7 @@ export default function OrganizationsPage() {
                   <Button
                     type="submit"
                     disabled={creating || !newOrgName.trim()}
-                    size="default"
+                    size="md"
                     className="h-11 w-full rounded-2xl text-sm font-semibold tracking-tight"
                   >
                     {creating ? (

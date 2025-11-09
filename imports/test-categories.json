@@ -1,0 +1,60 @@
+{
+  "categories": [
+    {
+      "id": "CAT-01",
+      "code": "REQ-SOL",
+      "title": "Required solution capabilities",
+      "short_name": "Required solution capabilities",
+      "level": 1,
+      "parent_id": null
+    },
+    {
+      "id": "CAT-02",
+      "code": "SCOPE-COV",
+      "title": "Scope and Service Coverage",
+      "short_name": "Scope and Service",
+      "level": 1,
+      "parent_id": null
+    },
+    {
+      "id": "CAT-03",
+      "code": "TARGET-DEL",
+      "title": "Target Delivey Model",
+      "short_name": "Target Delivey Model",
+      "level": 1,
+      "parent_id": null
+    },
+    {
+      "id": "CAT-04",
+      "code": "CONT-IMP",
+      "title": "Continuous Improvement, Innovation & Automation",
+      "short_name": "Continuous Improvement, Inn...",
+      "level": 1,
+      "parent_id": null
+    },
+    {
+      "id": "CAT-05",
+      "code": "SLA-PERF",
+      "title": "SLAs, KPIs & Performance Monitoring",
+      "short_name": "SLAs, KPIs &",
+      "level": 1,
+      "parent_id": null
+    },
+    {
+      "id": "CAT-06",
+      "code": "TRANS-REV",
+      "title": "Transition & Reversibility",
+      "short_name": "Transition & Reversibility",
+      "level": 1,
+      "parent_id": null
+    },
+    {
+      "id": "CAT-07",
+      "code": "PRICING",
+      "title": "Pricing Model",
+      "short_name": "Pricing Model",
+      "level": 1,
+      "parent_id": null
+    }
+  ]
+}

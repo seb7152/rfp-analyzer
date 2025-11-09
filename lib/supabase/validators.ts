@@ -14,7 +14,7 @@ import type {
 // ============================================================================
 
 export function validateCategoryPayload(
-  category: unknown
+  category: unknown,
 ): category is ImportCategoryPayload {
   if (!category || typeof category !== "object") return false;
 
@@ -32,12 +32,14 @@ export function validateCategoryPayload(
     typeof cat.level === "number" &&
     cat.level >= 1 &&
     cat.level <= 4 &&
-    (cat.parent_id === undefined || typeof cat.parent_id === "string")
+    (cat.parent_id === undefined ||
+      cat.parent_id === null ||
+      typeof cat.parent_id === "string")
   );
 }
 
 export function validateCategoriesRequest(
-  data: unknown
+  data: unknown,
 ): data is ImportCategoriesRequest {
   if (!data || typeof data !== "object") return false;
 
@@ -105,16 +107,17 @@ export function validateCategoriesJSON(jsonString: string): {
 // ============================================================================
 
 export function validateRequirementPayload(
-  requirement: unknown
+  requirement: unknown,
 ): requirement is ImportRequirementPayload {
   if (!requirement || typeof requirement !== "object") return false;
 
   const req = requirement as Record<string, unknown>;
 
   return (
-    typeof req.id === "string" &&
-    req.id.trim().length > 0 &&
-    (req.code === undefined || typeof req.code === "string") &&
+    (req.id === undefined ||
+      (typeof req.id === "string" && req.id.trim().length > 0)) &&
+    typeof req.code === "string" &&
+    req.code.trim().length > 0 &&
     typeof req.title === "string" &&
     req.title.trim().length > 0 &&
     (req.description === undefined || typeof req.description === "string") &&
@@ -136,16 +139,16 @@ export function validateSupplierPayload(supplier: unknown): boolean {
     supp.id.trim().length > 0 &&
     typeof supp.name === "string" &&
     supp.name.trim().length > 0 &&
-    (supp.contact_name === undefined || typeof supp.contact_name === "string") &&
+    (supp.contact_name === undefined ||
+      typeof supp.contact_name === "string") &&
     (supp.contact_email === undefined ||
       typeof supp.contact_email === "string") &&
-    (supp.contact_phone === undefined ||
-      typeof supp.contact_phone === "string")
+    (supp.contact_phone === undefined || typeof supp.contact_phone === "string")
   );
 }
 
 export function validateRequirementsRequest(
-  data: unknown
+  data: unknown,
 ): data is ImportRequirementsRequest {
   if (!data || typeof data !== "object") return false;
 
@@ -157,14 +160,15 @@ export function validateRequirementsRequest(
 
   const hasValidSuppliers =
     req.suppliers === undefined ||
-    (Array.isArray(req.suppliers) && req.suppliers.every(validateSupplierPayload));
+    (Array.isArray(req.suppliers) &&
+      req.suppliers.every(validateSupplierPayload));
 
   return hasValidRequirements && hasValidSuppliers;
 }
 
 export function validateRequirementsJSON(
   jsonString: string,
-  availableCategories: string[]
+  availableCategories: string[],
 ): {
   valid: boolean;
   data?: ImportRequirementsRequest;

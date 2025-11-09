@@ -250,8 +250,8 @@ export interface ImportCategoriesRequest {
 }
 
 export interface ImportRequirementPayload {
-  id: string;
-  code?: string;
+  id?: string;
+  code: string;
   title: string;
   description?: string;
   weight: number;

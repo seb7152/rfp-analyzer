@@ -297,7 +297,7 @@ export async function searchRequirements(
 
 /**
  * Import categories for an RFP
- * Inserts categories maintaining the parent-child hierarchy
+ * Uses UPSERT to replace existing categories with the same rfp_id and code
  */
 export async function importCategories(
   rfpId: string,
@@ -329,23 +329,28 @@ export async function importCategories(
 
       const { data, error } = await supabase
         .from("categories")
-        .insert([
+        .upsert(
+          [
+            {
+              rfp_id: rfpId,
+              code: category.code,
+              title: category.title,
+              short_name: category.short_name,
+              level: category.level,
+              parent_id: parentId,
+              created_by: userId,
+            },
+          ],
           {
-            rfp_id: rfpId,
-            code: category.code,
-            title: category.title,
-            short_name: category.short_name,
-            level: category.level,
-            parent_id: parentId,
-            created_by: userId,
+            onConflict: "rfp_id,code",
           },
-        ])
+        )
         .select("id")
         .single();
 
       if (error) {
         throw new Error(
-          `Failed to insert category ${category.id}: ${error.message}`,
+          `Failed to upsert category ${category.id}: ${error.message}`,
         );
       }
 
@@ -385,6 +390,7 @@ export async function getCategories(rfpId: string): Promise<Requirement[]> {
 
 /**
  * Import requirements for an RFP
+ * Uses UPSERT to replace existing requirements with the same rfp_id and requirement_id_external
  * Links requirements to existing categories by name
  */
 export async function importRequirements(
@@ -416,42 +422,47 @@ export async function importRequirements(
       (categories || []).map((c) => [c.title, c.id]),
     );
 
-    let insertedCount = 0;
+    let upsertedCount = 0;
 
     for (const req of requirements) {
       const categoryId = categoryNameToId.get(req.category_name);
 
       if (!categoryId) {
         console.warn(
-          `Skipping requirement ${req.id}: category "${req.category_name}" not found`,
+          `Skipping requirement ${req.code}: category "${req.category_name}" not found`,
         );
         continue;
       }
 
-      const { error } = await supabase.from("requirements").insert([
+      const { error } = await supabase.from("requirements").upsert(
+        [
+          {
+            rfp_id: rfpId,
+            requirement_id_external: req.code,
+            title: req.title,
+            description: req.description || null,
+            weight: req.weight,
+            category_id: categoryId,
+            level: 4, // Requirements are always level 4
+            created_by: userId,
+          },
+        ],
         {
-          rfp_id: rfpId,
-          requirement_id_external: req.id,
-          title: req.title,
-          description: req.description || null,
-          weight: req.weight,
-          category_id: categoryId,
-          level: 4, // Requirements are always level 4
-          created_by: userId,
+          onConflict: "rfp_id,requirement_id_external",
         },
-      ]);
+      );
 
       if (error) {
         console.warn(
-          `Failed to insert requirement ${req.id}: ${error.message}`,
+          `Failed to upsert requirement ${req.code}: ${error.message}`,
         );
         continue;
       }
 
-      insertedCount++;
+      upsertedCount++;
     }
 
-    return { success: true, count: insertedCount };
+    return { success: true, count: upsertedCount };
   } catch (error) {
     return {
       success: false,
@@ -494,6 +505,326 @@ export async function importSuppliers(
       if (error) {
         console.warn(
           `Failed to insert supplier ${supplier.id}: ${error.message}`,
+        );
+        continue;
+      }
+
+      insertedCount++;
+    }
+
+    return { success: true, count: insertedCount };
+  } catch (error) {
+    return {
+      success: false,
+      count: 0,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+/**
+ * Fetch all responses for a specific requirement with supplier information
+ * Includes supplier details joined with response data
+ */
+export async function getResponsesForRequirement(
+  requirementId: string,
+): Promise<Array<{
+  id: string;
+  rfp_id: string;
+  requirement_id: string;
+  supplier_id: string;
+  response_text: string | null;
+  ai_score: number | null;
+  ai_comment: string | null;
+  manual_score: number | null;
+  status: "pending" | "pass" | "partial" | "fail";
+  is_checked: boolean;
+  manual_comment: string | null;
+  question: string | null;
+  last_modified_by: string | null;
+  created_at: string;
+  updated_at: string;
+  supplier: {
+    id: string;
+    rfp_id: string;
+    supplier_id_external: string;
+    name: string;
+    contact_name: string | null;
+    contact_email: string | null;
+    contact_phone: string | null;
+    created_at: string;
+  };
+}>> {
+  const supabase = await createServerClient();
+
+  const { data, error } = await supabase
+    .from("responses")
+    .select(
+      `
+      id,
+      rfp_id,
+      requirement_id,
+      supplier_id,
+      response_text,
+      ai_score,
+      ai_comment,
+      manual_score,
+      status,
+      is_checked,
+      manual_comment,
+      question,
+      last_modified_by,
+      created_at,
+      updated_at,
+      supplier:suppliers (
+        id,
+        rfp_id,
+        supplier_id_external,
+        name,
+        contact_name,
+        contact_email,
+        contact_phone,
+        created_at
+      )
+    `,
+    )
+    .eq("requirement_id", requirementId)
+    .order("supplier:suppliers.name", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching responses for requirement:", error);
+    throw new Error(
+      `Failed to fetch responses for requirement: ${error.message}`,
+    );
+  }
+
+  return data || [];
+}
+
+/**
+ * Fetch all responses for an RFP, optionally filtered by requirement
+ */
+export async function getResponsesForRFP(
+  rfpId: string,
+  requirementId?: string,
+): Promise<Array<{
+  id: string;
+  rfp_id: string;
+  requirement_id: string;
+  supplier_id: string;
+  response_text: string | null;
+  ai_score: number | null;
+  ai_comment: string | null;
+  manual_score: number | null;
+  status: "pending" | "pass" | "partial" | "fail";
+  is_checked: boolean;
+  manual_comment: string | null;
+  question: string | null;
+  last_modified_by: string | null;
+  created_at: string;
+  updated_at: string;
+  supplier: {
+    id: string;
+    rfp_id: string;
+    supplier_id_external: string;
+    name: string;
+    contact_name: string | null;
+    contact_email: string | null;
+    contact_phone: string | null;
+    created_at: string;
+  };
+}>> {
+  const supabase = await createServerClient();
+
+  let query = supabase.from("responses").select(
+    `
+    id,
+    rfp_id,
+    requirement_id,
+    supplier_id,
+    response_text,
+    ai_score,
+    ai_comment,
+    manual_score,
+    status,
+    is_checked,
+    manual_comment,
+    question,
+    last_modified_by,
+    created_at,
+    updated_at,
+    supplier:suppliers (
+      id,
+      rfp_id,
+      supplier_id_external,
+      name,
+      contact_name,
+      contact_email,
+      contact_phone,
+      created_at
+    )
+  `,
+  );
+
+  query = query.eq("rfp_id", rfpId);
+
+  if (requirementId) {
+    query = query.eq("requirement_id", requirementId);
+  }
+
+  const { data, error } = await query.order("supplier:suppliers.name", {
+    ascending: true,
+  });
+
+  if (error) {
+    console.error("Error fetching responses for RFP:", error);
+    throw new Error(`Failed to fetch responses for RFP: ${error.message}`);
+  }
+
+  return data || [];
+}
+
+/**
+ * Fetch a single response with supplier details
+ */
+export async function getResponse(responseId: string): Promise<{
+  id: string;
+  rfp_id: string;
+  requirement_id: string;
+  supplier_id: string;
+  response_text: string | null;
+  ai_score: number | null;
+  ai_comment: string | null;
+  manual_score: number | null;
+  status: "pending" | "pass" | "partial" | "fail";
+  is_checked: boolean;
+  manual_comment: string | null;
+  question: string | null;
+  last_modified_by: string | null;
+  created_at: string;
+  updated_at: string;
+  supplier: {
+    id: string;
+    rfp_id: string;
+    supplier_id_external: string;
+    name: string;
+    contact_name: string | null;
+    contact_email: string | null;
+    contact_phone: string | null;
+    created_at: string;
+  };
+} | null> {
+  const supabase = await createServerClient();
+
+  const { data, error } = await supabase
+    .from("responses")
+    .select(
+      `
+      id,
+      rfp_id,
+      requirement_id,
+      supplier_id,
+      response_text,
+      ai_score,
+      ai_comment,
+      manual_score,
+      status,
+      is_checked,
+      manual_comment,
+      question,
+      last_modified_by,
+      created_at,
+      updated_at,
+      supplier:suppliers (
+        id,
+        rfp_id,
+        supplier_id_external,
+        name,
+        contact_name,
+        contact_email,
+        contact_phone,
+        created_at
+      )
+    `,
+    )
+    .eq("id", responseId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error fetching response:", error);
+    throw new Error(`Failed to fetch response: ${error.message}`);
+  }
+
+  return data || null;
+}
+
+/**
+ * Import responses for an RFP
+ * Creates response records linking requirements to suppliers with AI analysis
+ */
+export async function importResponses(
+  rfpId: string,
+  responses: Array<{
+    requirement_id_external: string;
+    supplier_id_external: string;
+    response_text: string;
+    ai_score?: number;
+    ai_comment?: string;
+  }>,
+): Promise<{ success: boolean; count: number; error?: string }> {
+  const supabase = await createServerClient();
+
+  try {
+    let insertedCount = 0;
+
+    for (const response of responses) {
+      // Get the requirement ID from external ID
+      const { data: requirement, error: reqError } = await supabase
+        .from("requirements")
+        .select("id")
+        .eq("rfp_id", rfpId)
+        .eq("requirement_id_external", response.requirement_id_external)
+        .maybeSingle();
+
+      if (reqError || !requirement) {
+        console.warn(
+          `Requirement ${response.requirement_id_external} not found for RFP ${rfpId}`,
+        );
+        continue;
+      }
+
+      // Get the supplier ID from external ID
+      const { data: supplier, error: supError } = await supabase
+        .from("suppliers")
+        .select("id")
+        .eq("rfp_id", rfpId)
+        .eq("supplier_id_external", response.supplier_id_external)
+        .maybeSingle();
+
+      if (supError || !supplier) {
+        console.warn(
+          `Supplier ${response.supplier_id_external} not found for RFP ${rfpId}`,
+        );
+        continue;
+      }
+
+      // Insert the response
+      const { error: insertError } = await supabase.from("responses").insert([
+        {
+          rfp_id: rfpId,
+          requirement_id: requirement.id,
+          supplier_id: supplier.id,
+          response_text: response.response_text,
+          ai_score: response.ai_score || null,
+          ai_comment: response.ai_comment || null,
+          status: "pending",
+          is_checked: false,
+        },
+      ]);
+
+      if (insertError) {
+        console.warn(
+          `Failed to insert response: ${insertError.message}`,
         );
         continue;
       }

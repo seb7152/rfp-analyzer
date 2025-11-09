@@ -1,15 +1,22 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Loader2, X } from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, X } from "lucide-react";
 
 interface CreateRFPDialogProps {
-  organizationId: string
-  onSuccess?: (rfp: any) => void
-  onClose: () => void
+  organizationId: string;
+  onSuccess?: (rfp: any) => void;
+  onClose: () => void;
 }
 
 export function CreateRFPDialog({
@@ -17,15 +24,15 @@ export function CreateRFPDialog({
   onSuccess,
   onClose,
 }: CreateRFPDialogProps) {
-  const [title, setTitle] = useState("")
-  const [description, setDescription] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setIsLoading(true)
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
 
     try {
       const response = await fetch("/api/rfps/create", {
@@ -38,30 +45,32 @@ export function CreateRFPDialog({
           description,
           organizationId,
         }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Failed to create RFP")
-        return
+        setError(data.error || "Failed to create RFP");
+        return;
       }
 
-      onSuccess?.(data.rfp)
-      onClose()
+      onSuccess?.(data.rfp);
+      onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <Card className="w-full max-w-md rounded-2xl border border-slate-200 bg-white/90 shadow-lg dark:border-slate-800 dark:bg-slate-900/60">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-slate-900 dark:text-slate-50">Create New RFP</CardTitle>
+            <CardTitle className="text-slate-900 dark:text-slate-50">
+              Create New RFP
+            </CardTitle>
             <CardDescription className="text-slate-500 dark:text-slate-400">
               Add a new Request for Proposal
             </CardDescription>
@@ -93,25 +102,28 @@ export function CreateRFPDialog({
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Description (Optional)
               </label>
-              <textarea
+              <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Add any additional details about this RFP..."
                 disabled={isLoading}
-                className="w-full min-h-24 p-3 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="min-h-24"
               />
             </div>
 
             {error && (
               <div className="flex items-start gap-3 rounded border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3">
-                <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
+                <p className="text-sm text-red-700 dark:text-red-200">
+                  {error}
+                </p>
               </div>
             )}
 
             <div className="flex gap-3 pt-4">
               <Button
                 type="button"
-                variant="outline"
+                variant="mono"
+                radius="lg"
                 onClick={onClose}
                 disabled={isLoading}
                 className="flex-1"
@@ -120,6 +132,8 @@ export function CreateRFPDialog({
               </Button>
               <Button
                 type="submit"
+                variant="primary"
+                radius="lg"
                 disabled={!title.trim() || isLoading}
                 className="flex-1"
               >
@@ -137,5 +151,5 @@ export function CreateRFPDialog({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

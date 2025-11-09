@@ -36,7 +36,7 @@ export function RequirementTree({
           <div key={req.id}>
             {/* Requirement Node */}
             <Button
-              variant={isSelected ? "default" : "ghost"}
+              variant={isSelected ? "primary" : "ghost"}
               size="sm"
               onClick={() => onSelectRequirement(req.id)}
               className="w-full justify-start px-2 py-1.5 h-auto text-left text-sm font-normal"
@@ -66,7 +66,7 @@ export function RequirementTree({
 
                 {/* Requirement ID and Title */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 min-w-0">
                     <span className="font-semibold flex-shrink-0">
                       {req.requirement_id_external}
                     </span>

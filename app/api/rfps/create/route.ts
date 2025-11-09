@@ -1,28 +1,28 @@
-import { NextRequest, NextResponse } from "next/server"
-import { createClient as createServerClient } from "@/lib/supabase/server"
+import { NextRequest, NextResponse } from "next/server";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
+    const supabase = await createServerClient();
 
     // Get authenticated user
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json()
-    const { title, description, organizationId } = body
+    const body = await request.json();
+    const { title, description, organizationId } = body;
 
     if (!title || !organizationId) {
       return NextResponse.json(
         { error: "Missing required fields: title, organizationId" },
-        { status: 400 }
-      )
+        { status: 400 },
+      );
     }
 
     // Verify user is part of the organization and is admin
@@ -31,13 +31,13 @@ export async function POST(request: NextRequest) {
       .select("role")
       .eq("user_id", user.id)
       .eq("organization_id", organizationId)
-      .single()
+      .single();
 
     if (userOrgError || !userOrg || userOrg.role !== "admin") {
       return NextResponse.json(
         { error: "Access denied. Only admins can create RFPs." },
-        { status: 403 }
-      )
+        { status: 403 },
+      );
     }
 
     // Create the RFP
@@ -53,14 +53,17 @@ export async function POST(request: NextRequest) {
         },
       ])
       .select()
-      .single()
+      .single();
 
     if (rfpError) {
       return NextResponse.json(
         { error: `Failed to create RFP: ${rfpError.message}` },
-        { status: 400 }
-      )
+        { status: 400 },
+      );
     }
+
+    // Note: A database trigger (auto_assign_rfp_creator_trigger) automatically
+    // assigns the creator as owner in rfp_user_assignments
 
     return NextResponse.json(
       {
@@ -68,15 +71,15 @@ export async function POST(request: NextRequest) {
         message: "RFP created successfully",
         rfp,
       },
-      { status: 201 }
-    )
+      { status: 201 },
+    );
   } catch (error) {
-    console.error("RFP creation error:", error)
+    console.error("RFP creation error:", error);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
-    )
+      { status: 500 },
+    );
   }
 }

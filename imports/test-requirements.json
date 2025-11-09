@@ -1,0 +1,60 @@
+{
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "code": "REQ-001",
+      "title": "Commitment to Full Scope Coverage",
+      "description": "The Service Provider shall explicitly confirm its ability and commitment to deliver the full scope of support activities.",
+      "weight": 1,
+      "category_name": "Scope and Service Coverage"
+    },
+    {
+      "id": "REQ-002",
+      "code": "REQ-002",
+      "title": "Documentation Management",
+      "description": "The Service Provider shall maintain a centralized and continuously updated knowledge base.",
+      "weight": 1,
+      "category_name": "Scope and Service Coverage"
+    },
+    {
+      "id": "REQ-003",
+      "code": "REQ-003",
+      "title": "Service Coverage Periods",
+      "description": "The Service Provider shall be able to ensure support coverage during the required periods.",
+      "weight": 1,
+      "category_name": "Scope and Service Coverage"
+    },
+    {
+      "id": "REQ-004",
+      "code": "REQ-004",
+      "title": "Supported Languages",
+      "description": "Support services shall be provided in both French and English.",
+      "weight": 1,
+      "category_name": "Scope and Service Coverage"
+    },
+    {
+      "id": "REQ-005",
+      "code": "REQ-005",
+      "title": "Service Model",
+      "description": "The Service Provider shall describe in detail its operating model.",
+      "weight": 1,
+      "category_name": "Target Delivey Model"
+    },
+    {
+      "id": "REQ-006",
+      "code": "REQ-006",
+      "title": "Flexibility of the Model",
+      "description": "The Service Provider shall demonstrate the ability to dynamically adjust its support capacity.",
+      "weight": 1,
+      "category_name": "Target Delivey Model"
+    },
+    {
+      "id": "REQ-007",
+      "code": "REQ-007",
+      "title": "Governance Structure",
+      "description": "Clear governance structure and reporting lines.",
+      "weight": 0.8,
+      "category_name": "Target Delivey Model"
+    }
+  ]
+}
