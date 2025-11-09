@@ -77,11 +77,22 @@ export function ComparisonView({
   const { tree } = useRequirementsTree(rfpId || null);
 
   // Fetch responses for the selected requirement
-  const {
-    responses,
-    suppliers,
-    isLoading: responsesLoading,
-  } = useResponses(rfpId || null, selectedRequirementId);
+  const { data: responsesData, isLoading: responsesLoading } = useResponses(
+    rfpId || "",
+    selectedRequirementId,
+  );
+
+  const responses = responsesData?.responses || [];
+  const suppliers = useMemo(() => {
+    // Extract unique suppliers from responses
+    const supplierMap = new Map();
+    responses.forEach((response) => {
+      if (response.supplier && !supplierMap.has(response.supplier.id)) {
+        supplierMap.set(response.supplier.id, response.supplier);
+      }
+    });
+    return Array.from(supplierMap.values());
+  }, [responses]);
 
   // Find the selected node in the tree to check its type
   const isCategory = useMemo(() => {
