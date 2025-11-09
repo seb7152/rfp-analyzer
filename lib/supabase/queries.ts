@@ -604,20 +604,34 @@ export async function getRFPCompletionPercentage(
     allRequirements.filter((r) => !parentIds.has(r.id)).map((r) => r.id),
   );
 
+  // Debug logging
+  console.log(`[Completion] RFP ${rfpId}:`);
+  console.log(`  Total responses: ${responses.length}`);
+  console.log(`  Total requirements: ${allRequirements.length}`);
+  console.log(`  Leaf requirements: ${leafReqIds.size}`);
+  console.log(`  Parent IDs: ${parentIds.size}`);
+
   // Filter responses to only those for leaf requirements
   const leafResponses = responses.filter((r) =>
     leafReqIds.has(r.requirement_id),
   );
 
+  console.log(`  Leaf responses: ${leafResponses.length}`);
+  console.log(
+    `  Checked responses: ${leafResponses.filter((r) => r.is_checked).length}`,
+  );
+
   const total = leafResponses.length;
 
   if (total === 0) {
+    console.log(`  Result: 0% (no responses for leaf requirements)`);
     return 0; // No responses = 0% complete
   }
 
   const checked = leafResponses.filter((r) => r.is_checked).length;
   const percentage = Math.round((checked / total) * 100);
 
+  console.log(`  Result: ${percentage}%`);
   return percentage;
 }
 
