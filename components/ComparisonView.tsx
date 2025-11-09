@@ -34,14 +34,13 @@ import {
   useCategoryRequirements,
   useRequirementsTree,
 } from "@/hooks/use-requirements";
+import { useResponses } from "@/hooks/use-responses";
 import type { TreeNode } from "@/hooks/use-requirements";
 import {
   Requirement,
   Response,
   getRequirementPath,
   getRequirementById,
-  generateResponses,
-  suppliersData,
 } from "@/lib/fake-data";
 
 interface ComparisonViewProps {
@@ -72,11 +71,17 @@ export function ComparisonView({
   const [error, setError] = useState<string | null>(null);
   const [contextExpanded, setContextExpanded] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
-  const [responses] = useState<Response[]>(generateResponses());
   const [responseStates, setResponseStates] = useState<ResponseState>({});
 
   // Fetch the tree to determine if selected item is a category
   const { tree } = useRequirementsTree(rfpId || null);
+
+  // Fetch responses for the selected requirement
+  const {
+    responses,
+    suppliers,
+    isLoading: responsesLoading,
+  } = useResponses(rfpId || null, selectedRequirementId);
 
   // Find the selected node in the tree to check its type
   const isCategory = useMemo(() => {
@@ -114,9 +119,8 @@ export function ComparisonView({
     allRequirements,
   );
   const path = getRequirementPath(selectedRequirementId, allRequirements);
-  const requirementResponses = responses.filter(
-    (r) => r.requirementId === selectedRequirementId,
-  );
+  // Filter responses for current requirement (already filtered by useResponses hook)
+  const requirementResponses = responses || [];
 
   // Build breadcrumb path with codes from tree
   const breadcrumbPath = useMemo(() => {
@@ -511,17 +515,17 @@ export function ComparisonView({
               </div>
             ) : (
               <div className="space-y-2">
-                {suppliersData.map((supplier) => {
+                {suppliers.map((supplier) => {
                   const response = requirementResponses.find(
-                    (r) => r.supplierId === supplier.id,
+                    (r) => r.supplier_id === supplier.id,
                   );
                   if (!response) return null;
 
                   const state = responseStates[response.id] || {
                     expanded: false,
-                    manualScore: 0,
-                    status: "pending" as const,
-                    isChecked: false,
+                    manualScore: response.manual_score || 0,
+                    status: (response.status || "pending") as const,
+                    isChecked: response.is_checked || false,
                     manualComment: "",
                     question: "",
                   };
@@ -532,14 +536,16 @@ export function ComparisonView({
                       supplierId={supplier.id}
                       supplierName={supplier.name}
                       responseId={response.id}
-                      responseText={response.responseText}
-                      aiScore={response.aiScore}
-                      aiComment={response.aiComment}
+                      responseText={response.response_text || ""}
+                      aiScore={response.ai_score || undefined}
+                      aiComment={response.ai_comment || undefined}
                       status={state.status}
                       isChecked={state.isChecked}
                       manualScore={state.manualScore}
-                      manualComment={state.manualComment}
-                      questionText={state.question}
+                      manualComment={
+                        response.manual_comment || state.manualComment
+                      }
+                      questionText={response.question || state.question}
                       isExpanded={state.expanded}
                       onExpandChange={(expanded) =>
                         updateResponseState(response.id, { expanded })
