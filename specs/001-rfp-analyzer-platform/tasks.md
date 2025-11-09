@@ -257,7 +257,7 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 - [x] T111 [US4] Disable next button when on last requirement (gray out, cursor not-allowed)
 - [x] T112 [US4] Update RequirementHeader breadcrumb automatically when navigating
 - [x] T113 [US4] Preserve scroll position at top when navigating between requirements
-- [ ] T114 [US4] Add keyboard shortcuts (arrow keys) for previous/next navigation
+- [x] T114 [US4] Add keyboard shortcuts (arrow keys) for previous/next navigation
 
 ### Navigation Data Management
 

@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+  useEffect,
+} from "react";
 import {
   ChevronRight,
   ChevronLeft,
@@ -215,6 +221,40 @@ export function ComparisonView({
       }, 300);
     }
   };
+
+  // Keyboard navigation handler
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      // Only trigger on arrow keys (left/right)
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        // Prevent default scrolling behavior
+        event.preventDefault();
+
+        const isLeftArrow = event.key === "ArrowLeft";
+
+        if (isLeftArrow && currentIndex > 0) {
+          // Previous requirement
+          goToRequirement(currentIndex - 1);
+        } else if (!isLeftArrow && currentIndex < totalPages - 1) {
+          // Next requirement
+          goToRequirement(currentIndex + 1);
+        }
+      }
+    },
+    [currentIndex, totalPages, flatReqs],
+  );
+
+  // Keyboard navigation: arrow keys for previous/next
+  useEffect(() => {
+    // Only add listener when we have requirements to navigate
+    if (flatReqs.length === 0) return;
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleKeyDown, flatReqs.length]);
 
   const updateResponseState = (
     responseId: string,
