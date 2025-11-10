@@ -9,7 +9,7 @@ import { getResponse } from "@/lib/supabase/queries";
  * Returns: Response object with supplier details
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ responseId: string }> },
 ) {
   const params = await context.params;

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { createContext, useContext } from "react"
-import { CheckIcon, LoaderCircleIcon } from "lucide-react"
+import { CheckIcon, Loader2 } from "lucide-react"
 import { Slot } from "radix-ui"
 
 import { cn } from "@/lib/utils"
@@ -221,7 +221,7 @@ function StepperIndicator({
           />
           {isLoading && (
             <span className="absolute transition-all">
-              <LoaderCircleIcon
+              <Loader2
                 className="animate-spin"
                 size={14}
                 aria-hidden="true"

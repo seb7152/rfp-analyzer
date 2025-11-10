@@ -714,12 +714,14 @@ export async function getResponsesForRequirement(
 
   // Sort responses by supplier name to maintain consistent order
   const sortedData = (data || []).sort((a, b) => {
-    const nameA = a.supplier?.name || "";
-    const nameB = b.supplier?.name || "";
+    const supplierA = Array.isArray(a.supplier) ? a.supplier[0] : a.supplier;
+    const supplierB = Array.isArray(b.supplier) ? b.supplier[0] : b.supplier;
+    const nameA = supplierA?.name || "";
+    const nameB = supplierB?.name || "";
     return nameA.localeCompare(nameB);
   });
 
-  return sortedData;
+  return sortedData as any;
 }
 
 /**
@@ -804,12 +806,14 @@ export async function getResponsesForRFP(
 
   // Sort responses by supplier name to maintain consistent order
   const sortedData = (data || []).sort((a, b) => {
-    const nameA = a.supplier?.name || "";
-    const nameB = b.supplier?.name || "";
+    const supplierA = Array.isArray(a.supplier) ? a.supplier[0] : a.supplier;
+    const supplierB = Array.isArray(b.supplier) ? b.supplier[0] : b.supplier;
+    const nameA = supplierA?.name || "";
+    const nameB = supplierB?.name || "";
     return nameA.localeCompare(nameB);
   });
 
-  return sortedData;
+  return sortedData as any;
 }
 
 /**
@@ -883,7 +887,7 @@ export async function getResponse(responseId: string): Promise<{
     throw new Error(`Failed to fetch response: ${error.message}`);
   }
 
-  return data || null;
+  return (data || null) as any;
 }
 
 /**

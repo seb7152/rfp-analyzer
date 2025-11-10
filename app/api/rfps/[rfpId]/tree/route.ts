@@ -17,7 +17,7 @@ interface TreeNode {
  * Categories are displayed with requirements as children
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { rfpId: string } },
 ) {
   try {

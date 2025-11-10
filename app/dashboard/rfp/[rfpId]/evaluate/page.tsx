@@ -18,6 +18,15 @@ interface EvaluatePageProps {
   };
 }
 
+function normalizeRequirement(req: any): any {
+  return {
+    ...req,
+    description: req.description || "",
+    context: req.context || "",
+    children: req.children?.map((child: any) => normalizeRequirement(child)),
+  };
+}
+
 export default function EvaluatePage({ params }: EvaluatePageProps) {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
@@ -157,7 +166,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
           ) : (
             <ComparisonView
               selectedRequirementId={selectedRequirementId}
-              allRequirements={allRequirements}
+              allRequirements={allRequirements.map((req) => normalizeRequirement(req))}
               onRequirementChange={setSelectedRequirementId}
               rfpId={params.rfpId}
             />

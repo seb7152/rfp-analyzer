@@ -17,7 +17,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
  *   - 500: Server error or webhook failure
  */
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { rfpId: string } },
 ) {
   try {
@@ -112,11 +112,14 @@ export async function POST(
         // Get all responses for this requirement
         const reqResponses = responses
           .filter((r) => r.requirement_id === req.id)
-          .map((r) => ({
-            supplier_code: r.suppliers?.supplier_id_external || "unknown",
-            supplier_name: r.suppliers?.name || "unknown",
-            response_text: r.response_text || "",
-          }));
+          .map((r) => {
+            const supplier = Array.isArray(r.suppliers) ? r.suppliers[0] : r.suppliers;
+            return {
+              supplier_code: supplier?.supplier_id_external || "unknown",
+              supplier_name: supplier?.name || "unknown",
+              response_text: r.response_text || "",
+            };
+          });
 
         return {
           requirement_id: req.requirement_id_external,

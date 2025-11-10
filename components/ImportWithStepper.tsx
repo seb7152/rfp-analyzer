@@ -10,19 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Stepper,
-  StepperDescription,
   StepperIndicator,
   StepperItem,
   StepperSeparator,
   StepperTitle,
   StepperTrigger,
 } from "@/components/ui/stepper";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import {
   Table,
   TableBody,
@@ -506,9 +499,9 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
               style={{
                 backgroundColor: "#f5f5f5",
                 fontFamily: "ui-monospace, Menlo, monospace",
+                height: 250,
               }}
               className="rounded border border-slate-300 dark:border-slate-700"
-              height={250}
             />
 
             {/* Preview table for categories */}
@@ -659,9 +652,9 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
               style={{
                 backgroundColor: "#f5f5f5",
                 fontFamily: "ui-monospace, Menlo, monospace",
+                height: 250,
               }}
               className="rounded border border-slate-300 dark:border-slate-700"
-              height={250}
             />
 
             {/* Preview table for requirements */}
@@ -963,7 +956,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
 
             {/* Import sections - one per supplier */}
             <div className="space-y-3">
-              {suppliers.map((supplier, idx) => {
+              {suppliers.map((supplier) => {
                 const supplierId = supplier.id;
                 const isExpanded = expandedSuppliers[supplierId] || false;
                 const isImported =
@@ -1047,9 +1040,9 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                             style={{
                               backgroundColor: "#f5f5f5",
                               fontFamily: "ui-monospace, Menlo, monospace",
+                              height: 200,
                             }}
                             className="rounded border border-slate-300 dark:border-slate-700"
-                            height={200}
                           />
                         </div>
 

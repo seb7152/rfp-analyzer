@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server"
  * Check if categories already exist for this RFP
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { rfpId: string } }
 ) {
   try {

@@ -5,14 +5,10 @@ import { Search, ChevronDown, ChevronUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { RequirementTree } from "./RequirementTree";
 import { RequirementsTreeView } from "./RequirementsTreeView";
 import {
-  useRequirements,
   useRequirementsTree,
-  searchRequirementTree,
 } from "@/hooks/use-requirements";
-import type { RequirementWithChildren } from "@/lib/supabase/types";
 import type { TreeNode } from "@/hooks/use-requirements";
 
 interface SidebarProps {

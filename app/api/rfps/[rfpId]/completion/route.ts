@@ -16,7 +16,7 @@ import { getRFPCompletionPercentage } from "@/lib/supabase/queries";
  *   - 500: Server error
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { rfpId: string } },
 ) {
   try {

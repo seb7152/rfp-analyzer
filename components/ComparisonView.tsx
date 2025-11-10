@@ -47,8 +47,6 @@ import { useResponseMutation } from "@/hooks/use-response-mutation";
 import type { TreeNode } from "@/hooks/use-requirements";
 import {
   Requirement,
-  Response,
-  getRequirementPath,
   getRequirementById,
 } from "@/lib/fake-data";
 
@@ -94,7 +92,7 @@ export function ComparisonView({
   const { tree } = useRequirementsTree(rfpId || null);
 
   // Fetch responses for the selected requirement
-  const { data: responsesData, isLoading: responsesLoading } = useResponses(
+  const { data: responsesData } = useResponses(
     rfpId || "",
     selectedRequirementId,
   );
@@ -146,7 +144,6 @@ export function ComparisonView({
     selectedRequirementId,
     allRequirements,
   );
-  const path = getRequirementPath(selectedRequirementId, allRequirements);
   // Filter responses for current requirement (already filtered by useResponses hook)
   const requirementResponses = responses || [];
 
@@ -743,10 +740,11 @@ export function ComparisonView({
                   );
                   if (!response) return null;
 
+                  const statusValue = response.status || "pending";
                   const state = responseStates[response.id] || {
                     expanded: false,
                     manualScore: response.manual_score ?? undefined,
-                    status: (response.status || "pending") as const,
+                    status: statusValue as "pass" | "partial" | "fail" | "pending",
                     isChecked: response.is_checked || false,
                     manualComment: response.manual_comment || "",
                     question: response.question || "",
@@ -761,8 +759,8 @@ export function ComparisonView({
                       supplierName={supplier.name}
                       responseId={response.id}
                       responseText={response.response_text || ""}
-                      aiScore={response.ai_score || undefined}
-                      aiComment={response.ai_comment || undefined}
+                      aiScore={response.ai_score ?? 0}
+                      aiComment={response.ai_comment ?? ""}
                       status={state.status}
                       isChecked={state.isChecked}
                       manualScore={state.manualScore}

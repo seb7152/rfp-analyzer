@@ -178,7 +178,7 @@ export function useResponseMutation(): UseMutationResult<
     },
 
     // Always refetch after error or success to ensure consistency
-    onSettled: (data, error, variables) => {
+    onSettled: (_data, _error, variables) => {
       // Invalidate and refetch the single response
       queryClient.invalidateQueries({
         queryKey: ["response", variables.responseId],

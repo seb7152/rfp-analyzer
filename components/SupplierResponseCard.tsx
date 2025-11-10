@@ -21,7 +21,7 @@ import { StatusSwitch } from "@/components/ui/status-switch";
 import { StarRating } from "@/components/ui/star-rating";
 
 export interface SupplierResponseCardProps {
-  supplierId: string;
+  supplierId?: string;
   supplierName: string;
   responseId: string;
   responseText: string;
@@ -46,9 +46,9 @@ export interface SupplierResponseCardProps {
 }
 
 export function SupplierResponseCard({
-  supplierId,
+  supplierId: _supplierId,
   supplierName,
-  responseId,
+  responseId: _responseId,
   responseText,
   aiScore,
   aiComment,

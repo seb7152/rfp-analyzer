@@ -9,7 +9,7 @@ import { validateRequirementsJSON } from "@/lib/supabase/validators";
 import type { ImportRequirementsRequest, Category } from "@/lib/supabase/types";
 
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { rfpId: string } },
 ) {
   try {
@@ -25,7 +25,7 @@ export async function POST(
     }
 
     // Get request body
-    const body = await request.json();
+    const body = await _request.json();
 
     // Validate JSON format
     if (typeof body.json !== "string") {
@@ -88,10 +88,19 @@ export async function POST(
       suppliersCount = supplierResult.count;
     }
 
-    // Import requirements
+    // Import requirements (filter out any without id)
+    const validRequirements = data.requirements.filter((req: any) => req.id) as Array<{
+      id: string;
+      code?: string;
+      title: string;
+      description?: string;
+      weight: number;
+      category_name: string;
+      order?: number;
+    }>;
     const requirementsResult = await importRequirements(
       params.rfpId,
-      data.requirements,
+      validRequirements,
       user.id,
     );
 

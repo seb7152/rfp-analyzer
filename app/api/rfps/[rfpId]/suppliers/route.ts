@@ -6,7 +6,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
  * Get all suppliers for an RFP
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ rfpId: string }> },
 ) {
   try {
