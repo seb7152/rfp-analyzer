@@ -3,6 +3,7 @@ import {
   useQueryClient,
   UseMutationResult,
 } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { ResponseWithSupplier, GetResponsesResponse } from "./use-responses";
 
 export interface UpdateResponseInput {
@@ -162,6 +163,18 @@ export function useResponseMutation(): UseMutationResult<
           queryClient.setQueryData(key, data);
         });
       }
+
+      // Show error toast
+      toast.error("Erreur lors de l'enregistrement", {
+        description: err.message || "Une erreur s'est produite",
+      });
+    },
+
+    // On success, show success toast
+    onSuccess: () => {
+      toast.success("Modifications enregistrées", {
+        description: "Vos changements ont été sauvegardés avec succès",
+      });
     },
 
     // Always refetch after error or success to ensure consistency

@@ -233,19 +233,27 @@ export function SupplierResponseCard({
                 <span className="text-sm font-semibold text-slate-900 dark:text-white">
                   Votre commentaire
                 </span>
-                {/* Save status indicator */}
-                {isSaving && (
-                  <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Enregistrement...
-                  </span>
-                )}
-                {showSaved && !isSaving && (
-                  <span className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 animate-in fade-in duration-200">
-                    <Check className="w-3 h-3" />
-                    Enregistré
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {/* Character count indicator (only shown if > 500) */}
+                  {manualComment.length > 500 && (
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {manualComment.length} caractères
+                    </span>
+                  )}
+                  {/* Save status indicator */}
+                  {isSaving && (
+                    <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Enregistrement...
+                    </span>
+                  )}
+                  {showSaved && !isSaving && (
+                    <span className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 animate-in fade-in duration-200">
+                      <Check className="w-3 h-3" />
+                      Enregistré
+                    </span>
+                  )}
+                </div>
               </div>
               <Textarea
                 value={manualComment}
@@ -257,8 +265,16 @@ export function SupplierResponseCard({
             </div>
 
             <div>
-              <div className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
-                Questions / Doutes
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                  Questions / Doutes
+                </span>
+                {/* Character count indicator (only shown if > 500) */}
+                {questionText.length > 500 && (
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    {questionText.length} caractères
+                  </span>
+                )}
               </div>
               <Textarea
                 value={questionText}
