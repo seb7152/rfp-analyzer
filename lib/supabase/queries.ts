@@ -712,7 +712,14 @@ export async function getResponsesForRequirement(
     );
   }
 
-  return data || [];
+  // Sort responses by supplier name to maintain consistent order
+  const sortedData = (data || []).sort((a, b) => {
+    const nameA = a.supplier?.name || "";
+    const nameB = b.supplier?.name || "";
+    return nameA.localeCompare(nameB);
+  });
+
+  return sortedData;
 }
 
 /**
@@ -795,7 +802,14 @@ export async function getResponsesForRFP(
     throw new Error(`Failed to fetch responses for RFP: ${error.message}`);
   }
 
-  return data || [];
+  // Sort responses by supplier name to maintain consistent order
+  const sortedData = (data || []).sort((a, b) => {
+    const nameA = a.supplier?.name || "";
+    const nameB = b.supplier?.name || "";
+    return nameA.localeCompare(nameB);
+  });
+
+  return sortedData;
 }
 
 /**
