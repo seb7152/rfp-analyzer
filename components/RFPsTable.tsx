@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, Edit2, Eye, Trash2 } from "lucide-react";
+import { FileText, Edit2, Eye, Trash2, Sparkles } from "lucide-react";
 import type { RFP } from "@/lib/supabase/types";
 
 interface RFPsTableProps {
@@ -149,6 +149,17 @@ export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
                         title="View RFP"
                       >
                         <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          router.push(`/dashboard/rfp/${rfp.id}/analyze`)
+                        }
+                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-slate-800"
+                        title="AI Analysis"
+                      >
+                        <Sparkles className="h-4 w-4" />
                       </Button>
                       <Button
                         size="sm"

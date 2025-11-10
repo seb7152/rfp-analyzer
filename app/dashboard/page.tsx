@@ -254,6 +254,40 @@ export default function DashboardPage() {
           })}
         </section>
 
+        {/* RFPs Table */}
+        <div className="mt-8">
+          <RFPsTable
+            rfps={rfps}
+            isLoading={rfpsLoading}
+            onDelete={async (rfpId) => {
+              if (
+                !confirm(
+                  "Are you sure you want to delete this RFP? This action cannot be undone.",
+                )
+              ) {
+                return;
+              }
+
+              try {
+                const response = await fetch(`/api/rfps/${rfpId}`, {
+                  method: "DELETE",
+                });
+
+                if (!response.ok) {
+                  const error = await response.json();
+                  alert(`Failed to delete RFP: ${error.error}`);
+                  return;
+                }
+
+                refetchRFPs();
+              } catch (error) {
+                console.error("Delete error:", error);
+                alert("Failed to delete RFP. Please try again.");
+              }
+            }}
+          />
+        </div>
+
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="flex w-full gap-1 rounded-2xl border border-slate-200 bg-white/80 p-2 dark:border-slate-800 dark:bg-slate-900/60">
             <TabsTrigger
@@ -511,40 +545,6 @@ export default function DashboardPage() {
             </div>
           </TabsContent>
         </Tabs>
-
-        {/* RFPs Table */}
-        <div className="mt-10">
-          <RFPsTable
-            rfps={rfps}
-            isLoading={rfpsLoading}
-            onDelete={async (rfpId) => {
-              if (
-                !confirm(
-                  "Are you sure you want to delete this RFP? This action cannot be undone.",
-                )
-              ) {
-                return;
-              }
-
-              try {
-                const response = await fetch(`/api/rfps/${rfpId}`, {
-                  method: "DELETE",
-                });
-
-                if (!response.ok) {
-                  const error = await response.json();
-                  alert(`Failed to delete RFP: ${error.error}`);
-                  return;
-                }
-
-                refetchRFPs();
-              } catch (error) {
-                console.error("Delete error:", error);
-                alert("Failed to delete RFP. Please try again.");
-              }
-            }}
-          />
-        </div>
       </div>
 
       {/* Create RFP Dialog */}
