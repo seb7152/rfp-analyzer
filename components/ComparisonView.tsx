@@ -57,8 +57,6 @@ interface ComparisonViewProps {
   rfpId?: string;
 }
 
-// Force rebuild - clear Vercel cache issue
-
 interface ResponseState {
   [responseId: string]: {
     expanded: boolean;
