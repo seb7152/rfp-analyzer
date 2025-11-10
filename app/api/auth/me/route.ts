@@ -53,7 +53,7 @@ export async function GET() {
     // Get user's organizations
     const { data: userOrgs, error: orgsError } = await supabase
       .from("user_organizations")
-      .select("role, organizations(*)")
+      .select("role, organizations(id, name, slug, organization_code, subscription_tier, max_users, max_rfps, settings)")
       .eq("user_id", authUser.id);
 
     if (orgsError) {
@@ -83,6 +83,7 @@ export async function GET() {
           id: uo.organizations?.id,
           name: uo.organizations?.name,
           slug: uo.organizations?.slug,
+          organization_code: uo.organizations?.organization_code,
           role: uo.role,
           subscription_tier: uo.organizations?.subscription_tier,
           max_users: uo.organizations?.max_users,
