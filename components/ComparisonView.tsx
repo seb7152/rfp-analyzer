@@ -16,6 +16,8 @@ import {
   Loader2,
   AlertTriangle,
   ExternalLink,
+  ChevronsDown,
+  ChevronsUp,
 } from "lucide-react";
 import {
   Breadcrumb,
@@ -357,6 +359,34 @@ export function ComparisonView({
     }
   };
 
+  // Toggle expand/collapse all responses
+  const toggleExpandAll = () => {
+    // Check if all are currently expanded
+    const allExpanded = requirementResponses.every(
+      (r) => responseStates[r.id]?.expanded ?? false,
+    );
+
+    // Toggle all to the opposite state
+    const newExpandedState = !allExpanded;
+
+    // Update all response states
+    setResponseStates((prev) => {
+      const newStates = { ...prev };
+      requirementResponses.forEach((response) => {
+        newStates[response.id] = {
+          ...newStates[response.id],
+          expanded: newExpandedState,
+        };
+      });
+      return newStates;
+    });
+  };
+
+  // Check if all responses are currently expanded
+  const allExpanded =
+    requirementResponses.length > 0 &&
+    requirementResponses.every((r) => responseStates[r.id]?.expanded ?? false);
+
   // Check if all responses for current requirement are checked
   const allResponsesChecked =
     requirementResponses.length > 0 &&
@@ -683,8 +713,31 @@ export function ComparisonView({
                 </div>
               </div>
             ) : (
-              <div className="space-y-2">
-                {suppliers.map((supplier) => {
+              <>
+                {/* Expand/Collapse all button - discreet placement */}
+                <div className="flex justify-end mb-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleExpandAll}
+                    className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  >
+                    {allExpanded ? (
+                      <>
+                        <ChevronsUp className="w-3.5 h-3.5 mr-1.5" />
+                        Tout réduire
+                      </>
+                    ) : (
+                      <>
+                        <ChevronsDown className="w-3.5 h-3.5 mr-1.5" />
+                        Tout expandre
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  {suppliers.map((supplier) => {
                   const response = requirementResponses.find(
                     (r) => r.supplier_id === supplier.id,
                   );
@@ -753,7 +806,8 @@ export function ComparisonView({
                     />
                   );
                 })}
-              </div>
+                </div>
+              </>
             )}
           </div>
         )}
