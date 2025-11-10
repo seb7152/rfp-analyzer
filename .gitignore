@@ -48,6 +48,9 @@ Thumbs.db
 *.tmp
 *.temp
 
+# TypeScript
+*.tsbuildinfo
+
 # Environment
 .env
 .env.*.local
