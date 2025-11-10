@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { createClient } from "@/lib/supabase/client";
 
 export interface AnalyzeRFPResponse {
   success: boolean;
@@ -13,26 +14,26 @@ export interface AnalyzeRFPResponse {
 
 /**
  * Hook to trigger AI analysis for an RFP
- * Sends all requirement and supplier response data to N8N webhook
+ * Calls Supabase Edge Function which sends data to N8N webhook
  */
 export function useAnalyzeRFP() {
+  const supabase = createClient();
+
   return useMutation({
     mutationFn: async (rfpId: string): Promise<AnalyzeRFPResponse> => {
-      const response = await fetch(`/api/rfps/${rfpId}/analyze`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({}),
-        credentials: "include",
+      const { data, error } = await supabase.functions.invoke("analyze-rfp", {
+        body: { rfpId },
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to trigger analysis");
+      if (error) {
+        throw new Error(error.message || "Failed to trigger analysis");
       }
 
-      return response.json();
+      if (!data || !data.success) {
+        throw new Error(data?.error || "Analysis request failed");
+      }
+
+      return data as AnalyzeRFPResponse;
     },
   });
 }

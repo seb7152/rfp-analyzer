@@ -24,10 +24,7 @@ export async function POST(
     const { rfpId } = params;
 
     if (!rfpId || typeof rfpId !== "string") {
-      return NextResponse.json(
-        { error: "Invalid RFP ID" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid RFP ID" }, { status: 400 });
     }
 
     // Use server client with RLS
@@ -64,7 +61,8 @@ export async function POST(
     // Fetch all responses with supplier information
     const { data: responses, error: respError } = await supabase
       .from("responses")
-      .select(`
+      .select(
+        `
         id,
         requirement_id,
         supplier_id,
@@ -73,7 +71,8 @@ export async function POST(
           supplier_id_external,
           name
         )
-      `)
+      `,
+      )
       .eq("rfp_id", rfpId);
 
     if (respError || !responses) {
@@ -130,11 +129,15 @@ export async function POST(
       timestamp: new Date().toISOString(),
     };
 
-    // Determine webhook URL based on environment
-    const isProduction = process.env.NODE_ENV === "production";
-    const webhookUrl = isProduction
-      ? "https://n8n.srv828065.hstgr.cloud/webhook/a7d141e3-24e6-431d-8f63-abbe83f0319f"
-      : "https://n8n.srv828065.hstgr.cloud/webhook-test/a7d141e3-24e6-431d-8f63-abbe83f0319f";
+    // Get webhook URL from environment
+    const webhookUrl = process.env.N8N_WEBHOOK_PROD;
+
+    if (!webhookUrl) {
+      return NextResponse.json(
+        { error: "N8N_WEBHOOK_PROD environment variable not configured" },
+        { status: 500 },
+      );
+    }
 
     // Send payload to N8N webhook
     console.log(`[N8N] Sending analysis request to ${webhookUrl}`);
@@ -150,7 +153,9 @@ export async function POST(
 
     if (!webhookResponse.ok) {
       const errorText = await webhookResponse.text();
-      console.error(`[N8N] Webhook failed: ${webhookResponse.status} - ${errorText}`);
+      console.error(
+        `[N8N] Webhook failed: ${webhookResponse.status} - ${errorText}`,
+      );
       return NextResponse.json(
         {
           error: "Failed to send analysis request to N8N",

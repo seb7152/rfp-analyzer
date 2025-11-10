@@ -692,7 +692,7 @@ export function ComparisonView({
 
                   const state = responseStates[response.id] || {
                     expanded: false,
-                    manualScore: response.manual_score || 0,
+                    manualScore: response.manual_score ?? undefined,
                     status: (response.status || "pending") as const,
                     isChecked: response.is_checked || false,
                     manualComment: response.manual_comment || "",

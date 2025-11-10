@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useRequirements } from "@/hooks/use-requirements";
 import { useRFPCompletion } from "@/hooks/use-completion";
+import { useAnalyzeRFP } from "@/hooks/use-analyze-rfp";
 import { Sidebar } from "@/components/Sidebar";
 import { ComparisonView } from "@/components/ComparisonView";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft, Loader2, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, Loader2, CheckCircle2, Zap } from "lucide-react";
 
 interface EvaluatePageProps {
   params: {
@@ -29,6 +30,12 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
 
   const { percentage: completionPercentage, isLoading: completionLoading } =
     useRFPCompletion(params.rfpId);
+
+  const {
+    mutate: triggerAnalysis,
+    isPending: isAnalyzing,
+    isSuccess: analysisSuccess,
+  } = useAnalyzeRFP();
 
   // Redirect if not authenticated
   if (authLoading) {
@@ -64,26 +71,54 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
             </div>
           </div>
 
-          {/* Completion Percentage */}
-          <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-            {completionLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin text-slate-600 dark:text-slate-400" />
-            ) : completionPercentage === 100 ? (
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
-            ) : (
-              <div className="h-5 w-5 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center">
-                <div className="h-3 w-3 rounded-full bg-slate-400 dark:bg-slate-500" />
-              </div>
-            )}
-            <div className="text-right">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-                {completionPercentage}% Complete
-              </p>
-              {completionPercentage === 100 && (
-                <p className="text-xs text-green-600 dark:text-green-400">
-                  All responses evaluated
-                </p>
+          <div className="flex items-center gap-4">
+            {/* AI Analysis Button */}
+            <Button
+              onClick={() => triggerAnalysis(params.rfpId)}
+              disabled={isAnalyzing}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              {isAnalyzing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Analyzing...
+                </>
+              ) : analysisSuccess ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  Analysis Started
+                </>
+              ) : (
+                <>
+                  <Zap className="h-4 w-4" />
+                  AI Analysis
+                </>
               )}
+            </Button>
+
+            {/* Completion Percentage */}
+            <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800">
+              {completionLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin text-slate-600 dark:text-slate-400" />
+              ) : completionPercentage === 100 ? (
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+              ) : (
+                <div className="h-5 w-5 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center">
+                  <div className="h-3 w-3 rounded-full bg-slate-400 dark:bg-slate-500" />
+                </div>
+              )}
+              <div className="text-right">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+                  {completionPercentage}% Complete
+                </p>
+                {completionPercentage === 100 && (
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    All responses evaluated
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>

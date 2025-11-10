@@ -141,7 +141,7 @@ export function SupplierResponseCard({
         {/* Final score - prominently displayed with manual score (interactive stars) */}
         <div className="flex-shrink-0 flex flex-col items-end gap-1">
           <StarRating
-            score={manualScore ?? 0}
+            score={currentScore}
             interactive={true}
             onScoreChange={onScoreChange}
             size="md"
