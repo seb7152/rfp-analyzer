@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+
+# Production Build
+out/
+dist/
+build/
+
+# Testing
+coverage/
+
+# Logs
+*.log
+
+# Environment
+.env*

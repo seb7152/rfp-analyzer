@@ -304,31 +304,31 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 ### AI Analysis API
 
 - [x] T126 Create app/api/rfps/[rfpId]/analyze/route.ts POST endpoint to trigger AI analysis
-- [ ] T127 Filter requirements to leaf nodes only and fetch all supplier responses for payload
-- [ ] T128 Build webhook payload with requirement context (title, description) and supplier responses
-- [ ] T129 Send POST request to N8N webhook with payload containing all analysis data
-- [ ] T130 Generate jobId and store initial analysis_status in rfps table (status: 'processing')
-- [ ] T131 Add error handling with try/catch and return appropriate error messages
+- [x] T127 Filter requirements to leaf nodes only and fetch all supplier responses for payload
+- [x] T128 Build webhook payload with requirement context (title, description) and supplier responses
+- [x] T129 Send POST request to N8N webhook with payload containing all analysis data
+- [x] T130 Generate jobId and store initial analysis_status in rfps table (status: 'processing')
+- [x] T131 Add error handling with try/catch and return appropriate error messages
 
 ### Analysis Status Tracking (Supabase Realtime)
 
-- [ ] T132 [P] Add analysis_status JSONB column to rfps table in new migration
+- [x] T132 [P] Add analysis_status JSONB column to rfps table in new migration
 - [ ] T133 Store analysis metadata: { jobId, startedAt, completedAt, totalResponses, processedResponses, status }
-- [ ] T134 Create app/api/rfps/[rfpId]/analyze/callback/route.ts PUT endpoint to receive N8N callback
+- [x] T134 Create app/api/rfps/[rfpId]/analyze/callback/route.ts PUT endpoint to receive N8N callback
 - [ ] T135 Validate callback is from N8N (token/signature validation once N8N workflow is ready)
-- [ ] T136 Update analysis_status in rfps table when job completes (status, processedResponses, completedAt)
-- [ ] T137 Create hooks/use-analyze-status.ts hook using Supabase Realtime to subscribe to status changes
-- [ ] T138 Hook automatically refetches responses when analysis_status changes to 'completed'
+- [x] T136 Update analysis_status in rfps table when job completes (status, processedResponses, completedAt)
+- [x] T137 Create hooks/use-analyze-status.ts hook using Supabase Realtime to subscribe to status changes
+- [x] T138 Hook automatically refetches responses when analysis_status changes to 'completed'
 
 ### Dashboard UI Integration (Real-time Updates via Supabase)
 
-- [ ] T139 [P] [US8] Add "Analyze with AI" action button to RFP dashboard table
-- [ ] T140 [US8] Show button only for RFPs with responses lacking AI analysis (ai_score IS NULL)
-- [ ] T141 [US8] Implement confirmation dialog: "Analyze X responses with AI? This may take several minutes."
-- [ ] T142 [US8] Disable "Analyze with AI" button while analysis is in progress (via analysis_status)
-- [ ] T143 [US8] Display processing status badge using Supabase Realtime subscription (e.g., "AI Analysis: 45/100 responses processed")
-- [ ] T144 [US8] Add success/error toast notifications when analysis completes (via Realtime callback)
-- [ ] T145 [US8] Implement loading state with spinner when analysis is triggered
+- [x] T139 [P] [US8] Add "Analyze with AI" action button to RFP dashboard table
+- [x] T140 [US8] Show button only for RFPs with responses lacking AI analysis (ai_score IS NULL)
+- [x] T141 [US8] Implement confirmation dialog: "Analyze X responses with AI? This may take several minutes."
+- [x] T142 [US8] Disable "Analyze with AI" button while analysis is in progress (via analysis_status)
+- [x] T143 [US8] Display processing status badge using Supabase Realtime subscription (e.g., "AI Analysis: 45/100 responses processed")
+- [x] T144 [US8] Add success/error toast notifications when analysis completes (via Realtime callback)
+- [x] T145 [US8] Implement loading state with spinner when analysis is triggered
 
 ### Response View Updates (Real-time Refresh)
 

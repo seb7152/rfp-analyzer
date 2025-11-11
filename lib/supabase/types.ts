@@ -110,7 +110,9 @@ export interface Category {
   short_name: string;
   parent_id: string | null;
   level: 1 | 2 | 3 | 4;
+  weight: number;
   position_in_pdf: Record<string, unknown> | null;
+  display_order?: number;
   created_at: string;
   updated_at: string;
   created_by: string | null;
