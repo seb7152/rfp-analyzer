@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useRequirements } from "@/hooks/use-requirements";
@@ -50,7 +50,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   } = useAnalyzeRFP();
 
   // Fetch RFP title for modal
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchRFPTitle = async () => {
       try {
         const response = await fetch(`/api/organizations`, {
