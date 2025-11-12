@@ -51,15 +51,9 @@ async function testConnection() {
     console.log(`📂 Accessing bucket: ${bucketName}...`);
     const bucket = storage.bucket(bucketName);
 
-    // Check if bucket exists
-    const [exists] = await bucket.exists();
-
-    if (!exists) {
-      console.error(`❌ Bucket '${bucketName}' does not exist or is not accessible`);
-      process.exit(1);
-    }
-
-    console.log(`✓ Bucket accessible\n`);
+    // Note: bucket.exists() requires storage.buckets.get permission
+    // Instead, we'll try to directly perform an operation
+    console.log(`✓ Bucket reference created\n`);
 
     // Try to create a test file (temporary)
     console.log("📤 Testing file upload...");
