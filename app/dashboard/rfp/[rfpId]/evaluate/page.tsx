@@ -8,9 +8,10 @@ import { useRFPCompletion } from "@/hooks/use-completion";
 import { useAnalyzeRFP } from "@/hooks/use-analyze-rfp";
 import { Sidebar } from "@/components/Sidebar";
 import { ComparisonView } from "@/components/ComparisonView";
+import { DocumentUploadModal } from "@/components/DocumentUploadModal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft, Loader2, CheckCircle2, Zap } from "lucide-react";
+import { ChevronLeft, Loader2, CheckCircle2, Zap, FileUp } from "lucide-react";
 
 interface EvaluatePageProps {
   params: {
@@ -33,6 +34,8 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   const [selectedRequirementId, setSelectedRequirementId] = useState<
     string | null
   >(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [rfpTitle, setRfpTitle] = useState<string>("RFP");
 
   const { requirements: allRequirements, isLoading: requirementsLoading } =
     useRequirements(params.rfpId);
@@ -45,6 +48,30 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
     isPending: isAnalyzing,
     isSuccess: analysisSuccess,
   } = useAnalyzeRFP();
+
+  // Fetch RFP title for modal
+  React.useEffect(() => {
+    const fetchRFPTitle = async () => {
+      try {
+        const response = await fetch(`/api/organizations`, {
+          credentials: "include",
+        });
+        if (response.ok) {
+          // Try to get RFP title from requirements or another source
+          const firstReq = allRequirements[0];
+          if (firstReq?.rfp_id === params.rfpId) {
+            setRfpTitle(firstReq.rfp_title || "RFP");
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching RFP title:", error);
+      }
+    };
+
+    if (allRequirements.length > 0 && !requirementsLoading) {
+      fetchRFPTitle();
+    }
+  }, [allRequirements, requirementsLoading, params.rfpId]);
 
   // Redirect if not authenticated
   if (authLoading) {
@@ -81,6 +108,18 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Upload Documents Button */}
+            <Button
+              onClick={() => setIsUploadModalOpen(true)}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              title="Ajouter des documents PDF"
+            >
+              <FileUp className="h-4 w-4" />
+              Documents
+            </Button>
+
             {/* AI Analysis Button */}
             <Button
               onClick={() => triggerAnalysis(params.rfpId)}
@@ -173,6 +212,14 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
           )}
         </div>
       </div>
+
+      {/* Document Upload Modal */}
+      <DocumentUploadModal
+        rfpId={params.rfpId}
+        rfpTitle={rfpTitle}
+        isOpen={isUploadModalOpen}
+        onOpenChange={setIsUploadModalOpen}
+      />
     </div>
   );
 }
