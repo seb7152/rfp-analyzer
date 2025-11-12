@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { bucket } from "@/lib/gcs";
+import { deleteFile } from "@/lib/gcs";
 
 // GET: List all documents for an RFP
 export async function GET(
@@ -170,8 +170,7 @@ export async function DELETE(
 
     // Delete file from GCS
     try {
-      const file = bucket.file(document.gcs_object_name);
-      await file.delete();
+      await deleteFile(document.gcs_object_name);
     } catch (gcsError) {
       // Log error but continue with soft delete
       console.error("GCS deletion error:", gcsError);

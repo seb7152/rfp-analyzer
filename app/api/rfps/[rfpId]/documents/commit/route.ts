@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { bucket } from "@/lib/gcs";
+import { fileExists, deleteFile, getFileMetadata } from "@/lib/gcs";
 
 export async function POST(
   request: NextRequest,
@@ -79,8 +79,7 @@ export async function POST(
 
     // Verify file exists in GCS
     try {
-      const file = bucket.file(objectName);
-      const [metadata] = await file.getMetadata();
+      const metadata = await getFileMetadata(objectName);
 
       // Validate file size matches
       if (metadata.size !== fileSize) {
@@ -120,8 +119,7 @@ export async function POST(
     if (insertError) {
       // Clean up GCS file if database insertion fails
       try {
-        const file = bucket.file(objectName);
-        await file.delete();
+        await deleteFile(objectName);
       } catch (cleanupError) {
         console.error("GCS cleanup error:", cleanupError);
       }

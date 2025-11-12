@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { bucket } from "@/lib/gcs";
+import { generateUploadSignedUrl } from "@/lib/gcs";
 import { v4 as uuidv4 } from "uuid";
 
 export async function POST(
@@ -104,13 +104,8 @@ export async function POST(
     const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, "_");
     const objectName = `rfps/${rfp.organization_id}/${rfpId}/${documentId}-${sanitizedFilename}`;
 
-    // Generate signed URL for upload
-    const file = bucket.file(objectName);
-    const [uploadUrl] = await file.getSignedUrl({
-      version: "v4",
-      action: "write",
-      expires: Date.now() + 15 * 60 * 1000, // 15 minutes for upload
-    });
+    // Generate signed URL for upload (15 minutes TTL for actual upload)
+    const uploadUrl = await generateUploadSignedUrl(objectName, 15 * 60 * 1000);
 
     const ttlSeconds = parseInt(
       process.env.SIGN_URL_TTL_SEC || "90",

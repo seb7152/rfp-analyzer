@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { bucket } from "@/lib/gcs";
+import { generateDownloadSignedUrl } from "@/lib/gcs";
 
 export async function GET(
   request: NextRequest,
@@ -61,17 +61,15 @@ export async function GET(
 
     // Generate signed URL for reading
     try {
-      const file = bucket.file(document.gcs_object_name);
       const ttlSeconds = parseInt(
         process.env.SIGN_URL_TTL_SEC || "90",
         10
       );
 
-      const [downloadUrl] = await file.getSignedUrl({
-        version: "v4",
-        action: "read",
-        expires: Date.now() + ttlSeconds * 1000,
-      });
+      const downloadUrl = await generateDownloadSignedUrl(
+        document.gcs_object_name,
+        ttlSeconds * 1000
+      );
 
       const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
 
