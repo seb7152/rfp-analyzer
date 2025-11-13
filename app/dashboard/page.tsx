@@ -48,8 +48,11 @@ export default function DashboardPage() {
   } = useRFPs(currentOrg?.id || null);
 
   // Find the most recent RFP in progress, or the most recent RFP overall
-  const activeRFP = rfps?.find((rfp) => rfp.status === "in_progress") || rfps?.[0] || null;
-  const { percentage: progressPercentage } = useRFPCompletion(activeRFP?.id || null);
+  const activeRFP =
+    rfps?.find((rfp) => rfp.status === "in_progress") || rfps?.[0] || null;
+  const { percentage: progressPercentage } = useRFPCompletion(
+    activeRFP?.id || null,
+  );
 
   if (authLoading || orgLoading) {
     return (
@@ -114,7 +117,9 @@ export default function DashboardPage() {
       icon: BarChart3,
       label: "Progression",
       value: `${Math.round(progressPercentage)}%`,
-      hint: activeRFP ? `Avancement du RFP: ${activeRFP.title}` : "Aucun RFP en cours",
+      hint: activeRFP
+        ? `Avancement du RFP: ${activeRFP.title}`
+        : "Aucun RFP en cours",
       tone: "from-neutral-100 to-white dark:from-slate-900 dark:to-slate-950",
     },
   ];
@@ -253,6 +258,40 @@ export default function DashboardPage() {
             );
           })}
         </section>
+
+        {/* RFPs Table */}
+        <div className="mt-8">
+          <RFPsTable
+            rfps={rfps}
+            isLoading={rfpsLoading}
+            onDelete={async (rfpId) => {
+              if (
+                !confirm(
+                  "Are you sure you want to delete this RFP? This action cannot be undone.",
+                )
+              ) {
+                return;
+              }
+
+              try {
+                const response = await fetch(`/api/rfps/${rfpId}`, {
+                  method: "DELETE",
+                });
+
+                if (!response.ok) {
+                  const error = await response.json();
+                  alert(`Failed to delete RFP: ${error.error}`);
+                  return;
+                }
+
+                refetchRFPs();
+              } catch (error) {
+                console.error("Delete error:", error);
+                alert("Failed to delete RFP. Please try again.");
+              }
+            }}
+          />
+        </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="flex w-full gap-1 rounded-2xl border border-slate-200 bg-white/80 p-2 dark:border-slate-800 dark:bg-slate-900/60">
@@ -511,40 +550,6 @@ export default function DashboardPage() {
             </div>
           </TabsContent>
         </Tabs>
-
-        {/* RFPs Table */}
-        <div className="mt-10">
-          <RFPsTable
-            rfps={rfps}
-            isLoading={rfpsLoading}
-            onDelete={async (rfpId) => {
-              if (
-                !confirm(
-                  "Are you sure you want to delete this RFP? This action cannot be undone.",
-                )
-              ) {
-                return;
-              }
-
-              try {
-                const response = await fetch(`/api/rfps/${rfpId}`, {
-                  method: "DELETE",
-                });
-
-                if (!response.ok) {
-                  const error = await response.json();
-                  alert(`Failed to delete RFP: ${error.error}`);
-                  return;
-                }
-
-                refetchRFPs();
-              } catch (error) {
-                console.error("Delete error:", error);
-                alert("Failed to delete RFP. Please try again.");
-              }
-            }}
-          />
-        </div>
       </div>
 
       {/* Create RFP Dialog */}
