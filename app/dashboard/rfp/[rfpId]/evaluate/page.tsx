@@ -49,29 +49,13 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
     isSuccess: analysisSuccess,
   } = useAnalyzeRFP();
 
-  // Fetch RFP title for modal
+  // Set RFP title from ID
   useEffect(() => {
-    const fetchRFPTitle = async () => {
-      try {
-        const response = await fetch(`/api/organizations`, {
-          credentials: "include",
-        });
-        if (response.ok) {
-          // Try to get RFP title from requirements or another source
-          const firstReq = allRequirements[0];
-          if (firstReq?.rfp_id === params.rfpId) {
-            setRfpTitle(firstReq.rfp_title || "RFP");
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching RFP title:", error);
-      }
-    };
-
-    if (allRequirements.length > 0 && !requirementsLoading) {
-      fetchRFPTitle();
+    if (params.rfpId) {
+      // Use the RFP ID as title for now (or could extract from first requirement later)
+      setRfpTitle(`RFP ${params.rfpId.slice(0, 8)}`);
     }
-  }, [allRequirements, requirementsLoading, params.rfpId]);
+  }, [params.rfpId]);
 
   // Redirect if not authenticated
   if (authLoading) {
