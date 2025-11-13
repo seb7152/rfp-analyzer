@@ -292,7 +292,7 @@ export default function RFPSynthesisPage() {
                 <p>Fournisseurs analysés: {suppliersAnalysis.comparisonTable.length}</p>
                 <p>Meilleur score: {Math.max(...suppliersAnalysis.comparisonTable.map(s => s.totalScore))}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  {suppliersAnalysis.ranking.slice(0, 3).map((supplier, index) => (
+                  {suppliersAnalysis.ranking.slice(0, 3).map((supplier, _index) => (
                     <div key={supplier.supplierId} className="border p-3 rounded">
                       <p className="font-medium">{supplier.supplierName}</p>
                       <p className="text-sm text-slate-600">Score: {supplier.finalScore}</p>
