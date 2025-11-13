@@ -86,7 +86,7 @@ export default function RFPSynthesisPage() {
   const rfpId = params.rfpId as string;
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [_selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
+  const [_selectedSupplier, _setSelectedSupplier] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
