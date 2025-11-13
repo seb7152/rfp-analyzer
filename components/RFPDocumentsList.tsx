@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { AlertCircle, FileText, Trash2, Loader2, FileUp, FileArchive, Eye } from "lucide-react";
 import { RFPDocument } from "@/hooks/useRFPDocuments";
 import { PDFViewerSheet } from "@/components/PDFViewerSheet";
@@ -49,6 +50,24 @@ function formatDate(dateString: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function getDocumentTypeLabel(documentType: string | null): { label: string; color: string } {
+  if (!documentType) {
+    return { label: "Non spécifié", color: "slate" };
+  }
+
+  if (documentType === "cahier_charges") {
+    return { label: "Cahier des charges", color: "blue" };
+  }
+
+  if (documentType.startsWith("supplier_")) {
+    // Extract supplier ID and return generic label
+    // The actual supplier name would come from a lookup
+    return { label: "Document de fournisseur", color: "green" };
+  }
+
+  return { label: documentType, color: "slate" };
 }
 
 export function RFPDocumentsList({
@@ -111,7 +130,7 @@ export function RFPDocumentsList({
                 <p className="text-sm font-medium text-slate-900 truncate">
                   {doc.original_filename || doc.filename}
                 </p>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <span className="text-xs text-slate-500">
                     {formatFileSize(doc.file_size)}
                   </span>
@@ -119,6 +138,14 @@ export function RFPDocumentsList({
                   <span className="text-xs text-slate-500">
                     {formatDate(doc.created_at)}
                   </span>
+                  {doc.document_type && (
+                    <>
+                      <span className="text-slate-300">•</span>
+                      <Badge variant="outline" className="text-xs">
+                        {getDocumentTypeLabel(doc.document_type).label}
+                      </Badge>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

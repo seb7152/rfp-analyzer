@@ -1,11 +1,23 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { AlertCircle, FileUp, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { useRFPDocumentUpload } from "@/hooks/useRFPDocumentUpload";
 import { cn } from "@/lib/utils";
+
+interface Supplier {
+  id: string;
+  name: string;
+}
 
 interface RFPDocumentUploadProps {
   rfpId: string;
@@ -18,8 +30,31 @@ export function RFPDocumentUpload({
 }: RFPDocumentUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [documentType, setDocumentType] = useState<"cahier_charges" | "supplier">("cahier_charges");
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>("");
+  const [loadingSuppliers, setLoadingSuppliers] = useState(true);
   const { uploadDocument, uploadProgress, removeProgressItem } =
     useRFPDocumentUpload(rfpId);
+
+  // Fetch suppliers on component mount
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const response = await fetch(`/api/rfps/${rfpId}/suppliers`);
+        if (response.ok) {
+          const data = await response.json();
+          setSuppliers(data.suppliers || []);
+        }
+      } catch (error) {
+        console.error("Error fetching suppliers:", error);
+      } finally {
+        setLoadingSuppliers(false);
+      }
+    };
+
+    fetchSuppliers();
+  }, [rfpId]);
 
   const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -73,7 +108,19 @@ export function RFPDocumentUpload({
         return;
       }
 
-      await uploadDocument(file, "cahier_charges");
+      // Validate supplier selection if document is from supplier
+      if (documentType === "supplier" && !selectedSupplierId) {
+        alert("Please select a supplier");
+        return;
+      }
+
+      // Determine the document type string to send to the API
+      let finalDocumentType = "cahier_charges";
+      if (documentType === "supplier") {
+        finalDocumentType = `supplier_${selectedSupplierId}`;
+      }
+
+      await uploadDocument(file, finalDocumentType);
 
       // Reset file input
       if (fileInputRef.current) {
@@ -94,6 +141,65 @@ export function RFPDocumentUpload({
 
   return (
     <div className="w-full space-y-4">
+      {/* Document Type Selector */}
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-4">
+        <div>
+          <label className="text-sm font-medium text-slate-700 block mb-2">
+            Type de document
+          </label>
+          <Select value={documentType} onValueChange={(value) => {
+            setDocumentType(value as "cahier_charges" | "supplier");
+            if (value === "cahier_charges") {
+              setSelectedSupplierId("");
+            }
+          }}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="cahier_charges">
+                Document de consultation (cahier des charges)
+              </SelectItem>
+              <SelectItem value="supplier" disabled={suppliers.length === 0}>
+                Document de fournisseur
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Supplier Selector - only shown when supplier type is selected */}
+        {documentType === "supplier" && (
+          <div>
+            <label className="text-sm font-medium text-slate-700 block mb-2">
+              Fournisseur
+            </label>
+            {loadingSuppliers ? (
+              <div className="flex items-center gap-2 text-slate-600">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Chargement des fournisseurs...</span>
+              </div>
+            ) : suppliers.length === 0 ? (
+              <div className="text-sm text-slate-500 bg-slate-100 p-3 rounded">
+                Aucun fournisseur trouvé. Veuillez d'abord importer des fournisseurs.
+              </div>
+            ) : (
+              <Select value={selectedSupplierId} onValueChange={setSelectedSupplierId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Sélectionner un fournisseur" />
+                </SelectTrigger>
+                <SelectContent>
+                  {suppliers.map((supplier) => (
+                    <SelectItem key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Upload Zone */}
       <div
         onDragEnter={handleDrag}
