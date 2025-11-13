@@ -66,7 +66,7 @@ export function DocumentUploadModal({
           {activeTab === "upload" && (
             <div className="space-y-4">
               <p className="text-sm text-slate-600">
-                Ajouter des documents (PDF, Excel, Word) pour le RFP:{" "}
+                Ajouter un ou plusieurs documents (PDF, Excel, Word) pour le RFP:{" "}
                 <span className="font-semibold">{rfpTitle}</span>
               </p>
               <RFPDocumentUpload

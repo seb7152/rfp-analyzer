@@ -72,16 +72,73 @@ export function RFPDocumentUpload({
     e.stopPropagation();
     setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      await handleFileUpload(file);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+      await handleMultipleFileUpload(files);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      handleFileUpload(file);
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      handleMultipleFileUpload(files);
+    }
+  };
+
+  const handleMultipleFileUpload = async (files: File[]) => {
+    // Validate all files before starting any upload
+    for (const file of files) {
+      // Validate file type - allow PDF, Excel, and Word documents
+      const allowedMimeTypes = [
+        "application/pdf",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
+
+      if (!allowedMimeTypes.includes(file.type)) {
+        alert(`Le fichier "${file.name}" n'est pas d'un type autorisé. Seuls les fichiers PDF, Excel et Word sont acceptés.`);
+        return;
+      }
+
+      // Validate file size (50MB)
+      const maxSizeBytes = 50 * 1024 * 1024;
+      if (file.size > maxSizeBytes) {
+        alert(`Le fichier "${file.name}" dépasse la limite de 50MB.`);
+        return;
+      }
+    }
+
+    // Validate supplier selection if document is from supplier
+    if (documentType === "supplier" && !selectedSupplierId) {
+      alert("Veuillez sélectionner un fournisseur");
+      return;
+    }
+
+    // Determine the document type string to send to the API
+    const finalDocumentType = documentType === "supplier" ? "supplier_response" : "cahier_charges";
+
+    // Upload all files
+    try {
+      for (const file of files) {
+        await uploadDocument(file, finalDocumentType, selectedSupplierId);
+      }
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      // Trigger callback after all uploads are initiated
+      if (onUploadSuccess) {
+        setTimeout(() => {
+          onUploadSuccess();
+        }, 1000);
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      // Error is already handled in the hook
     }
   };
 
@@ -216,6 +273,7 @@ export function RFPDocumentUpload({
           ref={fileInputRef}
           type="file"
           accept=".pdf,.xls,.xlsx,.doc,.docx"
+          multiple
           onChange={handleFileChange}
           className="hidden"
         />
@@ -227,12 +285,12 @@ export function RFPDocumentUpload({
           <FileUp className="h-10 w-10 text-gray-400" />
           <div className="text-center">
             <p className="text-sm font-medium text-gray-700">
-              Glissez-déposez votre document ici
+              Glissez-déposez vos documents ici
             </p>
             <p className="text-xs text-gray-500">
-              ou cliquez pour sélectionner un fichier
+              ou cliquez pour sélectionner un ou plusieurs fichiers
             </p>
-            <p className="text-xs text-gray-400 mt-2">Max 50MB • PDF, Excel, Word</p>
+            <p className="text-xs text-gray-400 mt-2">Max 50MB par fichier • PDF, Excel, Word</p>
           </div>
         </div>
       </div>
