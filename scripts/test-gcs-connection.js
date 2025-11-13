@@ -6,45 +6,45 @@
 require("dotenv").config({ path: ".env.local" });
 
 const { Storage } = require("@google-cloud/storage");
-const path = require("path");
-const fs = require("fs");
 
 const projectId = process.env.GCP_PROJECT_ID;
-const keyFilePath = process.env.GCP_KEY_FILE_PATH;
+const keyJsonContent = process.env.GCP_KEY_JSON;
 const bucketName = process.env.GCP_BUCKET_NAME || "rfp-analyzer-storage";
 
 console.log("🔍 GCP Cloud Storage Connection Test\n");
 console.log("Configuration:");
 console.log(`  Project ID: ${projectId}`);
 console.log(`  Bucket Name: ${bucketName}`);
-console.log(`  Key File: ${keyFilePath}`);
+console.log(`  Key JSON: ${keyJsonContent ? "✓ Set" : "✗ Not set"}`);
 
 if (!projectId) {
   console.error("❌ GCP_PROJECT_ID environment variable is not set");
   process.exit(1);
 }
 
-if (!keyFilePath) {
-  console.error("❌ GCP_KEY_FILE_PATH environment variable is not set");
+if (!keyJsonContent) {
+  console.error(
+    "❌ GCP_KEY_JSON environment variable is not set. Please set it with the content of your GCP service account JSON file."
+  );
   process.exit(1);
 }
-
-const absoluteKeyPath = path.resolve(keyFilePath);
-
-if (!fs.existsSync(absoluteKeyPath)) {
-  console.error(`❌ Key file not found at: ${absoluteKeyPath}`);
-  process.exit(1);
-}
-
-console.log(`✓ Key file found at: ${absoluteKeyPath}\n`);
 
 async function testConnection() {
   try {
     // Initialize GCS client
     console.log("📝 Initializing GCS client...");
+    let credentials;
+    try {
+      credentials = JSON.parse(keyJsonContent);
+    } catch (error) {
+      console.error("❌ Failed to parse GCP_KEY_JSON as valid JSON");
+      console.error("Make sure GCP_KEY_JSON contains the full JSON content of your service account key file");
+      process.exit(1);
+    }
+
     const storage = new Storage({
       projectId,
-      keyFilename: absoluteKeyPath,
+      credentials,
     });
 
     // Get bucket
