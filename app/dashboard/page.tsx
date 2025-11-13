@@ -29,6 +29,7 @@ import Link from "next/link";
 import { CreateRFPDialog } from "@/components/CreateRFPDialog";
 import { RFPsTable } from "@/components/RFPsTable";
 import { useRFPs } from "@/hooks/use-rfps";
+import { useRFPCompletion } from "@/hooks/use-completion";
 
 export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -45,6 +46,10 @@ export default function DashboardPage() {
     isLoading: rfpsLoading,
     refetch: refetchRFPs,
   } = useRFPs(currentOrg?.id || null);
+
+  // Find the most recent RFP in progress, or the most recent RFP overall
+  const activeRFP = rfps?.find((rfp) => rfp.status === "in_progress") || rfps?.[0] || null;
+  const { percentage: progressPercentage } = useRFPCompletion(activeRFP?.id || null);
 
   if (authLoading || orgLoading) {
     return (
@@ -93,7 +98,7 @@ export default function DashboardPage() {
     {
       icon: FileText,
       label: "Appels d'offres",
-      value: "0",
+      value: String(rfps?.length || 0),
       hint: "Premiers dossiers en préparation",
       tone: "from-slate-100 to-white dark:from-slate-900 dark:to-slate-950",
     },
@@ -108,8 +113,8 @@ export default function DashboardPage() {
     {
       icon: BarChart3,
       label: "Progression",
-      value: "0%",
-      hint: "Suivi des analyses RFP",
+      value: `${Math.round(progressPercentage)}%`,
+      hint: activeRFP ? `Avancement du RFP: ${activeRFP.title}` : "Aucun RFP en cours",
       tone: "from-neutral-100 to-white dark:from-slate-900 dark:to-slate-950",
     },
   ];
