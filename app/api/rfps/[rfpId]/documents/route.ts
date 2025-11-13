@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { deleteFile } from "@/lib/gcs";
 
-// GET: List all documents for an RFP
+// GET: List all documents for an RFP (optionally filtered by supplier)
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { rfpId: string } }
 ) {
   try {
@@ -28,6 +28,10 @@ export async function GET(
         { status: 400 }
       );
     }
+
+    // Get supplierId from query parameters
+    const { searchParams } = new URL(request.url);
+    const supplierId = searchParams.get("supplierId");
 
     // Get the RFP and verify user has access
     const { data: rfp, error: rfpFetchError } = await supabase
@@ -56,12 +60,46 @@ export async function GET(
     }
 
     // Get documents for this RFP
-    const { data: documents, error: fetchError } = await supabase
+    let query = supabase
       .from("rfp_documents")
       .select("id, filename, original_filename, document_type, mime_type, file_size, created_by, created_at, page_count")
       .eq("rfp_id", rfpId)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
+      .is("deleted_at", null);
+
+    // If supplierId is provided, filter by supplier
+    if (supplierId) {
+      // Get document IDs associated with this supplier
+      const { data: documentSuppliers, error: dsError } = await supabase
+        .from("document_suppliers")
+        .select("document_id")
+        .eq("supplier_id", supplierId);
+
+      if (dsError) {
+        return NextResponse.json(
+          { error: `Failed to fetch supplier documents: ${dsError.message}` },
+          { status: 400 }
+        );
+      }
+
+      const documentIds = documentSuppliers?.map(ds => ds.document_id) || [];
+
+      if (documentIds.length === 0) {
+        // No documents for this supplier
+        return NextResponse.json(
+          {
+            documents: [],
+            count: 0,
+          },
+          { status: 200 }
+        );
+      }
+
+      query = query.in("id", documentIds);
+    }
+
+    query = query.order("created_at", { ascending: false });
+
+    const { data: documents, error: fetchError } = await query;
 
     if (fetchError) {
       return NextResponse.json(
