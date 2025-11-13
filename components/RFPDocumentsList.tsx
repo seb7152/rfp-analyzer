@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, FileText, Trash2, Loader2, FileUp, FileArchive, Eye } from "lucide-react";
+import { FileText, Trash2, Loader2, FileUp, FileArchive, Eye } from "lucide-react";
 import { RFPDocument } from "@/hooks/useRFPDocuments";
 import { PDFViewerSheet } from "@/components/PDFViewerSheet";
 import { cn } from "@/lib/utils";
