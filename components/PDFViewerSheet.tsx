@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { X, Loader2, AlertCircle, ChevronRight } from "lucide-react";
 
-interface PDFDocument {
+export interface PDFDocument {
   id: string;
   filename: string;
   original_filename: string;

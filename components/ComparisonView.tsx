@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/table";
 import { SupplierResponseCard } from "@/components/SupplierResponseCard";
 import { PDFViewerSheet } from "@/components/PDFViewerSheet";
+import type { PDFDocument } from "@/components/PDFViewerSheet";
 import {
   useCategoryRequirements,
   useRequirementsTree,
@@ -83,7 +84,7 @@ export function ComparisonView({
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [responseStates, setResponseStates] = useState<ResponseState>({});
   const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
-  const [supplierDocuments, setSupplierDocuments] = useState<any[]>([]);
+  const [supplierDocuments, setSupplierDocuments] = useState<PDFDocument[]>([]);
   const [loadingSupplierDocs, setLoadingSupplierDocs] = useState(false);
 
   // Initialize mutation hook for persisting changes
