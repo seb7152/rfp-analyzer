@@ -23,7 +23,7 @@ export function useRFPDocumentUpload(rfpId: string) {
   const [isLoading, setIsLoading] = useState(false);
 
   const uploadDocument = useCallback(
-    async (file: File, documentType: string = "cahier_charges") => {
+    async (file: File, documentType: string = "cahier_charges", supplierId?: string) => {
       const documentId = `upload-${Date.now()}`;
 
       // Initialize progress tracking
@@ -69,7 +69,7 @@ export function useRFPDocumentUpload(rfpId: string) {
         const { uploadUrl, documentId: actualId, objectName } =
           await intentResponse.json();
 
-        // Step 2: Upload file directly to GCS
+        // Step 2: Upload file to backend which handles GCS upload
         setUploadProgress((prev) =>
           prev.map((p) =>
             p.documentId === documentId
@@ -78,16 +78,24 @@ export function useRFPDocumentUpload(rfpId: string) {
           )
         );
 
-        const uploadResponse = await fetch(uploadUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": file.type,
-          },
-          body: file,
-        });
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", file);
+        uploadFormData.append("documentId", actualId);
+        uploadFormData.append("objectName", objectName);
+
+        const uploadResponse = await fetch(
+          `/api/rfps/${rfpId}/documents/upload`,
+          {
+            method: "POST",
+            body: uploadFormData,
+          }
+        );
 
         if (!uploadResponse.ok) {
-          throw new Error("Failed to upload file to cloud storage");
+          const errorData = await uploadResponse.json();
+          throw new Error(
+            errorData.error || "Failed to upload file to cloud storage"
+          );
         }
 
         // Step 3: Commit the upload (save metadata to database)
@@ -112,6 +120,7 @@ export function useRFPDocumentUpload(rfpId: string) {
               mimeType: file.type,
               fileSize: file.size,
               documentType,
+              supplierId: supplierId || null,
             }),
           }
         );

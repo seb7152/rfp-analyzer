@@ -75,7 +75,7 @@ export async function POST(
       );
     }
 
-    if (!["cahier_charges", "specifications", "technical_brief", "appendix"].includes(documentType)) {
+    if (!["cahier_charges", "specifications", "technical_brief", "appendix", "supplier_response"].includes(documentType)) {
       return NextResponse.json(
         { error: "Invalid document type" },
         { status: 400 }

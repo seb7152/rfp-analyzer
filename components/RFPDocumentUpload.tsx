@@ -115,12 +115,11 @@ export function RFPDocumentUpload({
       }
 
       // Determine the document type string to send to the API
-      let finalDocumentType = "cahier_charges";
-      if (documentType === "supplier") {
-        finalDocumentType = `supplier_${selectedSupplierId}`;
-      }
+      // Use 'supplier_response' for supplier documents, not 'supplier_${id}'
+      const finalDocumentType = documentType === "supplier" ? "supplier_response" : "cahier_charges";
 
-      await uploadDocument(file, finalDocumentType);
+      // Upload the document
+      await uploadDocument(file, finalDocumentType, selectedSupplierId);
 
       // Reset file input
       if (fileInputRef.current) {

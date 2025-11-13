@@ -78,6 +78,44 @@ export function RFPDocumentsList({
 }: RFPDocumentsListProps) {
   const [deleting, setDeleting] = React.useState<string | null>(null);
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [supplierNames, setSupplierNames] = React.useState<Record<string, string>>({});
+
+  React.useEffect(() => {
+    // Load supplier names for supplier response documents
+    const loadSupplierNames = async () => {
+      if (!rfpId) return;
+
+      const supplierDocsIds = documents
+        .filter((doc) => doc.document_type === "supplier_response")
+        .map((doc) => doc.id);
+
+      if (supplierDocsIds.length === 0) return;
+
+      const newSupplierNames: Record<string, string> = {};
+
+      for (const docId of supplierDocsIds) {
+        try {
+          const response = await fetch(
+            `/api/rfps/${rfpId}/documents/${docId}/supplier`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            if (data.supplierName) {
+              newSupplierNames[docId] = data.supplierName;
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching supplier name for ${docId}:`, error);
+        }
+      }
+
+      if (Object.keys(newSupplierNames).length > 0) {
+        setSupplierNames(newSupplierNames);
+      }
+    };
+
+    loadSupplierNames();
+  }, [documents, rfpId]);
 
   const handleDelete = async (documentId: string) => {
     if (confirm("Êtes-vous sûr de vouloir supprimer ce document?")) {
@@ -143,6 +181,17 @@ export function RFPDocumentsList({
                       <span className="text-slate-300">•</span>
                       <Badge variant="outline" className="text-xs">
                         {getDocumentTypeLabel(doc.document_type).label}
+                      </Badge>
+                    </>
+                  )}
+                  {doc.document_type === "supplier_response" && supplierNames[doc.id] && (
+                    <>
+                      <span className="text-slate-300">•</span>
+                      <Badge
+                        className="text-xs bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100"
+                        variant="outline"
+                      >
+                        {supplierNames[doc.id]}
                       </Badge>
                     </>
                   )}

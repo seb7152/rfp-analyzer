@@ -38,6 +38,7 @@ export async function POST(
       mimeType = "application/pdf",
       fileSize,
       documentType = "cahier_charges",
+      supplierId,
     } = body;
 
     // Validation
@@ -130,6 +131,57 @@ export async function POST(
         },
         { status: 400 }
       );
+    }
+
+    // If this is a supplier response document, create the association
+    if (documentType === "supplier_response" && supplierId) {
+      // Verify supplier belongs to this RFP
+      const { data: supplier, error: supplierError } = await supabase
+        .from("suppliers")
+        .select("id")
+        .eq("id", supplierId)
+        .eq("rfp_id", rfpId)
+        .single();
+
+      if (supplierError || !supplier) {
+        // Clean up the document we just created
+        await supabase.from("rfp_documents").delete().eq("id", documentId);
+        try {
+          await deleteFile(objectName);
+        } catch (cleanupError) {
+          console.error("GCS cleanup error:", cleanupError);
+        }
+
+        return NextResponse.json(
+          { error: "Supplier not found or does not belong to this RFP" },
+          { status: 400 }
+        );
+      }
+
+      // Create the document-supplier association
+      const { error: associationError } = await supabase
+        .from("document_suppliers")
+        .insert({
+          document_id: documentId,
+          supplier_id: supplierId,
+        });
+
+      if (associationError) {
+        // Clean up the document we just created
+        await supabase.from("rfp_documents").delete().eq("id", documentId);
+        try {
+          await deleteFile(objectName);
+        } catch (cleanupError) {
+          console.error("GCS cleanup error:", cleanupError);
+        }
+
+        return NextResponse.json(
+          {
+            error: `Failed to create supplier association: ${associationError.message}`,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Log the upload action
