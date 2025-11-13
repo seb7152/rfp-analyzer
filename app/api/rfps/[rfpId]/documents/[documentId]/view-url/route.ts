@@ -62,7 +62,7 @@ export async function GET(
     // Generate signed URL for reading
     try {
       const ttlSeconds = parseInt(
-        process.env.SIGN_URL_TTL_SEC || "90",
+        process.env.SIGN_URL_TTL_SEC || "3600",
         10
       );
 

@@ -134,7 +134,11 @@ export async function getFileMetadata(objectName: string) {
 
   try {
     const [metadata] = await file.getMetadata();
-    return metadata;
+    // Ensure size is a number (GCS may return it as a string)
+    return {
+      ...metadata,
+      size: parseInt(metadata.size as any, 10),
+    };
   } catch (error) {
     console.error(`Error getting file metadata for ${objectName}:`, error);
     throw error;

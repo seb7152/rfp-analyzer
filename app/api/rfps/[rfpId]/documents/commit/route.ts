@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { fileExists, deleteFile, getFileMetadata } from "@/lib/gcs";
+import { deleteFile, getFileMetadata } from "@/lib/gcs";
 
 export async function POST(
   request: NextRequest,

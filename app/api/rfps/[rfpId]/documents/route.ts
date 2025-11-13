@@ -4,7 +4,7 @@ import { deleteFile } from "@/lib/gcs";
 
 // GET: List all documents for an RFP
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { rfpId: string } }
 ) {
   try {
@@ -58,7 +58,7 @@ export async function GET(
     // Get documents for this RFP
     const { data: documents, error: fetchError } = await supabase
       .from("rfp_documents")
-      .select("id, filename, original_filename, document_type, file_size, created_by, created_at, page_count")
+      .select("id, filename, original_filename, document_type, mime_type, file_size, created_by, created_at, page_count")
       .eq("rfp_id", rfpId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false });

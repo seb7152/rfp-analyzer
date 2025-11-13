@@ -46,9 +46,18 @@ export async function POST(
       );
     }
 
-    if (mimeType !== "application/pdf") {
+    // Allow PDF, Excel, and Word documents
+    const allowedMimeTypes = [
+      "application/pdf",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+
+    if (!allowedMimeTypes.includes(mimeType)) {
       return NextResponse.json(
-        { error: "Only PDF files are allowed" },
+        { error: "Only PDF, Excel, and Word files are allowed" },
         { status: 400 }
       );
     }

@@ -52,9 +52,17 @@ export function RFPDocumentUpload({
 
   const handleFileUpload = async (file: File) => {
     try {
-      // Validate file type
-      if (file.type !== "application/pdf") {
-        alert("Only PDF files are allowed");
+      // Validate file type - allow PDF, Excel, and Word documents
+      const allowedMimeTypes = [
+        "application/pdf",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
+
+      if (!allowedMimeTypes.includes(file.type)) {
+        alert("Only PDF, Excel, and Word files are allowed");
         return;
       }
 
@@ -102,7 +110,7 @@ export function RFPDocumentUpload({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf"
+          accept=".pdf,.xls,.xlsx,.doc,.docx"
           onChange={handleFileChange}
           className="hidden"
         />
@@ -114,12 +122,12 @@ export function RFPDocumentUpload({
           <FileUp className="h-10 w-10 text-gray-400" />
           <div className="text-center">
             <p className="text-sm font-medium text-gray-700">
-              Glissez-déposez votre PDF ici
+              Glissez-déposez votre document ici
             </p>
             <p className="text-xs text-gray-500">
               ou cliquez pour sélectionner un fichier
             </p>
-            <p className="text-xs text-gray-400 mt-2">Max 50MB • PDF uniquement</p>
+            <p className="text-xs text-gray-400 mt-2">Max 50MB • PDF, Excel, Word</p>
           </div>
         </div>
       </div>

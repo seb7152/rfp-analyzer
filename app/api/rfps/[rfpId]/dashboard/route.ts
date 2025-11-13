@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getRequirements, getResponsesForRFP, getRFPCompletionPercentage, getCategories } from "@/lib/supabase/queries";
-import type { RFP, Requirement, ResponseWithSupplier, Category } from "@/lib/supabase/types";
+import type { RFP, ResponseWithSupplier } from "@/lib/supabase/types";
 
 interface DashboardResponse {
   rfp: RFP;
@@ -118,7 +118,7 @@ export async function GET(
     const totalRequirements = requirements.filter(r => r.level === 4).length;
 
     // Fetch categories
-    const categories: Category[] = await getCategories(rfpId);
+    const categories = await getCategories(rfpId) as any;
 
     // Fetch all responses
     const allResponses: ResponseWithSupplier[] = await getResponsesForRFP(rfpId);
@@ -157,7 +157,7 @@ export async function GET(
         
         // Category scores
         const categoryScores: Record<string, number> = {};
-        categories.forEach(category => {
+        categories.forEach((category: any) => {
           const categoryReqs = requirements.filter(r => r.category_id === category.id);
           const categoryResponses = supplierResponses.filter(sr => 
             categoryReqs.some(cr => cr.id === sr.requirement_id)
@@ -187,10 +187,10 @@ export async function GET(
     });
 
     // Performance matrix
-    const supplierNames = rankedSuppliers.map(s => s.supplierName);
-    const categoryNames = categories.map(c => c.title);
-    const scoresMatrix = rankedSuppliers.map(supplier => 
-      categories.map(category => supplier.categoryScores[category.id] || 0)
+    const supplierNames = rankedSuppliers.map((s: any) => s.supplierName);
+    const categoryNames = categories.map((c: any) => c.title);
+    const scoresMatrix = rankedSuppliers.map((supplier: any) =>
+      categories.map((category: any) => supplier.categoryScores[category.id] || 0)
     );
 
     const performanceMatrix = {
@@ -210,7 +210,7 @@ export async function GET(
     }));
 
     // Categories analysis
-    const categoriesAnalysis = categories.map(category => {
+    const categoriesAnalysis = categories.map((category: any) => {
       const categoryReqs = requirements.filter(r => r.category_id === category.id);
       const categoryResponses = allResponses.filter(ar => 
         categoryReqs.some(cr => cr.id === ar.requirement_id)
@@ -239,7 +239,7 @@ export async function GET(
       averageScore: number;
       status: "pass" | "partial" | "fail" | "pending";
     }>> = {};
-    categories.forEach(category => {
+    categories.forEach((category: any) => {
       const categoryReqs = requirements.filter(r => r.category_id === category.id);
       requirementsByCategory[category.id] = categoryReqs.map(req => {
         const reqResponses = allResponses.filter(ar => ar.requirement_id === req.id);
@@ -265,7 +265,7 @@ export async function GET(
 
     // Weights configuration (using current weights as default)
     const weightsConfiguration = {
-      categories: categories.map(cat => ({
+      categories: categories.map((cat: any) => ({
         id: cat.id,
         title: cat.title,
         currentWeight: cat.weight || 1,
