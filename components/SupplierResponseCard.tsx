@@ -131,23 +131,9 @@ export function SupplierResponseCard({
           onChange={(checked) => onCheckChange?.(checked)}
         />
 
-        {/* Supplier name with document button */}
-        <div className="font-medium text-slate-900 dark:text-white text-sm flex-shrink-0 w-44 flex items-center gap-2">
-          <span>{supplierName}</span>
-          {supplierId && onOpenDocuments && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenDocuments(supplierId);
-              }}
-              className="h-6 w-6 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
-              title="Ouvrir les documents du fournisseur"
-            >
-              <FileText className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-            </Button>
-          )}
+        {/* Supplier name */}
+        <div className="font-medium text-slate-900 dark:text-white text-sm flex-shrink-0 w-44">
+          {supplierName}
         </div>
 
         {/* Response text excerpt (2-line preview) */}
@@ -189,8 +175,24 @@ export function SupplierResponseCard({
           <div className="flex gap-4 min-h-64">
             {/* Left: Response text (2/3 width) */}
             <div className="flex-1 flex flex-col basis-2/3">
-              <div className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
-                Réponse complète
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  Réponse complète
+                  {supplierId && onOpenDocuments && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenDocuments(supplierId);
+                      }}
+                      className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                      title="Ouvrir les documents du fournisseur"
+                    >
+                      <FileText className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                    </Button>
+                  )}
+                </div>
               </div>
               <textarea
                 readOnly
