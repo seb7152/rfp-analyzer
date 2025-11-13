@@ -53,7 +53,7 @@ export async function GET(
       .from("document_suppliers")
       .select(
         `
-        supplier:supplier_id (
+        supplier_id (
           id,
           name
         )
@@ -69,9 +69,14 @@ export async function GET(
       );
     }
 
+    // Supabase returns foreign key relations as arrays, so we need to access the first element
+    const supplier = Array.isArray(association.supplier_id)
+      ? association.supplier_id[0]
+      : association.supplier_id;
+
     return NextResponse.json(
       {
-        supplierName: association.supplier?.name || null,
+        supplierName: supplier?.name || null,
       },
       { status: 200 }
     );
