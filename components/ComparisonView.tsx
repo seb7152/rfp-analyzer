@@ -85,7 +85,7 @@ export function ComparisonView({
   const [responseStates, setResponseStates] = useState<ResponseState>({});
   const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
   const [supplierDocuments, setSupplierDocuments] = useState<PDFDocument[]>([]);
-  const [loadingSupplierDocs, setLoadingSupplierDocs] = useState(false);
+  const [_loadingSupplierDocs, setLoadingSupplierDocs] = useState(false);
 
   // Initialize mutation hook for persisting changes
   const mutation = useResponseMutation();
