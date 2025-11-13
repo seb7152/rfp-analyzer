@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, Trash2, Loader2, FileUp, FileArchive, Eye } from "lucide-react";
 import { RFPDocument } from "@/hooks/useRFPDocuments";
 import { PDFViewerSheet } from "@/components/PDFViewerSheet";
-import { cn } from "@/lib/utils";
 
 interface RFPDocumentsListProps {
   documents: RFPDocument[];

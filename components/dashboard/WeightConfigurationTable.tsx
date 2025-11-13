@@ -5,10 +5,8 @@ import {
   MaterialReactTable,
   useMaterialReactTable,
   type MRT_ColumnDef,
-  type MRT_Row,
 } from "material-react-table";
 import { Box, TextField, Typography } from "@mui/material";
-import { ChevronRight, ChevronDown } from "lucide-react";
 
 // Types pour notre structure de données
 interface WeightNode {
@@ -233,8 +231,8 @@ export function WeightConfigurationTable({
     enableTopToolbar: false,
     getSubRows: (row) => {
       // Retourner les enfants (exigences) pour les catégories
-      if (row.original && row.original.type === "category") {
-        return row.original.children || [];
+      if (row && row.type === "category") {
+        return row.children || [];
       }
       return [];
     },
@@ -247,7 +245,7 @@ export function WeightConfigurationTable({
       expanded: true, // Déplier toutes les catégories par défaut
     },
     // Utiliser l'identifiant unique pour éviter les doublons
-    rowId: "uniqueId",
+    getRowId: (row) => row.uniqueId || row.id,
   });
 
   return (

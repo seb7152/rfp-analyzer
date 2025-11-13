@@ -20,7 +20,6 @@ export interface UploadProgress {
 
 export function useRFPDocumentUpload(rfpId: string) {
   const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
 
   const uploadDocument = useCallback(
     async (file: File, documentType: string = "cahier_charges", supplierId?: string) => {
@@ -66,7 +65,7 @@ export function useRFPDocumentUpload(rfpId: string) {
           );
         }
 
-        const { uploadUrl, documentId: actualId, objectName } =
+        const { documentId: actualId, objectName } =
           await intentResponse.json();
 
         // Step 2: Upload file to backend which handles GCS upload
@@ -177,7 +176,6 @@ export function useRFPDocumentUpload(rfpId: string) {
   return {
     uploadDocument,
     uploadProgress,
-    isLoading,
     clearProgress,
     removeProgressItem,
   };
