@@ -38,6 +38,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SupplierResponseCard } from "@/components/SupplierResponseCard";
+import { PDFViewerSheet } from "@/components/PDFViewerSheet";
+import type { PDFDocument } from "@/components/PDFViewerSheet";
 import {
   useCategoryRequirements,
   useRequirementsTree,
@@ -81,6 +83,9 @@ export function ComparisonView({
   const [contextExpanded, setContextExpanded] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [responseStates, setResponseStates] = useState<ResponseState>({});
+  const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
+  const [supplierDocuments, setSupplierDocuments] = useState<PDFDocument[]>([]);
+  const [_loadingSupplierDocs, setLoadingSupplierDocs] = useState(false);
 
   // Initialize mutation hook for persisting changes
   const mutation = useResponseMutation();
@@ -388,6 +393,27 @@ export function ComparisonView({
   const allResponsesChecked =
     requirementResponses.length > 0 &&
     requirementResponses.every((r) => responseStates[r.id]?.isChecked ?? false);
+
+  // Handle opening supplier documents in PDF viewer
+  const handleOpenSupplierDocuments = useCallback(async (supplierId: string) => {
+    if (!rfpId) return;
+
+    setLoadingSupplierDocs(true);
+    try {
+      const response = await fetch(`/api/rfps/${rfpId}/documents?supplierId=${supplierId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch supplier documents");
+      }
+      const data = await response.json();
+      setSupplierDocuments(data.documents || []);
+      setIsPdfViewerOpen(true);
+    } catch (error) {
+      console.error("Error fetching supplier documents:", error);
+      setSupplierDocuments([]);
+    } finally {
+      setLoadingSupplierDocs(false);
+    }
+  }, [rfpId]);
 
   // If a category is selected, show requirements table
   if (isCategory) {
@@ -801,6 +827,7 @@ export function ComparisonView({
                           true,
                         )
                       }
+                      onOpenDocuments={handleOpenSupplierDocuments}
                     />
                   );
                 })}
@@ -810,6 +837,14 @@ export function ComparisonView({
           </div>
         )}
       </div>
+
+      {/* PDF Viewer Sheet for Supplier Documents */}
+      <PDFViewerSheet
+        isOpen={isPdfViewerOpen}
+        onOpenChange={setIsPdfViewerOpen}
+        documents={supplierDocuments}
+        rfpId={rfpId}
+      />
     </div>
   );
 }

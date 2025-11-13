@@ -1,7 +1,7 @@
 import { Storage } from "@google-cloud/storage";
 
 const projectId = process.env.GCP_PROJECT_ID;
-const keyFilePath = process.env.GCP_KEY_FILE_PATH;
+const keyJsonContent = process.env.GCP_KEY_JSON;
 
 if (!projectId) {
   throw new Error("GCP_PROJECT_ID environment variable is not set");
@@ -9,7 +9,8 @@ if (!projectId) {
 
 /**
  * Lazy load GCS client
- * Uses Application Default Credentials if no key file is provided
+ * Uses service account key from GCP_KEY_JSON environment variable
+ * or Application Default Credentials if not provided (for Vercel/deployment)
  */
 let gcsInstance: Storage | null = null;
 
@@ -22,10 +23,17 @@ export function getGCSClient(): Storage {
     projectId,
   };
 
-  // If key file path is provided, use it
+  // If GCP_KEY_JSON is provided, parse and use it
   // Otherwise, use Application Default Credentials (for Vercel/deployment)
-  if (keyFilePath) {
-    options.keyFilename = keyFilePath;
+  if (keyJsonContent) {
+    try {
+      const credentials = JSON.parse(keyJsonContent);
+      options.credentials = credentials;
+    } catch (error) {
+      throw new Error(
+        "Failed to parse GCP_KEY_JSON. Ensure it's a valid JSON string."
+      );
+    }
   }
 
   gcsInstance = new Storage(options);

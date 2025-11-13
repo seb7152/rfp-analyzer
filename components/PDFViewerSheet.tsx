@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetClose,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -18,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { X, Loader2, AlertCircle, ChevronRight } from "lucide-react";
 
-interface PDFDocument {
+export interface PDFDocument {
   id: string;
   filename: string;
   original_filename: string;

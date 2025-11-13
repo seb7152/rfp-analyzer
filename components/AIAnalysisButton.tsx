@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAnalyzeRFP } from "@/hooks/use-analyze-rfp";
 import { useAnalyzeStatus } from "@/hooks/use-analyze-status";
 import { Button } from "@/components/ui/button";

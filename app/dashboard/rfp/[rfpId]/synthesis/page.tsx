@@ -6,8 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, Loader2, AlertCircle, BarChart3, Save, RotateCcw } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { ChevronLeft, Loader2, AlertCircle, Save, RotateCcw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { WeightConfigurationTable } from "@/components/dashboard/WeightConfigurationTable";
 
@@ -87,7 +86,7 @@ export default function RFPSynthesisPage() {
   const rfpId = params.rfpId as string;
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
+  const [_selectedSupplier, _setSelectedSupplier] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -293,7 +292,7 @@ export default function RFPSynthesisPage() {
                 <p>Fournisseurs analysés: {suppliersAnalysis.comparisonTable.length}</p>
                 <p>Meilleur score: {Math.max(...suppliersAnalysis.comparisonTable.map(s => s.totalScore))}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  {suppliersAnalysis.ranking.slice(0, 3).map((supplier, index) => (
+                  {suppliersAnalysis.ranking.slice(0, 3).map((supplier, _index) => (
                     <div key={supplier.supplierId} className="border p-3 rounded">
                       <p className="font-medium">{supplier.supplierName}</p>
                       <p className="text-sm text-slate-600">Score: {supplier.finalScore}</p>

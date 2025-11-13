@@ -11,6 +11,7 @@ import {
   Clock,
   Check,
   Loader2,
+  FileText,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,10 +44,11 @@ export interface SupplierResponseCardProps {
   onQuestionBlur?: () => void;
   isExpanded?: boolean;
   onExpandChange?: (expanded: boolean) => void;
+  onOpenDocuments?: (supplierId: string) => void;
 }
 
 export function SupplierResponseCard({
-  supplierId: _supplierId,
+  supplierId,
   supplierName,
   responseId: _responseId,
   responseText,
@@ -68,6 +70,7 @@ export function SupplierResponseCard({
   onQuestionBlur,
   isExpanded = false,
   onExpandChange,
+  onOpenDocuments,
 }: SupplierResponseCardProps) {
   const currentScore = manualScore ?? aiScore;
 
@@ -128,9 +131,23 @@ export function SupplierResponseCard({
           onChange={(checked) => onCheckChange?.(checked)}
         />
 
-        {/* Supplier name */}
-        <div className="font-medium text-slate-900 dark:text-white text-sm flex-shrink-0 w-44">
-          {supplierName}
+        {/* Supplier name with document button */}
+        <div className="font-medium text-slate-900 dark:text-white text-sm flex-shrink-0 w-44 flex items-center gap-2">
+          <span>{supplierName}</span>
+          {supplierId && onOpenDocuments && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenDocuments(supplierId);
+              }}
+              className="h-6 w-6 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
+              title="Ouvrir les documents du fournisseur"
+            >
+              <FileText className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+            </Button>
+          )}
         </div>
 
         {/* Response text excerpt (2-line preview) */}

@@ -12,11 +12,6 @@ function ProgressProvider({
   return <ProgressContext.Provider value={props}>{children}</ProgressContext.Provider>;
 }
 
-function useProgressContext() {
-  const context = React.useContext(ProgressContext);
-  return context;
-}
-
 interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
   value: number;
   max?: number;
