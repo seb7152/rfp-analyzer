@@ -142,59 +142,6 @@ export function RFPDocumentUpload({
     }
   };
 
-  const handleFileUpload = async (file: File) => {
-    try {
-      // Validate file type - allow PDF, Excel, and Word documents
-      const allowedMimeTypes = [
-        "application/pdf",
-        "application/vnd.ms-excel",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      ];
-
-      if (!allowedMimeTypes.includes(file.type)) {
-        alert("Only PDF, Excel, and Word files are allowed");
-        return;
-      }
-
-      // Validate file size (50MB)
-      const maxSizeBytes = 50 * 1024 * 1024;
-      if (file.size > maxSizeBytes) {
-        alert("File size exceeds 50MB limit");
-        return;
-      }
-
-      // Validate supplier selection if document is from supplier
-      if (documentType === "supplier" && !selectedSupplierId) {
-        alert("Please select a supplier");
-        return;
-      }
-
-      // Determine the document type string to send to the API
-      // Use 'supplier_response' for supplier documents, not 'supplier_${id}'
-      const finalDocumentType = documentType === "supplier" ? "supplier_response" : "cahier_charges";
-
-      // Upload the document
-      await uploadDocument(file, finalDocumentType, selectedSupplierId);
-
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-
-      // Trigger callback
-      if (onUploadSuccess) {
-        setTimeout(() => {
-          onUploadSuccess();
-        }, 1000);
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-      // Error is already handled in the hook
-    }
-  };
-
   return (
     <div className="w-full space-y-4">
       {/* Document Type Selector */}
