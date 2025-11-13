@@ -1,11 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetClose,
-} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -41,9 +36,33 @@ export function PDFViewerSheet({
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [currentPage, setCurrentPage] = useState<number | null>(null);
+  const iframeRef = React.useRef<HTMLIFrameElement>(null);
+
+  // Helper to get storage key for PDF position
+  const getPdfPositionKey = (docId: string) => `pdf-position-${docId}`;
+
+  // Save PDF page position by tracking the URL hash changes
+  const savePdfPosition = (docId: string, page?: number) => {
+    if (page) {
+      localStorage.setItem(getPdfPositionKey(docId), String(page));
+    }
+  };
+
+  // Restore PDF page position by appending page fragment to URL
+  const getPdfUrlWithPosition = (docId: string, baseUrl: string): string => {
+    const savedPage = localStorage.getItem(getPdfPositionKey(docId));
+    if (savedPage) {
+      // Append page fragment to URL - PDF.js viewer will respect this
+      return `${baseUrl}#page=${savedPage}`;
+    }
+    return baseUrl;
+  };
 
   // Filter to only PDF documents
-  const pdfDocuments = documents.filter((doc) => doc.mime_type === "application/pdf");
+  const pdfDocuments = documents.filter(
+    (doc) => doc.mime_type === "application/pdf",
+  );
   const selectedDoc = pdfDocuments.find((doc) => doc.id === selectedDocId);
 
   // Initialize selected document
@@ -71,7 +90,7 @@ export function PDFViewerSheet({
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },
-          }
+          },
         );
 
         if (!response.ok) {
@@ -80,9 +99,11 @@ export function PDFViewerSheet({
         }
 
         const data = await response.json();
-        setPdfUrl(data.url);
+        const urlWithPosition = getPdfUrlWithPosition(selectedDoc.id, data.url);
+        setPdfUrl(urlWithPosition);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Unknown error";
+        const errorMessage =
+          err instanceof Error ? err.message : "Unknown error";
         setUrlError(errorMessage);
         console.error("Error fetching PDF URL:", err);
       } finally {
@@ -93,15 +114,67 @@ export function PDFViewerSheet({
     fetchPdfUrl();
   }, [selectedDoc, rfpId]);
 
+  // Handle page changes from iframe - PDF.js updates the iframe URL hash when navigating
+  useEffect(() => {
+    if (!iframeRef.current || !selectedDoc) return;
+
+    let lastDetectedPage: number | null = null;
+
+    const checkCurrentPage = () => {
+      if (!iframeRef.current?.src) return;
+
+      // Check the iframe src for page fragment
+      const hashMatch = iframeRef.current.src.match(/#page=(\d+)/);
+      if (hashMatch && hashMatch[1]) {
+        const page = parseInt(hashMatch[1], 10);
+        // Only save if page changed
+        if (page !== lastDetectedPage && page > 0) {
+          lastDetectedPage = page;
+          setCurrentPage(page);
+          savePdfPosition(selectedDoc.id, page);
+        }
+      }
+
+      // Also try to access PDFViewerApplication directly for more reliable detection
+      try {
+        const iframeWindow = iframeRef.current?.contentWindow as any;
+        if (
+          iframeWindow?.PDFViewerApplication?.page &&
+          typeof iframeWindow.PDFViewerApplication.page === "number"
+        ) {
+          const page = iframeWindow.PDFViewerApplication.page;
+          if (page !== lastDetectedPage && page > 0) {
+            lastDetectedPage = page;
+            setCurrentPage(page);
+            savePdfPosition(selectedDoc.id, page);
+          }
+        }
+      } catch (e) {
+        // Silently ignore cross-origin errors
+      }
+    };
+
+    // Poll frequently for page changes
+    const interval = setInterval(checkCurrentPage, 500);
+
+    return () => clearInterval(interval);
+  }, [selectedDoc]);
+
   const handleDocumentChange = (docId: string) => {
     setSelectedDocId(docId);
   };
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
+      // Save current page position before closing
+      if (selectedDoc && currentPage) {
+        savePdfPosition(selectedDoc.id, currentPage);
+      }
+      // Reset state when actually closing the viewer
       setPdfUrl(null);
       setUrlError(null);
       setSelectedDocId(null);
+      setCurrentPage(null);
     }
     onOpenChange(open);
   };
@@ -112,16 +185,23 @@ export function PDFViewerSheet({
   }
 
   return (
-    <Sheet open={isOpen && !isMinimized} onOpenChange={handleOpenChange}>
-      <SheetContent
-        side="right"
-        className="!w-1/2 !max-w-none flex flex-col p-0 border-l [&>button]:hidden"
-        onOpenAutoFocus={(e) => e.preventDefault()}
+    <>
+      {/* Persistent iframe container - always mounted to prevent reload */}
+      <div
+        className={`fixed top-0 right-0 bottom-0 w-1/2 bg-white border-l border-slate-200 dark:border-slate-800 transition-transform duration-300 z-40 flex flex-col ${
+          isOpen && !isMinimized ? "translate-x-0" : "translate-x-full"
+        }`}
+        style={{
+          pointerEvents: isOpen && !isMinimized ? "auto" : "none",
+        }}
       >
         {/* Header avec sélecteur et boutons */}
         <div className="border-b px-6 py-3 flex items-center justify-between gap-4">
           {/* Sélecteur de document */}
-          <Select value={selectedDocId || ""} onValueChange={handleDocumentChange}>
+          <Select
+            value={selectedDocId || ""}
+            onValueChange={handleDocumentChange}
+          >
             <SelectTrigger className="flex-1 max-w-xs">
               <SelectValue placeholder="Select a PDF document" />
             </SelectTrigger>
@@ -148,16 +228,15 @@ export function PDFViewerSheet({
             </Button>
 
             {/* Bouton fermer */}
-            <SheetClose asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                title="Fermer"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </SheetClose>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handleOpenChange(false)}
+              title="Fermer"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
@@ -180,6 +259,7 @@ export function PDFViewerSheet({
           {pdfUrl && !isLoadingPdf && (
             <div className="bg-white rounded-lg shadow-lg w-full h-full">
               <iframe
+                ref={iframeRef}
                 src={pdfUrl}
                 className="w-full h-full border-0"
                 title="PDF Viewer"
@@ -187,7 +267,15 @@ export function PDFViewerSheet({
             </div>
           )}
         </div>
-      </SheetContent>
+      </div>
+
+      {/* Overlay backdrop when panel is open */}
+      {isOpen && !isMinimized && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30"
+          onClick={() => handleOpenChange(false)}
+        />
+      )}
 
       {/* Bouton minimisé au bas de la page */}
       {isMinimized && (
@@ -202,6 +290,6 @@ export function PDFViewerSheet({
           </Button>
         </div>
       )}
-    </Sheet>
+    </>
   );
 }
