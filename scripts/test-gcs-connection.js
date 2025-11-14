@@ -24,7 +24,7 @@ if (!projectId) {
 
 if (!keyJsonContent) {
   console.error(
-    "❌ GCP_KEY_JSON environment variable is not set. Please set it with the content of your GCP service account JSON file."
+    "❌ GCP_KEY_JSON environment variable is not set. Please set it with the content of your GCP service account JSON file.",
   );
   process.exit(1);
 }
@@ -38,7 +38,9 @@ async function testConnection() {
       credentials = JSON.parse(keyJsonContent);
     } catch (error) {
       console.error("❌ Failed to parse GCP_KEY_JSON as valid JSON");
-      console.error("Make sure GCP_KEY_JSON contains the full JSON content of your service account key file");
+      console.error(
+        "Make sure GCP_KEY_JSON contains the full JSON content of your service account key file",
+      );
       process.exit(1);
     }
 

@@ -11,6 +11,7 @@ Créer des hooks optimisés pour récupérer et gérer les données nécessaires
 **Objectif**: Récupérer toutes les données consolidées pour le dashboard
 
 **Signature**:
+
 ```typescript
 interface DashboardData {
   rfp: RFP;
@@ -20,10 +21,11 @@ interface DashboardData {
   weightsConfiguration: WeightsConfiguration;
 }
 
-export function useDashboardData(rfpId: string): UseQueryResult<DashboardData>
+export function useDashboardData(rfpId: string): UseQueryResult<DashboardData>;
 ```
 
 **Stratégie de chargement**:
+
 1. Paralléliser les requêtes pour optimiser le temps de chargement
 2. Utiliser React Query avec staleTime différencié
 3. Combiner les données de plusieurs hooks
@@ -33,6 +35,7 @@ export function useDashboardData(rfpId: string): UseQueryResult<DashboardData>
 **Objectif**: Calculer les scores finaux et classements des fournisseurs
 
 **Signature**:
+
 ```typescript
 interface SuppliersAnalysis {
   comparisonTable: SupplierComparison[];
@@ -41,10 +44,13 @@ interface SuppliersAnalysis {
   charts: ChartData[];
 }
 
-export function useSuppliersAnalysis(rfpId: string): UseQueryResult<SuppliersAnalysis>
+export function useSuppliersAnalysis(
+  rfpId: string,
+): UseQueryResult<SuppliersAnalysis>;
 ```
 
 **Calculs implémentés**:
+
 - Score final pondéré par fournisseur
 - Classement dynamique avec variations
 - Matrice de performance comparative
@@ -54,16 +60,20 @@ export function useSuppliersAnalysis(rfpId: string): UseQueryResult<SuppliersAna
 **Objectif**: Gérer la modification et la persistance des poids
 
 **Signature**:
+
 ```typescript
 interface WeightsConfiguration {
   categories: CategoryWeight[];
   requirements: RequirementWeight[];
 }
 
-export function useWeightsManagement(rfpId: string): UseQueryResult<WeightsConfiguration>
+export function useWeightsManagement(
+  rfpId: string,
+): UseQueryResult<WeightsConfiguration>;
 ```
 
 **Fonctionnalités**:
+
 - Modification des poids avec validation
 - Historique des changements
 - Reset aux poids par défaut
@@ -74,13 +84,16 @@ export function useWeightsManagement(rfpId: string): UseQueryResult<WeightsConfi
 **Objectif**: Analyser les performances par catégorie
 
 **Signature**:
+
 ```typescript
 interface CategoriesAnalysis {
   categories: CategoryWithAnalysis[];
   requirementsByCategory: Record<string, RequirementAnalysis[]>;
 }
 
-export function useCategoriesAnalysis(rfpId: string): UseQueryResult<CategoriesAnalysis>
+export function useCategoriesAnalysis(
+  rfpId: string,
+): UseQueryResult<CategoriesAnalysis>;
 ```
 
 ## 🔄 Stratégies d'Optimisation
@@ -125,12 +138,12 @@ export function useLocalWeightsState(rfpId: string) {
 
 ```typescript
 // Invalidation sélective lors des modifications
-const invalidateRelatedQueries = (changedType: 'category' | 'requirement') => {
-  queryClient.invalidateQueries(['dashboard-data']);
-  queryClient.invalidateQueries(['suppliers-analysis']);
-  
-  if (changedType === 'category') {
-    queryClient.invalidateQueries(['categories-analysis']);
+const invalidateRelatedQueries = (changedType: "category" | "requirement") => {
+  queryClient.invalidateQueries(["dashboard-data"]);
+  queryClient.invalidateQueries(["suppliers-analysis"]);
+
+  if (changedType === "category") {
+    queryClient.invalidateQueries(["categories-analysis"]);
   }
 };
 ```
@@ -146,7 +159,7 @@ interface SupplierComparison {
   categoryScores: Record<string, number>;
   ranking: number;
   previousRanking?: number;
-  trend: 'up' | 'down' | 'stable';
+  trend: "up" | "down" | "stable";
 }
 
 interface PerformanceMatrix {
@@ -161,7 +174,7 @@ interface SupplierRanking {
   finalScore: number;
   ranking: number;
   variation: number; // % variation vs moyenne
-  confidence: 'high' | 'medium' | 'low';
+  confidence: "high" | "medium" | "low";
 }
 
 // Types pour l'analyse par catégorie
@@ -173,7 +186,7 @@ interface CategoryWithAnalysis {
   requirementCount: number;
   averageScore: number;
   completionRate: number;
-  trend: 'improving' | 'stable' | 'declining';
+  trend: "improving" | "stable" | "declining";
 }
 
 interface RequirementAnalysis {
@@ -182,7 +195,7 @@ interface RequirementAnalysis {
   categoryId: string;
   currentWeight: number;
   averageScore: number;
-  status: 'pass' | 'partial' | 'fail' | 'pending';
+  status: "pass" | "partial" | "fail" | "pending";
   evaluationCount: number;
 }
 ```
@@ -195,17 +208,17 @@ interface RequirementAnalysis {
 export function calculateWeightedScore(
   scores: Record<string, number>,
   categoryWeights: Record<string, number>,
-  requirementWeights: Record<string, number>
+  requirementWeights: Record<string, number>,
 ): number {
   let totalScore = 0;
-  
+
   for (const [categoryId, score] of Object.entries(scores)) {
     const categoryWeight = categoryWeights[categoryId] || 0;
     const requirementWeight = requirementWeights[score.requirementId] || 1;
-    
+
     totalScore += score * categoryWeight * requirementWeight;
   }
-  
+
   return totalScore;
 }
 ```
@@ -213,13 +226,18 @@ export function calculateWeightedScore(
 ### Normalisation des Poids
 
 ```typescript
-export function normalizeWeights(weights: Record<string, number>): Record<string, number> {
+export function normalizeWeights(
+  weights: Record<string, number>,
+): Record<string, number> {
   const total = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
-  
+
   if (total === 0) return weights;
-  
+
   return Object.fromEntries(
-    Object.entries(weights).map(([key, weight]) => [key, (weight / total) * 100])
+    Object.entries(weights).map(([key, weight]) => [
+      key,
+      (weight / total) * 100,
+    ]),
   );
 }
 ```
@@ -230,9 +248,9 @@ export function normalizeWeights(weights: Record<string, number>): Record<string
 // Gestion robuste des erreurs
 export function useDashboardError() {
   const [error, setError] = useState<string | null>(null);
-  
+
   const clearError = useCallback(() => setError(null), []);
-  
+
   return { error, setError, clearError };
 }
 ```
@@ -247,14 +265,14 @@ export function useDashboardPerformance() {
     renderTime: 0,
     queryCount: 0,
   });
-  
+
   // Log automatique des métriques
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Dashboard Metrics:', metrics);
+    if (process.env.NODE_ENV === "development") {
+      console.log("Dashboard Metrics:", metrics);
     }
   }, [metrics]);
-  
+
   return metrics;
 }
 ```
@@ -265,7 +283,11 @@ export function useDashboardPerformance() {
 // Props pour les composants du dashboard
 interface DashboardComponentProps {
   data: DashboardData;
-  onWeightChange: (type: 'category' | 'requirement', id: string, weight: number) => void;
+  onWeightChange: (
+    type: "category" | "requirement",
+    id: string,
+    weight: number,
+  ) => void;
   onExportData: () => void;
   onRefreshData: () => void;
 }
@@ -274,7 +296,7 @@ interface DashboardComponentProps {
 export function useDashboardInteractions() {
   const [selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  
+
   return {
     selectedSupplier,
     setSelectedSupplier,

@@ -9,6 +9,7 @@
 **Objectif**: Récupérer toutes les données consolidées pour le dashboard de synthèse
 
 **Response attendue**:
+
 ```typescript
 interface DashboardResponse {
   rfp: RFP;
@@ -42,9 +43,10 @@ interface DashboardResponse {
 ```
 
 **Requêtes SQL nécessaires**:
+
 ```sql
 -- KPIs globaux
-SELECT 
+SELECT
   COUNT(r.id) as total_requirements,
   COUNT(CASE WHEN resp.is_checked = true THEN 1 END) as evaluated_requirements,
   ROUND(AVG(COALESCE(resp.manual_score, resp.ai_score, 0)), 2) as avg_score,
@@ -57,7 +59,7 @@ LEFT JOIN responses resp ON r.id = resp.requirement_id
 WHERE r.rfp_id = $1 AND r.level = 4;
 
 -- Analyse par fournisseur
-SELECT 
+SELECT
   s.id,
   s.name,
   COUNT(resp.id) as total_responses,
@@ -72,7 +74,7 @@ GROUP BY s.id, s.name
 ORDER BY avg_score DESC;
 
 -- Analyse par catégorie
-SELECT 
+SELECT
   c.id,
   c.title,
   c.weight as current_weight,
@@ -92,6 +94,7 @@ GROUP BY c.id, c.title, c.weight;
 **Objectif**: Analyse comparative détaillée des fournisseurs
 
 **Response attendue**:
+
 ```typescript
 interface SuppliersAnalysisResponse {
   comparisonTable: {
@@ -121,6 +124,7 @@ interface SuppliersAnalysisResponse {
 **Objectif**: Mettre à jour les poids des catégories
 
 **Body attendu**:
+
 ```typescript
 interface UpdateCategoryWeightsRequest {
   categories: {
@@ -141,6 +145,7 @@ interface UpdateCategoryWeightsRequest {
 **Objectif**: Mettre à jour les poids des exigences
 
 **Body attendu**:
+
 ```typescript
 interface UpdateRequirementWeightsRequest {
   requirements: {
@@ -153,18 +158,22 @@ interface UpdateRequirementWeightsRequest {
 ## 🔄 Logique de Calcul des Scores Pondérés
 
 ### Formule Principale
+
 ```
 ScoreFinalFournisseur = Σ(ScoreExigence × PoidsCatégorie × PoidsExigence)
 ```
 
 ### Normalisation
+
 ```
 PoidsNormalisé = PoidsCatégorie / Σ(TousPoidsCatégories)
 ScoreFinalNormalisé = ScoreBrut / ScoreMaximumPossible
 ```
 
 ### Recalcul Dynamique
+
 Lors de la modification d'un poids:
+
 1. Recalculer immédiatement tous les scores impactés
 2. Mettre à jour le classement
 3. Historiser la modification pour undo/redo
@@ -211,28 +220,30 @@ interface RequirementAnalysis {
   categoryId: string;
   currentWeight: number;
   averageScore: number;
-  status: 'pass' | 'partial' | 'fail' | 'pending';
+  status: "pass" | "partial" | "fail" | "pending";
 }
 ```
 
 ## 🎯 Optimisations de Performance
 
 ### Indexation Recommandée
+
 ```sql
 -- Index composite pour les calculs de scores
-CREATE INDEX idx_responses_requirement_supplier 
+CREATE INDEX idx_responses_requirement_supplier
 ON responses(requirement_id, supplier_id);
 
 -- Index pour les analyses par catégorie
-CREATE INDEX idx_requirements_category_rfp 
+CREATE INDEX idx_requirements_category_rfp
 ON requirements(category_id, rfp_id);
 
 -- Index pour les poids
-CREATE INDEX idx_categories_weights 
+CREATE INDEX idx_categories_weights
 ON categories(rfp_id, weight);
 ```
 
 ### Stratégie de Cache
+
 - React Query avec staleTime de 5 minutes pour les données globales
 - staleTime de 2 minutes pour les calculs de scores
 - Invalidation sélective lors des modifications de poids
@@ -240,10 +251,12 @@ ON categories(rfp_id, weight);
 ## 🔐 Sécurité
 
 ### Validation des Poids
+
 - Somme des poids de catégories = 100%
 - Poids individuels entre 0 et 100
 - Validation côté client et serveur
 
 ### Permissions
+
 - Vérification des permissions RFP (admin/evaluator)
 - Isolation des données par organisation (RLS)

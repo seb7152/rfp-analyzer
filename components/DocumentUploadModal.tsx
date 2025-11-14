@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { RFPDocumentUpload } from "@/components/RFPDocumentUpload";
 import { RFPDocumentsList } from "@/components/RFPDocumentsList";
 import { useRFPDocuments } from "@/hooks/useRFPDocuments";
@@ -66,8 +71,8 @@ export function DocumentUploadModal({
           {activeTab === "upload" && (
             <div className="space-y-4">
               <p className="text-sm text-slate-600">
-                Ajouter un ou plusieurs documents (PDF, Excel, Word) pour le RFP:{" "}
-                <span className="font-semibold">{rfpTitle}</span>
+                Ajouter un ou plusieurs documents (PDF, Excel, Word) pour le
+                RFP: <span className="font-semibold">{rfpTitle}</span>
               </p>
               <RFPDocumentUpload
                 rfpId={rfpId}

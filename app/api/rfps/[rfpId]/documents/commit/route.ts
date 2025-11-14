@@ -4,7 +4,7 @@ import { deleteFile, getFileMetadata } from "@/lib/gcs";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { rfpId: string } }
+  { params }: { params: { rfpId: string } },
 ) {
   try {
     const supabase = await createServerClient();
@@ -24,7 +24,7 @@ export async function POST(
     if (!rfpId) {
       return NextResponse.json(
         { error: "RFP ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -45,10 +45,9 @@ export async function POST(
     if (!documentId || !objectName || !filename || !fileSize) {
       return NextResponse.json(
         {
-          error:
-            "documentId, objectName, filename, and fileSize are required",
+          error: "documentId, objectName, filename, and fileSize are required",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -72,10 +71,7 @@ export async function POST(
       .single();
 
     if (userOrgError || !userOrg) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Verify file exists in GCS
@@ -88,14 +84,14 @@ export async function POST(
           {
             error: `File size mismatch: expected ${fileSize}, got ${metadata.size}`,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
     } catch (error) {
       console.error("GCS file validation error:", error);
       return NextResponse.json(
         { error: "File not found in cloud storage" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -129,7 +125,7 @@ export async function POST(
         {
           error: `Failed to save document metadata: ${insertError.message}`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -154,7 +150,7 @@ export async function POST(
 
         return NextResponse.json(
           { error: "Supplier not found or does not belong to this RFP" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -179,7 +175,7 @@ export async function POST(
           {
             error: `Failed to create supplier association: ${associationError.message}`,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -208,7 +204,7 @@ export async function POST(
           uploaded_at: document.created_at,
         },
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Commit error:", error);
@@ -216,7 +212,7 @@ export async function POST(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

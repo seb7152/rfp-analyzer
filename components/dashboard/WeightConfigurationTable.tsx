@@ -55,11 +55,11 @@ export function WeightConfigurationTable({
     const initialCategories: Record<string, number> = {};
     const initialRequirements: Record<string, number> = {};
 
-    categories.forEach(cat => {
+    categories.forEach((cat) => {
       initialCategories[cat.id] = cat.currentWeight;
     });
 
-    requirements.forEach(req => {
+    requirements.forEach((req) => {
       initialRequirements[req.id] = req.currentWeight;
     });
 
@@ -69,21 +69,25 @@ export function WeightConfigurationTable({
   // Construction de la structure arborescente
   const treeData = useMemo(() => {
     // Créer les nœuds de catégories avec leurs exigences comme enfants
-    const categoryNodes: WeightNode[] = categories.map(cat => {
+    const categoryNodes: WeightNode[] = categories.map((cat) => {
       // Trouver les exigences pour cette catégorie
-      const categoryRequirements = requirements.filter(req => req.categoryId === cat.id);
-      
+      const categoryRequirements = requirements.filter(
+        (req) => req.categoryId === cat.id,
+      );
+
       // Créer les nœuds d'exigences
-      const requirementNodes: WeightNode[] = categoryRequirements.map(req => ({
-        id: req.id,
-        title: req.title,
-        type: "requirement",
-        level: 1,
-        absoluteWeight: weights.requirements[req.id] || req.currentWeight,
-        relativeWeight: 0, // Sera calculé plus tard
-        categoryId: req.categoryId,
-        parentId: req.categoryId,
-      }));
+      const requirementNodes: WeightNode[] = categoryRequirements.map(
+        (req) => ({
+          id: req.id,
+          title: req.title,
+          type: "requirement",
+          level: 1,
+          absoluteWeight: weights.requirements[req.id] || req.currentWeight,
+          relativeWeight: 0, // Sera calculé plus tard
+          categoryId: req.categoryId,
+          parentId: req.categoryId,
+        }),
+      );
 
       return {
         id: cat.id,
@@ -98,23 +102,35 @@ export function WeightConfigurationTable({
 
     // Calculer les poids relatifs
     const calculateRelativeWeights = (nodes: WeightNode[]): WeightNode[] => {
-      return nodes.map(node => {
+      return nodes.map((node) => {
         if (node.type === "category") {
           // Pour les catégories, le poids relatif est par rapport au total des catégories
-          const totalCategoryWeight = nodes.reduce((sum, cat) => sum + cat.absoluteWeight, 0);
-          const relativeWeight = totalCategoryWeight > 0 ? (node.absoluteWeight / totalCategoryWeight) * 100 : 0;
-          
+          const totalCategoryWeight = nodes.reduce(
+            (sum, cat) => sum + cat.absoluteWeight,
+            0,
+          );
+          const relativeWeight =
+            totalCategoryWeight > 0
+              ? (node.absoluteWeight / totalCategoryWeight) * 100
+              : 0;
+
           const updatedNode = { ...node, relativeWeight };
-          
+
           // Calculer les poids relatifs des exigences dans cette catégorie
           if (updatedNode.children && updatedNode.children.length > 0) {
-            const totalRequirementWeight = updatedNode.children.reduce((sum, req) => sum + req.absoluteWeight, 0);
-            updatedNode.children = updatedNode.children.map(child => ({
+            const totalRequirementWeight = updatedNode.children.reduce(
+              (sum, req) => sum + req.absoluteWeight,
+              0,
+            );
+            updatedNode.children = updatedNode.children.map((child) => ({
               ...child,
-              relativeWeight: totalRequirementWeight > 0 ? (child.absoluteWeight / totalRequirementWeight) * 100 : 0,
+              relativeWeight:
+                totalRequirementWeight > 0
+                  ? (child.absoluteWeight / totalRequirementWeight) * 100
+                  : 0,
             }));
           }
-          
+
           return updatedNode;
         }
         return node;
@@ -140,84 +156,100 @@ export function WeightConfigurationTable({
   }, [treeData]);
 
   // Gestionnaire de mise à jour des poids
-  const handleWeightChange = useCallback((nodeId: string, nodeType: "category" | "requirement", newValue: number) => {
-    setWeights(prev => {
-      const updated = { ...prev };
-      if (nodeType === "category") {
-        updated.categories[nodeId] = newValue;
-      } else {
-        updated.requirements[nodeId] = newValue;
-      }
-      
-      // Notifier le parent si callback fourni
-      if (onWeightsChange) {
-        onWeightsChange(updated);
-      }
-      
-      return updated;
-    });
-  }, [onWeightsChange]);
+  const handleWeightChange = useCallback(
+    (
+      nodeId: string,
+      nodeType: "category" | "requirement",
+      newValue: number,
+    ) => {
+      setWeights((prev) => {
+        const updated = { ...prev };
+        if (nodeType === "category") {
+          updated.categories[nodeId] = newValue;
+        } else {
+          updated.requirements[nodeId] = newValue;
+        }
+
+        // Notifier le parent si callback fourni
+        if (onWeightsChange) {
+          onWeightsChange(updated);
+        }
+
+        return updated;
+      });
+    },
+    [onWeightsChange],
+  );
 
   // Définition des colonnes
-  const columns = useMemo<MRT_ColumnDef<WeightNode>[]>(() => [
-    {
-      accessorKey: "title",
-      header: "Élément",
-      Cell: ({ row }) => {
-        const node = row.original;
-        const indent = node.level * 24;
-        
-        return (
-          <Box sx={{ display: "flex", alignItems: "center", pl: `${indent}px` }}>
-            {node.type === "category" ? (
-              <Box sx={{ mr: 1, color: "primary.main", fontWeight: "bold" }}>
-                📁
-              </Box>
-            ) : (
-              <Box sx={{ mr: 1, color: "secondary.main" }}>
-                📄
-              </Box>
-            )}
-            <Typography variant="body2" fontWeight={node.type === "category" ? "bold" : "normal"}>
-              {node.title}
+  const columns = useMemo<MRT_ColumnDef<WeightNode>[]>(
+    () => [
+      {
+        accessorKey: "title",
+        header: "Élément",
+        Cell: ({ row }) => {
+          const node = row.original;
+          const indent = node.level * 24;
+
+          return (
+            <Box
+              sx={{ display: "flex", alignItems: "center", pl: `${indent}px` }}
+            >
+              {node.type === "category" ? (
+                <Box sx={{ mr: 1, color: "primary.main", fontWeight: "bold" }}>
+                  📁
+                </Box>
+              ) : (
+                <Box sx={{ mr: 1, color: "secondary.main" }}>📄</Box>
+              )}
+              <Typography
+                variant="body2"
+                fontWeight={node.type === "category" ? "bold" : "normal"}
+              >
+                {node.title}
+              </Typography>
+            </Box>
+          );
+        },
+      },
+      {
+        accessorKey: "absoluteWeight",
+        header: "Poids absolu",
+        Cell: ({ row }) => {
+          const node = row.original;
+          return (
+            <TextField
+              type="number"
+              value={node.absoluteWeight}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value) || 0;
+                handleWeightChange(node.id, node.type, value);
+              }}
+              inputProps={{ min: 0, max: 1, step: 0.01 }}
+              size="small"
+              sx={{ width: "100px" }}
+            />
+          );
+        },
+      },
+      {
+        accessorKey: "relativeWeight",
+        header: "Poids relatif (%)",
+        Cell: ({ row }) => {
+          const node = row.original;
+          return (
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: "bold", color: "primary.main" }}
+            >
+              {node.relativeWeight.toFixed(1)}%
             </Typography>
-          </Box>
-        );
+          );
+        },
       },
-    },
-    {
-      accessorKey: "absoluteWeight",
-      header: "Poids absolu",
-      Cell: ({ row }) => {
-        const node = row.original;
-        return (
-          <TextField
-            type="number"
-            value={node.absoluteWeight}
-            onChange={(e) => {
-              const value = parseFloat(e.target.value) || 0;
-              handleWeightChange(node.id, node.type, value);
-            }}
-            inputProps={{ min: 0, max: 1, step: 0.01 }}
-            size="small"
-            sx={{ width: "100px" }}
-          />
-        );
-      },
-    },
-    {
-      accessorKey: "relativeWeight",
-      header: "Poids relatif (%)",
-      Cell: ({ row }) => {
-        const node = row.original;
-        return (
-          <Typography variant="body2" sx={{ fontWeight: "bold", color: "primary.main" }}>
-            {node.relativeWeight.toFixed(1)}%
-          </Typography>
-        );
-      },
-    },
-  ], [handleWeightChange]);
+    ],
+    [handleWeightChange],
+  );
 
   // Configuration de la table
   const table = useMaterialReactTable({

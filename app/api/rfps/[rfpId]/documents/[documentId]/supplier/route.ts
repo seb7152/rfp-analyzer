@@ -7,7 +7,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
  */
 export async function GET(
   _request: NextRequest,
-  context: { params: Promise<{ rfpId: string; documentId: string }> }
+  context: { params: Promise<{ rfpId: string; documentId: string }> },
 ) {
   try {
     const params = await context.params;
@@ -42,10 +42,7 @@ export async function GET(
       .single();
 
     if (userOrgError || !userOrg) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Get the supplier associated with this document
@@ -57,16 +54,13 @@ export async function GET(
           id,
           name
         )
-      `
+      `,
       )
       .eq("document_id", documentId)
       .single();
 
     if (associationError || !association) {
-      return NextResponse.json(
-        { supplierName: null },
-        { status: 200 }
-      );
+      return NextResponse.json({ supplierName: null }, { status: 200 });
     }
 
     // Supabase returns foreign key relations as arrays, so we need to access the first element
@@ -74,15 +68,16 @@ export async function GET(
       ? association.supplier_id[0]
       : association.supplier_id;
 
-    const supplierName = supplierData && typeof supplierData === 'object' && 'name' in supplierData
-      ? (supplierData as { id: string; name: string }).name
-      : null;
+    const supplierName =
+      supplierData && typeof supplierData === "object" && "name" in supplierData
+        ? (supplierData as { id: string; name: string }).name
+        : null;
 
     return NextResponse.json(
       {
         supplierName,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error fetching supplier name:", error);
@@ -90,7 +85,7 @@ export async function GET(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

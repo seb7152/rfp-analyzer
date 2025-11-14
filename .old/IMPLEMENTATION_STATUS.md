@@ -3,6 +3,7 @@
 ## ✅ User Story 1 COMPLETE: View and Navigate Requirements Hierarchy (T047-T065)
 
 ### Phase 1: Database & API Layer (T047-T050) ✅
+
 - **T047**: `lib/supabase/queries.ts` - Hierarchical requirement queries
   - `getRequirements()` - Recursive fetch with buildHierarchy()
   - `getRequirement()` - Single requirement with details
@@ -123,18 +124,20 @@
 ✅ Dark mode support  
 ✅ Loading & error states  
 ✅ Responsive layout  
-✅ TypeScript type safety  
+✅ TypeScript type safety
 
 ---
 
 ## 🚀 What's Next (Phase 5)
 
 User Story 2: Compare Supplier Responses (T066-T080)
+
 - Requirements response API endpoints (T066-T069)
 - Supplier comparison view (T070-T078)
 - AI score display (T079-T080)
 
 User Story 3: Manually Score Responses (T081-T095)
+
 - Response update API (T081-T085)
 - Manual scoring UI (T086-T095)
 
@@ -143,6 +146,7 @@ User Story 3: Manually Score Responses (T081-T095)
 ## 📦 Files Created/Modified
 
 **New Files:**
+
 - `lib/supabase/queries.ts`
 - `components/Sidebar.tsx`
 - `components/RequirementTree.tsx`
@@ -152,6 +156,7 @@ User Story 3: Manually Score Responses (T081-T095)
 - `app/dashboard/page.tsx` (replaced)
 
 **API Routes:**
+
 - `app/api/rfps/[rfpId]/requirements/route.ts`
 - `app/api/requirements/[requirementId]/route.ts`
 

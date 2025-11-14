@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * POST /api/organizations/create
@@ -8,47 +8,50 @@ import { createClient } from "@/lib/supabase/server"
  */
 export async function POST(request: Request) {
   try {
-    const { name } = await request.json()
+    const { name } = await request.json();
 
     if (!name || typeof name !== "string") {
       return NextResponse.json(
         { error: "Organization name is required" },
-        { status: 400 }
-      )
+        { status: 400 },
+      );
     }
 
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     // Verify user is authenticated
-    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
-    
+    const {
+      data: { user: authUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+
     if (authError || !authUser) {
-      return NextResponse.json(
-        { error: "Not authenticated" },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     // Generate slug from name
     const slug = name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
+      .replace(/^-|-$/g, "");
 
     // Check if slug already exists
     const { data: existingOrg } = await supabase
       .from("organizations")
       .select("slug")
       .eq("slug", slug)
-      .maybeSingle()
+      .maybeSingle();
 
-    let finalSlug = slug
+    let finalSlug = slug;
     if (existingOrg) {
-      finalSlug = `${slug}-${Math.random().toString(36).substring(2, 7)}`
+      finalSlug = `${slug}-${Math.random().toString(36).substring(2, 7)}`;
     }
 
     // Generate random 10-digit code
-    const code = String(Math.floor(Math.random() * 10000000000)).padStart(10, '0')
+    const code = String(Math.floor(Math.random() * 10000000000)).padStart(
+      10,
+      "0",
+    );
 
     // Create organization
     const { data: organization, error: orgError } = await supabase
@@ -62,14 +65,14 @@ export async function POST(request: Request) {
         max_rfps: 5,
       })
       .select()
-      .single()
+      .single();
 
     if (orgError) {
-      console.error("Organization creation error:", orgError)
+      console.error("Organization creation error:", orgError);
       return NextResponse.json(
         { error: "Failed to create organization", message: orgError.message },
-        { status: 500 }
-      )
+        { status: 500 },
+      );
     }
 
     // Link creator as admin
@@ -79,17 +82,17 @@ export async function POST(request: Request) {
         user_id: authUser.id,
         organization_id: organization.id,
         role: "admin",
-      })
+      });
 
     if (linkError) {
-      console.error("User-organization link error:", linkError)
+      console.error("User-organization link error:", linkError);
       return NextResponse.json(
         {
           error: "Failed to link user to organization",
           message: linkError.message,
         },
-        { status: 500 }
-      )
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
@@ -100,12 +103,12 @@ export async function POST(request: Request) {
         slug: organization.slug,
         organization_code: organization.organization_code,
       },
-    })
+    });
   } catch (error: any) {
-    console.error("Create organization error:", error)
+    console.error("Create organization error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 }
-    )
+      { status: 500 },
+    );
   }
 }

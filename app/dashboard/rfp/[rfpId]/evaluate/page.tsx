@@ -189,7 +189,9 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
           ) : (
             <ComparisonView
               selectedRequirementId={selectedRequirementId}
-              allRequirements={allRequirements.map((req) => normalizeRequirement(req))}
+              allRequirements={allRequirements.map((req) =>
+                normalizeRequirement(req),
+              )}
               onRequirementChange={setSelectedRequirementId}
               rfpId={params.rfpId}
             />

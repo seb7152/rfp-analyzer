@@ -88,7 +88,9 @@ export function AIAnalysisButton({
         onClick={() => setShowConfirmation(true)}
         disabled={isAnalysisInProgress}
         className="text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
-        title={isAnalysisInProgress ? "Analysis in progress..." : "Analyze with AI"}
+        title={
+          isAnalysisInProgress ? "Analysis in progress..." : "Analyze with AI"
+        }
       >
         {isAnalyzing || isAnalysisInProgress ? (
           <>
@@ -103,9 +105,13 @@ export function AIAnalysisButton({
 
       {/* T143: Processing status badge */}
       {analysisStatus?.status === "processing" && (
-        <Badge variant="outline" className="ml-2 border-purple-200 text-purple-600 dark:border-purple-800 dark:text-purple-400 gap-1">
+        <Badge
+          variant="outline"
+          className="ml-2 border-purple-200 text-purple-600 dark:border-purple-800 dark:text-purple-400 gap-1"
+        >
           <Loader2 className="h-3 w-3 animate-spin" />
-          Analyzing {analysisStatus.processedResponses}/{analysisStatus.totalResponses}
+          Analyzing {analysisStatus.processedResponses}/
+          {analysisStatus.totalResponses}
         </Badge>
       )}
 
@@ -135,8 +141,9 @@ export function AIAnalysisButton({
           <DialogHeader>
             <DialogTitle>Analyze Responses with AI</DialogTitle>
             <DialogDescription>
-              This will analyze {responsesCount} responses. This may take several
-              minutes depending on the size and complexity of the responses.
+              This will analyze {responsesCount} responses. This may take
+              several minutes depending on the size and complexity of the
+              responses.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">

@@ -89,7 +89,9 @@ export async function POST(
     }
 
     // Import requirements (filter out any without id)
-    const validRequirements = data.requirements.filter((req: any) => req.id) as Array<{
+    const validRequirements = data.requirements.filter(
+      (req: any) => req.id,
+    ) as Array<{
       id: string;
       code?: string;
       title: string;

@@ -31,7 +31,10 @@ export default async function RFPDocumentsPage({
     .single();
 
   if (rfpError || !rfp) {
-    console.error(`[RFP Documents Page] Error fetching RFP ${rfpId}:`, rfpError || "RFP not found");
+    console.error(
+      `[RFP Documents Page] Error fetching RFP ${rfpId}:`,
+      rfpError || "RFP not found",
+    );
     redirect("/dashboard");
   }
 
@@ -125,9 +128,15 @@ export default async function RFPDocumentsPage({
       <Card className="p-6 bg-blue-50 border-blue-200">
         <h3 className="font-semibold text-blue-900 mb-2">ℹ️ Informations</h3>
         <ul className="text-sm text-blue-800 space-y-1">
-          <li>✓ Les fichiers PDF sont stockés de manière sécurisée dans Google Cloud Storage</li>
+          <li>
+            ✓ Les fichiers PDF sont stockés de manière sécurisée dans Google
+            Cloud Storage
+          </li>
           <li>✓ Maximum 50MB par fichier</li>
-          <li>✓ Les URLs de téléchargement expirent après 90 secondes pour des raisons de sécurité</li>
+          <li>
+            ✓ Les URLs de téléchargement expirent après 90 secondes pour des
+            raisons de sécurité
+          </li>
           <li>✓ Tous les accès sont enregistrés dans les journaux d'audit</li>
         </ul>
       </Card>

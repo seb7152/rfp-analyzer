@@ -4,7 +4,14 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Trash2, Loader2, FileUp, FileArchive, Eye } from "lucide-react";
+import {
+  FileText,
+  Trash2,
+  Loader2,
+  FileUp,
+  FileArchive,
+  Eye,
+} from "lucide-react";
 import { RFPDocument } from "@/hooks/useRFPDocuments";
 import { PDFViewerSheet } from "@/components/PDFViewerSheet";
 
@@ -20,12 +27,14 @@ function getFileIcon(mimeType: string) {
     return <FileText className="h-5 w-5 text-red-500" />;
   } else if (
     mimeType === "application/vnd.ms-excel" ||
-    mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    mimeType ===
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   ) {
     return <FileArchive className="h-5 w-5 text-green-500" />;
   } else if (
     mimeType === "application/msword" ||
-    mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    mimeType ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
   ) {
     return <FileArchive className="h-5 w-5 text-blue-500" />;
   }
@@ -51,7 +60,10 @@ function formatDate(dateString: string): string {
   });
 }
 
-function getDocumentTypeLabel(documentType: string | null): { label: string; color: string } {
+function getDocumentTypeLabel(documentType: string | null): {
+  label: string;
+  color: string;
+} {
   if (!documentType) {
     return { label: "Non spécifié", color: "slate" };
   }
@@ -77,7 +89,9 @@ export function RFPDocumentsList({
 }: RFPDocumentsListProps) {
   const [deleting, setDeleting] = React.useState<string | null>(null);
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
-  const [supplierNames, setSupplierNames] = React.useState<Record<string, string>>({});
+  const [supplierNames, setSupplierNames] = React.useState<
+    Record<string, string>
+  >({});
 
   React.useEffect(() => {
     // Load supplier names for supplier response documents
@@ -95,7 +109,7 @@ export function RFPDocumentsList({
       for (const docId of supplierDocsIds) {
         try {
           const response = await fetch(
-            `/api/rfps/${rfpId}/documents/${docId}/supplier`
+            `/api/rfps/${rfpId}/documents/${docId}/supplier`,
           );
           if (response.ok) {
             const data = await response.json();
@@ -134,7 +148,9 @@ export function RFPDocumentsList({
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
-        <span className="ml-2 text-sm text-slate-500">Chargement des documents...</span>
+        <span className="ml-2 text-sm text-slate-500">
+          Chargement des documents...
+        </span>
       </div>
     );
   }
@@ -154,10 +170,7 @@ export function RFPDocumentsList({
   return (
     <div className="space-y-2">
       {documents.map((doc) => (
-        <Card
-          key={doc.id}
-          className="p-3 hover:bg-slate-50 transition-colors"
-        >
+        <Card key={doc.id} className="p-3 hover:bg-slate-50 transition-colors">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 flex-1 min-w-0">
               <div className="flex-shrink-0 mt-0.5">
@@ -183,17 +196,18 @@ export function RFPDocumentsList({
                       </Badge>
                     </>
                   )}
-                  {doc.document_type === "supplier_response" && supplierNames[doc.id] && (
-                    <>
-                      <span className="text-slate-300">•</span>
-                      <Badge
-                        className="text-xs bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100"
-                        variant="outline"
-                      >
-                        {supplierNames[doc.id]}
-                      </Badge>
-                    </>
-                  )}
+                  {doc.document_type === "supplier_response" &&
+                    supplierNames[doc.id] && (
+                      <>
+                        <span className="text-slate-300">•</span>
+                        <Badge
+                          className="text-xs bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100"
+                          variant="outline"
+                        >
+                          {supplierNames[doc.id]}
+                        </Badge>
+                      </>
+                    )}
                 </div>
               </div>
             </div>

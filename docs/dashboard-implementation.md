@@ -7,11 +7,13 @@ Implémenter une page complète de dashboard de synthèse par RFP avec toutes le
 ## 📁 Structure des Fichiers à Créer
 
 ### Pages
+
 ```
 app/dashboard/rfp/[rfpId]/synthesis/page.tsx
 ```
 
 ### Composants
+
 ```
 components/dashboard/
 ├── GlobalProgressCard.tsx
@@ -28,6 +30,7 @@ components/dashboard/
 ```
 
 ### Hooks
+
 ```
 hooks/dashboard/
 ├── useDashboardData.ts
@@ -38,6 +41,7 @@ hooks/dashboard/
 ```
 
 ### API Routes
+
 ```
 app/api/rfps/[rfpId]/dashboard/route.ts
 app/api/rfps/[rfpId]/suppliers/analysis/route.ts
@@ -48,6 +52,7 @@ app/api/rfps/[rfpId]/requirements/weights/route.ts
 ## 🔄 Étapes d'Implémentation
 
 ### Phase 1: Infrastructure de Base
+
 1. **Créer le layout du dashboard**
    - Header avec navigation RFP
    - Sidebar avec menu rapide
@@ -65,6 +70,7 @@ app/api/rfps/[rfpId]/requirements/weights/route.ts
    - Validation et sécurité des accès
 
 ### Phase 2: Composants Principaux
+
 1. **Section Avancement Global**
    - KPIs principaux avec cartes métriques
    - Graphique de progression par catégorie
@@ -86,6 +92,7 @@ app/api/rfps/[rfpId]/requirements/weights/route.ts
    - Visualisation de l'impact sur les scores
 
 ### Phase 3: Fonctionnalités Avancées
+
 1. **Calcul des Scores Pondérés**
    - Algorithme de calcul en temps réel
    - Mise à jour automatique des classements
@@ -104,11 +111,13 @@ app/api/rfps/[rfpId]/requirements/weights/route.ts
 ## 🎨 Integration avec le Design System Existant
 
 ### Réutilisation des Composants
+
 - Utiliser les composants UI existants (`components/ui/`)
 - Conserver les patterns de styling (Tailwind CSS)
 - Maintenir la cohérence des thèmes clair/sombre
 
 ### Navigation Cohérente
+
 - Intégration avec la sidebar existante
 - Breadcrumbs pour la navigation hiérarchique
 - Actions rapides dans le header
@@ -116,6 +125,7 @@ app/api/rfps/[rfpId]/requirements/weights/route.ts
 ## 📊 Gestion des États
 
 ### États de Chargement
+
 ```typescript
 interface DashboardState {
   loading: {
@@ -130,6 +140,7 @@ interface DashboardState {
 ```
 
 ### Gestion des Erreurs
+
 - Affichage élégant des messages d'erreur
 - Boutons de retry pour les échecs réseau
 - Fallback UI pour les données partielles
@@ -137,11 +148,13 @@ interface DashboardState {
 ## 🔐 Sécurité et Permissions
 
 ### Validation des Accès
+
 - Vérification des permissions RFP (admin/evaluator)
 - Isolation des données par organisation
 - Validation des entrées utilisateur
 
 ### Optimisation des Performances
+
 - React.memo pour les composants lourds
 - useCallback pour les gestionnaires d'événements
 - Debouncing des modifications de poids
@@ -149,11 +162,13 @@ interface DashboardState {
 ## 📱 Responsive Design
 
 ### Breakpoints
+
 - Mobile: < 768px (vue simplifiée)
 - Tablet: 768px - 1024px (vue intermédiaire)
 - Desktop: > 1024px (vue complète)
 
 ### Adaptations
+
 - Tableaux scrollables horizontalement
 - Collapsible panels sur mobile
 - Touch-friendly controls pour tablettes
@@ -161,9 +176,10 @@ interface DashboardState {
 ## 🔄 Déploiement et Monitoring
 
 ### Variables d'Environnement
+
 ```typescript
 const DASHBOARD_CONFIG = {
-  ENABLE_ADVANCED_CHARTS: process.env.NODE_ENV === 'production',
+  ENABLE_ADVANCED_CHARTS: process.env.NODE_ENV === "production",
   CACHE_DURATION: 5 * 60 * 1000, // 5 minutes
   MAX_CATEGORIES_PER_VIEW: 50,
   MAX_SUPPLIERS_PER_VIEW: 20,
@@ -171,6 +187,7 @@ const DASHBOARD_CONFIG = {
 ```
 
 ### Monitoring Performance
+
 - Temps de chargement des sections
 - Fréquence des recalculs de scores
 - Taux d'utilisation des fonctionnalités
@@ -178,17 +195,20 @@ const DASHBOARD_CONFIG = {
 ## 🎯 Critères de Succès
 
 ### Performance
+
 - Temps de chargement < 2 secondes
 - Calcul des scores < 500ms
 - Navigation fluide entre sections
 
 ### Fonctionnalités
+
 - Modification des poids en temps réel
 - Mise à jour automatique des classements
 - Export des données
 - Responsive design sur tous appareils
 
 ### Qualité
+
 - Accessibilité WCAG 2.1 AA
 - Tests unitaires > 80% de couverture
 - Revue de code complète

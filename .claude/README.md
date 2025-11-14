@@ -13,29 +13,34 @@ This directory contains Claude Code configuration and hooks for this project.
 ## 🚀 Quick Start
 
 ### Automatic (Recommended)
+
 The pre-commit hook runs automatically when you create a commit. Just write normally:
+
 ```
 git commit -m "fix: Your message here"
 ```
 
 The hook will automatically:
+
 1. ✨ Format code with Prettier
 2. 🔐 Check TypeScript strict mode
 3. 🏗️ Verify the build succeeds
 
 ### Manual
+
 Run checks manually anytime:
+
 ```bash
 bash .claude/pre-commit.sh
 ```
 
 ## ✅ What Gets Checked
 
-| Check | Purpose | Auto-Fix |
-|-------|---------|----------|
-| **Prettier** | Code formatting | ✅ Yes |
+| Check          | Purpose                            | Auto-Fix                    |
+| -------------- | ---------------------------------- | --------------------------- |
+| **Prettier**   | Code formatting                    | ✅ Yes                      |
 | **TypeScript** | Type safety & Vercel compatibility | ❌ No (manual fix required) |
-| **Build** | Compilation success | ❌ No (manual fix required) |
+| **Build**      | Compilation success                | ❌ No (manual fix required) |
 
 ## 📚 Documentation
 
@@ -46,6 +51,7 @@ bash .claude/pre-commit.sh
 ## ⚙️ Configuration
 
 Your local hook settings are in `settings.local.json` (not tracked in git):
+
 - Triggers on commits containing "commit"
 - Timeout: 300 seconds (5 minutes)
 - Runs Prettier, TypeScript check, and build
@@ -61,13 +67,16 @@ To modify the pre-commit hook:
 ## ❓ Troubleshooting
 
 **Hook not running?**
+
 - Ensure commit message contains "commit"
 - Check `settings.local.json` exists and is valid
 
 **Build taking too long?**
+
 - Edit `settings.local.json` and increase `timeout` value
 
 **Want to skip the hook temporarily?**
+
 - Use different commit message (without "commit")
 - Or temporarily modify the matcher pattern
 

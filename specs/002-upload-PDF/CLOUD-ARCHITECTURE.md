@@ -21,11 +21,11 @@ GCP (Stockage de fichiers)
 
 ## Services et responsabilités
 
-| Service | Rôle | Utilisé pour |
-|---------|------|-------------|
-| **Vercel** | Héberge Next.js + API routes | Orchestration, génération URLs signées |
+| Service      | Rôle                               | Utilisé pour                                                          |
+| ------------ | ---------------------------------- | --------------------------------------------------------------------- |
+| **Vercel**   | Héberge Next.js + API routes       | Orchestration, génération URLs signées                                |
 | **Supabase** | Base de données + Authentification | Metadata fichiers RFP/Réponses, Row Level Security (RLS), audit trail |
-| **GCP** | Stockage de fichiers | Cahiers des charges (PDF), documents RFP, réponses fournisseurs |
+| **GCP**      | Stockage de fichiers               | Cahiers des charges (PDF), documents RFP, réponses fournisseurs       |
 
 ## Configuration
 
@@ -49,6 +49,7 @@ MAX_FILE_SIZE_MB=50
 ### Authentification GCP
 
 **En local**: Fichier JSON avec credentials du service account
+
 ```json
 {
   "type": "service_account",
@@ -102,6 +103,7 @@ Payload:
 ```
 
 Validations côté serveur:
+
 - Vérifier que la taille du fichier ne dépasse pas `MAX_FILE_SIZE_MB` (50 MB)
 - Vérifier que le type MIME est `application/pdf`
 - Vérifier que le RFP existe (RLS)
@@ -153,6 +155,7 @@ Payload:
 ```
 
 Côté serveur:
+
 1. Vérifier que le fichier existe dans GCS
 2. Valider la taille du fichier (métadonnées GCS)
 3. Vérifier que le RFP existe (RLS)
@@ -188,6 +191,7 @@ Cookie: supabase-auth=...
 ### Étape 2: Récupérer l'URL signée
 
 L'API route:
+
 1. Récupère le record depuis Supabase
 2. Extrait `gcs_object_name`
 3. Génère une URL signée temporaire (90 secondes par défaut)
@@ -205,6 +209,7 @@ Response 200:
 ### Étape 3: Afficher le PDF dans le composant
 
 Le composant `RFPDocumentViewer` affiche le PDF avec:
+
 - Navigation par page
 - Surlignage des sections correspondant à la requirement actuelle
 - Synchronisation avec la `ComparisonView`
@@ -224,20 +229,17 @@ Cookie: supabase-auth=...
 ```typescript
 // 1. Récupérer le record depuis Supabase (avec RLS)
 const docRecord = await supabase
-  .from('rfp_documents')
-  .select('*')
-  .eq('id', documentId)
-  .eq('rfp_id', rfpId)
+  .from("rfp_documents")
+  .select("*")
+  .eq("id", documentId)
+  .eq("rfp_id", rfpId)
   .single();
 
 // 2. Supprimer le fichier depuis GCS
 await bucket.file(docRecord.gcs_object_name).delete();
 
 // 3. Supprimer l'enregistrement en base
-await supabase
-  .from('rfp_documents')
-  .delete()
-  .eq('id', documentId);
+await supabase.from("rfp_documents").delete().eq("id", documentId);
 
 // 4. Mettre à jour le statut du RFP
 await updateRFPStatus(rfpId);
@@ -280,16 +282,14 @@ Les cookies de session sont automatiquement gérés par le Supabase SSR SDK.
 Chaque accès au fichier est enregistré:
 
 ```typescript
-await supabase
-  .from('document_access_logs')
-  .insert({
-    document_id: documentId,
-    user_id: userId,
-    action: 'view', // ou 'download', 'upload', 'delete'
-    ip_address: request.headers.get('x-forwarded-for'),
-    user_agent: request.headers.get('user-agent'),
-    timestamp: new Date()
-  });
+await supabase.from("document_access_logs").insert({
+  document_id: documentId,
+  user_id: userId,
+  action: "view", // ou 'download', 'upload', 'delete'
+  ip_address: request.headers.get("x-forwarded-for"),
+  user_agent: request.headers.get("user-agent"),
+  timestamp: new Date(),
+});
 ```
 
 ## Architecture détaillée
@@ -373,6 +373,7 @@ export const bucket = storage.bucket(process.env.GCS_BUCKET!);
 **File**: `lib/fileUploadService.ts`
 
 Classe réutilisable pour gérer l'upload de fichiers RFP:
+
 - `getRFPUploadIntent()` - Génère une URL signée
 - `commitRFPUpload()` - Enregistre les métadonnées
 - `deleteRFPDocument()` - Supprime fichier + metadata
@@ -396,6 +397,7 @@ Endpoint pour finaliser l'upload après que le fichier soit en GCS.
 **File**: `components/RFPDocumentViewer.tsx`
 
 Composant React pour afficher le PDF avec:
+
 - Navigation dans le document
 - Surlignage des sections
 - Intégration avec la ComparisonView
@@ -404,14 +406,14 @@ Composant React pour afficher le PDF avec:
 
 ### Scénarios et résolutions
 
-| Scénario | Gestion |
-|----------|---------|
-| Fichier dépasse `MAX_FILE_SIZE_MB` | ❌ 400 Bad Request |
-| Type MIME non PDF | ❌ 400 Bad Request |
-| URL signée expirée | ❌ 403 Forbidden (par GCS) |
-| Fichier non trouvé en GCS | ❌ 404 Not Found |
-| Taille mismatch GCS vs metadata | ❌ 400 Bad Request |
-| Erreur Supabase RLS | ❌ 403 Forbidden |
+| Scénario                              | Gestion                    |
+| ------------------------------------- | -------------------------- |
+| Fichier dépasse `MAX_FILE_SIZE_MB`    | ❌ 400 Bad Request         |
+| Type MIME non PDF                     | ❌ 400 Bad Request         |
+| URL signée expirée                    | ❌ 403 Forbidden (par GCS) |
+| Fichier non trouvé en GCS             | ❌ 404 Not Found           |
+| Taille mismatch GCS vs metadata       | ❌ 400 Bad Request         |
+| Erreur Supabase RLS                   | ❌ 403 Forbidden           |
 | Upload non finalisé (commit manquant) | ⚠️ Fichier orphelin en GCS |
 
 ### Nettoyage automatique

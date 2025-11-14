@@ -1,20 +1,22 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react'
-import { Navbar } from '@/components/Navbar'
-import { Sidebar } from '@/components/Sidebar'
-import { ComparisonView } from '@/components/ComparisonView'
-import { requirementsData, flattenRequirements } from '@/lib/fake-data'
+import React, { useState } from "react";
+import { Navbar } from "@/components/Navbar";
+import { Sidebar } from "@/components/Sidebar";
+import { ComparisonView } from "@/components/ComparisonView";
+import { requirementsData, flattenRequirements } from "@/lib/fake-data";
 
 export default function Dashboard() {
-  const [selectedRequirementId, setSelectedRequirementId] = useState('REQ-001')
-  const [activeTab, setActiveTab] = useState<'config' | 'comparison' | 'responses'>('comparison')
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [selectedRequirementId, setSelectedRequirementId] = useState("REQ-001");
+  const [activeTab, setActiveTab] = useState<
+    "config" | "comparison" | "responses"
+  >("comparison");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
-  const allRequirements = flattenRequirements(requirementsData)
+  const allRequirements = flattenRequirements(requirementsData);
 
   return (
-    <div className={theme === 'dark' ? 'dark' : ''}>
+    <div className={theme === "dark" ? "dark" : ""}>
       <div className="flex flex-col h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
         {/* Navbar */}
         <Navbar
@@ -36,7 +38,7 @@ export default function Dashboard() {
 
           {/* Content area */}
           <div className="flex-1 overflow-hidden">
-            {activeTab === 'comparison' && (
+            {activeTab === "comparison" && (
               <ComparisonView
                 selectedRequirementId={selectedRequirementId}
                 allRequirements={allRequirements}
@@ -44,7 +46,7 @@ export default function Dashboard() {
               />
             )}
 
-            {activeTab === 'config' && (
+            {activeTab === "config" && (
               <div className="p-6">
                 <h2 className="text-2xl font-bold mb-4">Configuration</h2>
                 <p className="text-slate-600 dark:text-slate-400">
@@ -53,7 +55,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {activeTab === 'responses' && (
+            {activeTab === "responses" && (
               <div className="p-6">
                 <h2 className="text-2xl font-bold mb-4">Réponses</h2>
                 <p className="text-slate-600 dark:text-slate-400">
@@ -65,5 +67,5 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -20,6 +20,7 @@ First, create an RFP through the web interface or use an existing one.
 ### 2. Gather Credentials
 
 You'll need:
+
 - **RFP ID**: From the dashboard or URL (e.g., `/dashboard/rfp/my-rfp-123`)
 - **Auth Cookie**: Available in browser DevTools:
   1. Open browser DevTools (F12)
@@ -89,6 +90,7 @@ chmod +x scripts/test-pdf-upload.sh
 ```
 
 Expected output:
+
 ```
 📄 PDF Upload Test
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -122,9 +124,11 @@ MIME Type:     application/pdf
 ## API Endpoints Reference
 
 ### Upload Intent
+
 **POST** `/api/rfps/[rfpId]/documents/upload-intent`
 
 Request:
+
 ```json
 {
   "filename": "cahier-charges.pdf",
@@ -135,6 +139,7 @@ Request:
 ```
 
 Response (200):
+
 ```json
 {
   "uploadUrl": "https://storage.googleapis.com/...",
@@ -145,9 +150,11 @@ Response (200):
 ```
 
 ### Commit Upload
+
 **POST** `/api/rfps/[rfpId]/documents/commit`
 
 Request:
+
 ```json
 {
   "documentId": "550e8400-e29b-41d4-a716-446655440000",
@@ -160,6 +167,7 @@ Request:
 ```
 
 Response (200):
+
 ```json
 {
   "success": true,
@@ -176,9 +184,11 @@ Response (200):
 ```
 
 ### Get View URL
+
 **GET** `/api/rfps/[rfpId]/documents/[documentId]/view-url`
 
 Response (200):
+
 ```json
 {
   "url": "https://storage.googleapis.com/...",
@@ -188,9 +198,11 @@ Response (200):
 ```
 
 ### List Documents
+
 **GET** `/api/rfps/[rfpId]/documents`
 
 Response (200):
+
 ```json
 {
   "documents": [
@@ -207,9 +219,11 @@ Response (200):
 ```
 
 ### Delete Document
+
 **DELETE** `/api/rfps/[rfpId]/documents?documentId=[documentId]`
 
 Response (200):
+
 ```json
 {
   "success": true,
@@ -221,14 +235,14 @@ Response (200):
 
 ### Common Errors
 
-| Error | Status | Cause | Solution |
-|-------|--------|-------|----------|
-| `Unauthorized` | 401 | Missing/invalid auth | Check auth cookie |
-| `RFP not found` | 404 | Invalid RFP ID | Verify RFP exists |
-| `Access denied` | 403 | Wrong organization | Check user permissions |
-| `Only PDF files are allowed` | 400 | Wrong file type | Use PDF files only |
-| `File size exceeds maximum` | 400 | File too large | Max 50MB |
-| `File not found in cloud storage` | 404 | GCS sync failed | Retry upload |
+| Error                             | Status | Cause                | Solution               |
+| --------------------------------- | ------ | -------------------- | ---------------------- |
+| `Unauthorized`                    | 401    | Missing/invalid auth | Check auth cookie      |
+| `RFP not found`                   | 404    | Invalid RFP ID       | Verify RFP exists      |
+| `Access denied`                   | 403    | Wrong organization   | Check user permissions |
+| `Only PDF files are allowed`      | 400    | Wrong file type      | Use PDF files only     |
+| `File size exceeds maximum`       | 400    | File too large       | Max 50MB               |
+| `File not found in cloud storage` | 404    | GCS sync failed      | Retry upload           |
 
 ## Monitoring & Debugging
 
@@ -268,12 +282,14 @@ WHERE organization_id = auth.jwt() ->> 'organization_id';
 ### Enable Debug Logging
 
 Set environment variables:
+
 ```bash
 export DEBUG=true
 export LOG_LEVEL=debug
 ```
 
 Check logs:
+
 ```bash
 # Vercel logs
 vercel logs <project-name> --prod

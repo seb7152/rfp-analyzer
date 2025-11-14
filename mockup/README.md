@@ -58,11 +58,13 @@ mockup/
 ## 🎨 Fonctionnalités du Mockup
 
 ### Sidebar
+
 - **Recherche** : Filtrez les exigences par ID ou titre
 - **Arborescence** : Navigation hiérarchique sur 4 niveaux
 - **Sélection** : Clic sur une exigence pour afficher les détails
 
 ### Vue Comparative
+
 - **Breadcrumb** : Montre le chemin de navigation (Domaine > Catégorie > Sous-catégorie > Exigence)
 - **Pagination** : Naviguez rapidement entre les exigences
 - **Pondération** : Affichage du poids de l'exigence
@@ -76,6 +78,7 @@ mockup/
   - Expansion pour voir détails complets
 
 ### Détails étendus
+
 - Réponse complète du fournisseur
 - Commentaire IA
 - Champ pour score manuel
@@ -83,6 +86,7 @@ mockup/
 - Champ pour questions/doutes
 
 ### Thème
+
 - Toggle jour/nuit dans la navbar
 - Style Vercel noir et blanc
 - Dark mode avec Tailwind CSS
@@ -101,6 +105,7 @@ Le mockup utilise des données structurées:
 ```
 
 Chaque réponse a:
+
 - Texte de réponse
 - Score IA (0-5)
 - Commentaire IA
@@ -119,6 +124,7 @@ Chaque réponse a:
 ## 📝 Notes de conception
 
 ### UX Decisions
+
 1. **Sidebar collapsible** : Permet de maximiser l'espace de contenu
 2. **Expansion des lignes** : Voir détails sans quitter l'exigence
 3. **Étoiles de rating** : Visuel simple et intuitif pour les scores
@@ -126,6 +132,7 @@ Chaque réponse a:
 5. **Pagination** : Naviger entre les exigences sans scroller le sidebar
 
 ### Couleurs et Styling
+
 - **Vercel-style** : Noir (#000), blanc (#fff), gris neutre
 - **Semantic colors** : Rouge pour les erreurs, vert pour les succès, jaune pour les avertissements
 - **Dark mode** : Mode nuit complet avec contraste approprié
@@ -170,6 +177,7 @@ Chaque réponse a:
 ## 🤝 Feedback & Amélioration
 
 Pour améliorer le mockup:
+
 - Testez la navigation et l'UX
 - Vérifiez les proportions et espacements
 - Suggérez des ajustements de couleurs/typographie

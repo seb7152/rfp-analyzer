@@ -52,8 +52,12 @@ export function ComparisonView({
   const [responses, setResponses] = useState<Response[]>(generateResponses());
   const [manualScores, setManualScores] = useState<Record<string, number>>({});
   const [comments, setComments] = useState<Record<string, string>>({});
-  const [statuses, setStatuses] = useState<Record<string, "pass" | "partial" | "fail" | "pending">>({});
-  const [responseChecks, setResponseChecks] = useState<Record<string, boolean>>({});
+  const [statuses, setStatuses] = useState<
+    Record<string, "pass" | "partial" | "fail" | "pending">
+  >({});
+  const [responseChecks, setResponseChecks] = useState<Record<string, boolean>>(
+    {},
+  );
 
   const requirement = getRequirementById(
     selectedRequirementId,
@@ -97,7 +101,7 @@ export function ComparisonView({
 
   const getStatusBadge = (response: Response) => {
     const status = statuses[response.id] ?? "pending";
-    
+
     return status === "pass" ? (
       <Badge className="bg-green-500 px-3 py-1.5">
         <CheckCircle2 className="w-4 h-4 mr-1.5" />
@@ -121,10 +125,9 @@ export function ComparisonView({
     );
   };
   // Check if all responses for current requirement are checked
-  const allResponsesChecked = requirementResponses.length > 0 && 
+  const allResponsesChecked =
+    requirementResponses.length > 0 &&
     requirementResponses.every((r) => responseChecks[r.id]);
-
-
 
   const renderStars = (score: number) => {
     return (
@@ -186,7 +189,10 @@ export function ComparisonView({
                   <CheckCircle2 className="w-4 h-4" />
                 </Badge>
               ) : (
-                <Badge variant="outline" className="px-2 py-1 border-dashed border-slate-300 dark:border-slate-600">
+                <Badge
+                  variant="outline"
+                  className="px-2 py-1 border-dashed border-slate-300 dark:border-slate-600"
+                >
                   <Clock className="w-4 h-4" />
                 </Badge>
               )}
@@ -306,11 +312,18 @@ export function ComparisonView({
                   </div>
 
                   {/* Stars and score - center right */}
-                  <div className="flex items-center gap-2 cursor-pointer flex-shrink-0 w-48" title="Cliquez pour changer le score">
+                  <div
+                    className="flex items-center gap-2 cursor-pointer flex-shrink-0 w-48"
+                    title="Cliquez pour changer le score"
+                  >
                     <div className="flex gap-1 flex-1">
                       {[1, 2, 3, 4, 5].map((i) => {
-                        const currentScore = manualScores[response.id] ?? response.aiScore;
-                        const isFilled = manualScores[response.id] === 0 ? false : (i <= currentScore);
+                        const currentScore =
+                          manualScores[response.id] ?? response.aiScore;
+                        const isFilled =
+                          manualScores[response.id] === 0
+                            ? false
+                            : i <= currentScore;
                         return (
                           <button
                             key={i}
@@ -343,7 +356,10 @@ export function ComparisonView({
                       })}
                     </div>
                     <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 w-9 text-center flex-shrink-0">
-                      {manualScores[response.id] === 0 ? "0" : (manualScores[response.id] ?? response.aiScore)}/5
+                      {manualScores[response.id] === 0
+                        ? "0"
+                        : (manualScores[response.id] ?? response.aiScore)}
+                      /5
                     </span>
                   </div>
 
@@ -403,7 +419,7 @@ export function ComparisonView({
                             <button
                               onClick={() => {
                                 navigator.clipboard.writeText(
-                                  response.aiComment
+                                  response.aiComment,
                                 );
                               }}
                               className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition-colors"

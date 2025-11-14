@@ -8,20 +8,21 @@
 
 ## 🚀 Quick Navigation
 
-| What You Need | Link |
-|---|---|
-| **Start here** | [QUICK-START.md](./QUICK-START.md) |
-| **Test it** | [docs/PDF-UPLOAD-TESTING.md](./docs/PDF-UPLOAD-TESTING.md) |
-| **Understand architecture** | [CLOUD-ARCHITECTURE.md](./CLOUD-ARCHITECTURE.md) |
+| What You Need                   | Link                                                               |
+| ------------------------------- | ------------------------------------------------------------------ |
+| **Start here**                  | [QUICK-START.md](./QUICK-START.md)                                 |
+| **Test it**                     | [docs/PDF-UPLOAD-TESTING.md](./docs/PDF-UPLOAD-TESTING.md)         |
+| **Understand architecture**     | [CLOUD-ARCHITECTURE.md](./CLOUD-ARCHITECTURE.md)                   |
 | **Full implementation details** | [docs/IMPLEMENTATION-SUMMARY.md](./docs/IMPLEMENTATION-SUMMARY.md) |
-| **What was built** | [PDF-UPLOAD-SUMMARY.md](./PDF-UPLOAD-SUMMARY.md) |
-| **Track progress** | [IMPLEMENTATION-CHECKLIST.md](./IMPLEMENTATION-CHECKLIST.md) |
+| **What was built**              | [PDF-UPLOAD-SUMMARY.md](./PDF-UPLOAD-SUMMARY.md)                   |
+| **Track progress**              | [IMPLEMENTATION-CHECKLIST.md](./IMPLEMENTATION-CHECKLIST.md)       |
 
 ---
 
 ## 📋 What's Included
 
 ### 🗄️ Database
+
 - ✅ `rfp_documents` table for PDF metadata
 - ✅ `document_access_logs` table for audit trail
 - ✅ Row Level Security (RLS) with organization isolation
@@ -31,6 +32,7 @@
 **File**: `supabase/migrations/009_create_rfp_documents_table.sql`
 
 ### 🔌 API Routes
+
 - ✅ **POST** `/api/rfps/[rfpId]/documents/upload-intent` - Get signed URL
 - ✅ **POST** `/api/rfps/[rfpId]/documents/commit` - Finalize upload
 - ✅ **GET** `/api/rfps/[rfpId]/documents/[documentId]/view-url` - Get download URL
@@ -39,27 +41,32 @@
 **Files**: `app/api/rfps/[rfpId]/documents/**`
 
 ### 🎨 Frontend Components
+
 - ✅ Upload hook with progress tracking
 - ✅ Drag-and-drop upload component
 - ✅ Documents management page
 - ✅ Fully styled with Tailwind CSS
 
 **Files**:
+
 - `hooks/useRFPDocumentUpload.ts`
 - `components/RFPDocumentUpload.tsx`
 - `app/dashboard/rfp/[rfpId]/documents/page.tsx`
 
 ### 🧪 Testing
+
 - ✅ Automated test script with 4 steps
 - ✅ cURL examples
 - ✅ Comprehensive testing guide
 - ✅ Error scenarios covered
 
 **Files**:
+
 - `scripts/test-pdf-upload.sh`
 - `docs/PDF-UPLOAD-TESTING.md`
 
 ### 📚 Documentation
+
 - ✅ Architecture documentation
 - ✅ Testing guide
 - ✅ Implementation summary
@@ -73,6 +80,7 @@
 ## ⚡ 5-Minute Quick Start
 
 ### 1️⃣ Apply Database Migration
+
 ```bash
 # Option A: Using Supabase CLI
 supabase db push
@@ -84,7 +92,9 @@ supabase db push
 ```
 
 ### 2️⃣ Verify Configuration
+
 Make sure `.env.local` has GCP credentials:
+
 ```env
 GCP_PROJECT_ID=rfp-analyzer-project
 GCS_BUCKET=rfp-analyzer-storage
@@ -92,17 +102,21 @@ GCP_SA_KEY_JSON=<your-service-account-json>
 ```
 
 ### 3️⃣ Start Development Server
+
 ```bash
 npm run dev
 ```
 
 ### 4️⃣ Test the Feature
+
 **Option A: Via Browser**
+
 ```
 http://localhost:3000/dashboard/rfp/[YOUR-RFP-ID]/documents
 ```
 
 **Option B: Via Test Script**
+
 ```bash
 chmod +x scripts/test-pdf-upload.sh
 ./scripts/test-pdf-upload.sh "your-rfp-id" "./sample.pdf" "your-auth-cookie"
@@ -150,20 +164,21 @@ chmod +x scripts/test-pdf-upload.sh
 
 ## 🔐 Security Features
 
-| Feature | Details |
-|---------|---------|
+| Feature                      | Details                                                 |
+| ---------------------------- | ------------------------------------------------------- |
 | **RLS (Row Level Security)** | Users can only access documents from their organization |
-| **Signed URLs** | GCP V4 signed URLs that expire after 90 seconds |
-| **Access Logging** | Every document access logged with user, IP, timestamp |
-| **File Validation** | PDF only, max 50MB, MIME type check |
-| **Automatic Cleanup** | Orphaned GCS files deleted if commit fails |
-| **Soft Deletes** | Documents marked as deleted, not permanently removed |
+| **Signed URLs**              | GCP V4 signed URLs that expire after 90 seconds         |
+| **Access Logging**           | Every document access logged with user, IP, timestamp   |
+| **File Validation**          | PDF only, max 50MB, MIME type check                     |
+| **Automatic Cleanup**        | Orphaned GCS files deleted if commit fails              |
+| **Soft Deletes**             | Documents marked as deleted, not permanently removed    |
 
 ---
 
 ## 📊 Database Schema
 
 ### rfp_documents (14 columns)
+
 Stores PDF file metadata and GCS reference.
 
 ```sql
@@ -173,6 +188,7 @@ ORDER BY created_at DESC;
 ```
 
 ### document_access_logs (8 columns)
+
 Stores audit trail of document access.
 
 ```sql
@@ -186,11 +202,13 @@ ORDER BY created_at DESC;
 ## 🧪 Testing
 
 ### Test via Script (Recommended)
+
 ```bash
 ./scripts/test-pdf-upload.sh "my-rfp" "./test.pdf" "auth-cookie"
 ```
 
 ### Test via cURL
+
 ```bash
 # Step 1: Get upload intent
 curl -X POST http://localhost:3000/api/rfps/my-rfp/documents/upload-intent \
@@ -209,6 +227,7 @@ curl -X POST http://localhost:3000/api/rfps/my-rfp/documents/commit \
 ```
 
 ### Test via Browser
+
 1. Navigate to `/dashboard/rfp/[RFP-ID]/documents`
 2. Drag & drop a PDF or click to select
 3. Wait for upload to complete
@@ -221,6 +240,7 @@ For detailed testing guide, see: [docs/PDF-UPLOAD-TESTING.md](./docs/PDF-UPLOAD-
 ## 📈 API Reference
 
 ### 1. Upload Intent
+
 ```http
 POST /api/rfps/{rfpId}/documents/upload-intent
 
@@ -242,6 +262,7 @@ Response (200):
 ```
 
 ### 2. Commit Upload
+
 ```http
 POST /api/rfps/{rfpId}/documents/commit
 
@@ -268,6 +289,7 @@ Response (200):
 ```
 
 ### 3. Get View URL
+
 ```http
 GET /api/rfps/{rfpId}/documents/{documentId}/view-url
 
@@ -280,6 +302,7 @@ Response (200):
 ```
 
 ### 4. List Documents
+
 ```http
 GET /api/rfps/{rfpId}/documents
 
@@ -299,6 +322,7 @@ Response (200):
 ```
 
 ### 5. Delete Document
+
 ```http
 DELETE /api/rfps/{rfpId}/documents?documentId={documentId}
 
@@ -314,18 +338,22 @@ Response (200):
 ## 🐛 Troubleshooting
 
 ### 401 Unauthorized
+
 - Check your auth cookie is valid
 - Try refreshing the page
 
 ### 403 Forbidden
+
 - Verify you belong to the RFP's organization
 - Check RLS policies in Supabase
 
 ### 404 RFP Not Found
+
 - Verify the RFP ID is correct
 - Check the RFP exists in your organization
 
 ### File Not Found in GCS
+
 - Verify GCP credentials in `.env.local`
 - Check bucket name is correct: `rfp-analyzer-storage`
 - Verify service account has write permissions
@@ -391,6 +419,7 @@ Before declaring ready for use:
 The upload infrastructure is complete! To finish the feature:
 
 ### Phase 6: PDF Viewer (Not Yet Implemented)
+
 ```typescript
 // components/RFPDocumentViewer.tsx
 - Display PDF using react-pdf
@@ -399,6 +428,7 @@ The upload infrastructure is complete! To finish the feature:
 ```
 
 ### Phase 7: ComparisonView Integration (Not Yet Implemented)
+
 ```typescript
 // Show PDF + supplier responses side-by-side
 <div className="grid grid-cols-2">
@@ -408,6 +438,7 @@ The upload infrastructure is complete! To finish the feature:
 ```
 
 ### Phase 8: UI Enhancements (Not Yet Implemented)
+
 - Download button for documents
 - Delete button with confirmation
 - Reorder documents (drag-drop)
@@ -418,12 +449,14 @@ The upload infrastructure is complete! To finish the feature:
 ## 📞 Support & References
 
 ### Documentation
+
 1. **Start here**: [QUICK-START.md](./QUICK-START.md)
 2. **Test it**: [docs/PDF-UPLOAD-TESTING.md](./docs/PDF-UPLOAD-TESTING.md)
 3. **Understand it**: [CLOUD-ARCHITECTURE.md](./CLOUD-ARCHITECTURE.md)
 4. **Deep dive**: [docs/IMPLEMENTATION-SUMMARY.md](./docs/IMPLEMENTATION-SUMMARY.md)
 
 ### External References
+
 - [GCP Cloud Storage](https://cloud.google.com/storage/docs)
 - [Supabase Row Level Security](https://supabase.com/docs/guides/auth/row-level-security)
 - [Signed URLs](https://cloud.google.com/storage/docs/access-control/signed-urls)
@@ -433,15 +466,15 @@ The upload infrastructure is complete! To finish the feature:
 
 ## 📊 Status Overview
 
-| Component | Status | Details |
-|-----------|--------|---------|
-| Database | ✅ Complete | Schema, RLS, indexes ready |
-| API Routes | ✅ Complete | 4 endpoints, fully tested |
-| Frontend | ✅ Complete | Hook, component, page ready |
-| Security | ✅ Complete | RLS, signed URLs, logging |
-| Testing | ✅ Complete | Script, guide, examples |
-| Documentation | ✅ Complete | 6 comprehensive guides |
-| PDF Viewer | ⏳ Not Started | Next phase |
+| Component     | Status         | Details                     |
+| ------------- | -------------- | --------------------------- |
+| Database      | ✅ Complete    | Schema, RLS, indexes ready  |
+| API Routes    | ✅ Complete    | 4 endpoints, fully tested   |
+| Frontend      | ✅ Complete    | Hook, component, page ready |
+| Security      | ✅ Complete    | RLS, signed URLs, logging   |
+| Testing       | ✅ Complete    | Script, guide, examples     |
+| Documentation | ✅ Complete    | 6 comprehensive guides      |
+| PDF Viewer    | ⏳ Not Started | Next phase                  |
 
 ---
 

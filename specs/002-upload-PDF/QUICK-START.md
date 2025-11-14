@@ -3,6 +3,7 @@
 ## 🎯 5-Minute Setup
 
 ### 1. Apply Database Migration
+
 ```bash
 # Using Supabase CLI
 supabase db push
@@ -14,7 +15,9 @@ supabase db push
 ```
 
 ### 2. Verify Environment Variables
+
 Make sure `.env.local` has:
+
 ```env
 GCP_PROJECT_ID=rfp-analyzer-project
 GCS_BUCKET=rfp-analyzer-storage
@@ -22,17 +25,21 @@ GCP_SA_KEY_JSON=<your-service-account-json>
 ```
 
 ### 3. Start Development Server
+
 ```bash
 npm run dev
 ```
 
 ### 4. Test Upload
+
 Navigate to:
+
 ```
 http://localhost:3000/dashboard/rfp/[YOUR-RFP-ID]/documents
 ```
 
 Or use the test script:
+
 ```bash
 chmod +x scripts/test-pdf-upload.sh
 ./scripts/test-pdf-upload.sh "rfp-id" "sample.pdf" "auth-cookie"
@@ -40,20 +47,21 @@ chmod +x scripts/test-pdf-upload.sh
 
 ## 📋 Files to Review
 
-| File | Purpose | Location |
-|------|---------|----------|
-| Architecture | System design & flows | `CLOUD-ARCHITECTURE.md` |
-| API Details | Endpoint specs | `docs/PDF-UPLOAD-TESTING.md` |
-| Implementation | What was built | `docs/IMPLEMENTATION-SUMMARY.md` |
-| Checklist | All tasks completed | `IMPLEMENTATION-CHECKLIST.md` |
-| Code | Upload hook | `hooks/useRFPDocumentUpload.ts` |
-| Component | UI for upload | `components/RFPDocumentUpload.tsx` |
-| Routes | API endpoints | `app/api/rfps/[rfpId]/documents/` |
-| Database | Schema | `supabase/migrations/009_...sql` |
+| File           | Purpose               | Location                           |
+| -------------- | --------------------- | ---------------------------------- |
+| Architecture   | System design & flows | `CLOUD-ARCHITECTURE.md`            |
+| API Details    | Endpoint specs        | `docs/PDF-UPLOAD-TESTING.md`       |
+| Implementation | What was built        | `docs/IMPLEMENTATION-SUMMARY.md`   |
+| Checklist      | All tasks completed   | `IMPLEMENTATION-CHECKLIST.md`      |
+| Code           | Upload hook           | `hooks/useRFPDocumentUpload.ts`    |
+| Component      | UI for upload         | `components/RFPDocumentUpload.tsx` |
+| Routes         | API endpoints         | `app/api/rfps/[rfpId]/documents/`  |
+| Database       | Schema                | `supabase/migrations/009_...sql`   |
 
 ## 🧪 Quick Test Commands
 
 ### Test Upload Intent
+
 ```bash
 curl -X POST http://localhost:3000/api/rfps/my-rfp/documents/upload-intent \
   -H "Content-Type: application/json" \
@@ -62,11 +70,13 @@ curl -X POST http://localhost:3000/api/rfps/my-rfp/documents/upload-intent \
 ```
 
 ### Test Full Upload
+
 ```bash
 ./scripts/test-pdf-upload.sh "my-rfp" "./test.pdf" "your-auth-cookie"
 ```
 
 ### List Documents
+
 ```bash
 curl -X GET http://localhost:3000/api/rfps/my-rfp/documents \
   -H "Cookie: supabase-auth=YOUR_AUTH_COOKIE"
@@ -92,18 +102,22 @@ curl -X GET http://localhost:3000/api/rfps/my-rfp/documents \
 ## 🐛 Troubleshooting
 
 ### 401 Unauthorized
+
 - Check auth cookie is valid
 - Try refreshing the page
 
 ### 403 Forbidden
+
 - Ensure user belongs to RFP's organization
 - Check RLS policies in Supabase
 
 ### 404 RFP Not Found
+
 - Verify RFP ID exists
 - Check organization matches
 
 ### File Not Found in GCS
+
 - Verify GCP credentials
 - Check bucket name is correct
 - Ensure service account has write permissions
@@ -111,6 +125,7 @@ curl -X GET http://localhost:3000/api/rfps/my-rfp/documents \
 ## 📚 Full Documentation
 
 For detailed information, see:
+
 - **Architecture**: `CLOUD-ARCHITECTURE.md`
 - **Testing Guide**: `docs/PDF-UPLOAD-TESTING.md`
 - **Implementation Details**: `docs/IMPLEMENTATION-SUMMARY.md`
@@ -121,11 +136,13 @@ For detailed information, see:
 The upload feature is complete! To build the PDF viewer:
 
 1. **Install react-pdf**:
+
    ```bash
    npm install react-pdf pdfjs-dist
    ```
 
 2. **Create viewer component**:
+
    ```typescript
    // components/RFPDocumentViewer.tsx
    - Display PDF pages

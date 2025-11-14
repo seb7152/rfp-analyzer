@@ -6,7 +6,7 @@ import {
   StepperSeparator,
   StepperTitle,
   StepperTrigger,
-} from "@/components/ui/stepper"
+} from "@/components/ui/stepper";
 
 const steps = [
   {
@@ -24,7 +24,7 @@ const steps = [
     title: "Step Three",
     description: "Desc for step three",
   },
-]
+];
 
 export default function Component() {
   return (
@@ -59,5 +59,5 @@ export default function Component() {
         Stepper with titles and descriptions
       </p>
     </div>
-  )
+  );
 }

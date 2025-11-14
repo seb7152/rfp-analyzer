@@ -3,12 +3,14 @@
 ## ✅ Completed Tasks
 
 ### Phase 1: Architecture & Planning
+
 - [x] Updated `CLOUD-ARCHITECTURE.md` with GCP bucket structure for RFP-Analyzer
 - [x] Designed 3-step upload flow (intent → upload → commit)
 - [x] Planned security model (RLS + signed URLs)
 - [x] Designed database schema for documents and audit logs
 
 ### Phase 2: Database Setup
+
 - [x] Created migration: `009_create_rfp_documents_table.sql`
   - [x] `rfp_documents` table with proper constraints
   - [x] `document_access_logs` table for audit trail
@@ -17,6 +19,7 @@
   - [x] Soft delete support via `deleted_at`
 
 ### Phase 3: API Routes
+
 - [x] **Upload Intent Route**
   - [x] `POST /api/rfps/[rfpId]/documents/upload-intent`
   - [x] File validation (PDF only, max 50MB)
@@ -44,6 +47,7 @@
   - [x] Log delete action
 
 ### Phase 4: Frontend Components
+
 - [x] **Upload Hook** (`hooks/useRFPDocumentUpload.ts`)
   - [x] 3-step upload orchestration
   - [x] Progress tracking per file
@@ -69,6 +73,7 @@
   - [x] Info box with security notes
 
 ### Phase 5: Testing & Documentation
+
 - [x] **Test Script** (`scripts/test-pdf-upload.sh`)
   - [x] 4-step automated testing
   - [x] Colored output for readability
@@ -108,6 +113,7 @@
 ### New Files Created
 
 #### Backend
+
 ```
 supabase/migrations/009_create_rfp_documents_table.sql
 app/api/rfps/[rfpId]/documents/upload-intent/route.ts
@@ -117,6 +123,7 @@ app/api/rfps/[rfpId]/documents/[documentId]/view-url/route.ts
 ```
 
 #### Frontend
+
 ```
 hooks/useRFPDocumentUpload.ts
 components/RFPDocumentUpload.tsx
@@ -124,11 +131,13 @@ app/dashboard/rfp/[rfpId]/documents/page.tsx
 ```
 
 #### Testing & Scripts
+
 ```
 scripts/test-pdf-upload.sh
 ```
 
 #### Documentation
+
 ```
 docs/CLOUD-ARCHITECTURE.md (updated)
 docs/PDF-UPLOAD-TESTING.md
@@ -139,6 +148,7 @@ IMPLEMENTATION-CHECKLIST.md (this file)
 ## 🚀 How to Use
 
 ### 1. Apply Database Migration
+
 ```bash
 # Option A: Using Supabase CLI
 supabase db push
@@ -148,6 +158,7 @@ supabase db push
 ```
 
 ### 2. Verify API Routes Work
+
 ```bash
 # Start the development server
 npm run dev
@@ -160,12 +171,14 @@ curl -X POST http://localhost:3000/api/rfps/test-rfp-id/documents/upload-intent 
 ```
 
 ### 3. Test Upload Flow
+
 ```bash
 chmod +x scripts/test-pdf-upload.sh
 ./scripts/test-pdf-upload.sh my-rfp-id ./test.pdf "sb-..." http://localhost:3000
 ```
 
 ### 4. Test in Browser
+
 ```
 http://localhost:3000/dashboard/rfp/[rfpId]/documents
 ```
@@ -173,6 +186,7 @@ http://localhost:3000/dashboard/rfp/[rfpId]/documents
 ## 🔍 Testing Scenarios
 
 ### ✅ Must Test
+
 1. [ ] Upload small PDF (< 5MB)
 2. [ ] Upload large PDF (> 20MB, < 50MB)
 3. [ ] Reject non-PDF files
@@ -184,6 +198,7 @@ http://localhost:3000/dashboard/rfp/[rfpId]/documents
 9. [ ] Verify access logs are created
 
 ### ✅ Security Tests
+
 1. [ ] RLS prevents cross-organization access
 2. [ ] Signed URLs expire after 90 seconds
 3. [ ] Invalid auth returns 401
@@ -191,6 +206,7 @@ http://localhost:3000/dashboard/rfp/[rfpId]/documents
 5. [ ] Orphaned GCS files are cleaned up
 
 ### ✅ Error Handling Tests
+
 1. [ ] Network timeout during upload
 2. [ ] Large file upload interruption
 3. [ ] Database connection failure
@@ -200,6 +216,7 @@ http://localhost:3000/dashboard/rfp/[rfpId]/documents
 ## 📊 Database Queries
 
 ### View All Documents
+
 ```sql
 SELECT id, filename, document_type, file_size, created_at
 FROM rfp_documents
@@ -208,6 +225,7 @@ ORDER BY created_at DESC;
 ```
 
 ### View Access Logs
+
 ```sql
 SELECT user_id, action, ip_address, created_at
 FROM document_access_logs
@@ -217,6 +235,7 @@ LIMIT 100;
 ```
 
 ### Audit Trail for Specific Document
+
 ```sql
 SELECT user_id, action, ip_address, created_at
 FROM document_access_logs
@@ -225,6 +244,7 @@ ORDER BY created_at DESC;
 ```
 
 ### Find Orphaned Documents
+
 ```sql
 SELECT *
 FROM rfp_documents
@@ -235,6 +255,7 @@ WHERE created_at < NOW() - INTERVAL '1 day'
 ## 🔄 Next Steps (Not Yet Implemented)
 
 ### Phase 6: PDF Viewer Component
+
 - [ ] Create `components/RFPDocumentViewer.tsx`
 - [ ] Use `react-pdf` library
 - [ ] Implement page navigation
@@ -243,12 +264,14 @@ WHERE created_at < NOW() - INTERVAL '1 day'
 - [ ] Cache PDFs locally (with expiration)
 
 ### Phase 7: Integration with ComparisonView
+
 - [ ] Add `RFPDocumentViewer` to comparison layout
 - [ ] Implement bidirectional scrolling sync
 - [ ] Add requirement highlighting
 - [ ] Mobile responsive layout
 
 ### Phase 8: Document Management UI
+
 - [ ] Download button in documents list
 - [ ] Delete button with confirmation modal
 - [ ] Reorder documents (drag-and-drop)
@@ -256,6 +279,7 @@ WHERE created_at < NOW() - INTERVAL '1 day'
 - [ ] Bulk operations (select multiple)
 
 ### Phase 9: Advanced Features (Optional)
+
 - [ ] PDF text extraction
 - [ ] Requirement matching
 - [ ] Document annotations
@@ -265,26 +289,31 @@ WHERE created_at < NOW() - INTERVAL '1 day'
 ## 🎯 Key Features Implemented
 
 ✅ **Secure File Upload**
+
 - Direct GCS upload (no server bottleneck)
 - Signed URLs with time expiration
 - File validation (type, size)
 
 ✅ **Metadata Management**
+
 - Store in Supabase with RLS
 - Soft delete support
 - Audit trail with logs
 
 ✅ **Multi-tenant Support**
+
 - Organization-based isolation
 - RLS policies prevent cross-org access
 - Organization ID in GCS path
 
 ✅ **Progress Tracking**
+
 - Real-time upload progress
 - Status indicators
 - Error messages
 
 ✅ **Security**
+
 - JWT-based auth
 - Row Level Security (RLS)
 - Signed URLs (V4)
@@ -292,11 +321,13 @@ WHERE created_at < NOW() - INTERVAL '1 day'
 - Soft deletes for compliance
 
 ✅ **Error Handling**
+
 - Automatic GCS cleanup on failure
 - Detailed error messages
 - Retry logic ready
 
 ✅ **Testing**
+
 - Automated test script
 - cURL examples
 - Testing guide with edge cases
@@ -305,6 +336,7 @@ WHERE created_at < NOW() - INTERVAL '1 day'
 ## 🧹 Cleanup (If Needed)
 
 To remove all test files:
+
 ```bash
 # GCS
 gsutil -m rm -r gs://rfp-analyzer-storage/rfps/*/test*
@@ -318,12 +350,14 @@ WHERE organization_id = 'test-org'
 ## 📈 Performance Metrics
 
 Expected timings (local development):
+
 - Upload intent: ~200ms
 - GCS upload (1MB file): ~500ms
 - Commit: ~200ms
 - **Total for 1MB file: ~900ms**
 
 Concurrent uploads:
+
 - Can handle 10+ simultaneous uploads
 - GCS rate limit: 1000 requests/second
 - Supabase: No concurrent limit on writes
@@ -339,6 +373,7 @@ Concurrent uploads:
 ## ✅ Ready for Testing
 
 The implementation is complete and ready for:
+
 1. ✅ Database schema testing
 2. ✅ API endpoint testing
 3. ✅ File upload testing

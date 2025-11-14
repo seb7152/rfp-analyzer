@@ -16,6 +16,7 @@
 ## Path Conventions
 
 Based on plan.md, this is a Next.js 14 App Router project with the following structure:
+
 - Frontend components: `components/`, `app/`
 - API routes: `app/api/`
 - Database: `supabase/migrations/`
@@ -297,6 +298,7 @@ Based on plan.md, this is a Next.js 14 App Router project with the following str
 **Independent Test**: From RFP dashboard, click "Analyze with AI" action for an RFP with responses lacking AI analysis. Verify webhook is sent to N8N, status shows "Processing", and after completion, AI scores and commentary appear in comparison view.
 
 **⚠️ Prerequisites**:
+
 - N8N webhook endpoint configured and accessible
 - Environment variable `N8N_WEBHOOK_URL` set in .env.local
 - Responses imported without `ai_score` and `ai_comment` for testing
@@ -608,6 +610,7 @@ With 3 developers after foundational phase complete:
 4. Stories complete and integrate independently
 
 **Estimated Timeline**:
+
 - **MVP (US1-3)**: ~2-3 weeks with 3 developers
 - **Full P1+P2 features**: ~3-4 weeks with 3 developers
 - **Production-ready (all features + polish)**: ~4-6 weeks with 3 developers

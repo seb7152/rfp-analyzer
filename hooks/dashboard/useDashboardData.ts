@@ -46,13 +46,16 @@ interface DashboardData {
       averageScore: number;
       completionRate: number;
     }>;
-    requirementsByCategory: Record<string, Array<{
-      id: string;
-      title: string;
-      currentWeight: number;
-      averageScore: number;
-      status: "pass" | "partial" | "fail" | "pending";
-    }>>;
+    requirementsByCategory: Record<
+      string,
+      Array<{
+        id: string;
+        title: string;
+        currentWeight: number;
+        averageScore: number;
+        status: "pass" | "partial" | "fail" | "pending";
+      }>
+    >;
   };
   weightsConfiguration: {
     categories: Array<{

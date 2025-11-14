@@ -6,9 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RequirementsTreeView } from "./RequirementsTreeView";
-import {
-  useRequirementsTree,
-} from "@/hooks/use-requirements";
+import { useRequirementsTree } from "@/hooks/use-requirements";
 import type { TreeNode } from "@/hooks/use-requirements";
 
 interface SidebarProps {

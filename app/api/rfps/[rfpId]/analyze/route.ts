@@ -113,7 +113,9 @@ export async function POST(
         const reqResponses = responses
           .filter((r) => r.requirement_id === req.id)
           .map((r) => {
-            const supplier = Array.isArray(r.suppliers) ? r.suppliers[0] : r.suppliers;
+            const supplier = Array.isArray(r.suppliers)
+              ? r.suppliers[0]
+              : r.suppliers;
             return {
               supplier_code: supplier?.supplier_id_external || "unknown",
               supplier_name: supplier?.name || "unknown",

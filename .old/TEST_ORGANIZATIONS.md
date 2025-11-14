@@ -1,6 +1,7 @@
 # Guide de test - Gestion des Organisations
 
 ## Prérequis
+
 - Application Next.js en cours d'exécution sur `http://localhost:3000`
 - Base de données Supabase connectée
 - Un utilisateur créé lors de l'inscription
@@ -13,13 +14,14 @@
 
 ```bash
 # Via Supabase dashboard ou psql
-SELECT id, name, slug, subscription_tier, max_users, max_rfps 
-FROM organizations 
-ORDER BY created_at DESC 
+SELECT id, name, slug, subscription_tier, max_users, max_rfps
+FROM organizations
+ORDER BY created_at DESC
 LIMIT 1;
 ```
 
 **Résultat attendu :**
+
 ```
 id                                   | name             | slug             | subscription_tier | max_users | max_rfps
 a242bfb5-982d-404a-84f3-7837296e9b73 | Test Organization| test-organization| free              | 10        | 5
@@ -28,13 +30,14 @@ a242bfb5-982d-404a-84f3-7837296e9b73 | Test Organization| test-organization| fre
 ### 1.2 Vérifiez le lien utilisateur-organisation :
 
 ```sql
-SELECT uo.*, u.email 
+SELECT uo.*, u.email
 FROM user_organizations uo
 JOIN users u ON uo.user_id = u.id
 WHERE uo.organization_id = 'a242bfb5-982d-404a-84f3-7837296e9b73';
 ```
 
 **Résultat attendu :**
+
 ```
 id      | user_id | organization_id | role  | joined_at | invited_by | email
 [UUID]  | [UUID]  | [org-id]        | admin | NOW()     | NULL       | test@example.com
@@ -52,6 +55,7 @@ curl -X GET http://localhost:3000/api/organizations \
 ```
 
 **Résultat attendu (200):**
+
 ```json
 {
   "organizations": [
@@ -80,6 +84,7 @@ curl -X POST http://localhost:3000/api/organizations \
 ```
 
 **Résultat attendu (200):**
+
 ```json
 {
   "success": true,
@@ -103,6 +108,7 @@ curl -X GET http://localhost:3000/api/organizations/a242bfb5-982d-404a-84f3-7837
 ```
 
 **Résultat attendu (200):**
+
 ```json
 {
   "organization": {
@@ -129,13 +135,14 @@ curl -X PUT http://localhost:3000/api/organizations/a242bfb5-982d-404a-84f3-7837
 ```
 
 **Résultat attendu (200):**
+
 ```json
 {
   "success": true,
   "organization": {
     "id": "a242bfb5-982d-404a-84f3-7837296e9b73",
     "name": "Organisation Renommée",
-    "settings": {"theme": "dark"},
+    "settings": { "theme": "dark" },
     "updated_at": "2025-11-07T10:30:00.000000+00:00"
   }
 }
@@ -153,6 +160,7 @@ curl -X GET http://localhost:3000/api/organizations/a242bfb5-982d-404a-84f3-7837
 ```
 
 **Résultat attendu (200):**
+
 ```json
 {
   "members": [
@@ -172,6 +180,7 @@ curl -X GET http://localhost:3000/api/organizations/a242bfb5-982d-404a-84f3-7837
 ### 3.2 Inviter un utilisateur (admin uniquement)
 
 **D'abord, créez un 2e utilisateur :**
+
 1. Ouvrez une fenêtre incognito/privée
 2. Allez à `http://localhost:3000/register`
 3. Créez un compte avec email: `user2@example.com`
@@ -188,6 +197,7 @@ curl -X POST http://localhost:3000/api/organizations/a242bfb5-982d-404a-84f3-783
 ```
 
 **Résultat attendu (200):**
+
 ```json
 {
   "success": true,
@@ -213,6 +223,7 @@ curl -X PATCH http://localhost:3000/api/organizations/a242bfb5-982d-404a-84f3-78
 ```
 
 **Résultat attendu (200):**
+
 ```json
 {
   "success": true,
@@ -232,6 +243,7 @@ curl -X DELETE http://localhost:3000/api/organizations/a242bfb5-982d-404a-84f3-7
 ```
 
 **Résultat attendu (200):**
+
 ```json
 {
   "success": true,
@@ -290,7 +302,7 @@ export default function DashboardPage() {
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-4">Tableau de bord</h1>
-      
+
       <div className="space-y-4">
         <div>
           <h2 className="text-xl font-semibold">Utilisateur</h2>
@@ -369,27 +381,29 @@ Les policies RLS empêchent les utilisateurs de voir les données d'autres organ
 
 **Rôles et permissions :**
 
-| Permission | Admin | Evaluator | Viewer |
-|-----------|-------|-----------|--------|
-| Créer RFP | ✅ | ✅ | ❌ |
-| Modifier RFP | ✅ | ❌ | ❌ |
-| Supprimer RFP | ✅ | ❌ | ❌ |
-| Inviter users | ✅ | ❌ | ❌ |
-| Gérer rôles | ✅ | ❌ | ❌ |
-| Évaluer réponses | ✅ | ✅ | ❌ |
-| Voir analytics | ✅ | ✅ | ❌ |
+| Permission       | Admin | Evaluator | Viewer |
+| ---------------- | ----- | --------- | ------ |
+| Créer RFP        | ✅    | ✅        | ❌     |
+| Modifier RFP     | ✅    | ❌        | ❌     |
+| Supprimer RFP    | ✅    | ❌        | ❌     |
+| Inviter users    | ✅    | ❌        | ❌     |
+| Gérer rôles      | ✅    | ❌        | ❌     |
+| Évaluer réponses | ✅    | ✅        | ❌     |
+| Voir analytics   | ✅    | ✅        | ❌     |
 
 ---
 
 ## Tests d'erreur à vérifier
 
 ### 401 Non authentifié
+
 ```bash
 curl -X GET http://localhost:3000/api/organizations
 # Sans cookies de session → 401
 ```
 
 ### 403 Accès refusé
+
 ```bash
 # User A try to delete User B from User A's org
 curl -X DELETE http://localhost:3000/api/organizations/[org-a-id]/members/[user-b-id]
@@ -397,12 +411,14 @@ curl -X DELETE http://localhost:3000/api/organizations/[org-a-id]/members/[user-
 ```
 
 ### 404 Non trouvé
+
 ```bash
 curl -X GET http://localhost:3000/api/organizations/invalid-uuid
 # Org doesn't exist → 404
 ```
 
 ### 409 Conflit
+
 ```bash
 curl -X POST http://localhost:3000/api/organizations/[org-id]/invite \
   -d '{"email": "already-member@example.com", "role": "evaluator"}'
@@ -416,7 +432,7 @@ curl -X POST http://localhost:3000/api/organizations/[org-id]/invite \
 ### Voir toutes les organisations et leurs membres
 
 ```sql
-SELECT 
+SELECT
   o.id,
   o.name,
   o.slug,
@@ -432,7 +448,7 @@ ORDER BY o.created_at DESC;
 ### Voir la hiérarchie d'une organisation
 
 ```sql
-SELECT 
+SELECT
   u.email,
   uo.role,
   uo.joined_at

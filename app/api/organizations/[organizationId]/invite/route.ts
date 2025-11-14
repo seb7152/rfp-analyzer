@@ -1,39 +1,33 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
-type Params = Promise<{ organizationId: string }>
+type Params = Promise<{ organizationId: string }>;
 
-export async function POST(
-  request: Request,
-  { params }: { params: Params }
-) {
+export async function POST(request: Request, { params }: { params: Params }) {
   try {
-    const { organizationId } = await params
-    const { email, role } = await request.json()
+    const { organizationId } = await params;
+    const { email, role } = await request.json();
 
     if (!email || !role) {
       return NextResponse.json(
         { error: "Email and role are required" },
-        { status: 400 }
-      )
+        { status: 400 },
+      );
     }
 
     if (!["admin", "evaluator", "viewer"].includes(role)) {
-      return NextResponse.json(
-        { error: "Invalid role" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
 
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Not authenticated" },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     // Verify user is admin in this organization
@@ -42,13 +36,13 @@ export async function POST(
       .select("role")
       .eq("user_id", user.id)
       .eq("organization_id", organizationId)
-      .single()
+      .single();
 
     if (memberError || !membership || membership.role !== "admin") {
       return NextResponse.json(
         { error: "Only admins can invite users" },
-        { status: 403 }
-      )
+        { status: 403 },
+      );
     }
 
     // Get user by email
@@ -56,13 +50,13 @@ export async function POST(
       .from("users")
       .select("id")
       .eq("email", email)
-      .single()
+      .single();
 
     if (userError) {
       return NextResponse.json(
         { error: "User not found. Please ask them to register first." },
-        { status: 404 }
-      )
+        { status: 404 },
+      );
     }
 
     // Check if user is already a member
@@ -71,13 +65,13 @@ export async function POST(
       .select("id")
       .eq("user_id", invitedUser.id)
       .eq("organization_id", organizationId)
-      .single()
+      .single();
 
     if (existingMembership) {
       return NextResponse.json(
         { error: "User is already a member of this organization" },
-        { status: 409 }
-      )
+        { status: 409 },
+      );
     }
 
     // Add user to organization
@@ -90,25 +84,25 @@ export async function POST(
         invited_by: user.id,
       })
       .select()
-      .single()
+      .single();
 
     if (addError) {
       return NextResponse.json(
         { error: "Failed to invite user", message: addError.message },
-        { status: 500 }
-      )
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
       success: true,
       message: `User ${email} has been invited as ${role}`,
       membership: newMembership,
-    })
+    });
   } catch (error: any) {
-    console.error("Invite user error:", error)
+    console.error("Invite user error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 }
-    )
+      { status: 500 },
+    );
   }
 }

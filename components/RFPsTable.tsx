@@ -23,15 +23,25 @@ interface RFPsTableProps {
   onAnalysisStarted?: (rfpId: string) => void;
 }
 
-export function RFPsTable({ rfps, isLoading, onDelete, onAnalysisStarted }: RFPsTableProps) {
+export function RFPsTable({
+  rfps,
+  isLoading,
+  onDelete,
+  onAnalysisStarted,
+}: RFPsTableProps) {
   const router = useRouter();
-  const [rfpStats, setRfpStats] = useState<Record<string, { responsesCount: number; hasUnanalyzed: boolean }>>({});
+  const [rfpStats, setRfpStats] = useState<
+    Record<string, { responsesCount: number; hasUnanalyzed: boolean }>
+  >({});
 
   // Fetch RFP stats (responses count and unanalyzed status) for each RFP
   useEffect(() => {
     const fetchRFPStats = async () => {
       console.log(`[RFPsTable] Fetching stats for ${rfps.length} RFPs`);
-      const stats: Record<string, { responsesCount: number; hasUnanalyzed: boolean }> = {};
+      const stats: Record<
+        string,
+        { responsesCount: number; hasUnanalyzed: boolean }
+      > = {};
 
       for (const rfp of rfps) {
         try {
@@ -44,14 +54,20 @@ export function RFPsTable({ rfps, isLoading, onDelete, onAnalysisStarted }: RFPs
             const data = await response.json();
             const responses = data.responses || [];
             // Check if any response has no AI score (unanalyzed)
-            const unanalyzedResponses = responses.filter((r: any) => !r.ai_score);
+            const unanalyzedResponses = responses.filter(
+              (r: any) => !r.ai_score,
+            );
             stats[rfp.id] = {
               responsesCount: unanalyzedResponses.length,
               hasUnanalyzed: unanalyzedResponses.length > 0,
             };
-            console.log(`[RFPsTable] RFP ${rfp.id}: ${unanalyzedResponses.length}/${responses.length} unanalyzed`);
+            console.log(
+              `[RFPsTable] RFP ${rfp.id}: ${unanalyzedResponses.length}/${responses.length} unanalyzed`,
+            );
           } else {
-            console.warn(`[RFPsTable] Failed to fetch responses for RFP ${rfp.id}: ${response.status}`);
+            console.warn(
+              `[RFPsTable] Failed to fetch responses for RFP ${rfp.id}: ${response.status}`,
+            );
           }
         } catch (error) {
           console.error(`Failed to fetch stats for RFP ${rfp.id}:`, error);
@@ -189,33 +205,35 @@ export function RFPsTable({ rfps, isLoading, onDelete, onAnalysisStarted }: RFPs
                         <AIAnalysisButton
                           rfp={rfp}
                           responsesCount={rfpStats[rfp.id]?.responsesCount || 0}
-                          hasUnanalyzedResponses={rfpStats[rfp.id]?.hasUnanalyzed || false}
+                          hasUnanalyzedResponses={
+                            rfpStats[rfp.id]?.hasUnanalyzed || false
+                          }
                           onAnalysisStarted={() => onAnalysisStarted?.(rfp.id)}
                         />
                       </div>
 
                       <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              onClick={() =>
-                                                router.push(`/dashboard/rfp/${rfp.id}/evaluate`)
-                                              }
-                                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-slate-800"
-                                              title="Évaluer RFP"
-                                            >
-                                              <Eye className="h-4 w-4" />
-                                            </Button>
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          router.push(`/dashboard/rfp/${rfp.id}/evaluate`)
+                        }
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-slate-800"
+                        title="Évaluer RFP"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button
-                                                                    size="sm"
-                                                                    variant="ghost"
-                                                                    onClick={() =>
-                                                                      router.push(`/dashboard/rfp/${rfp.id}/synthesis`)
-                                                                    }
-                                                                    className="text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-slate-800"
-                                                                    title="Synthèse RFP"
-                                                                  >
-                                                                    <BarChart3 className="h-4 w-4" />
-                                                                  </Button>
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          router.push(`/dashboard/rfp/${rfp.id}/synthesis`)
+                        }
+                        className="text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-slate-800"
+                        title="Synthèse RFP"
+                      >
+                        <BarChart3 className="h-4 w-4" />
+                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"

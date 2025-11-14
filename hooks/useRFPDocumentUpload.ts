@@ -22,7 +22,11 @@ export function useRFPDocumentUpload(rfpId: string) {
   const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
 
   const uploadDocument = useCallback(
-    async (file: File, documentType: string = "cahier_charges", supplierId?: string) => {
+    async (
+      file: File,
+      documentType: string = "cahier_charges",
+      supplierId?: string,
+    ) => {
       const documentId = `upload-${Date.now()}`;
 
       // Initialize progress tracking
@@ -40,8 +44,8 @@ export function useRFPDocumentUpload(rfpId: string) {
         // Step 1: Request upload intent
         setUploadProgress((prev) =>
           prev.map((p) =>
-            p.documentId === documentId ? { ...p, progress: 10 } : p
-          )
+            p.documentId === documentId ? { ...p, progress: 10 } : p,
+          ),
         );
 
         const intentResponse = await fetch(
@@ -55,14 +59,12 @@ export function useRFPDocumentUpload(rfpId: string) {
               fileSize: file.size,
               documentType,
             }),
-          }
+          },
         );
 
         if (!intentResponse.ok) {
           const errorData = await intentResponse.json();
-          throw new Error(
-            errorData.error || "Failed to get upload intent"
-          );
+          throw new Error(errorData.error || "Failed to get upload intent");
         }
 
         const { documentId: actualId, objectName } =
@@ -73,8 +75,8 @@ export function useRFPDocumentUpload(rfpId: string) {
           prev.map((p) =>
             p.documentId === documentId
               ? { ...p, progress: 30, documentId: actualId }
-              : p
-          )
+              : p,
+          ),
         );
 
         const uploadFormData = new FormData();
@@ -87,13 +89,13 @@ export function useRFPDocumentUpload(rfpId: string) {
           {
             method: "POST",
             body: uploadFormData,
-          }
+          },
         );
 
         if (!uploadResponse.ok) {
           const errorData = await uploadResponse.json();
           throw new Error(
-            errorData.error || "Failed to upload file to cloud storage"
+            errorData.error || "Failed to upload file to cloud storage",
           );
         }
 
@@ -102,8 +104,8 @@ export function useRFPDocumentUpload(rfpId: string) {
           prev.map((p) =>
             p.documentId === actualId
               ? { ...p, progress: 80, status: "committing" }
-              : p
-          )
+              : p,
+          ),
         );
 
         const commitResponse = await fetch(
@@ -121,7 +123,7 @@ export function useRFPDocumentUpload(rfpId: string) {
               documentType,
               supplierId: supplierId || null,
             }),
-          }
+          },
         );
 
         if (!commitResponse.ok) {
@@ -140,8 +142,8 @@ export function useRFPDocumentUpload(rfpId: string) {
                   progress: 100,
                   status: "success",
                 }
-              : p
-          )
+              : p,
+          ),
         );
 
         return document as UploadedDocument;
@@ -153,14 +155,14 @@ export function useRFPDocumentUpload(rfpId: string) {
           prev.map((p) =>
             p.documentId === documentId
               ? { ...p, progress: 0, status: "error", error: errorMessage }
-              : p
-          )
+              : p,
+          ),
         );
 
         throw error;
       }
     },
-    [rfpId]
+    [rfpId],
   );
 
   const clearProgress = useCallback(() => {
@@ -169,7 +171,7 @@ export function useRFPDocumentUpload(rfpId: string) {
 
   const removeProgressItem = useCallback((documentId: string) => {
     setUploadProgress((prev) =>
-      prev.filter((p) => p.documentId !== documentId)
+      prev.filter((p) => p.documentId !== documentId),
     );
   }, []);
 

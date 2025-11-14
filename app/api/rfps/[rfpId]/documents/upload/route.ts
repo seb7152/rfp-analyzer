@@ -4,7 +4,7 @@ import { getRFPDocumentsBucket } from "@/lib/gcs";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { rfpId: string } }
+  { params }: { params: { rfpId: string } },
 ) {
   try {
     const supabase = await createServerClient();
@@ -24,7 +24,7 @@ export async function POST(
     if (!rfpId) {
       return NextResponse.json(
         { error: "RFP ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -48,10 +48,7 @@ export async function POST(
       .single();
 
     if (userOrgError || !userOrg) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Get form data
@@ -63,7 +60,7 @@ export async function POST(
     if (!file || !documentId || !objectName) {
       return NextResponse.json(
         { error: "file, documentId, and objectName are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -84,7 +81,7 @@ export async function POST(
         success: true,
         message: "File uploaded successfully",
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Upload error:", error);
@@ -92,7 +89,7 @@ export async function POST(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

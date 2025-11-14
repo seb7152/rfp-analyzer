@@ -53,7 +53,7 @@ export function useRFPDocuments(rfpId: string) {
         `/api/rfps/${rfpId}/documents?documentId=${documentId}`,
         {
           method: "DELETE",
-        }
+        },
       );
 
       if (!response.ok) {

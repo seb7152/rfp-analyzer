@@ -7,6 +7,7 @@ Le système a été modifié pour que les utilisateurs ne créent plus automatiq
 ## Architecture
 
 ### 1. Enregistrement (Register)
+
 - **URL**: `http://localhost:3001/register`
 - **Champs requis**:
   - Nom complet
@@ -22,6 +23,7 @@ Le système a été modifié pour que les utilisateurs ne créent plus automatiq
   6. Redirection vers `/dashboard`
 
 ### 2. Gestion des Organisations
+
 - **URL**: `http://localhost:3001/dashboard/organizations`
 - **Fonctionnalités**:
   - Voir toutes les organisations dont vous êtes membre
@@ -31,6 +33,7 @@ Le système a été modifié pour que les utilisateurs ne créent plus automatiq
   - Les nouvelles organisations reçoivent automatiquement un code à 10 chiffres
 
 ### 3. Création d'Organisation
+
 - **Endpoint**: `POST /api/organizations/create`
 - **Authentification**: Requise (utilisateur authentifié)
 - **Corps de la requête**:
@@ -56,16 +59,17 @@ Le système a été modifié pour que les utilisateurs ne créent plus automatiq
 
 Pour tester le système, utilisez ces codes:
 
-| Organisation | Code |
-|---|---|
+| Organisation      | Code       |
+| ----------------- | ---------- |
 | Test Organization | 5525548542 |
-| My Organization | 8534584434 |
-| Test Org | 8726755826 |
-| seb's corp | 6664718785 |
+| My Organization   | 8534584434 |
+| Test Org          | 8726755826 |
+| seb's corp        | 6664718785 |
 
 ## Workflow Complet
 
 ### Pour un nouvel utilisateur (sans organisation)
+
 1. L'administrateur/propriétaire crée une organisation via `/dashboard/organizations`
 2. L'organisation reçoit automatiquement un code à 10 chiffres
 3. L'administrateur partage ce code avec les nouveaux utilisateurs
@@ -73,6 +77,7 @@ Pour tester le système, utilisez ces codes:
 5. Ils sont automatiquement ajoutés à l'organisation en tant que "member"
 
 ### Pour un administrateur (créer une organisation)
+
 1. Aller à `/dashboard/organizations`
 2. Section "Créer une nouvelle organisation"
 3. Entrer le nom de l'organisation
@@ -83,6 +88,7 @@ Pour tester le système, utilisez ces codes:
 ## Bases de Données
 
 ### Table: `organizations`
+
 - `id` (UUID) - Clé primaire
 - `name` (TEXT) - Nom de l'organisation
 - `slug` (TEXT) - Slug unique
@@ -94,16 +100,19 @@ Pour tester le système, utilisez ces codes:
 - `updated_at` (TIMESTAMP)
 
 ### Constraints
+
 - `organization_code` est UNIQUE
 - Index créé sur `organization_code` pour les recherches rapides
 
 ### Table: `user_organizations`
+
 - `user_id` + `organization_id` = UNIQUE
 - `role` accepte: `admin`, `member`, `viewer`
 
 ## Tests
 
 ### Test d'enregistrement valide
+
 ```bash
 curl -X POST http://localhost:3001/api/auth/register \
   -H "Content-Type: application/json" \
@@ -116,6 +125,7 @@ curl -X POST http://localhost:3001/api/auth/register \
 ```
 
 ### Erreur: Code invalide
+
 ```bash
 # Code trop court
 curl -X POST http://localhost:3001/api/auth/register \
@@ -130,6 +140,7 @@ curl -X POST http://localhost:3001/api/auth/register \
 ```
 
 ### Erreur: Organisation inexistante
+
 ```bash
 # Code qui n'existe pas
 curl -X POST http://localhost:3001/api/auth/register \

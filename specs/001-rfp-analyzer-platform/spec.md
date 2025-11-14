@@ -13,6 +13,7 @@
 ### Authentication & Organization Management (Phases 1-3: T001-T046) - ✅ COMPLETED
 
 #### Phase 1: Setup (T001-T015) - ✅ COMPLETE
+
 - Project initialization with Next.js 14, TypeScript, Tailwind CSS
 - shadcn/ui component library integration
 - Supabase project setup and configuration
@@ -20,6 +21,7 @@
 - User, Organization, RFP, Requirement, and Response tables
 
 #### Phase 2: Foundational (T016-T031) - ✅ COMPLETE
+
 - Middleware for session management
 - Layout components (RootLayout, DashboardLayout)
 - Navigation components (Navbar, Sidebar)
@@ -29,6 +31,7 @@
 #### Phase 3: Authentication & Organization Management (T032-T046) - ✅ COMPLETE
 
 **User Registration & Authentication (T032-T039)**:
+
 - ✅ Registration form with email/password/fullname fields
 - ✅ Supabase Auth email/password authentication
 - ✅ Login page and logout functionality
@@ -38,6 +41,7 @@
 - ✅ `/api/auth/register` endpoint for user profile creation
 
 **Organization Management (T040-T046)**:
+
 - ✅ Multi-tenant architecture with Row Level Security (RLS)
 - ✅ Organization creation with automatic code generation
 - ✅ Organization management page (`/dashboard/organizations`)
@@ -52,16 +56,19 @@
 ### Key Architecture Changes - Phase 3
 
 #### Organization Registration Flow (UPDATED)
+
 **Original Design**: Users could create organizations during registration
 **Current Design**: Users must enter a 10-digit organization code to join existing organizations
 
 **Why This Change**:
+
 - Prevents unauthorized organization creation
 - Ensures proper access control and security
 - Allows admins to control who can join their organization
 - Better audit trail and data governance
 
 **New Registration Process**:
+
 1. Admin creates organization via `/dashboard/organizations`
 2. System generates unique 10-digit `organization_code`
 3. Admin shares code with team members (displayed on page, copy button available)
@@ -72,13 +79,15 @@
 #### Data Model Changes
 
 **organizations Table - NEW COLUMN**:
+
 ```sql
-ALTER TABLE public.organizations 
+ALTER TABLE public.organizations
 ADD COLUMN organization_code VARCHAR(10) UNIQUE NOT NULL;
 CREATE INDEX idx_organizations_code ON public.organizations(organization_code);
 ```
 
 **Example Organization Record**:
+
 ```json
 {
   "id": "a242bfb5-982d-404a-84f3-7837296e9b73",
@@ -94,21 +103,24 @@ CREATE INDEX idx_organizations_code ON public.organizations(organization_code);
 ```
 
 **user_organizations Table - ROLE CONSTRAINTS UPDATED**:
+
 ```sql
 -- Changed from admin-only to support multiple roles
-ALTER TABLE public.user_organizations 
+ALTER TABLE public.user_organizations
 DROP CONSTRAINT valid_role;
 
-ALTER TABLE public.user_organizations 
+ALTER TABLE public.user_organizations
 ADD CONSTRAINT valid_role CHECK (role IN ('admin', 'member', 'viewer'));
 ```
 
 **Valid Roles**:
+
 - **admin**: Full access to organization settings, can invite/remove members, manage RFPs
 - **member**: Can access organization RFPs and perform evaluations
 - **viewer**: Read-only access to organization data
 
 **Role Assignment Rules**:
+
 - User creating organization → automatically **admin**
 - User joining via code → automatically **member**
 - Admin can change roles via API endpoint `/api/organizations/[id]/members/[userId]`
@@ -116,12 +128,14 @@ ADD CONSTRAINT valid_role CHECK (role IN ('admin', 'member', 'viewer'));
 #### RLS (Row Level Security) Status
 
 **Current Implementation**:
+
 - ✅ `users` table: INSERT (during registration), SELECT (own profile), UPDATE (own profile)
 - ✅ `user_organizations` table: INSERT, SELECT, UPDATE, DELETE
 - ⚠️ `organizations` table: RLS DISABLED (temporary for MVP testing)
 - ✅ Multi-tenant isolation enforced where RLS enabled
 
 **Production Readiness Note**:
+
 - Need to re-enable RLS on `organizations` table before production
 - Policy: Users can SELECT organizations they are members of
 - Policy: Only admins can UPDATE organization settings
@@ -130,53 +144,48 @@ ADD CONSTRAINT valid_role CHECK (role IN ('admin', 'member', 'viewer'));
 #### API Endpoints - Phase 3 Complete
 
 **Authentication Endpoints**:
+
 - `POST /api/auth/register` - Register new user and join organization via code
   - Body: `{ userId, email, fullName, organizationCode }`
   - Returns: User + organization details
   - Error: Invalid code format, organization not found
-  
 - `POST /api/auth/login` - Authenticate existing user
   - Body: `{ email, password }`
   - Returns: Access token and user profile
-  
 - `POST /api/auth/logout` - Clear session
-  
 - `GET /api/auth/me` - Get current authenticated user with all organizations
   - Returns: User profile + array of organizations with roles
 
 **Organization Endpoints**:
+
 - `POST /api/organizations/create` - Create new organization (authenticated only)
   - Body: `{ name }`
   - Returns: Organization with auto-generated code
   - Note: Creator becomes admin
-  
 - `GET /api/organizations` - List user's organizations
-  
 - `GET /api/organizations/[id]` - Get organization details (admin only)
-  
 - `PUT /api/organizations/[id]` - Update organization (admin only)
-  
 - `GET /api/organizations/[id]/members` - List organization members
-  
 - `POST /api/organizations/[id]/invite` - Invite user via email (admin only)
-  
 - `PATCH /api/organizations/[id]/members/[userId]` - Change member role (admin only)
-  
 - `DELETE /api/organizations/[id]/members/[userId]` - Remove member (admin only)
 
 #### UI Components - Phase 3
 
 **Pages**:
+
 - `app/(auth)/register/page.tsx` - Registration with organization code input
 - `app/(auth)/login/page.tsx` - Login page
 - `app/dashboard/page.tsx` - Main dashboard
 - `app/dashboard/organizations/page.tsx` - Organization management (NEW)
 
 **Components**:
+
 - `Navbar.tsx` - Top navigation with user menu and theme toggle
 - `OrganizationSwitcher.tsx` - Dropdown for switching organizations
 
 **Hooks**:
+
 - `hooks/use-auth.ts` - Authentication state management
 - `hooks/use-organization.ts` - Organization context and switching
 
@@ -191,6 +200,7 @@ ADD CONSTRAINT valid_role CHECK (role IN ('admin', 'member', 'viewer'));
 | seb's corp | 6664718785 |
 
 **Test Scenarios - All ✅ PASSING**:
+
 1. Register with valid organization code → User added as "member" ✅
 2. Register with invalid code format → Error: "Code must be exactly 10 digits" ✅
 3. Register with non-existent code → Error: "Organization not found" ✅
@@ -205,6 +215,7 @@ ADD CONSTRAINT valid_role CHECK (role IN ('admin', 'member', 'viewer'));
 ## 📋 Phase 4: Requirements Hierarchy & Evaluation (T047-T065) - IN PROGRESS
 
 This phase will implement the core RFP evaluation functionality:
+
 - View and navigate hierarchical requirements (Domain → Category → Subcategory → Requirement)
 - Compare supplier responses side-by-side
 - Score and evaluate supplier responses
@@ -218,7 +229,7 @@ This phase will implement the core RFP evaluation functionality:
 **Status**: Draft  
 **Input**: User description: "Sur la base de l'expression de besoin V2, construit les specs. Analyse bien le mockup qui a été construit."
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - View and Navigate Requirements Hierarchy (Priority: P1)
 
@@ -358,6 +369,7 @@ Evaluators need to trigger AI analysis for supplier responses that were imported
 5. **Given** some responses already have AI analysis, **When** triggering analysis, **Then** only responses without `ai_score` and `ai_comment` are processed (skip already analyzed)
 
 **Technical Approach**:
+
 - Dashboard action button triggers POST `/api/rfps/[rfpId]/analyze`
 - Backend webhook to N8N workflow with payload: `{ rfpId, responseIds[] }`
 - N8N processes each response and updates via PUT `/api/responses/[responseId]`
@@ -401,11 +413,12 @@ Evaluators need to trigger AI analysis for supplier responses that were imported
   - Users are expected to communicate and divide evaluation work to avoid conflicts
   - Note: Real-time collaborative editing with conflict resolution is deferred to V2
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
 #### Navigation & Structure
+
 - **FR-001**: System MUST display requirements in a 4-level hierarchy (Domain → Category → Subcategory → Requirement) in a sidebar navigation tree
 - **FR-002**: System MUST allow users to expand and collapse individual nodes in the requirements tree by clicking on them
 - **FR-003**: System MUST provide "Expand All" and "Collapse All" buttons to control the entire tree state simultaneously
@@ -414,12 +427,14 @@ Evaluators need to trigger AI analysis for supplier responses that were imported
 - **FR-006**: System MUST display a breadcrumb trail showing the full hierarchical path to the current requirement (e.g., "DOM-1 / CAT-1.1 / SUB-1.1.1 / REQ-001")
 
 #### Requirement Display
+
 - **FR-007**: System MUST display requirement details including: unique ID, title, multi-line description with bullet point support, and weighting percentage
 - **FR-008**: System MUST provide a collapsible context section containing 3-4 paragraphs of background information from the RFP document
 - **FR-009**: System MUST display a completion status badge for each requirement (green checkmark when all suppliers reviewed, gray clock when pending)
 - **FR-010**: System MUST provide pagination controls (previous/next chevrons and X/Y counter) to navigate between requirements sequentially
 
 #### Supplier Response Comparison
+
 - **FR-011**: System MUST display all supplier responses (4-10) for the selected requirement in a vertically aligned comparison list
 - **FR-012**: System MUST show for each supplier response in collapsed view: supplier name, 2-line response text preview, AI score (1-5 stars), and status badge
 - **FR-013**: System MUST allow users to expand individual supplier responses to view full details without affecting other rows
@@ -427,6 +442,7 @@ Evaluators need to trigger AI analysis for supplier responses that were imported
 - **FR-015**: System MUST provide a "Copy" button to copy AI commentary to clipboard
 
 #### Scoring & Evaluation
+
 - **FR-016**: System MUST display AI-generated scores as 1-5 stars with numeric display (e.g., "4/5")
 - **FR-017**: System MUST allow users to manually set scores by clicking stars, with the ability to reset to 0 by clicking the current score again
 - **FR-018**: System MUST prioritize manual scores over AI scores when both exist (final score = manual if set, otherwise AI)
@@ -436,23 +452,27 @@ Evaluators need to trigger AI analysis for supplier responses that were imported
 - **FR-022**: System MUST update the requirement completion badge when all supplier responses for that requirement are checked
 
 #### Comments & Documentation
+
 - **FR-023**: System MUST provide a "Your Comment" textarea field for evaluator notes on each supplier response
 - **FR-024**: System MUST provide a "Questions / Doubts" textarea field for flagging unclear or concerning aspects of each response
 - **FR-025**: System MUST preserve all manual inputs (scores, statuses, comments, questions, checkboxes) when navigating between requirements
 
 #### Theme & Appearance
+
 - **FR-026**: System MUST support both light and dark color themes with a toggle button in the navbar
 - **FR-027**: System MUST use dark backgrounds (slate-900) for the sidebar in all themes
 - **FR-028**: System MUST ensure proper contrast ratios for text readability in both themes
 - **FR-029**: System MUST display status badges with consistent sizing and appropriate semantic colors (green=pass, blue=partial, red=fail, gray=pending)
 
 #### Data Integration
+
 - **FR-030**: System MUST accept requirement data with attributes: id, title, description, context, weight, level (1-4), parentId
 - **FR-031**: System MUST accept supplier data with attributes: id, name, contact information
 - **FR-032**: System MUST accept response data with attributes: requirementId, supplierId, responseText, aiScore (0-5), aiComment, status
 - **FR-033**: System MUST handle missing or incomplete data gracefully (e.g., missing AI scores, empty response text)
 
 #### Multi-Tenant & Access Control
+
 - **FR-034**: System MUST support multiple organizations (companies or business units) in a single database instance
 - **FR-035**: System MUST isolate RFP data by organization - users can only access RFPs belonging to their organization
 - **FR-036**: System MUST support user authentication and maintain user sessions
@@ -463,7 +483,7 @@ Evaluators need to trigger AI analysis for supplier responses that were imported
 - **FR-041**: System MUST track which user created/modified each RFP, requirement, and response evaluation
 - **FR-042**: System MUST prevent cross-organization data access through database-level Row Level Security (RLS) policies
 
-### Key Entities *(include if feature involves data)*
+### Key Entities _(include if feature involves data)_
 
 - **Organization**: Represents a company or business unit using the platform. Contains: unique ID, name, settings/configuration, subscription tier, and creation date. Provides multi-tenant isolation - all RFPs, users, and data are scoped to an organization. Supports multiple business units within a company as separate organizations.
 
@@ -483,7 +503,7 @@ Evaluators need to trigger AI analysis for supplier responses that were imported
 
 - **Evaluation Session**: Represents the work session of an evaluator. Tracks: user identifier, current RFP, currently selected requirement, theme preference (light/dark), and sidebar expansion state. Maintains local state for unsaved changes during navigation.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

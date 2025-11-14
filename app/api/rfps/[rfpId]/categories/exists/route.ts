@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * GET /api/rfps/[rfpId]/categories/exists
@@ -8,31 +8,25 @@ import { createClient } from "@/lib/supabase/server"
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { rfpId: string } }
+  { params }: { params: { rfpId: string } },
 ) {
   try {
-    const { rfpId } = params
+    const { rfpId } = params;
 
     // Validate RFP ID
     if (!rfpId || rfpId.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Invalid RFP ID" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Invalid RFP ID" }, { status: 400 });
     }
 
     // Get authenticated user
-    const supabase = await createClient()
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Verify user has access to this RFP
@@ -40,13 +34,10 @@ export async function GET(
       .from("rfps")
       .select("id, organization_id")
       .eq("id", rfpId)
-      .maybeSingle()
+      .maybeSingle();
 
     if (rfpError || !rfp) {
-      return NextResponse.json(
-        { error: "RFP not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "RFP not found" }, { status: 404 });
     }
 
     // Check if user is member of the organization
@@ -55,13 +46,10 @@ export async function GET(
       .select("role")
       .eq("user_id", user.id)
       .eq("organization_id", rfp.organization_id)
-      .maybeSingle()
+      .maybeSingle();
 
     if (userOrgError || !userOrg) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Check if categories exist for this RFP
@@ -69,14 +57,14 @@ export async function GET(
       .from("categories")
       .select("id")
       .eq("rfp_id", rfpId)
-      .limit(1)
+      .limit(1);
 
     if (catError) {
-      console.error("Error checking categories:", catError)
+      console.error("Error checking categories:", catError);
       return NextResponse.json(
         { error: "Failed to check categories" },
-        { status: 500 }
-      )
+        { status: 500 },
+      );
     }
 
     return NextResponse.json(
@@ -84,13 +72,13 @@ export async function GET(
         exists: (categories?.length ?? 0) > 0,
         count: categories?.length ?? 0,
       },
-      { status: 200 }
-    )
+      { status: 200 },
+    );
   } catch (error) {
-    console.error("Error in GET /api/rfps/[rfpId]/categories/exists:", error)
+    console.error("Error in GET /api/rfps/[rfpId]/categories/exists:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
-    )
+      { status: 500 },
+    );
   }
 }

@@ -5,7 +5,8 @@
  * Usage: npx ts-node scripts/test-n8n-webhook.ts
  */
 
-const WEBHOOK_URL = "https://n8n.srv828065.hstgr.cloud/webhook-test/a7d141e3-24e6-431d-8f63-abbe83f0319f";
+const WEBHOOK_URL =
+  "https://n8n.srv828065.hstgr.cloud/webhook-test/a7d141e3-24e6-431d-8f63-abbe83f0319f";
 
 const examplePayload = {
   rfp_id: "550e8400-e29b-41d4-a716-446655440000",
@@ -93,7 +94,7 @@ async function sendTestPayload() {
   console.log("🚀 Sending test payload to N8N webhook...");
   console.log(`📍 URL: ${WEBHOOK_URL}`);
   console.log(
-    `📦 Payload: ${JSON.stringify(examplePayload, null, 2).substring(0, 100)}...`
+    `📦 Payload: ${JSON.stringify(examplePayload, null, 2).substring(0, 100)}...`,
   );
   console.log("");
 

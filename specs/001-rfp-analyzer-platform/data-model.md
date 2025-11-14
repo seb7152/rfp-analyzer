@@ -63,24 +63,26 @@ This document defines the database schema for the RFP Analyzer Platform. The mod
 
 Represents a company or business unit using the platform (multi-tenant isolation).
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique identifier |
-| `name` | TEXT | NOT NULL | Organization name (e.g., "Acme Corp", "Acme - IT Division") |
-| `slug` | VARCHAR(100) | UNIQUE, NOT NULL | URL-friendly identifier (e.g., "acme-corp") |
-| `settings` | JSONB | DEFAULT '{}'::jsonb | Organization-specific settings and configuration |
-| `subscription_tier` | VARCHAR(50) | DEFAULT 'free' | Enum: 'free', 'pro', 'enterprise' |
-| `max_users` | INTEGER | DEFAULT 10 | Maximum users allowed (based on subscription) |
-| `max_rfps` | INTEGER | DEFAULT 5 | Maximum active RFPs allowed |
-| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Creation timestamp |
-| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Last update timestamp |
+| Column              | Type         | Constraints                             | Description                                                 |
+| ------------------- | ------------ | --------------------------------------- | ----------------------------------------------------------- |
+| `id`                | UUID         | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique identifier                                           |
+| `name`              | TEXT         | NOT NULL                                | Organization name (e.g., "Acme Corp", "Acme - IT Division") |
+| `slug`              | VARCHAR(100) | UNIQUE, NOT NULL                        | URL-friendly identifier (e.g., "acme-corp")                 |
+| `settings`          | JSONB        | DEFAULT '{}'::jsonb                     | Organization-specific settings and configuration            |
+| `subscription_tier` | VARCHAR(50)  | DEFAULT 'free'                          | Enum: 'free', 'pro', 'enterprise'                           |
+| `max_users`         | INTEGER      | DEFAULT 10                              | Maximum users allowed (based on subscription)               |
+| `max_rfps`          | INTEGER      | DEFAULT 5                               | Maximum active RFPs allowed                                 |
+| `created_at`        | TIMESTAMPTZ  | NOT NULL, DEFAULT NOW()                 | Creation timestamp                                          |
+| `updated_at`        | TIMESTAMPTZ  | NOT NULL, DEFAULT NOW()                 | Last update timestamp                                       |
 
 **Indexes**:
+
 - Primary key on `id`
 - Unique index on `slug`
 - Index on `subscription_tier`
 
 **Validation Rules**:
+
 - `name` cannot be empty
 - `slug` must be unique, lowercase, alphanumeric with hyphens only
 - `subscription_tier` must be one of: 'free', 'pro', 'enterprise'
@@ -92,21 +94,23 @@ Represents a company or business unit using the platform (multi-tenant isolation
 
 Represents authenticated users. Linked to Supabase Auth `auth.users` table.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | UUID | PRIMARY KEY, REFERENCES auth.users(id) | Supabase Auth user ID |
-| `email` | TEXT | UNIQUE, NOT NULL | User email (synced from auth.users) |
-| `full_name` | TEXT | | User's full name |
-| `avatar_url` | TEXT | | Profile picture URL |
-| `preferences` | JSONB | DEFAULT '{}'::jsonb | User preferences (theme, language, etc.) |
-| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Account creation timestamp |
-| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Last profile update |
+| Column        | Type        | Constraints                            | Description                              |
+| ------------- | ----------- | -------------------------------------- | ---------------------------------------- |
+| `id`          | UUID        | PRIMARY KEY, REFERENCES auth.users(id) | Supabase Auth user ID                    |
+| `email`       | TEXT        | UNIQUE, NOT NULL                       | User email (synced from auth.users)      |
+| `full_name`   | TEXT        |                                        | User's full name                         |
+| `avatar_url`  | TEXT        |                                        | Profile picture URL                      |
+| `preferences` | JSONB       | DEFAULT '{}'::jsonb                    | User preferences (theme, language, etc.) |
+| `created_at`  | TIMESTAMPTZ | NOT NULL, DEFAULT NOW()                | Account creation timestamp               |
+| `updated_at`  | TIMESTAMPTZ | NOT NULL, DEFAULT NOW()                | Last profile update                      |
 
 **Indexes**:
+
 - Primary key on `id` (references auth.users)
 - Unique index on `email`
 
 **Validation Rules**:
+
 - `email` must be valid email format
 - `id` must exist in `auth.users` (foreign key constraint)
 
@@ -118,26 +122,29 @@ Represents authenticated users. Linked to Supabase Auth `auth.users` table.
 
 Links users to organizations with role-based access control (many-to-many).
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique identifier |
-| `user_id` | UUID | NOT NULL, REFERENCES users(id) ON DELETE CASCADE | User being assigned |
-| `organization_id` | UUID | NOT NULL, REFERENCES organizations(id) ON DELETE CASCADE | Organization user belongs to |
-| `role` | VARCHAR(20) | NOT NULL, DEFAULT 'evaluator' | Enum: 'admin', 'evaluator', 'viewer' |
-| `joined_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | When user joined organization |
-| `invited_by` | UUID | REFERENCES users(id) | User who sent the invitation |
+| Column            | Type        | Constraints                                              | Description                          |
+| ----------------- | ----------- | -------------------------------------------------------- | ------------------------------------ |
+| `id`              | UUID        | PRIMARY KEY, DEFAULT uuid_generate_v4()                  | Unique identifier                    |
+| `user_id`         | UUID        | NOT NULL, REFERENCES users(id) ON DELETE CASCADE         | User being assigned                  |
+| `organization_id` | UUID        | NOT NULL, REFERENCES organizations(id) ON DELETE CASCADE | Organization user belongs to         |
+| `role`            | VARCHAR(20) | NOT NULL, DEFAULT 'evaluator'                            | Enum: 'admin', 'evaluator', 'viewer' |
+| `joined_at`       | TIMESTAMPTZ | NOT NULL, DEFAULT NOW()                                  | When user joined organization        |
+| `invited_by`      | UUID        | REFERENCES users(id)                                     | User who sent the invitation         |
 
 **Indexes**:
+
 - Primary key on `id`
 - Composite unique index on `(user_id, organization_id)` - one role per user per org
 - Index on `organization_id` for fetching org members
 - Index on `user_id` for fetching user's organizations
 
 **Validation Rules**:
+
 - `role` must be one of: 'admin', 'evaluator', 'viewer'
 - Cannot have duplicate `(user_id, organization_id)` pairs
 
 **Role Permissions**:
+
 - **admin**: Full access - manage organization, invite users, create/delete RFPs, assign evaluators
 - **evaluator**: Can evaluate assigned RFPs, add comments, change scores/statuses
 - **viewer**: Read-only access to assigned RFPs, cannot modify evaluations
@@ -148,27 +155,30 @@ Links users to organizations with role-based access control (many-to-many).
 
 Links users to specific RFPs for granular access control within an organization.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique identifier |
-| `rfp_id` | UUID | NOT NULL, REFERENCES rfps(id) ON DELETE CASCADE | RFP being assigned |
-| `user_id` | UUID | NOT NULL, REFERENCES users(id) ON DELETE CASCADE | User being assigned |
-| `access_level` | VARCHAR(20) | NOT NULL, DEFAULT 'evaluator' | Enum: 'owner', 'evaluator', 'viewer' |
-| `assigned_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Assignment timestamp |
-| `assigned_by` | UUID | REFERENCES users(id) | User who made the assignment |
+| Column         | Type        | Constraints                                      | Description                          |
+| -------------- | ----------- | ------------------------------------------------ | ------------------------------------ |
+| `id`           | UUID        | PRIMARY KEY, DEFAULT uuid_generate_v4()          | Unique identifier                    |
+| `rfp_id`       | UUID        | NOT NULL, REFERENCES rfps(id) ON DELETE CASCADE  | RFP being assigned                   |
+| `user_id`      | UUID        | NOT NULL, REFERENCES users(id) ON DELETE CASCADE | User being assigned                  |
+| `access_level` | VARCHAR(20) | NOT NULL, DEFAULT 'evaluator'                    | Enum: 'owner', 'evaluator', 'viewer' |
+| `assigned_at`  | TIMESTAMPTZ | NOT NULL, DEFAULT NOW()                          | Assignment timestamp                 |
+| `assigned_by`  | UUID        | REFERENCES users(id)                             | User who made the assignment         |
 
 **Indexes**:
+
 - Primary key on `id`
 - Composite unique index on `(rfp_id, user_id)` - one assignment per RFP-user pair
 - Index on `rfp_id` for fetching RFP team members
 - Index on `user_id` for fetching user's assigned RFPs
 
 **Validation Rules**:
+
 - `access_level` must be one of: 'owner', 'evaluator', 'viewer'
 - User must be member of same organization as RFP
 - Cannot have duplicate `(rfp_id, user_id)` pairs
 
 **Access Level Permissions**:
+
 - **owner**: Full control - edit RFP, assign evaluators, delete RFP
 - **evaluator**: Can evaluate responses, add comments, change scores
 - **viewer**: Read-only access, cannot modify evaluations
@@ -179,24 +189,26 @@ Links users to specific RFPs for granular access control within an organization.
 
 Represents a single Request for Proposal (procurement process).
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique identifier |
-| `organization_id` | UUID | NOT NULL, REFERENCES organizations(id) ON DELETE CASCADE | Owner organization |
-| `title` | TEXT | NOT NULL | RFP name (e.g., "Infrastructure Cloud 2025") |
-| `description` | TEXT | | Detailed RFP description |
-| `status` | VARCHAR(20) | NOT NULL, DEFAULT 'in_progress' | Enum: 'in_progress', 'completed', 'archived' |
-| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Creation timestamp |
-| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Last update timestamp |
-| `created_by` | UUID | NOT NULL, REFERENCES users(id) | User who created the RFP |
+| Column            | Type        | Constraints                                              | Description                                  |
+| ----------------- | ----------- | -------------------------------------------------------- | -------------------------------------------- |
+| `id`              | UUID        | PRIMARY KEY, DEFAULT uuid_generate_v4()                  | Unique identifier                            |
+| `organization_id` | UUID        | NOT NULL, REFERENCES organizations(id) ON DELETE CASCADE | Owner organization                           |
+| `title`           | TEXT        | NOT NULL                                                 | RFP name (e.g., "Infrastructure Cloud 2025") |
+| `description`     | TEXT        |                                                          | Detailed RFP description                     |
+| `status`          | VARCHAR(20) | NOT NULL, DEFAULT 'in_progress'                          | Enum: 'in_progress', 'completed', 'archived' |
+| `created_at`      | TIMESTAMPTZ | NOT NULL, DEFAULT NOW()                                  | Creation timestamp                           |
+| `updated_at`      | TIMESTAMPTZ | NOT NULL, DEFAULT NOW()                                  | Last update timestamp                        |
+| `created_by`      | UUID        | NOT NULL, REFERENCES users(id)                           | User who created the RFP                     |
 
 **Indexes**:
+
 - Primary key on `id`
 - Index on `organization_id` for filtering by organization
 - Index on `status` for filtering active RFPs
 - Index on `created_by` for user activity tracking
 
 **Validation Rules**:
+
 - `status` must be one of: 'in_progress', 'completed', 'archived'
 - `title` cannot be empty
 - `organization_id` must reference valid organization
@@ -208,24 +220,25 @@ Represents a single Request for Proposal (procurement process).
 
 Represents evaluable criteria in a 4-level hierarchy (Domain → Category → Subcategory → Requirement).
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique identifier |
-| `rfp_id` | UUID | NOT NULL, FOREIGN KEY → rfps(id) ON DELETE CASCADE | Parent RFP |
-| `requirement_id_external` | VARCHAR(50) | NOT NULL | External ID from N8N (e.g., "REQ-001", "DOM-1") |
-| `title` | TEXT | NOT NULL | Requirement name |
-| `description` | TEXT | | Multi-line description with bullet points |
-| `context` | TEXT | | Background info (3-4 paragraphs) from RFP document |
-| `parent_id` | UUID | FOREIGN KEY → requirements(id) ON DELETE CASCADE | Parent requirement (NULL for root level) |
-| `level` | INTEGER | NOT NULL, CHECK (level BETWEEN 1 AND 4) | Hierarchy level: 1=Domain, 2=Category, 3=Subcategory, 4=Requirement |
-| `weight` | DECIMAL(5,4) | NOT NULL, CHECK (weight BETWEEN 0 AND 1) | Importance weight (0.0 to 1.0) |
-| `position_in_pdf` | JSONB | | PDF location metadata: {page, coordinates} |
-| `pdf_url` | TEXT | | Link to PDF document for context |
-| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Creation timestamp |
-| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Last update timestamp |
-| `created_by` | VARCHAR(255) | | Future: User ID (V2) |
+| Column                    | Type         | Constraints                                        | Description                                                         |
+| ------------------------- | ------------ | -------------------------------------------------- | ------------------------------------------------------------------- |
+| `id`                      | UUID         | PRIMARY KEY, DEFAULT uuid_generate_v4()            | Unique identifier                                                   |
+| `rfp_id`                  | UUID         | NOT NULL, FOREIGN KEY → rfps(id) ON DELETE CASCADE | Parent RFP                                                          |
+| `requirement_id_external` | VARCHAR(50)  | NOT NULL                                           | External ID from N8N (e.g., "REQ-001", "DOM-1")                     |
+| `title`                   | TEXT         | NOT NULL                                           | Requirement name                                                    |
+| `description`             | TEXT         |                                                    | Multi-line description with bullet points                           |
+| `context`                 | TEXT         |                                                    | Background info (3-4 paragraphs) from RFP document                  |
+| `parent_id`               | UUID         | FOREIGN KEY → requirements(id) ON DELETE CASCADE   | Parent requirement (NULL for root level)                            |
+| `level`                   | INTEGER      | NOT NULL, CHECK (level BETWEEN 1 AND 4)            | Hierarchy level: 1=Domain, 2=Category, 3=Subcategory, 4=Requirement |
+| `weight`                  | DECIMAL(5,4) | NOT NULL, CHECK (weight BETWEEN 0 AND 1)           | Importance weight (0.0 to 1.0)                                      |
+| `position_in_pdf`         | JSONB        |                                                    | PDF location metadata: {page, coordinates}                          |
+| `pdf_url`                 | TEXT         |                                                    | Link to PDF document for context                                    |
+| `created_at`              | TIMESTAMPTZ  | NOT NULL, DEFAULT NOW()                            | Creation timestamp                                                  |
+| `updated_at`              | TIMESTAMPTZ  | NOT NULL, DEFAULT NOW()                            | Last update timestamp                                               |
+| `created_by`              | VARCHAR(255) |                                                    | Future: User ID (V2)                                                |
 
 **Indexes**:
+
 - Primary key on `id`
 - Index on `rfp_id` for filtering by RFP
 - Index on `parent_id` for hierarchy traversal
@@ -234,6 +247,7 @@ Represents evaluable criteria in a 4-level hierarchy (Domain → Category → Su
 - Index on `(rfp_id, level)` for efficient tree queries
 
 **Validation Rules**:
+
 - `level` must be 1, 2, 3, or 4
 - `weight` must be between 0.0 and 1.0
 - `parent_id` must be NULL for level 1, non-NULL for levels 2-4
@@ -242,18 +256,19 @@ Represents evaluable criteria in a 4-level hierarchy (Domain → Category → Su
 **State Transitions**: N/A (requirements are static during evaluation)
 
 **Recursive Query Example**:
+
 ```sql
 WITH RECURSIVE requirement_tree AS (
   -- Base case: root requirements (level 1)
-  SELECT id, rfp_id, requirement_id_external, title, parent_id, level, 
+  SELECT id, rfp_id, requirement_id_external, title, parent_id, level,
          weight, ARRAY[id] AS path
   FROM requirements
   WHERE rfp_id = $1 AND parent_id IS NULL
-  
+
   UNION ALL
-  
+
   -- Recursive case: children
-  SELECT r.id, r.rfp_id, r.requirement_id_external, r.title, r.parent_id, 
+  SELECT r.id, r.rfp_id, r.requirement_id_external, r.title, r.parent_id,
          r.level, r.weight, rt.path || r.id
   FROM requirements r
   INNER JOIN requirement_tree rt ON r.parent_id = rt.id
@@ -268,23 +283,25 @@ ORDER BY path;
 
 Represents vendors responding to an RFP.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique identifier |
-| `rfp_id` | UUID | NOT NULL, FOREIGN KEY → rfps(id) ON DELETE CASCADE | Parent RFP |
-| `supplier_id_external` | VARCHAR(50) | NOT NULL | External ID from N8N (e.g., "SUP-A") |
-| `name` | TEXT | NOT NULL | Supplier company name |
-| `contact_name` | VARCHAR(255) | | Contact person name |
-| `contact_email` | VARCHAR(255) | | Contact email |
-| `contact_phone` | VARCHAR(50) | | Contact phone |
-| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Creation timestamp |
+| Column                 | Type         | Constraints                                        | Description                          |
+| ---------------------- | ------------ | -------------------------------------------------- | ------------------------------------ |
+| `id`                   | UUID         | PRIMARY KEY, DEFAULT uuid_generate_v4()            | Unique identifier                    |
+| `rfp_id`               | UUID         | NOT NULL, FOREIGN KEY → rfps(id) ON DELETE CASCADE | Parent RFP                           |
+| `supplier_id_external` | VARCHAR(50)  | NOT NULL                                           | External ID from N8N (e.g., "SUP-A") |
+| `name`                 | TEXT         | NOT NULL                                           | Supplier company name                |
+| `contact_name`         | VARCHAR(255) |                                                    | Contact person name                  |
+| `contact_email`        | VARCHAR(255) |                                                    | Contact email                        |
+| `contact_phone`        | VARCHAR(50)  |                                                    | Contact phone                        |
+| `created_at`           | TIMESTAMPTZ  | NOT NULL, DEFAULT NOW()                            | Creation timestamp                   |
 
 **Indexes**:
+
 - Primary key on `id`
 - Index on `rfp_id` for filtering by RFP
 - Composite unique index on `(rfp_id, supplier_id_external)`
 
 **Validation Rules**:
+
 - `name` cannot be empty
 - `contact_email` must be valid email format (if provided)
 - `supplier_id_external` must be unique within an RFP
@@ -295,25 +312,26 @@ Represents vendors responding to an RFP.
 
 Represents a single supplier's answer to a specific requirement. Core evaluation entity.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique identifier |
-| `rfp_id` | UUID | NOT NULL, FOREIGN KEY → rfps(id) ON DELETE CASCADE | Parent RFP (denormalized for queries) |
-| `requirement_id` | UUID | NOT NULL, FOREIGN KEY → requirements(id) ON DELETE CASCADE | Requirement being answered |
-| `supplier_id` | UUID | NOT NULL, FOREIGN KEY → suppliers(id) ON DELETE CASCADE | Supplier providing response |
-| `response_text` | TEXT | | Full response text from supplier |
-| `ai_score` | INTEGER | CHECK (ai_score BETWEEN 0 AND 5) | AI-generated score (0-5 stars) |
-| `ai_comment` | TEXT | | AI-generated analysis commentary |
-| `manual_score` | INTEGER | CHECK (manual_score BETWEEN 0 AND 5) | Evaluator's manual score (0-5 stars, NULL if not set) |
-| `status` | VARCHAR(20) | NOT NULL, DEFAULT 'pending' | Enum: 'pending', 'pass', 'partial', 'fail' |
-| `is_checked` | BOOLEAN | NOT NULL, DEFAULT false | Completion checkbox state |
-| `manual_comment` | TEXT | | Evaluator's comments |
-| `question` | TEXT | | Evaluator's questions/doubts |
-| `last_modified_by` | UUID | REFERENCES users(id) | User who last modified this response |
-| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Creation timestamp |
-| `updated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Last update timestamp |
+| Column             | Type        | Constraints                                                | Description                                           |
+| ------------------ | ----------- | ---------------------------------------------------------- | ----------------------------------------------------- |
+| `id`               | UUID        | PRIMARY KEY, DEFAULT uuid_generate_v4()                    | Unique identifier                                     |
+| `rfp_id`           | UUID        | NOT NULL, FOREIGN KEY → rfps(id) ON DELETE CASCADE         | Parent RFP (denormalized for queries)                 |
+| `requirement_id`   | UUID        | NOT NULL, FOREIGN KEY → requirements(id) ON DELETE CASCADE | Requirement being answered                            |
+| `supplier_id`      | UUID        | NOT NULL, FOREIGN KEY → suppliers(id) ON DELETE CASCADE    | Supplier providing response                           |
+| `response_text`    | TEXT        |                                                            | Full response text from supplier                      |
+| `ai_score`         | INTEGER     | CHECK (ai_score BETWEEN 0 AND 5)                           | AI-generated score (0-5 stars)                        |
+| `ai_comment`       | TEXT        |                                                            | AI-generated analysis commentary                      |
+| `manual_score`     | INTEGER     | CHECK (manual_score BETWEEN 0 AND 5)                       | Evaluator's manual score (0-5 stars, NULL if not set) |
+| `status`           | VARCHAR(20) | NOT NULL, DEFAULT 'pending'                                | Enum: 'pending', 'pass', 'partial', 'fail'            |
+| `is_checked`       | BOOLEAN     | NOT NULL, DEFAULT false                                    | Completion checkbox state                             |
+| `manual_comment`   | TEXT        |                                                            | Evaluator's comments                                  |
+| `question`         | TEXT        |                                                            | Evaluator's questions/doubts                          |
+| `last_modified_by` | UUID        | REFERENCES users(id)                                       | User who last modified this response                  |
+| `created_at`       | TIMESTAMPTZ | NOT NULL, DEFAULT NOW()                                    | Creation timestamp                                    |
+| `updated_at`       | TIMESTAMPTZ | NOT NULL, DEFAULT NOW()                                    | Last update timestamp                                 |
 
 **Indexes**:
+
 - Primary key on `id`
 - Composite index on `(rfp_id, requirement_id)` for loading responses by requirement
 - Composite index on `(rfp_id, supplier_id)` for supplier profile views
@@ -321,6 +339,7 @@ Represents a single supplier's answer to a specific requirement. Core evaluation
 - Index on `status` for filtering by compliance
 
 **Validation Rules**:
+
 - `ai_score` must be 0-5 (NULL allowed if AI analysis failed)
 - `manual_score` must be 0-5 (NULL if not set by evaluator)
 - `status` must be one of: 'pending', 'pass', 'partial', 'fail'
@@ -328,9 +347,11 @@ Represents a single supplier's answer to a specific requirement. Core evaluation
 - Cannot have duplicate (requirement_id, supplier_id) pairs
 
 **Computed Fields** (not stored, computed at query time):
+
 - `final_score`: `COALESCE(manual_score, ai_score)` - manual score takes precedence
 
 **State Transitions**:
+
 ```
 pending → pass/partial/fail (evaluator sets status)
   ↓
@@ -346,17 +367,18 @@ any status + is_checked = false (evaluator unchecks)
 
 Audit log for tracking changes to response evaluations.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique identifier |
-| `response_id` | UUID | NOT NULL, FOREIGN KEY → responses(id) ON DELETE CASCADE | Response being modified |
-| `field_name` | VARCHAR(50) | NOT NULL | Field changed (e.g., 'manual_score', 'status') |
-| `old_value` | TEXT | | Previous value |
-| `new_value` | TEXT | | New value |
-| `modified_by` | UUID | NOT NULL, REFERENCES users(id) | User who made change |
-| `modified_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | Change timestamp |
+| Column        | Type        | Constraints                                             | Description                                    |
+| ------------- | ----------- | ------------------------------------------------------- | ---------------------------------------------- |
+| `id`          | UUID        | PRIMARY KEY, DEFAULT uuid_generate_v4()                 | Unique identifier                              |
+| `response_id` | UUID        | NOT NULL, FOREIGN KEY → responses(id) ON DELETE CASCADE | Response being modified                        |
+| `field_name`  | VARCHAR(50) | NOT NULL                                                | Field changed (e.g., 'manual_score', 'status') |
+| `old_value`   | TEXT        |                                                         | Previous value                                 |
+| `new_value`   | TEXT        |                                                         | New value                                      |
+| `modified_by` | UUID        | NOT NULL, REFERENCES users(id)                          | User who made change                           |
+| `modified_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW()                                 | Change timestamp                               |
 
 **Indexes**:
+
 - Primary key on `id`
 - Index on `response_id` for fetching audit trail
 - Index on `modified_at` for time-based queries
@@ -495,15 +517,15 @@ Audit log for tracking changes to response evaluations.
 
 ```sql
 WITH RECURSIVE requirement_tree AS (
-  SELECT id, rfp_id, requirement_id_external, title, description, 
+  SELECT id, rfp_id, requirement_id_external, title, description,
          parent_id, level, weight, 1 AS sort_order
   FROM requirements
   WHERE rfp_id = $1 AND parent_id IS NULL
-  
+
   UNION ALL
-  
-  SELECT r.id, r.rfp_id, r.requirement_id_external, r.title, 
-         r.description, r.parent_id, r.level, r.weight, 
+
+  SELECT r.id, r.rfp_id, r.requirement_id_external, r.title,
+         r.description, r.parent_id, r.level, r.weight,
          rt.sort_order + 1
   FROM requirements r
   INNER JOIN requirement_tree rt ON r.parent_id = rt.id
@@ -515,7 +537,7 @@ ORDER BY sort_order, requirement_id_external;
 #### 2. Get all responses for a specific requirement with supplier info
 
 ```sql
-SELECT 
+SELECT
   r.id,
   r.response_text,
   r.ai_score,
@@ -537,12 +559,12 @@ ORDER BY s.name;
 #### 3. Get requirement completion status
 
 ```sql
-SELECT 
+SELECT
   req.id,
   req.title,
   COUNT(resp.id) AS total_responses,
   COUNT(resp.id) FILTER (WHERE resp.is_checked = true) AS checked_responses,
-  CASE 
+  CASE
     WHEN COUNT(resp.id) = 0 THEN 'no_responses'
     WHEN COUNT(resp.id) FILTER (WHERE resp.is_checked = true) = COUNT(resp.id) THEN 'complete'
     ELSE 'pending'
@@ -557,7 +579,7 @@ ORDER BY req.requirement_id_external;
 #### 4. Get supplier summary across all requirements
 
 ```sql
-SELECT 
+SELECT
   s.id,
   s.name,
   COUNT(r.id) AS total_responses,
@@ -577,12 +599,12 @@ ORDER BY avg_score DESC;
 
 ```sql
 UPDATE responses
-SET 
+SET
   manual_score = $2,
   status = $3,
-  is_checked = CASE 
-    WHEN $3 != 'pending' THEN true 
-    ELSE is_checked 
+  is_checked = CASE
+    WHEN $3 != 'pending' THEN true
+    ELSE is_checked
   END,
   manual_comment = $4,
   question = $5,
@@ -595,13 +617,13 @@ RETURNING *;
 
 ```sql
 WITH RECURSIVE breadcrumb AS (
-  SELECT id, requirement_id_external, title, parent_id, level, 
+  SELECT id, requirement_id_external, title, parent_id, level,
          ARRAY[requirement_id_external] AS path
   FROM requirements
   WHERE id = $1
-  
+
   UNION ALL
-  
+
   SELECT r.id, r.requirement_id_external, r.title, r.parent_id, r.level,
          r.requirement_id_external || b.path
   FROM requirements r
@@ -623,6 +645,7 @@ ORDER BY level;
 ⚠️ **Updated**: The migration has been updated to include multi-tenant support with organizations, users, and RLS policies. See [migrations-multi-tenant.sql](./migrations-multi-tenant.sql) for the complete schema.
 
 **Key Changes**:
+
 - Added `organizations` table for multi-tenant isolation
 - Added `users` table extending Supabase Auth
 - Added `user_organizations` for role-based access (admin/evaluator/viewer)
@@ -752,31 +775,31 @@ npx supabase gen types typescript --project-id <project-id> > lib/supabase/types
 This generates types like:
 
 ```typescript
-export type RFP = Database['public']['Tables']['rfps']['Row']
-export type Requirement = Database['public']['Tables']['requirements']['Row']
-export type Supplier = Database['public']['Tables']['suppliers']['Row']
-export type Response = Database['public']['Tables']['responses']['Row']
+export type RFP = Database["public"]["Tables"]["rfps"]["Row"];
+export type Requirement = Database["public"]["Tables"]["requirements"]["Row"];
+export type Supplier = Database["public"]["Tables"]["suppliers"]["Row"];
+export type Response = Database["public"]["Tables"]["responses"]["Row"];
 ```
 
 ---
 
 ## Validation Rules Summary
 
-| Entity | Field | Rule |
-|--------|-------|------|
-| RFP | status | Must be 'in_progress', 'completed', or 'archived' |
-| RFP | title | Cannot be empty |
-| Requirement | level | Must be 1, 2, 3, or 4 |
-| Requirement | weight | Must be between 0.0 and 1.0 |
-| Requirement | parent_id | NULL for level 1, non-NULL for levels 2-4 |
-| Requirement | requirement_id_external | Unique within RFP |
-| Supplier | name | Cannot be empty |
-| Supplier | contact_email | Valid email format (if provided) |
-| Supplier | supplier_id_external | Unique within RFP |
-| Response | ai_score | 0-5 or NULL |
-| Response | manual_score | 0-5 or NULL |
-| Response | status | Must be 'pending', 'pass', 'partial', or 'fail' |
-| Response | (requirement_id, supplier_id) | Unique pair - one response per requirement-supplier combo |
+| Entity      | Field                         | Rule                                                      |
+| ----------- | ----------------------------- | --------------------------------------------------------- |
+| RFP         | status                        | Must be 'in_progress', 'completed', or 'archived'         |
+| RFP         | title                         | Cannot be empty                                           |
+| Requirement | level                         | Must be 1, 2, 3, or 4                                     |
+| Requirement | weight                        | Must be between 0.0 and 1.0                               |
+| Requirement | parent_id                     | NULL for level 1, non-NULL for levels 2-4                 |
+| Requirement | requirement_id_external       | Unique within RFP                                         |
+| Supplier    | name                          | Cannot be empty                                           |
+| Supplier    | contact_email                 | Valid email format (if provided)                          |
+| Supplier    | supplier_id_external          | Unique within RFP                                         |
+| Response    | ai_score                      | 0-5 or NULL                                               |
+| Response    | manual_score                  | 0-5 or NULL                                               |
+| Response    | status                        | Must be 'pending', 'pass', 'partial', or 'fail'           |
+| Response    | (requirement_id, supplier_id) | Unique pair - one response per requirement-supplier combo |
 
 ---
 

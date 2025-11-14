@@ -66,10 +66,13 @@ export function GlobalProgressCard({
               Score Moyen
             </p>
             <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">
-              {Object.values(averageScores).length > 0 
-                ? Math.round(Object.values(averageScores).reduce((a, b) => a + b, 0) / Object.values(averageScores).length)
-                : 0
-              }/5
+              {Object.values(averageScores).length > 0
+                ? Math.round(
+                    Object.values(averageScores).reduce((a, b) => a + b, 0) /
+                      Object.values(averageScores).length,
+                  )
+                : 0}
+              /5
             </p>
           </div>
           <div className="text-center">
@@ -97,7 +100,10 @@ export function GlobalProgressCard({
             <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
               Partiel
             </p>
-            <Progress value={statusDistribution.partial} className="w-full h-2" />
+            <Progress
+              value={statusDistribution.partial}
+              className="w-full h-2"
+            />
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               {statusDistribution.partial}
             </p>
@@ -115,7 +121,10 @@ export function GlobalProgressCard({
             <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
               En attente
             </p>
-            <Progress value={statusDistribution.pending} className="w-full h-2" />
+            <Progress
+              value={statusDistribution.pending}
+              className="w-full h-2"
+            />
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               {statusDistribution.pending}
             </p>

@@ -6,7 +6,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, Loader2, AlertCircle, Save, RotateCcw } from "lucide-react";
+import {
+  ChevronLeft,
+  Loader2,
+  AlertCircle,
+  Save,
+  RotateCcw,
+} from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { WeightConfigurationTable } from "@/components/dashboard/WeightConfigurationTable";
 
@@ -54,13 +60,16 @@ interface DashboardData {
       averageScore: number;
       completionRate: number;
     }>;
-    requirementsByCategory: Record<string, Array<{
-      id: string;
-      title: string;
-      currentWeight: number;
-      averageScore: number;
-      status: "pass" | "partial" | "fail" | "pending";
-    }>>;
+    requirementsByCategory: Record<
+      string,
+      Array<{
+        id: string;
+        title: string;
+        currentWeight: number;
+        averageScore: number;
+        status: "pass" | "partial" | "fail" | "pending";
+      }>
+    >;
   };
   weightsConfiguration: {
     categories: Array<{
@@ -86,8 +95,12 @@ export default function RFPSynthesisPage() {
   const rfpId = params.rfpId as string;
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [_selectedSupplier, _setSelectedSupplier] = useState<string | null>(null);
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [_selectedSupplier, _setSelectedSupplier] = useState<string | null>(
+    null,
+  );
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modifiedWeights, setModifiedWeights] = useState<{
@@ -156,9 +169,13 @@ export default function RFPSynthesisPage() {
               <AlertCircle className="h-12 w-12 text-red-500" />
               <h2 className="text-xl font-semibold">Erreur de chargement</h2>
               <p className="text-sm text-slate-500 text-center">
-                Impossible de charger les données du dashboard. Vérifiez votre connexion et réessayez.
+                Impossible de charger les données du dashboard. Vérifiez votre
+                connexion et réessayez.
               </p>
-              <Button onClick={() => window.location.reload()} className="w-full">
+              <Button
+                onClick={() => window.location.reload()}
+                className="w-full"
+              >
                 Réessayer
               </Button>
             </div>
@@ -176,7 +193,13 @@ export default function RFPSynthesisPage() {
     );
   }
 
-  const { rfp, globalProgress, suppliersAnalysis, categoriesAnalysis, weightsConfiguration } = dashboardData;
+  const {
+    rfp,
+    globalProgress,
+    suppliersAnalysis,
+    categoriesAnalysis,
+    weightsConfiguration,
+  } = dashboardData;
 
   return (
     <div className="flex h-screen flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
@@ -201,7 +224,12 @@ export default function RFPSynthesisPage() {
             <Button variant="outline" size="sm" onClick={() => {}}>
               Réinitialiser les poids
             </Button>
-            <Button size="sm" onClick={() => {/* Export logic */}}>
+            <Button
+              size="sm"
+              onClick={() => {
+                /* Export logic */
+              }}
+            >
               Exporter
             </Button>
             <Button size="sm" onClick={() => window.location.reload()}>
@@ -226,14 +254,18 @@ export default function RFPSynthesisPage() {
                 Avancement Global
               </Button>
               <Button
-                variant={selectedCategory === "suppliers" ? "secondary" : "ghost"}
+                variant={
+                  selectedCategory === "suppliers" ? "secondary" : "ghost"
+                }
                 className="w-full justify-start"
                 onClick={() => setSelectedCategory("suppliers")}
               >
                 Analyse Fournisseurs
               </Button>
               <Button
-                variant={selectedCategory === "categories" ? "secondary" : "ghost"}
+                variant={
+                  selectedCategory === "categories" ? "secondary" : "ghost"
+                }
                 className="w-full justify-start"
                 onClick={() => setSelectedCategory("categories")}
               >
@@ -264,19 +296,31 @@ export default function RFPSynthesisPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                 <div>
                   <p className="text-sm font-medium">Validé</p>
-                  <Progress value={globalProgress.statusDistribution.pass} className="w-full h-2" />
+                  <Progress
+                    value={globalProgress.statusDistribution.pass}
+                    className="w-full h-2"
+                  />
                 </div>
                 <div>
                   <p className="text-sm font-medium">Partiel</p>
-                  <Progress value={globalProgress.statusDistribution.partial} className="w-full h-2" />
+                  <Progress
+                    value={globalProgress.statusDistribution.partial}
+                    className="w-full h-2"
+                  />
                 </div>
                 <div>
                   <p className="text-sm font-medium">Échoué</p>
-                  <Progress value={globalProgress.statusDistribution.fail} className="w-full h-2" />
+                  <Progress
+                    value={globalProgress.statusDistribution.fail}
+                    className="w-full h-2"
+                  />
                 </div>
                 <div>
                   <p className="text-sm font-medium">En attente</p>
-                  <Progress value={globalProgress.statusDistribution.pending} className="w-full h-2" />
+                  <Progress
+                    value={globalProgress.statusDistribution.pending}
+                    className="w-full h-2"
+                  />
                 </div>
               </div>
             </CardContent>
@@ -289,16 +333,35 @@ export default function RFPSynthesisPage() {
                 <CardTitle>Analyse Comparative des Fournisseurs</CardTitle>
               </CardHeader>
               <CardContent>
-                <p>Fournisseurs analysés: {suppliersAnalysis.comparisonTable.length}</p>
-                <p>Meilleur score: {Math.max(...suppliersAnalysis.comparisonTable.map(s => s.totalScore))}</p>
+                <p>
+                  Fournisseurs analysés:{" "}
+                  {suppliersAnalysis.comparisonTable.length}
+                </p>
+                <p>
+                  Meilleur score:{" "}
+                  {Math.max(
+                    ...suppliersAnalysis.comparisonTable.map(
+                      (s) => s.totalScore,
+                    ),
+                  )}
+                </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  {suppliersAnalysis.ranking.slice(0, 3).map((supplier, _index) => (
-                    <div key={supplier.supplierId} className="border p-3 rounded">
-                      <p className="font-medium">{supplier.supplierName}</p>
-                      <p className="text-sm text-slate-600">Score: {supplier.finalScore}</p>
-                      <p className="text-xs text-slate-500">Classement: {supplier.ranking}</p>
-                    </div>
-                  ))}
+                  {suppliersAnalysis.ranking
+                    .slice(0, 3)
+                    .map((supplier, _index) => (
+                      <div
+                        key={supplier.supplierId}
+                        className="border p-3 rounded"
+                      >
+                        <p className="font-medium">{supplier.supplierName}</p>
+                        <p className="text-sm text-slate-600">
+                          Score: {supplier.finalScore}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          Classement: {supplier.ranking}
+                        </p>
+                      </div>
+                    ))}
                 </div>
               </CardContent>
             </Card>
@@ -311,12 +374,19 @@ export default function RFPSynthesisPage() {
                 <CardTitle>Analyse par Catégories</CardTitle>
               </CardHeader>
               <CardContent>
-                <p>Catégories analysées: {categoriesAnalysis.categories.length}</p>
+                <p>
+                  Catégories analysées: {categoriesAnalysis.categories.length}
+                </p>
                 <div className="space-y-2">
                   {categoriesAnalysis.categories.slice(0, 5).map((category) => (
-                    <div key={category.id} className="flex justify-between items-center p-2 border rounded">
+                    <div
+                      key={category.id}
+                      className="flex justify-between items-center p-2 border rounded"
+                    >
                       <span className="text-sm">{category.title}</span>
-                      <span className="text-sm font-medium">{category.averageScore.toFixed(1)}/5</span>
+                      <span className="text-sm font-medium">
+                        {category.averageScore.toFixed(1)}/5
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -337,14 +407,21 @@ export default function RFPSynthesisPage() {
                       onClick={() => {
                         // Réinitialiser les poids aux valeurs par défaut
                         const defaultWeights = {
-                          categories: weightsConfiguration.categories.reduce((acc, cat) => {
-                            acc[cat.id] = cat.defaultWeight;
-                            return acc;
-                          }, {} as Record<string, number>),
-                          requirements: weightsConfiguration.requirements.reduce((acc, req) => {
-                            acc[req.id] = req.defaultWeight;
-                            return acc;
-                          }, {} as Record<string, number>)
+                          categories: weightsConfiguration.categories.reduce(
+                            (acc, cat) => {
+                              acc[cat.id] = cat.defaultWeight;
+                              return acc;
+                            },
+                            {} as Record<string, number>,
+                          ),
+                          requirements:
+                            weightsConfiguration.requirements.reduce(
+                              (acc, req) => {
+                                acc[req.id] = req.defaultWeight;
+                                return acc;
+                              },
+                              {} as Record<string, number>,
+                            ),
                         };
                         handleWeightsChange(defaultWeights);
                       }}
@@ -358,15 +435,18 @@ export default function RFPSynthesisPage() {
                         if (!modifiedWeights) {
                           return;
                         }
-                        
+
                         try {
-                          const response = await fetch(`/api/rfps/${rfpId}/weights`, {
-                            method: "PUT",
-                            headers: {
-                              "Content-Type": "application/json",
+                          const response = await fetch(
+                            `/api/rfps/${rfpId}/weights`,
+                            {
+                              method: "PUT",
+                              headers: {
+                                "Content-Type": "application/json",
+                              },
+                              body: JSON.stringify(modifiedWeights),
                             },
-                            body: JSON.stringify(modifiedWeights),
-                          });
+                          );
 
                           if (!response.ok) {
                             throw new Error("Failed to save weights");
@@ -390,7 +470,8 @@ export default function RFPSynthesisPage() {
               <CardContent>
                 <div className="mb-4">
                   <p className="text-sm text-slate-600 mb-2">
-                    Configurez les poids pour les catégories et les exigences. Les poids relatifs sont calculés automatiquement.
+                    Configurez les poids pour les catégories et les exigences.
+                    Les poids relatifs sont calculés automatiquement.
                   </p>
                   <div className="flex gap-4 text-sm">
                     <div className="flex items-center gap-2">

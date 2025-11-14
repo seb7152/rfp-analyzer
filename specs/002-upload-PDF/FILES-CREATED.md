@@ -1,6 +1,7 @@
 # 📦 Complete List of Created Files
 
 ## Overview
+
 This document lists all files created or significantly modified for the RFP PDF Upload feature implementation.
 
 **Total Files Created**: 15
@@ -13,8 +14,10 @@ This document lists all files created or significantly modified for the RFP PDF 
 ## 1. Database Schema (1 file)
 
 ### `supabase/migrations/009_create_rfp_documents_table.sql` (380 lines)
+
 **Purpose**: Create database tables for RFP documents and access logs
 **Contains**:
+
 - `rfp_documents` table (14 columns)
   - id, rfp_id, organization_id, filename, document_type
   - gcs_object_name, created_by, created_at, updated_at, etc.
@@ -37,18 +40,22 @@ This document lists all files created or significantly modified for the RFP PDF 
 ## 2. API Routes (4 files)
 
 ### `app/api/rfps/[rfpId]/documents/upload-intent/route.ts` (125 lines)
+
 **Purpose**: Generate signed GCS URL for file upload
 **Endpoint**: POST `/api/rfps/{rfpId}/documents/upload-intent`
 **Features**:
+
 - ✅ File metadata validation
 - ✅ GCP signed URL generation (V4)
 - ✅ RLS verification
 - ✅ Error handling
 
 ### `app/api/rfps/[rfpId]/documents/commit/route.ts` (165 lines)
+
 **Purpose**: Finalize upload and save metadata to database
 **Endpoint**: POST `/api/rfps/{rfpId}/documents/commit`
 **Features**:
+
 - ✅ Verify file exists in GCS
 - ✅ Save metadata to database
 - ✅ Log upload action
@@ -56,11 +63,13 @@ This document lists all files created or significantly modified for the RFP PDF 
 - ✅ Size validation
 
 ### `app/api/rfps/[rfpId]/documents/route.ts` (190 lines)
+
 **Purpose**: List documents and delete documents
 **Endpoints**:
+
 - GET `/api/rfps/{rfpId}/documents` - List documents
 - DELETE `/api/rfps/{rfpId}/documents?documentId=...` - Soft delete
-**Features**:
+  **Features**:
 - ✅ RLS protection
 - ✅ Soft delete with timestamp
 - ✅ GCS cleanup
@@ -68,9 +77,11 @@ This document lists all files created or significantly modified for the RFP PDF 
 - ✅ Ordered by creation date
 
 ### `app/api/rfps/[rfpId]/documents/[documentId]/view-url/route.ts` (115 lines)
+
 **Purpose**: Generate signed URL for viewing/downloading documents
 **Endpoint**: GET `/api/rfps/{rfpId}/documents/{documentId}/view-url`
 **Features**:
+
 - ✅ Signed URL generation
 - ✅ Access logging
 - ✅ RLS verification
@@ -81,8 +92,10 @@ This document lists all files created or significantly modified for the RFP PDF 
 ## 3. Frontend Components (3 files)
 
 ### `hooks/useRFPDocumentUpload.ts` (180 lines)
+
 **Purpose**: React hook for managing file uploads
 **Features**:
+
 - ✅ 3-step upload orchestration (intent → upload → commit)
 - ✅ Real-time progress tracking
 - ✅ Error handling and state management
@@ -90,6 +103,7 @@ This document lists all files created or significantly modified for the RFP PDF 
 - ✅ Memory management
 
 **Exports**:
+
 ```typescript
 - uploadDocument(file, documentType) → Promise
 - uploadProgress → UploadProgress[]
@@ -99,8 +113,10 @@ This document lists all files created or significantly modified for the RFP PDF 
 ```
 
 ### `components/RFPDocumentUpload.tsx` (220 lines)
+
 **Purpose**: React component for user-facing PDF upload
 **Features**:
+
 - ✅ Drag-and-drop interface
 - ✅ Click-to-upload fallback
 - ✅ Real-time progress bars
@@ -110,6 +126,7 @@ This document lists all files created or significantly modified for the RFP PDF 
 - ✅ Lucide icons
 
 **Props**:
+
 ```typescript
 interface RFPDocumentUploadProps {
   rfpId: string;
@@ -118,8 +135,10 @@ interface RFPDocumentUploadProps {
 ```
 
 ### `app/dashboard/rfp/[rfpId]/documents/page.tsx` (165 lines)
+
 **Purpose**: Full page for managing RFP documents
 **Features**:
+
 - ✅ Server-rendered with Supabase auth check
 - ✅ Upload widget integration
 - ✅ Documents list view
@@ -137,9 +156,11 @@ interface RFPDocumentUploadProps {
 ## 4. Testing Tools (1 file)
 
 ### `scripts/test-pdf-upload.sh` (160 lines)
+
 **Purpose**: Automated end-to-end testing script
 **Usage**: `./scripts/test-pdf-upload.sh <RFP_ID> <PDF_FILE> <AUTH_COOKIE> [API_URL]`
 **Features**:
+
 - ✅ 4-step automated testing
 - ✅ Colored output for readability
 - ✅ Error detection and reporting
@@ -148,6 +169,7 @@ interface RFPDocumentUploadProps {
 - ✅ Detailed logging
 
 **Tests**:
+
 1. Upload intent request
 2. Direct GCS upload
 3. Metadata commit
@@ -158,8 +180,10 @@ interface RFPDocumentUploadProps {
 ## 5. Documentation (6 files)
 
 ### `CLOUD-ARCHITECTURE.md` (Updated, ~500 lines)
+
 **Purpose**: Complete system architecture documentation
 **Contents**:
+
 - ✅ Overview of services (Vercel, Supabase, GCP)
 - ✅ GCS bucket structure (RFP-specific)
 - ✅ 3-step upload flow with diagrams
@@ -174,8 +198,10 @@ interface RFPDocumentUploadProps {
 - ✅ Monitoring recommendations
 
 ### `docs/PDF-UPLOAD-TESTING.md` (450 lines)
+
 **Purpose**: Comprehensive testing guide
 **Contents**:
+
 - ✅ Prerequisites and setup
 - ✅ Credential gathering instructions
 - ✅ Test methods:
@@ -194,8 +220,10 @@ interface RFPDocumentUploadProps {
 - ✅ Next steps after testing
 
 ### `docs/IMPLEMENTATION-SUMMARY.md` (380 lines)
+
 **Purpose**: Technical implementation details
 **Contents**:
+
 - ✅ Implementation overview
 - ✅ What was delivered (5 phases)
 - ✅ Architecture diagrams
@@ -209,8 +237,10 @@ interface RFPDocumentUploadProps {
 - ✅ Related documentation links
 
 ### `IMPLEMENTATION-CHECKLIST.md` (400 lines)
+
 **Purpose**: Complete task tracking and progress
 **Contents**:
+
 - ✅ Completed tasks by phase (1-5)
 - ✅ Architecture & planning checklist
 - ✅ Database setup verification
@@ -226,8 +256,10 @@ interface RFPDocumentUploadProps {
 - ✅ Known limitations
 
 ### `QUICK-START.md` (150 lines)
+
 **Purpose**: 5-minute quick start guide
 **Contents**:
+
 - ✅ 5-minute setup steps
 - ✅ File reference table
 - ✅ Quick test commands
@@ -237,8 +269,10 @@ interface RFPDocumentUploadProps {
 - ✅ Next steps (PDF viewer)
 
 ### `PDF-UPLOAD-SUMMARY.md` (450 lines)
+
 **Purpose**: Executive summary of implementation
 **Contents**:
+
 - ✅ What was delivered
 - ✅ Backend infrastructure summary
 - ✅ Frontend components summary
@@ -260,8 +294,10 @@ interface RFPDocumentUploadProps {
 ## 6. Project Documentation (2 files)
 
 ### `README-PDF-UPLOAD.md` (400 lines)
+
 **Purpose**: Main project README for the feature
 **Contents**:
+
 - ✅ Quick navigation guide
 - ✅ What's included overview
 - ✅ 5-minute quick start
@@ -278,8 +314,10 @@ interface RFPDocumentUploadProps {
 - ✅ Status overview
 
 ### `FILES-CREATED.md` (This file, ~300 lines)
+
 **Purpose**: Complete index of all created files
 **Contents**:
+
 - This complete listing with descriptions
 - Line counts
 - Feature summaries
@@ -289,38 +327,42 @@ interface RFPDocumentUploadProps {
 
 ## 📊 Summary Statistics
 
-| Category | Count | Lines | Details |
-|----------|-------|-------|---------|
-| Database | 1 | 380 | Migration with RLS & indexes |
-| API Routes | 4 | 595 | Upload, commit, view, list/delete |
-| Frontend Hooks | 1 | 180 | Upload orchestration |
-| Frontend Components | 1 | 220 | Upload UI |
-| Frontend Pages | 1 | 165 | Documents management |
-| Test Scripts | 1 | 160 | Automated testing |
-| Documentation | 6 | 2,500+ | Guides, references, checklists |
-| Project READMEs | 2 | 700 | Feature overview & index |
-| **Total** | **15** | **~6,400** | **Complete implementation** |
+| Category            | Count  | Lines      | Details                           |
+| ------------------- | ------ | ---------- | --------------------------------- |
+| Database            | 1      | 380        | Migration with RLS & indexes      |
+| API Routes          | 4      | 595        | Upload, commit, view, list/delete |
+| Frontend Hooks      | 1      | 180        | Upload orchestration              |
+| Frontend Components | 1      | 220        | Upload UI                         |
+| Frontend Pages      | 1      | 165        | Documents management              |
+| Test Scripts        | 1      | 160        | Automated testing                 |
+| Documentation       | 6      | 2,500+     | Guides, references, checklists    |
+| Project READMEs     | 2      | 700        | Feature overview & index          |
+| **Total**           | **15** | **~6,400** | **Complete implementation**       |
 
 ---
 
 ## 🎯 Key Files by Purpose
 
 ### To Start
+
 1. Read: `README-PDF-UPLOAD.md`
 2. Quick start: `QUICK-START.md`
 3. Setup: Run `supabase db push`
 
 ### To Test
+
 1. Use browser: `/dashboard/rfp/[rfpId]/documents`
 2. Or script: `./scripts/test-pdf-upload.sh`
 3. Reference: `docs/PDF-UPLOAD-TESTING.md`
 
 ### To Understand
+
 1. Architecture: `CLOUD-ARCHITECTURE.md`
 2. Implementation: `docs/IMPLEMENTATION-SUMMARY.md`
 3. Progress: `IMPLEMENTATION-CHECKLIST.md`
 
 ### To Develop Next Phase
+
 1. Reference: `docs/IMPLEMENTATION-SUMMARY.md` (Next Steps section)
 2. Plan: `IMPLEMENTATION-CHECKLIST.md` (Phase 6-9)
 3. Track: Use checklist format
@@ -330,6 +372,7 @@ interface RFPDocumentUploadProps {
 ## ✅ Implementation Complete
 
 All files are created and ready for:
+
 - ✅ Database setup (`supabase db push`)
 - ✅ Testing PDF uploads
 - ✅ Integration with ComparisonView (next phase)

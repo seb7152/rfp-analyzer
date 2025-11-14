@@ -10,7 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertCircle, FileUp, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import {
+  AlertCircle,
+  FileUp,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import { useRFPDocumentUpload } from "@/hooks/useRFPDocumentUpload";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +37,9 @@ export function RFPDocumentUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [documentType, setDocumentType] = useState<"cahier_charges" | "supplier">("cahier_charges");
+  const [documentType, setDocumentType] = useState<
+    "cahier_charges" | "supplier"
+  >("cahier_charges");
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>("");
   const [loadingSuppliers, setLoadingSuppliers] = useState(true);
   const { uploadDocument, uploadProgress, removeProgressItem } =
@@ -98,7 +106,9 @@ export function RFPDocumentUpload({
       ];
 
       if (!allowedMimeTypes.includes(file.type)) {
-        alert(`Le fichier "${file.name}" n'est pas d'un type autorisé. Seuls les fichiers PDF, Excel et Word sont acceptés.`);
+        alert(
+          `Le fichier "${file.name}" n'est pas d'un type autorisé. Seuls les fichiers PDF, Excel et Word sont acceptés.`,
+        );
         return;
       }
 
@@ -117,7 +127,8 @@ export function RFPDocumentUpload({
     }
 
     // Determine the document type string to send to the API
-    const finalDocumentType = documentType === "supplier" ? "supplier_response" : "cahier_charges";
+    const finalDocumentType =
+      documentType === "supplier" ? "supplier_response" : "cahier_charges";
 
     // Upload all files
     try {
@@ -150,12 +161,15 @@ export function RFPDocumentUpload({
           <label className="text-sm font-medium text-slate-700 block mb-2">
             Type de document
           </label>
-          <Select value={documentType} onValueChange={(value) => {
-            setDocumentType(value as "cahier_charges" | "supplier");
-            if (value === "cahier_charges") {
-              setSelectedSupplierId("");
-            }
-          }}>
+          <Select
+            value={documentType}
+            onValueChange={(value) => {
+              setDocumentType(value as "cahier_charges" | "supplier");
+              if (value === "cahier_charges") {
+                setSelectedSupplierId("");
+              }
+            }}
+          >
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
@@ -183,10 +197,14 @@ export function RFPDocumentUpload({
               </div>
             ) : suppliers.length === 0 ? (
               <div className="text-sm text-slate-500 bg-slate-100 p-3 rounded">
-                Aucun fournisseur trouvé. Veuillez d'abord importer des fournisseurs.
+                Aucun fournisseur trouvé. Veuillez d'abord importer des
+                fournisseurs.
               </div>
             ) : (
-              <Select value={selectedSupplierId} onValueChange={setSelectedSupplierId}>
+              <Select
+                value={selectedSupplierId}
+                onValueChange={setSelectedSupplierId}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Sélectionner un fournisseur" />
                 </SelectTrigger>
@@ -213,7 +231,7 @@ export function RFPDocumentUpload({
           "relative border-2 border-dashed rounded-lg p-8 transition-colors cursor-pointer",
           dragActive
             ? "border-blue-500 bg-blue-50"
-            : "border-gray-300 hover:border-gray-400"
+            : "border-gray-300 hover:border-gray-400",
         )}
       >
         <input
@@ -237,7 +255,9 @@ export function RFPDocumentUpload({
             <p className="text-xs text-gray-500">
               ou cliquez pour sélectionner un ou plusieurs fichiers
             </p>
-            <p className="text-xs text-gray-400 mt-2">Max 50MB par fichier • PDF, Excel, Word</p>
+            <p className="text-xs text-gray-400 mt-2">
+              Max 50MB par fichier • PDF, Excel, Word
+            </p>
           </div>
         </div>
       </div>

@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { rfpId: string } }
+  { params }: { params: { rfpId: string } },
 ) {
   try {
     const supabase = await createServerClient();
@@ -25,7 +25,7 @@ export async function POST(
     if (!rfpId) {
       return NextResponse.json(
         { error: "RFP ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -42,7 +42,7 @@ export async function POST(
     if (!filename || !fileSize) {
       return NextResponse.json(
         { error: "filename and fileSize are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -58,27 +58,32 @@ export async function POST(
     if (!allowedMimeTypes.includes(mimeType)) {
       return NextResponse.json(
         { error: "Only PDF, Excel, and Word files are allowed" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const maxFileSizeMB = parseInt(
-      process.env.MAX_FILE_SIZE_MB || "50",
-      10
-    );
+    const maxFileSizeMB = parseInt(process.env.MAX_FILE_SIZE_MB || "50", 10);
     if (fileSize > maxFileSizeMB * 1024 * 1024) {
       return NextResponse.json(
         {
           error: `File size exceeds maximum allowed (${maxFileSizeMB}MB)`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (!["cahier_charges", "specifications", "technical_brief", "appendix", "supplier_response"].includes(documentType)) {
+    if (
+      ![
+        "cahier_charges",
+        "specifications",
+        "technical_brief",
+        "appendix",
+        "supplier_response",
+      ].includes(documentType)
+    ) {
       return NextResponse.json(
         { error: "Invalid document type" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -102,10 +107,7 @@ export async function POST(
       .single();
 
     if (userOrgError || !userOrg) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Generate unique document ID and object name
@@ -116,10 +118,7 @@ export async function POST(
     // Generate signed URL for upload (15 minutes TTL for actual upload)
     const uploadUrl = await generateUploadSignedUrl(objectName, 15 * 60 * 1000);
 
-    const ttlSeconds = parseInt(
-      process.env.SIGN_URL_TTL_SEC || "90",
-      10
-    );
+    const ttlSeconds = parseInt(process.env.SIGN_URL_TTL_SEC || "90", 10);
     const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
 
     return NextResponse.json(
@@ -129,7 +128,7 @@ export async function POST(
         objectName,
         expiresAt: expiresAt.toISOString(),
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Upload intent error:", error);
@@ -137,7 +136,7 @@ export async function POST(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

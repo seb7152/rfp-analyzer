@@ -7,6 +7,7 @@ The registration system is now fully functional. Here's how to test it:
 ## Quick Test via Browser
 
 ### 1. Test Registration
+
 - Go to: `http://localhost:3001/register`
 - Fill in the form:
   - Full Name: "Jean Dupont"
@@ -18,17 +19,20 @@ The registration system is now fully functional. Here's how to test it:
 **Expected**: Redirect to `/dashboard` with navbar showing your organization
 
 ### 2. Test Dashboard
+
 - You should see:
   - Navbar with user name and theme toggle
   - Organization switcher dropdown (currently showing "My First Company")
   - Main dashboard content with user info
 
 ### 3. Test Organization Switching
+
 - Click the organization dropdown
 - You should see "My First Company" as your only org
 - Note: You can create new orgs later via the "Create Organization" button
 
 ### 4. Test Logout
+
 - Click user menu (top right)
 - Click "Se déconnecter"
 - You should be redirected to `/login`
@@ -64,12 +68,14 @@ curl -X POST http://localhost:3001/api/auth/register \
 ## Known Issues / Recent Fixes
 
 ### Fixed: RLS Policies
+
 - ✅ Users can INSERT their own profile during registration
 - ✅ Users can SELECT their own profile after login
 - ✅ Organizations can be created during registration
 - ✅ User-organization links can be created during registration
 
 ### Current Limitations
+
 - Organizations table has RLS disabled (temporary)
 - Will need to refine RLS policies for production security
 - Need to test: multi-organization features, member invitations, role-based access
@@ -93,6 +99,7 @@ curl -X POST http://localhost:3001/api/auth/register \
 ## Database State
 
 Current test data:
+
 - Multiple test users created during development
 - Test organizations created
 - All properly linked with user-organization relationships

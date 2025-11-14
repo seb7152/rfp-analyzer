@@ -9,9 +9,11 @@
 ## 1. Vue d'ensemble
 
 ### Objectif général
+
 Créer une application web permettant d'analyser et de comparer les réponses des fournisseurs à un cahier des charges structuré. L'application centralise les exigences, leurs pondérations, les réponses des fournisseurs, les scores comparatifs et facilite le dépouillement via une interface intuitive et comparative.
 
 ### Scope priorité
+
 - **MVP 1** : Fondations multi-RFP, multi-utilisateur, gestion des exigences, scoring et analyse comparative
 - **V2** : Authentification/gestion d'accès, modification des pondérations, workflows avancés
 - **Hors-scope initial** : Gestion automatique de plusieurs formats PDF, intégration direct du parsing dans l'app
@@ -21,18 +23,21 @@ Créer une application web permettant d'analyser et de comparer les réponses de
 ## 2. Contexte et contraintes
 
 ### Contexte métier
+
 - **Fréquence** : 4-5 RFP par an
 - **Acteurs** : 2-3 utilisateurs (équipe d'évaluation)
 - **Fournisseurs** : 4-10 répondants par RFP
 - **Durée cycle** : De quelques semaines à quelques mois par RFP
 
 ### Principes de conception
+
 1. **Séparation des responsabilités** : Le parsing et l'analyse IA se font **via N8N en amont**, pas dans l'app
 2. **Traçabilité** : Historique des modifications manuelles (notes, commentaires, questions)
 3. **Flexibilité** : Format d'exigences spécifique par RFP (géré par un workflow N8N dédié)
 4. **Performance** : Interface réactive malgré le volume de données (structure arborescente, lazy-loading si nécessaire)
 
 ### Stack technique
+
 - **Frontend** : Next.js (React) + Vercel
 - **Backend** : Next.js API Routes + Supabase (PostgreSQL)
 - **Stockage fichiers** : GCP (PDF, fichiers générés)
@@ -46,6 +51,7 @@ Créer une application web permettant d'analyser et de comparer les réponses de
 ### 3.1 Gestion des RFP
 
 #### 3.1.1 Sélection/Création d'un RFP
+
 - **Écran d'accueil** : Liste des RFP existants avec dernier accès mémorisé
 - **Actions** :
   - Sélectionner un RFP (redirige vers le dashboard d'analyse)
@@ -53,6 +59,7 @@ Créer une application web permettant d'analyser et de comparer les réponses de
 - **Mémorisation** : Le dernier RFP consulté est sauvegardé en session/local storage
 
 #### 3.1.2 Initialisation d'un RFP
+
 - Formulaire de création :
   - Nom du RFP
   - Description (optionnel)
@@ -66,6 +73,7 @@ Créer une application web permettant d'analyser et de comparer les réponses de
 - **Trigger N8N** : Une fois créé, déclencher le workflow N8N via API (bearer token) pour parser et importer les données
 
 #### 3.1.3 Suivi du parsing
+
 - **Dashboard de suivi** :
   - État du workflow (en cours / complété / erreur)
   - Logs d'exécution du workflow N8N (extraction d'exigences, import des réponses Excel, etc.)
@@ -77,6 +85,7 @@ Créer une application web permettant d'analyser et de comparer les réponses de
 ### 3.2 Architecture des données (modèle conceptuel)
 
 #### 3.2.1 Hiérarchie des exigences
+
 ```
 RFP (1)
   └─ Niveau 1 (Domaine) [1..N]
@@ -84,10 +93,12 @@ RFP (1)
           └─ Niveau 3 (Sous-catégorie) [1..N]
               └─ Niveau 4 (Exigence) [1..N]
 ```
+
 - **Paramétrable** : Nombre de niveaux configurable par RFP (par défaut 4, peuvent être 3, 4, 5...)
 - **Tree structure** : Navigation hiérarchique dans le sidebar gauche
 
 #### 3.2.2 Exigences
+
 - **Identifiant** : ID hérité de N8N (ex: `REQ-001`) + UUID interne (Supabase)
   - UUID pour éviter collisions en multi-RFP
   - ID N8N pour traçabilité avec le workflow
@@ -106,7 +117,9 @@ RFP (1)
   - `created_at`, `updated_at`, `created_by`
 
 #### 3.2.3 Position dans le PDF
+
 N8N extrait la position depuis la structure Word (headings) :
+
 ```json
 {
   "page": 12,
@@ -115,12 +128,14 @@ N8N extrait la position depuis la structure Word (headings) :
   "heading_level": 3
 }
 ```
+
 - **Page** : Calculée lors de la conversion Word → PDF par N8N
 - **Section** : Numérotation héritée du Word (ex: "4.2.1")
 - **Heading level** : Utilisé pour valider la hiérarchie
 - Permet un scroll automatique à la bonne section lors du clic "Ouvrir dans le PDF"
 
 #### 3.2.4 Fournisseurs
+
 - **Identifiant** : ID hérité de N8N + UUID
 - **Attributs** :
   - `id` (UUID)
@@ -131,6 +146,7 @@ N8N extrait la position depuis la structure Word (headings) :
   - `created_at`
 
 #### 3.2.5 Réponses
+
 - **1 réponse = 1 fournisseur + 1 exigence**
 - **Attributs** :
   - `id` (UUID)
@@ -147,6 +163,7 @@ N8N extrait la position depuis la structure Word (headings) :
   - `created_at`, `updated_at`
 
 #### 3.2.6 Historique des modifications
+
 - **Table** : `response_audit`
 - **Attributs** :
   - `id` (UUID)
@@ -162,6 +179,7 @@ N8N extrait la position depuis la structure Word (headings) :
 ### 3.3 Interface principale - Dashboard d'analyse
 
 #### 3.3.1 Layout global
+
 ```
 ┌─────────────────────────────────────────────┐
 │ Header : Logo | RFP actuel (select) | Menu │
@@ -175,6 +193,7 @@ N8N extrait la position depuis la structure Word (headings) :
 ```
 
 #### 3.3.2 Sidebar gauche - Arborescence des exigences
+
 - **Affichage** : Tree hiérarchique (collapsible/expandable)
 - **Contenu** :
   - Niveaux 1-3 : Dossiers (domaines, catégories)
@@ -187,9 +206,11 @@ N8N extrait la position depuis la structure Word (headings) :
 #### 3.3.3 Contenu principal - Onglets
 
 ##### Onglet 1 : "Vue Comparative par Exigence"
+
 Affiche une vue **side-by-side** de l'exigence sélectionnée et les réponses comparatives des fournisseurs.
 
 **Layout** :
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │ Titre Exigence | ID | Pondération (%)                   │
@@ -223,6 +244,7 @@ Affiche une vue **side-by-side** de l'exigence sélectionnée et les réponses c
 ```
 
 **Fonctionnalités** :
+
 - Affichage de la réponse texte du fournisseur (scrollable si long)
 - Score IA/20 (grisé, non-modifiable)
 - Champ de saisie pour score manuel/20 (optionnel, remplace le score final si complété)
@@ -233,9 +255,11 @@ Affiche une vue **side-by-side** de l'exigence sélectionnée et les réponses c
 - **Tri/Filtres** : Possibilité de trier par score, fournisseur, etc.
 
 ##### Onglet 2 : "Fiche Fournisseur"
+
 Affiche la synthèse d'**un fournisseur spécifique** sur tous les critères.
 
 **Layout** :
+
 ```
 ┌───────────────────────────────────────────────┐
 │ Nom Fournisseur | Score Global/20 | Synthèse │
@@ -259,10 +283,12 @@ Affiche la synthèse d'**un fournisseur spécifique** sur tous les critères.
 ```
 
 **Navigation** :
+
 - Sélecteur dropdown ou onglet interne pour changer de fournisseur
 - Clic sur une exigence → retour à la "Vue Comparative par Exigence" pour cette exigence
 
 #### 3.3.4 Viewer PDF intégré
+
 - **Source** : PDF généré par N8N depuis le Word .docx original
 - **Emplacement** : Panel flottant/modal ou intégré dans la page (à définir UX)
 - **Fonctionnalité** :
@@ -281,9 +307,11 @@ Affiche la synthèse d'**un fournisseur spécifique** sur tous les critères.
 ### 3.4 Module d'analyse finale (Scoring comparatif)
 
 #### 3.4.1 Dashboard de synthèse
+
 Affiche un **tableau comparatif interactif** de tous les fournisseurs.
 
 **Layout** :
+
 ```
 ┌──────────────────────────────────────────────────────────┐
 │ Synthèse d'analyse | Filtres | [Export Excel]           │
@@ -302,6 +330,7 @@ Affiche un **tableau comparatif interactif** de tous les fournisseurs.
 ```
 
 **Fonctionnalités** :
+
 - **Tri** : Par score global (DESC par défaut), par domaine, par fournisseur
 - **Filtre** : Par domaine, plage de score
 - **Détail** : Clic sur un fournisseur → onglet "Fiche Fournisseur"
@@ -311,6 +340,7 @@ Affiche un **tableau comparatif interactif** de tous les fournisseurs.
   - Box plot : Distribution des scores par domaine
 
 #### 3.4.2 Calcul du score final
+
 ```
 Score final d'une réponse = (Score final réponse) / 5 * 20
 
@@ -323,6 +353,7 @@ Score global d'un fournisseur = Σ(Score pondéré) / Σ(Poids)
 ```
 
 #### 3.4.3 Export Excel
+
 - **Contenu** :
   - Feuille 1 : Synthèse (tableau du dashboard)
   - Feuille 2 : Détails par fournisseur (scores + commentaires par exigence)
@@ -335,6 +366,7 @@ Score global d'un fournisseur = Σ(Score pondéré) / Σ(Poids)
 ### 3.5 Gestion des pondérations
 
 #### 3.5.1 Import initial
+
 - Pondérations importées via N8N en base lors du parsing du RFP
 - **Format** :
   - Pondération **absolue** par exigence (ex: 0.07 = 7%)
@@ -342,6 +374,7 @@ Score global d'un fournisseur = Σ(Score pondéré) / Σ(Poids)
 - **Stockage** : Colonne `weight` dans la table `requirements`
 
 #### 3.5.2 Visualisation et modification (V2)
+
 - **Écran de gestion des pondérations** :
   - Vue hiérarchique (domaine → catégorie → exigence)
   - Affichage du poids absolu (%) pour chaque exigence
@@ -356,6 +389,7 @@ Score global d'un fournisseur = Σ(Score pondéré) / Σ(Poids)
 ### 3.6 Gestion des utilisateurs et droits d'accès (V2)
 
 #### 3.6.1 Modèle multi-tenant
+
 - **Organisations** (table `organizations`) : Limite de scope (actuellement 1 seule)
 - **Utilisateurs** (table `users`) : Membres d'une organisation
 - **RFP** (table `rfps`) : Appartient à 1 organisation
@@ -365,6 +399,7 @@ Score global d'un fournisseur = Σ(Score pondéré) / Σ(Poids)
   - `viewer` : Lecture seule
 
 #### 3.6.2 Authentification
+
 - **Non-prioritaire pour MVP**
 - **Futur** : Supabase Auth (magic link ou OAuth)
 - **Tracking** : `created_by`, `updated_by` (VARCHAR) pour l'historique
@@ -376,6 +411,7 @@ Score global d'un fournisseur = Σ(Score pondéré) / Σ(Poids)
 ### 4.1 Intégration N8N
 
 #### 4.1.1 Workflow de parsing (déclenché par l'app)
+
 1. **Entrée** : Téléchargement du cahier des charges Word (.docx) par l'utilisateur dans l'app
 2. **Trigger** : App appelle endpoint N8N `/api/workflow/parse-rfp` via bearer token
    - Paramètres : `rfp_id`, `docx_url` (GCP), `template_type`
@@ -402,8 +438,8 @@ Score global d'un fournisseur = Σ(Score pondéré) / Σ(Poids)
          "title": "Titre exigence",
          "description": "Description complète",
          "context": "Contexte du cahier",
-         "position_pdf": { 
-           "page": 12, 
+         "position_pdf": {
+           "page": 12,
            "section_number": "4.2.1",
            "section_title": "Sécurité des données",
            "heading_level": 3
@@ -418,6 +454,7 @@ Score global d'un fournisseur = Σ(Score pondéré) / Σ(Poids)
 5. **Callback** : N8N appelle endpoint de l'app `/api/rfp/{rfp_id}/import-requirements` pour importer en base
 
 #### 4.1.2 Workflow d'analyse des réponses (déclenché par l'app)
+
 1. **Entrée** : Une fois les fichiers Excel des fournisseurs importés en base
 2. **Trigger** : App appelle endpoint N8N `/api/workflow/analyze-responses` via bearer token
    - Paramètres : `rfp_id`
@@ -449,6 +486,7 @@ Score global d'un fournisseur = Σ(Score pondéré) / Σ(Poids)
 5. **Callback** : N8N appelle endpoint de l'app `/api/rfp/{rfp_id}/import-analyses` pour importer les scores/commentaires
 
 #### 4.1.3 Import des réponses Excel des fournisseurs (déclenché par l'app)
+
 1. **Préalable** : Fournisseurs upladent leur fichier Excel (template fourni par l'app)
 2. **Entrée** : Fichier Excel importé en GCP
 3. **Trigger** : App appelle endpoint N8N `/api/workflow/import-supplier-responses`
@@ -462,6 +500,7 @@ Score global d'un fournisseur = Σ(Score pondéré) / Σ(Poids)
 ### 4.2 Endpoints API de l'app (pour N8N)
 
 #### 4.2.1 Import des exigences
+
 ```
 POST /api/rfp/{rfp_id}/import-requirements
 Content-Type: application/json
@@ -492,6 +531,7 @@ Response: 201 Created
 ```
 
 #### 4.2.2 Import des analyses IA
+
 ```
 POST /api/rfp/{rfp_id}/import-analyses
 Content-Type: application/json
@@ -517,6 +557,7 @@ Response: 201 Created
 ```
 
 #### 4.2.3 Import des réponses
+
 ```
 POST /api/rfp/{rfp_id}/import-responses
 Content-Type: application/json
@@ -537,6 +578,7 @@ Response: 201 Created
 ```
 
 #### 4.2.4 Endpoints front-end (CRUD local)
+
 ```
 GET    /api/rfps                              # Liste des RFP
 POST   /api/rfps                              # Créer un RFP
@@ -553,17 +595,20 @@ GET    /api/rfps/{rfp_id}/analytics          # Synthèse scoring
 ## 5. Critères d'acceptation (MVP)
 
 ### 5.1 Gestion des RFP
+
 - [ ] L'utilisateur peut créer un nouveau RFP avec formulaire simple
 - [ ] L'utilisateur peut sélectionner un RFP et lancer le parsing via N8N
 - [ ] Le suivi du parsing affiche l'état du workflow en temps réel (ou quasi temps réel avec polling)
 - [ ] Une fois complété, l'app redirige automatiquement vers le dashboard d'analyse
 
 ### 5.2 Affichage des exigences
+
 - [ ] Sidebar affiche une arborescence (tree) des exigences sur 3-4 niveaux
 - [ ] Clic sur une exigence met à jour le contenu principal (pas de rechargement page)
 - [ ] Recherche/filtre sur les exigences fonctionne
 
 ### 5.3 Vue comparative par exigence
+
 - [ ] Affichage du titre, ID, pondération, contexte de l'exigence
 - [ ] Affichage d'un tableau avec une ligne par fournisseur
 - [ ] Chaque ligne affiche : réponse texte, score IA/20 (grisé), score manuel (éditable)
@@ -572,33 +617,39 @@ GET    /api/rfps/{rfp_id}/analytics          # Synthèse scoring
 - [ ] Bouton "Ouvrir dans PDF" scroll le viewer à la bonne page/section
 
 ### 5.4 Viewer PDF
+
 - [ ] PDF s'affiche dans un panel (intégré ou modal, à décider UX)
 - [ ] Navigation par page fonctionne
 - [ ] Scroll automatique à la page correspondante quand on clique "Ouvrir dans PDF"
 
 ### 5.5 Fiche fournisseur
+
 - [ ] Onglet "Fiche Fournisseur" affiche synthèse du fournisseur sélectionné
 - [ ] Tableau : exigence, poids, score/20, contribution pondérée
 - [ ] Score global = Σ(score × poids) ramené sur 20
 - [ ] Clic sur une exigence revient à la vue comparative pour cette exigence
 
 ### 5.6 Dashboard de synthèse
+
 - [ ] Tableau comparatif de tous les fournisseurs (score global, score par domaine)
 - [ ] Tri par score global (DESC par défaut)
 - [ ] Export en Excel fonctionnel
 - [ ] Classement automatique (1er, 2e, 3e, etc.)
 
 ### 5.7 Données et historique
+
 - [ ] Les scores manuels et commentaires sont sauvegardés en base
 - [ ] Un historique des modifications est tracké (user, date, champ modifié, ancienne/nouvelle valeur)
 - [ ] Les calculs de score final et pondéré sont corrects mathématiquement
 
 ### 5.8 Intégration N8N
+
 - [ ] L'app peut déclencher le workflow N8N de parsing via bearer token
 - [ ] L'app reçoit les données structurées et les importe en base correctement
 - [ ] L'app peut déclencher le workflow d'analyse IA et importer les résultats
 
 ### 5.9 Performance et UX
+
 - [ ] Interface réactive (pas de lag perceptible à la navigation)
 - [ ] Lazy-loading des données si nécessaire (gros RFP avec 200+ exigences)
 - [ ] Messages d'erreur clairs en cas de problème d'import N8N
@@ -754,6 +805,7 @@ GROUP BY supplier_id;
 ## 7. Architecture et déploiement
 
 ### 7.1 Frontend (Next.js)
+
 - Structure : `/app` (App Router)
 - Pages principales :
   - `/` : Home (sélection RFP)
@@ -769,12 +821,14 @@ GROUP BY supplier_id;
 - State management : React Context ou Zustand (simple pour MVP)
 
 ### 7.2 Backend (Next.js API Routes)
+
 - Endpoints pour CRUD RFP, exigences, réponses
 - Endpoints pour import N8N (avec bearer token validation)
 - Calculs de scores (computed fields en SQL ou backend)
 - Génération Excel (via exceljs)
 
 ### 7.3 Déploiement
+
 - **Frontend** : Vercel (auto-deploy sur push)
 - **Backend** : Next.js API Routes (colocalisé sur Vercel)
 - **DB** : Supabase (PostgreSQL)
@@ -782,6 +836,7 @@ GROUP BY supplier_id;
 - **Workflows** : N8N (auto-hosted ou cloud, avec bearer tokens pour sécurité)
 
 ### 7.4 Sécurité
+
 - CORS / CSRF : Gestion via headers Next.js
 - Bearer tokens : Pour authentifier les appels N8N ↔ App
 - Signed URLs : Pour accès GCP sécurisé
@@ -792,6 +847,7 @@ GROUP BY supplier_id;
 ## 8. Roadmap (phases)
 
 ### Phase 1 : MVP (Fondations)
+
 - Gestion des RFP (create, select, status)
 - Parsing N8N (import exigences + réponses)
 - Vue comparative par exigence
@@ -802,6 +858,7 @@ GROUP BY supplier_id;
 - **Timeline** : 4-6 semaines
 
 ### Phase 2 : Polish & Optimisation
+
 - Authentification Supabase
 - Gestion des droits d'accès (rôles)
 - UI/UX refinement (géométrie, couleurs, accessibilité)
@@ -810,6 +867,7 @@ GROUP BY supplier_id;
 - **Timeline** : 2-3 semaines
 
 ### Phase 3 : Fonctionnalités avancées
+
 - Modification des pondérations dans l'app
 - Graphiques d'analyse (radar, histogramme)
 - Commentaires collaboratifs (mentions)
@@ -833,20 +891,20 @@ GROUP BY supplier_id;
 
 ## 10. Glossaire
 
-| Terme | Définition |
-|-------|-----------|
-| **RFP** | Request For Proposal (Appel d'Offres) |
-| **Exigence** | Critère évalué du cahier des charges |
-| **Fournisseur** | Entité soumissionnaire (répondant à l'RFP) |
-| **Pondération** | Coefficient d'importance d'une exigence (% du score final) |
-| **Score IA** | Notation générée par N8N/LLM (0-5) |
-| **Score manuel** | Notation ajustée par l'évaluateur (0-5), optionnel |
-| **Score final** | Score ramené sur 20 (score manuel si présent, sinon score IA) |
-| **Score pondéré** | Score final × Pondération de l'exigence |
-| **Score global** | Σ(Scores pondérés) d'un fournisseur, ramené sur 20 |
-| **N8N** | Plateforme d'automatisation des workflows (parsing, IA) |
-| **GCP** | Google Cloud Platform (stockage fichiers) |
-| **Supabase** | Backend PostgreSQL + Auth (gérées en SaaS) |
+| Terme             | Définition                                                    |
+| ----------------- | ------------------------------------------------------------- |
+| **RFP**           | Request For Proposal (Appel d'Offres)                         |
+| **Exigence**      | Critère évalué du cahier des charges                          |
+| **Fournisseur**   | Entité soumissionnaire (répondant à l'RFP)                    |
+| **Pondération**   | Coefficient d'importance d'une exigence (% du score final)    |
+| **Score IA**      | Notation générée par N8N/LLM (0-5)                            |
+| **Score manuel**  | Notation ajustée par l'évaluateur (0-5), optionnel            |
+| **Score final**   | Score ramené sur 20 (score manuel si présent, sinon score IA) |
+| **Score pondéré** | Score final × Pondération de l'exigence                       |
+| **Score global**  | Σ(Scores pondérés) d'un fournisseur, ramené sur 20            |
+| **N8N**           | Plateforme d'automatisation des workflows (parsing, IA)       |
+| **GCP**           | Google Cloud Platform (stockage fichiers)                     |
+| **Supabase**      | Backend PostgreSQL + Auth (gérées en SaaS)                    |
 
 ---
 
@@ -872,6 +930,7 @@ Domaine 1 (Niveau 1)
 ### 11.2 Exemple de flux de notation IA
 
 **Entrée pour N8N (1 exigence)** :
+
 ```json
 {
   "requirement_id": "REQ-001",
@@ -892,6 +951,7 @@ Domaine 1 (Niveau 1)
 ```
 
 **Sortie N8N** :
+
 ```json
 {
   "requirement_id": "REQ-001",
@@ -912,15 +972,15 @@ Domaine 1 (Niveau 1)
 
 ### 11.3 Exemple de calcul de score final (fournisseur A, RFP avec 3 exigences)
 
-| Exigence | Poids | Score IA | Score Manuel | Score Final/20 | Pondéré |
-|----------|-------|----------|--------------|-----------------|---------|
-| REQ-001 | 7% | 5 | - | 20 | 1.40 |
-| REQ-002 | 5% | 4 | 3 | 12 | 0.60 |
-| REQ-003 | 8% | 3 | - | 12 | 0.96 |
-| **TOTAL** | **20%** | - | - | - | **2.96** |
-| **Score global** | - | - | - | **14.8/20** | - |
+| Exigence         | Poids   | Score IA | Score Manuel | Score Final/20 | Pondéré  |
+| ---------------- | ------- | -------- | ------------ | -------------- | -------- |
+| REQ-001          | 7%      | 5        | -            | 20             | 1.40     |
+| REQ-002          | 5%      | 4        | 3            | 12             | 0.60     |
+| REQ-003          | 8%      | 3        | -            | 12             | 0.96     |
+| **TOTAL**        | **20%** | -        | -            | -              | **2.96** |
+| **Score global** | -       | -        | -            | **14.8/20**    | -        |
 
-Calcul: 2.96 / 0.20 * 20 = 14.8/20
+Calcul: 2.96 / 0.20 \* 20 = 14.8/20
 
 ---
 

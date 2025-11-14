@@ -1,19 +1,127 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { rfpId: string } }
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: { rfpId: string } },
 ) {
   try {
     const { rfpId } = params;
 
     if (!rfpId) {
-      return NextResponse.json({ error: "RFP ID is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "RFP ID is required" },
+        { status: 400 },
+      );
     }
 
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Vérifier que l'utilisateur a accès à l'organisation du RFP
+    const { data: rfp, error: rfpError } = await supabase
+      .from("rfps")
+      .select("organization_id")
+      .eq("id", rfpId)
+      .single();
+
+    if (rfpError || !rfp) {
+      return NextResponse.json({ error: "RFP not found" }, { status: 404 });
+    }
+
+    const { data: userOrg, error: userOrgError } = await supabase
+      .from("user_organizations")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("organization_id", rfp.organization_id)
+      .single();
+
+    if (userOrgError || !userOrg) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+
+    // Récupérer les poids des catégories
+    const { data: categories, error: catError } = await supabase
+      .from("categories")
+      .select("id, weight")
+      .eq("rfp_id", rfpId);
+
+    if (catError) {
+      console.error("Error fetching category weights:", catError);
+      return NextResponse.json(
+        { error: "Failed to fetch category weights" },
+        { status: 500 },
+      );
+    }
+
+    // Récupérer les poids des exigences
+    const { data: requirements, error: reqError } = await supabase
+      .from("requirements")
+      .select("id, weight")
+      .eq("rfp_id", rfpId);
+
+    if (reqError) {
+      console.error("Error fetching requirement weights:", reqError);
+      return NextResponse.json(
+        { error: "Failed to fetch requirement weights" },
+        { status: 500 },
+      );
+    }
+
+    // Formater les réponses en objets { [id]: weight }
+    const categoryWeights: Record<string, number> = {};
+    const requirementWeights: Record<string, number> = {};
+
+    for (const cat of categories || []) {
+      categoryWeights[cat.id] = cat.weight || 0;
+    }
+
+    for (const req of requirements || []) {
+      requirementWeights[req.id] = req.weight || 0;
+    }
+
+    return NextResponse.json(
+      {
+        categories: categoryWeights,
+        requirements: requirementWeights,
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("Error fetching weights:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { rfpId: string } },
+) {
+  try {
+    const { rfpId } = params;
+
+    if (!rfpId) {
+      return NextResponse.json(
+        { error: "RFP ID is required" },
+        { status: 400 },
+      );
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -43,7 +151,10 @@ export async function PUT(
 
     // Seuls les admins peuvent modifier les poids
     if (userOrg.role !== "admin") {
-      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Insufficient permissions" },
+        { status: 403 },
+      );
     }
 
     const body = await request.json();
@@ -52,7 +163,7 @@ export async function PUT(
     if (!categories || !requirements) {
       return NextResponse.json(
         { error: "Categories and weights are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -67,56 +178,52 @@ export async function PUT(
         "update_category_weights",
         {
           category_updates: categoryUpdates,
-        }
+        },
       );
 
       if (categoryError) {
         console.error("Error updating category weights:", categoryError);
         // Fallback: mise à jour individuelle
         for (const [id, weight] of Object.entries(categories)) {
-          await supabase
-            .from("categories")
-            .update({ weight })
-            .eq("id", id);
+          await supabase.from("categories").update({ weight }).eq("id", id);
         }
       }
     }
 
     // Mettre à jour les poids des exigences
-    const requirementUpdates = Object.entries(requirements).map(([id, weight]) => ({
-      id,
-      weight,
-    }));
+    const requirementUpdates = Object.entries(requirements).map(
+      ([id, weight]) => ({
+        id,
+        weight,
+      }),
+    );
 
     if (requirementUpdates.length > 0) {
       const { error: requirementError } = await supabase.rpc(
         "update_requirement_weights",
         {
           requirement_updates: requirementUpdates,
-        }
+        },
       );
 
       if (requirementError) {
         console.error("Error updating requirement weights:", requirementError);
         // Fallback: mise à jour individuelle
         for (const [id, weight] of Object.entries(requirements)) {
-          await supabase
-            .from("requirements")
-            .update({ weight })
-            .eq("id", id);
+          await supabase.from("requirements").update({ weight }).eq("id", id);
         }
       }
     }
 
     return NextResponse.json(
       { message: "Weights updated successfully" },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error updating weights:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -4,7 +4,7 @@ import { generateDownloadSignedUrl } from "@/lib/gcs";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { rfpId: string; documentId: string } }
+  { params }: { params: { rfpId: string; documentId: string } },
 ) {
   try {
     const supabase = await createServerClient();
@@ -24,7 +24,7 @@ export async function GET(
     if (!rfpId || !documentId) {
       return NextResponse.json(
         { error: "RFP ID and document ID are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -40,7 +40,7 @@ export async function GET(
     if (fetchError || !document) {
       return NextResponse.json(
         { error: "Document not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -53,22 +53,16 @@ export async function GET(
       .single();
 
     if (userOrgError || !userOrg) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Generate signed URL for reading
     try {
-      const ttlSeconds = parseInt(
-        process.env.SIGN_URL_TTL_SEC || "3600",
-        10
-      );
+      const ttlSeconds = parseInt(process.env.SIGN_URL_TTL_SEC || "3600", 10);
 
       const downloadUrl = await generateDownloadSignedUrl(
         document.gcs_object_name,
-        ttlSeconds * 1000
+        ttlSeconds * 1000,
       );
 
       const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
@@ -90,13 +84,13 @@ export async function GET(
           expiresAt: expiresAt.toISOString(),
           pageCount: document.page_count,
         },
-        { status: 200 }
+        { status: 200 },
       );
     } catch (error) {
       console.error("GCS signed URL generation error:", error);
       return NextResponse.json(
         { error: "Failed to generate download URL" },
-        { status: 500 }
+        { status: 500 },
       );
     }
   } catch (error) {
@@ -105,7 +99,7 @@ export async function GET(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

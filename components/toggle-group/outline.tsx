@@ -1,8 +1,8 @@
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export default function TabsDemo() {
   return (
-    <ToggleGroup type="multiple" variant="outline" defaultValue={['1W', '1M']}>
+    <ToggleGroup type="multiple" variant="outline" defaultValue={["1W", "1M"]}>
       <ToggleGroupItem value="1D">1D</ToggleGroupItem>
       <ToggleGroupItem value="1W">1W</ToggleGroupItem>
       <ToggleGroupItem value="1M">1M</ToggleGroupItem>

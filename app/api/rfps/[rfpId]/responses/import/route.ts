@@ -5,7 +5,7 @@ import { importResponses } from "@/lib/supabase/queries";
 /**
  * POST /api/rfps/[rfpId]/responses/import
  * Import responses for an RFP from JSON
- * 
+ *
  * Request body:
  * {
  *   responses: [
@@ -33,10 +33,7 @@ export async function POST(
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Parse request body

@@ -12,7 +12,8 @@ The RFP Analyzer Platform enables evaluation teams to compare and score supplier
 ## Technical Context
 
 **Language/Version**: TypeScript 5.x / JavaScript ES2022+ with Next.js 14 (React 18)  
-**Primary Dependencies**: 
+**Primary Dependencies**:
+
 - Frontend: Next.js 14, React 18, Tailwind CSS 3.x, shadcn/ui components, Lucide React (icons)
 - Backend: Next.js API Routes, Supabase JS Client 2.x, PostgreSQL 15+ (via Supabase)
 - External: N8N workflows (PDF parsing, AI scoring - out of scope for this implementation)
@@ -22,14 +23,16 @@ The RFP Analyzer Platform enables evaluation teams to compare and score supplier
 **Target Platform**: Modern web browsers (Chrome, Firefox, Edge, Safari) on desktop/laptop  
 **Deployment**: Vercel (frontend + API routes), Supabase Cloud (database + auth future)  
 **Project Type**: Web application (frontend + backend)  
-**Performance Goals**: 
+**Performance Goals**:
+
 - Page load < 2s on 3G connection
 - Search filtering < 500ms for 200 requirements
 - Navigation between requirements < 2s
 - Support 50-200 requirements per RFP
 - Handle 10,000+ character response texts
 
-**Constraints**: 
+**Constraints**:
+
 - Multi-tenant from day 1: Organization-based data isolation with Row Level Security (RLS)
 - User authentication via Supabase Auth (email/password, OAuth providers)
 - Role-based access control: admin, evaluator, viewer roles per organization
@@ -40,7 +43,8 @@ The RFP Analyzer Platform enables evaluation teams to compare and score supplier
 - Dark mode support mandatory
 - Must work with pre-processed data from N8N workflows
 
-**Scale/Scope**: 
+**Scale/Scope**:
+
 - Multiple organizations (companies/business units) in single database
 - 10-50 users per organization (free tier: 10 users)
 - 2-3 concurrent evaluators per RFP
@@ -52,7 +56,7 @@ The RFP Analyzer Platform enables evaluation teams to compare and score supplier
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+_GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
 ### Pre-Design Check (Phase 0)
 
@@ -70,6 +74,7 @@ The constitution file (`.specify/memory/constitution.md`) is currently empty/tem
 **Status**: ✅ PASS (No constitution to violate)
 
 **Design Artifacts Completed**:
+
 - ✅ [research.md](./research.md) - All technology decisions documented with rationale
 - ✅ [data-model.md](./data-model.md) - Complete database schema with indexes and validation
 - ✅ [contracts/api.yaml](./contracts/api.yaml) - OpenAPI 3.0 spec for all API routes
@@ -77,6 +82,7 @@ The constitution file (`.specify/memory/constitution.md`) is currently empty/tem
 - ✅ [CLAUDE.md](../CLAUDE.md) - Agent context updated with tech stack
 
 **Best Practices Applied**:
+
 - ✅ **Separation of Concerns**: Clear boundaries between frontend components, API routes, and database
 - ✅ **Type Safety**: TypeScript strict mode, auto-generated types from Supabase schema
 - ✅ **Testing Strategy**: Unit tests (Jest + RTL), E2E tests (Playwright), integration tests for API routes
@@ -194,6 +200,7 @@ package.json           # Dependencies and scripts
 ```
 
 **Structure Decision**: Selected web application structure (Option 2 variant using Next.js App Router). This aligns with the documented tech stack (Next.js 14 + Supabase) and provides:
+
 - Co-located frontend and backend (Next.js API Routes)
 - Server-side rendering capabilities for better performance
 - File-based routing via App Router

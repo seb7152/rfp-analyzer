@@ -24,6 +24,7 @@ Ensure you have the following installed:
   - Tailwind CSS IntelliSense
 
 **Check versions**:
+
 ```bash
 node --version  # Should be v18.x or higher
 npm --version   # Should be 9.x or higher
@@ -126,6 +127,7 @@ NODE_ENV=development
 ```
 
 **⚠️ Important**:
+
 - Never commit `.env.local` to Git (already in `.gitignore`)
 - Anon key is safe for browser use
 - Service role key must stay server-side only
@@ -147,6 +149,7 @@ supabase db diff
 ```
 
 **Troubleshooting**:
+
 - If `supabase db push` fails, check that you're linked to the correct project
 - Try `supabase db reset` to start fresh (⚠️ destroys all data)
 
@@ -166,6 +169,7 @@ npm run seed
 ```
 
 **Verify in Supabase Dashboard**:
+
 1. Go to **Table Editor**
 2. Check `rfps`, `requirements`, `suppliers`, `responses` tables
 3. Should see sample data
@@ -183,10 +187,11 @@ npm run generate-types
 ```
 
 **Verify**:
+
 ```typescript
 // lib/supabase/types.ts should contain:
-export type RFP = Database['public']['Tables']['rfps']['Row']
-export type Requirement = Database['public']['Tables']['requirements']['Row']
+export type RFP = Database["public"]["Tables"]["rfps"]["Row"];
+export type Requirement = Database["public"]["Tables"]["requirements"]["Row"];
 // ...etc
 ```
 
@@ -207,6 +212,7 @@ npm run dev
 Open browser to [http://localhost:3000](http://localhost:3000)
 
 **You should see**:
+
 - Navbar with tabs: Configuration | Comparaison | Réponses
 - Sidebar with requirements tree
 - Main content area with comparison view
@@ -216,12 +222,14 @@ Open browser to [http://localhost:3000](http://localhost:3000)
 ## Step 8: Verify Setup
 
 ### Test Navigation
+
 1. Click "Expand All" in sidebar → tree fully expands
 2. Select "REQ-001" → supplier responses load
 3. Click star rating → manual score updates
 4. Toggle theme → dark/light mode switches
 
 ### Test API Routes
+
 ```bash
 # Get RFP data
 curl http://localhost:3000/api/rfps/<rfp-id>
@@ -322,6 +330,7 @@ supabase db pull         # Pull schema changes from remote
 ### Issue: "Module not found" errors
 
 **Solution**:
+
 ```bash
 rm -rf node_modules package-lock.json
 npm install
@@ -330,12 +339,14 @@ npm install
 ### Issue: Supabase connection fails
 
 **Checklist**:
+
 - ✅ Correct URL and anon key in `.env.local`
 - ✅ Supabase project is not paused (dashboard shows "Active")
 - ✅ Migrations have been applied (`supabase db push`)
 - ✅ No firewall blocking `*.supabase.co`
 
 **Test connection**:
+
 ```bash
 curl https://xxxxx.supabase.co/rest/v1/
 # Should return: {"msg":"ok","details":"API is ready","hint":null}
@@ -344,20 +355,23 @@ curl https://xxxxx.supabase.co/rest/v1/
 ### Issue: Dark mode not working
 
 **Checklist**:
+
 - ✅ `next-themes` installed: `npm list next-themes`
 - ✅ ThemeProvider in `app/layout.tsx`
 - ✅ `dark:` classes in components
 - ✅ No conflicting `color-scheme` CSS
 
 **Force dark mode**:
+
 ```javascript
 // In browser console
-document.documentElement.classList.add('dark')
+document.documentElement.classList.add("dark");
 ```
 
 ### Issue: Types not found after migration
 
 **Solution**:
+
 ```bash
 npm run generate-types
 # Restart TypeScript server in VS Code: Cmd+Shift+P → "Restart TS Server"
@@ -366,6 +380,7 @@ npm run generate-types
 ### Issue: Port 3000 already in use
 
 **Solution**:
+
 ```bash
 # Kill process on port 3000
 lsof -ti:3000 | xargs kill -9
@@ -394,6 +409,7 @@ After setup is complete:
 ### Making Changes
 
 1. **Create a new component**:
+
 ```bash
 # Use shadcn/ui CLI to add primitives
 npx shadcn-ui@latest add <component-name>
@@ -403,12 +419,14 @@ touch components/MyComponent.tsx
 ```
 
 2. **Add a new API route**:
+
 ```bash
 mkdir -p app/api/my-endpoint
 touch app/api/my-endpoint/route.ts
 ```
 
 3. **Create a database migration**:
+
 ```bash
 # Create new migration file
 supabase migration new my_migration_name
@@ -445,6 +463,7 @@ git push origin 001-rfp-analyzer-platform
 ## Resources
 
 ### Documentation
+
 - [Next.js 14 Docs](https://nextjs.org/docs)
 - [Supabase Docs](https://supabase.com/docs)
 - [Tailwind CSS Docs](https://tailwindcss.com/docs)
@@ -452,12 +471,14 @@ git push origin 001-rfp-analyzer-platform
 - [React Query Docs](https://tanstack.com/query/latest)
 
 ### Project Docs
+
 - [Feature Specification](./spec.md)
 - [Data Model](./data-model.md)
 - [API Contracts](./contracts/api.yaml)
 - [Research Notes](./research.md)
 
 ### Support
+
 - **Issues**: Report bugs in GitHub Issues
 - **Questions**: Ask in team Slack channel
 - **Code Review**: Submit PR for feedback

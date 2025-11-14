@@ -5,7 +5,7 @@ import { deleteFile } from "@/lib/gcs";
 // GET: List all documents for an RFP (optionally filtered by supplier)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { rfpId: string } }
+  { params }: { params: { rfpId: string } },
 ) {
   try {
     const supabase = await createServerClient();
@@ -25,7 +25,7 @@ export async function GET(
     if (!rfpId) {
       return NextResponse.json(
         { error: "RFP ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -53,16 +53,15 @@ export async function GET(
       .single();
 
     if (userOrgError || !userOrg) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Get documents for this RFP
     let query = supabase
       .from("rfp_documents")
-      .select("id, filename, original_filename, document_type, mime_type, file_size, created_by, created_at, page_count")
+      .select(
+        "id, filename, original_filename, document_type, mime_type, file_size, created_by, created_at, page_count",
+      )
       .eq("rfp_id", rfpId)
       .is("deleted_at", null);
 
@@ -77,11 +76,11 @@ export async function GET(
       if (dsError) {
         return NextResponse.json(
           { error: `Failed to fetch supplier documents: ${dsError.message}` },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
-      const documentIds = documentSuppliers?.map(ds => ds.document_id) || [];
+      const documentIds = documentSuppliers?.map((ds) => ds.document_id) || [];
 
       if (documentIds.length === 0) {
         // No documents for this supplier
@@ -90,7 +89,7 @@ export async function GET(
             documents: [],
             count: 0,
           },
-          { status: 200 }
+          { status: 200 },
         );
       }
 
@@ -104,7 +103,7 @@ export async function GET(
     if (fetchError) {
       return NextResponse.json(
         { error: `Failed to fetch documents: ${fetchError.message}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -113,7 +112,7 @@ export async function GET(
         documents: documents || [],
         count: (documents || []).length,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("List documents error:", error);
@@ -121,7 +120,7 @@ export async function GET(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -129,7 +128,7 @@ export async function GET(
 // DELETE: Delete a document
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { rfpId: string } }
+  { params }: { params: { rfpId: string } },
 ) {
   try {
     const supabase = await createServerClient();
@@ -149,7 +148,7 @@ export async function DELETE(
     if (!rfpId) {
       return NextResponse.json(
         { error: "RFP ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -160,7 +159,7 @@ export async function DELETE(
     if (!documentId) {
       return NextResponse.json(
         { error: "Document ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -184,10 +183,7 @@ export async function DELETE(
       .single();
 
     if (userOrgError || !userOrg) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Get document and verify it exists
@@ -202,7 +198,7 @@ export async function DELETE(
     if (docFetchError || !document) {
       return NextResponse.json(
         { error: "Document not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -223,7 +219,7 @@ export async function DELETE(
     if (updateError) {
       return NextResponse.json(
         { error: `Failed to delete document: ${updateError.message}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -243,7 +239,7 @@ export async function DELETE(
         success: true,
         message: "Document deleted successfully",
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Delete document error:", error);
@@ -251,7 +247,7 @@ export async function DELETE(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

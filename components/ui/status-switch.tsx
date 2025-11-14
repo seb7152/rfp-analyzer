@@ -15,7 +15,11 @@ const statuses = [
   { value: "fail", label: "Non conforme", icon: AlertCircle },
 ];
 
-export function StatusSwitch({ value = "pending", onChange, disabled = false }: StatusSwitchProps) {
+export function StatusSwitch({
+  value = "pending",
+  onChange,
+  disabled = false,
+}: StatusSwitchProps) {
   return (
     <ToggleGroup
       type="single"

@@ -1,36 +1,38 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json()
+    const { email, password } = await request.json();
 
     if (!email || !password) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
-      )
+        { status: 400 },
+      );
     }
 
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     // Sign in with Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const { data: authData, error: authError } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
     if (authError) {
       return NextResponse.json(
         { error: "Invalid credentials", message: authError.message },
-        { status: 401 }
-      )
+        { status: 401 },
+      );
     }
 
     // Get user profile and organizations
     const { data: user, error: userError } = await supabase
       .from("users")
-      .select(`
+      .select(
+        `
         *,
         user_organizations (
           role,
@@ -41,15 +43,16 @@ export async function POST(request: Request) {
             subscription_tier
           )
         )
-      `)
+      `,
+      )
       .eq("id", authData.user.id)
-      .single()
+      .single();
 
     if (userError) {
       return NextResponse.json(
         { error: "Failed to fetch user profile", message: userError.message },
-        { status: 500 }
-      )
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
@@ -66,12 +69,12 @@ export async function POST(request: Request) {
           subscription_tier: uo.organization.subscription_tier,
         })),
       },
-    })
+    });
   } catch (error: any) {
-    console.error("Login error:", error)
+    console.error("Login error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 }
-    )
+      { status: 500 },
+    );
   }
 }

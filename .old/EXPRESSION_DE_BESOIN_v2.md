@@ -9,9 +9,11 @@
 ## 1. Vue d'ensemble
 
 ### Objectif général
+
 Créer une application web permettant d'analyser et de comparer les réponses des fournisseurs à un cahier des charges structuré. L'application centralise les exigences, leurs pondérations, les réponses des fournisseurs, les scores comparatifs et facilite le dépouillement via une interface intuitive et comparative.
 
 ### Scope priorité
+
 - **MVP 1** : Fondations multi-RFP, multi-utilisateur, gestion des exigences, scoring et analyse comparative
 - **V2** : Authentification/gestion d'accès, modification des pondérations, workflows avancés
 - **Hors-scope initial** : Gestion automatique de plusieurs formats PDF, intégration direct du parsing dans l'app
@@ -21,18 +23,21 @@ Créer une application web permettant d'analyser et de comparer les réponses de
 ## 2. Contexte et contraintes
 
 ### Contexte métier
+
 - **Fréquence** : 4-5 RFP par an
 - **Acteurs** : 2-3 utilisateurs (équipe d'évaluation)
 - **Fournisseurs** : 4-10 répondants par RFP
 - **Durée cycle** : De quelques semaines à quelques mois par RFP
 
 ### Principes de conception
+
 1. **Séparation des responsabilités** : Le parsing et l'analyse IA se font **via N8N en amont**, pas dans l'app
 2. **Traçabilité** : Historique des modifications manuelles (notes, commentaires, questions)
 3. **Flexibilité** : Format d'exigences spécifique par RFP (géré par un workflow N8N dédié)
 4. **Performance** : Interface réactive malgré le volume de données (structure arborescente, lazy-loading si nécessaire)
 
 ### Stack technique
+
 - **Frontend** : Next.js 14 (React) + Vercel
 - **Styling** : Tailwind CSS + shadcn/ui components
 - **Backend** : Next.js API Routes + Supabase (PostgreSQL)
@@ -65,12 +70,14 @@ Créer une application web permettant d'analyser et de comparer les réponses de
 #### 3.1.2 Navbar
 
 **Éléments** :
+
 - **Titre RFP centré**
 - **Onglets** : Configuration | Comparaison | Réponses
 - **Theme Toggle** : Bouton Moon/Sun pour mode clair/sombre
 - **Avatar** : Profil utilisateur (coin supérieur droit)
 
 **Styling** :
+
 - Design minimaliste, height réduite (h-12)
 - Onglets avec underline active
 - Dark mode supporté
@@ -78,6 +85,7 @@ Créer une application web permettant d'analyser et de comparer les réponses de
 #### 3.1.3 Sidebar
 
 **Caractéristiques** :
+
 - **Couleur** : Noir (bg-slate-900) avec texte blanc
 - **Contenu** : Arborescence hiérarchique des exigences (4 niveaux)
 - **Interaction** :
@@ -86,6 +94,7 @@ Créer une application web permettant d'analyser et de comparer les réponses de
   - Clic sur une exigence → affiche les détails
 
 **Indicateurs** :
+
 - Badge de complétude à côté du code d'exigence (REQ-001)
   - ✓ Vert (Check) : Tous les fournisseurs évalués
   - ⏱ Gris pointillé : En attente
@@ -93,6 +102,7 @@ Créer une application web permettant d'analyser et de comparer les réponses de
 #### 3.1.4 Vue Comparative par Exigence
 
 **Header** :
+
 ```
 ┌────────────────────────────────────────────────────────┐
 │ Breadcrumb : DOM-001 / CAT-001 / REQ-001 [Badge]      │
@@ -107,11 +117,13 @@ Créer une application web permettant d'analyser et de comparer les réponses de
 ```
 
 **Pagination** :
+
 - Chevrons << >> en haut à droite
 - Affichage "X/Y" (ex: 3/8)
 - Navigation entre les exigences
 
 **Contexte** :
+
 - Section collapsible (bouton toggle avec chevron)
 - Texte avec scroll area si long
 - Contenu multiline supporté
@@ -135,6 +147,7 @@ Créer une application web permettant d'analyser et de comparer les réponses de
 ```
 
 **Ligne fournisseur** :
+
 - **Checkbox** : Rond pointillé gris (vide) → vert plein (coché)
   - Auto-check quand statut défini
   - Permet de suivre qui a été évalué
@@ -158,6 +171,7 @@ Créer une application web permettant d'analyser et de comparer les réponses de
   - Gaps : gap-4 entre les éléments
 
 **Section expandable** :
+
 - Clic sur chevron → affiche détails ci-dessous
 - **Gauche (2/3)** :
   - Label "Réponse complète"
@@ -178,11 +192,13 @@ Créer une application web permettant d'analyser et de comparer les réponses de
 - **Alignement bas** : Les deux zones (textarea + scrollarea) alignées en bas avec min-h-64
 
 **Bas** (full width) :
+
 - **2 colonnes** :
   - "Votre commentaire" : Textarea h-24
   - "Questions / Doutes" : Textarea h-24
 
 **Comportements** :
+
 - Clic sur ToggleGroup → auto-check la checkbox correspondante
 - Statut "Attente" ne check pas automatiquement
 - Copier commentaire IA → clipboard
@@ -193,6 +209,7 @@ Créer une application web permettant d'analyser et de comparer les réponses de
 ### 3.2 Architecture des données
 
 #### 3.2.1 Hiérarchie des exigences
+
 ```
 RFP (1)
   └─ Niveau 1 (Domaine) [1..N]
@@ -202,6 +219,7 @@ RFP (1)
 ```
 
 #### 3.2.2 Exigences
+
 - **Identifiant** : ID hérité de N8N (ex: `REQ-001`) + UUID interne
 - **Attributs** :
   - `id` (UUID)
@@ -217,6 +235,7 @@ RFP (1)
   - `created_at`, `updated_at`, `created_by`
 
 #### 3.2.3 Fournisseurs
+
 - **Identifiant** : ID hérité de N8N + UUID
 - **Attributs** :
   - `id` (UUID)
@@ -227,6 +246,7 @@ RFP (1)
   - `created_at`
 
 #### 3.2.4 Réponses
+
 - **1 réponse = 1 fournisseur + 1 exigence**
 - **Attributs** :
   - `id` (UUID)
@@ -245,6 +265,7 @@ RFP (1)
   - `created_at`, `updated_at`
 
 #### 3.2.5 Historique des modifications
+
 - **Table** : `response_audit`
 - Enregistre : field_name, old_value, new_value, modified_by, modified_at
 
@@ -253,6 +274,7 @@ RFP (1)
 ### 3.3 État et Interactions
 
 #### 3.3.1 États des réponses
+
 - **Statut** (4 niveaux) :
   - `pending` : Attente (gris, ⏱)
   - `pass` : Conforme (vert, ✓)
@@ -260,6 +282,7 @@ RFP (1)
   - `fail` : Non conforme (rouge, ✕)
 
 #### 3.3.2 Scoring
+
 - **Étoiles** (0-5) :
   - Représentent le score manuel de l'évaluateur
   - Clic = sélectionne jusqu'à cette étoile
@@ -268,6 +291,7 @@ RFP (1)
   - Convertis en /20 pour calculs finaux
 
 #### 3.3.3 Suivi de complétude
+
 - **Checkbox** par fournisseur :
   - Vide (pointillé gris) → coché (vert plein)
   - Auto-check quand statut défini (sauf Attente)
@@ -282,6 +306,7 @@ RFP (1)
 ### 3.4 Composants Techniques
 
 #### 3.4.1 Composants shadcn/ui utilisés
+
 - Badge (pour les statuts et badge de complétude)
 - Button (expand, pagination, actions)
 - Textarea (réponses, commentaires, questions)
@@ -290,6 +315,7 @@ RFP (1)
 - ToggleGroup + ToggleGroupItem (statuts)
 
 #### 3.4.2 Composants personnalisés
+
 - **RoundCheckbox** : Checkbox rond avec border pointillé
   - States : empty (gris pointillé) | checked (vert plein)
   - Size : w-4 h-4
@@ -301,10 +327,11 @@ RFP (1)
   - Padding : px-3 py-1.5
 
 #### 3.4.3 Styling général
+
 - **Theme** : Dark mode supporté (Tailwind dark: prefix)
 - **Couleurs** : Slate pour textes, vert/bleu/rouge pour statuts
 - **Spacings** : Gap standard gap-4 entre éléments du header
-- **Heights** : 
+- **Heights** :
   - Textareas : h-96 (détail), h-24 (bas)
   - ScrollArea : h-96
   - Container min : min-h-64

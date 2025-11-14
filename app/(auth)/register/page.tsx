@@ -1,26 +1,26 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { supabase } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { supabase } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [fullName, setFullName] = useState("")
-  const [organizationCode, setOrganizationCode] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [organizationCode, setOrganizationCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
 
     try {
       // Create user with Supabase Auth
@@ -32,12 +32,12 @@ export default function RegisterPage() {
             full_name: fullName,
           },
         },
-      })
+      });
 
-      if (authError) throw authError
+      if (authError) throw authError;
 
       if (!authData.user) {
-        throw new Error("Échec de création du compte")
+        throw new Error("Échec de création du compte");
       }
 
       // Call API to link user to organization
@@ -50,30 +50,30 @@ export default function RegisterPage() {
           fullName,
           organizationCode,
         }),
-      })
+      });
 
       if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.message || "Erreur lors de l'ajout à l'organisation")
+        const data = await response.json();
+        throw new Error(
+          data.message || "Erreur lors de l'ajout à l'organisation",
+        );
       }
 
       // Redirect to dashboard
-      router.push("/dashboard")
-      router.refresh()
+      router.push("/dashboard");
+      router.refresh();
     } catch (err: any) {
-      setError(err.message || "Une erreur est survenue lors de l'inscription")
+      setError(err.message || "Une erreur est survenue lors de l'inscription");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h2 className="text-3xl font-bold tracking-tight">
-            Créer un compte
-          </h2>
+          <h2 className="text-3xl font-bold tracking-tight">Créer un compte</h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Commencez à analyser vos appels d'offres
           </p>
@@ -124,9 +124,7 @@ export default function RegisterPage() {
                 placeholder="Minimum 8 caractères"
                 disabled={loading}
               />
-              <p className="text-xs text-gray-500">
-                Minimum 8 caractères
-              </p>
+              <p className="text-xs text-gray-500">Minimum 8 caractères</p>
             </div>
 
             <div className="space-y-2">
@@ -139,7 +137,11 @@ export default function RegisterPage() {
                 pattern="[0-9]{10}"
                 maxLength={10}
                 value={organizationCode}
-                onChange={(e) => setOrganizationCode(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                onChange={(e) =>
+                  setOrganizationCode(
+                    e.target.value.replace(/\D/g, "").slice(0, 10),
+                  )
+                }
                 placeholder="Entrez le code à 10 chiffres"
                 disabled={loading}
               />
@@ -156,11 +158,7 @@ export default function RegisterPage() {
               </div>
             )}
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Création du compte..." : "Créer mon compte"}
             </Button>
           </form>
@@ -188,5 +186,5 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

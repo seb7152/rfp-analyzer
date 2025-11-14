@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import React from "react"
-import { CheckCircle2, Clock } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import type { Requirement } from "@/lib/supabase/types"
+import React from "react";
+import { CheckCircle2, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import type { Requirement } from "@/lib/supabase/types";
 
 interface RequirementHeaderProps {
-  requirement: Requirement | null
-  breadcrumb: Requirement[]
-  isComplete: boolean
-  isLoading?: boolean
+  requirement: Requirement | null;
+  breadcrumb: Requirement[];
+  isComplete: boolean;
+  isLoading?: boolean;
 }
 
 export function RequirementHeader({
@@ -24,7 +24,7 @@ export function RequirementHeader({
         <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-1/3 animate-pulse" />
         <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded w-2/3 animate-pulse" />
       </div>
-    )
+    );
   }
 
   return (
@@ -83,7 +83,9 @@ export function RequirementHeader({
         <div className="flex items-center gap-6 text-sm text-slate-600 dark:text-slate-400">
           <div>
             <span className="font-medium">Weight:</span>
-            <span className="ml-2">{(requirement.weight * 100).toFixed(0)}%</span>
+            <span className="ml-2">
+              {(requirement.weight * 100).toFixed(0)}%
+            </span>
           </div>
           <div>
             <span className="font-medium">Level:</span>
@@ -92,5 +94,5 @@ export function RequirementHeader({
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -2,7 +2,7 @@
 
 ## Prérequis
 
-- Node.js 18+ 
+- Node.js 18+
 - npm ou pnpm
 
 ## Installation complète
@@ -68,12 +68,14 @@ Puis accédez à: **http://localhost:3001/dashboard**
 ## Troubleshooting
 
 ### "next: command not found"
+
 ```bash
 # Les dépendances ne sont pas installées
 npm install
 ```
 
 ### Erreur 404 sur `/dashboard`
+
 ```bash
 # Vérifiez que le serveur est bien lancé
 npm run dev
@@ -81,6 +83,7 @@ npm run dev
 ```
 
 ### Problème de styles Tailwind
+
 ```bash
 # Réinstallez les dépendances
 rm -rf node_modules package-lock.json
@@ -99,6 +102,7 @@ npm run dev
 ## Structure des données
 
 Voir `lib/fake-data.ts` pour:
+
 - `requirementsData` : Hiérarchie complète des exigences
 - `suppliersData` : Liste des 4 fournisseurs
 - `generateResponses()` : Génère 32 réponses (8 exigences × 4 fournisseurs)
@@ -115,9 +119,9 @@ export const requirementsData: Requirement[] = [
     // ... autres champs
     children: [
       // Sous-éléments
-    ]
-  }
-]
+    ],
+  },
+];
 ```
 
 ---

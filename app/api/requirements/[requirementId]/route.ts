@@ -1,6 +1,9 @@
-import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
-import { getRequirement, getRequirementBreadcrumb } from "@/lib/supabase/queries"
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import {
+  getRequirement,
+  getRequirementBreadcrumb,
+} from "@/lib/supabase/queries";
 
 /**
  * GET /api/requirements/[requirementId]
@@ -40,42 +43,39 @@ import { getRequirement, getRequirementBreadcrumb } from "@/lib/supabase/queries
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { requirementId: string } }
+  { params }: { params: { requirementId: string } },
 ) {
   try {
-    const { requirementId } = params
-    const { searchParams } = request.nextUrl
+    const { requirementId } = params;
+    const { searchParams } = request.nextUrl;
 
     // Validate requirement ID
     if (!requirementId || requirementId.trim().length === 0) {
       return NextResponse.json(
         { error: "Invalid requirement ID" },
-        { status: 400 }
-      )
+        { status: 400 },
+      );
     }
 
     // Get authenticated user
-    const supabase = await createClient()
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Fetch the requirement
-    const requirement = await getRequirement(requirementId)
+    const requirement = await getRequirement(requirementId);
 
     if (!requirement) {
       return NextResponse.json(
         { error: "Requirement not found" },
-        { status: 404 }
-      )
+        { status: 404 },
+      );
     }
 
     // Verify user has access to this requirement's RFP
@@ -83,21 +83,18 @@ export async function GET(
       .from("rfps")
       .select("id, organization_id")
       .eq("id", requirement.rfp_id)
-      .maybeSingle()
+      .maybeSingle();
 
     if (rfpError) {
-      console.error("Error fetching RFP:", rfpError)
+      console.error("Error fetching RFP:", rfpError);
       return NextResponse.json(
         { error: "Failed to verify access" },
-        { status: 500 }
-      )
+        { status: 500 },
+      );
     }
 
     if (!rfp) {
-      return NextResponse.json(
-        { error: "RFP not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "RFP not found" }, { status: 404 });
     }
 
     // Check if user is member of the organization
@@ -106,41 +103,38 @@ export async function GET(
       .select("role")
       .eq("user_id", user.id)
       .eq("organization_id", rfp.organization_id)
-      .maybeSingle()
+      .maybeSingle();
 
     if (userOrgError) {
-      console.error("Error checking user organization:", userOrgError)
+      console.error("Error checking user organization:", userOrgError);
       return NextResponse.json(
         { error: "Failed to verify access" },
-        { status: 500 }
-      )
+        { status: 500 },
+      );
     }
 
     if (!userOrg) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Fetch breadcrumb if requested (default true)
-    const includeBreadcrumb = searchParams.get("includeBreadcrumb") !== "false"
+    const includeBreadcrumb = searchParams.get("includeBreadcrumb") !== "false";
     const breadcrumb = includeBreadcrumb
       ? await getRequirementBreadcrumb(requirementId)
-      : undefined
+      : undefined;
 
     // Return requirement with optional breadcrumb
     const response = {
       ...requirement,
       ...(breadcrumb && { breadcrumb }),
-    }
+    };
 
-    return NextResponse.json(response, { status: 200 })
+    return NextResponse.json(response, { status: 200 });
   } catch (error) {
-    console.error("Error in GET /api/requirements/[requirementId]:", error)
+    console.error("Error in GET /api/requirements/[requirementId]:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
-    )
+      { status: 500 },
+    );
   }
 }

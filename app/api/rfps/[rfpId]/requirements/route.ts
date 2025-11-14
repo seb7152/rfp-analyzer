@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import {
   getRequirements,
   buildHierarchy,
   searchRequirements,
-} from "@/lib/supabase/queries"
+} from "@/lib/supabase/queries";
 
 /**
  * GET /api/rfps/[rfpId]/requirements
@@ -46,32 +46,26 @@ import {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { rfpId: string } }
+  { params }: { params: { rfpId: string } },
 ) {
   try {
-    const { rfpId } = params
-    const { searchParams } = request.nextUrl
+    const { rfpId } = params;
+    const { searchParams } = request.nextUrl;
 
     // Validate RFP ID
     if (!rfpId || rfpId.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Invalid RFP ID" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Invalid RFP ID" }, { status: 400 });
     }
 
     // Get authenticated user
-    const supabase = await createClient()
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Verify user has access to this RFP
@@ -80,21 +74,18 @@ export async function GET(
       .from("rfps")
       .select("id, organization_id")
       .eq("id", rfpId)
-      .maybeSingle()
+      .maybeSingle();
 
     if (rfpError) {
-      console.error("Error fetching RFP:", rfpError)
+      console.error("Error fetching RFP:", rfpError);
       return NextResponse.json(
         { error: "Failed to fetch RFP" },
-        { status: 500 }
-      )
+        { status: 500 },
+      );
     }
 
     if (!rfp) {
-      return NextResponse.json(
-        { error: "RFP not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "RFP not found" }, { status: 404 });
     }
 
     // Check if user is member of the organization
@@ -103,43 +94,40 @@ export async function GET(
       .select("role")
       .eq("user_id", user.id)
       .eq("organization_id", rfp.organization_id)
-      .maybeSingle()
+      .maybeSingle();
 
     if (userOrgError) {
-      console.error("Error checking user organization:", userOrgError)
+      console.error("Error checking user organization:", userOrgError);
       return NextResponse.json(
         { error: "Failed to verify access" },
-        { status: 500 }
-      )
+        { status: 500 },
+      );
     }
 
     if (!userOrg) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Fetch requirements
-    const search = searchParams.get("search")
-    const flatten = searchParams.get("flatten") === "true"
+    const search = searchParams.get("search");
+    const flatten = searchParams.get("flatten") === "true";
 
-    let requirements
+    let requirements;
     if (search) {
-      requirements = await searchRequirements(rfpId, search)
+      requirements = await searchRequirements(rfpId, search);
     } else {
-      requirements = await getRequirements(rfpId)
+      requirements = await getRequirements(rfpId);
     }
 
     // Return flat list or hierarchical structure
-    const result = flatten ? requirements : buildHierarchy(requirements)
+    const result = flatten ? requirements : buildHierarchy(requirements);
 
-    return NextResponse.json(result, { status: 200 })
+    return NextResponse.json(result, { status: 200 });
   } catch (error) {
-    console.error("Error in GET /api/rfps/[rfpId]/requirements:", error)
+    console.error("Error in GET /api/rfps/[rfpId]/requirements:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
-    )
+      { status: 500 },
+    );
   }
 }

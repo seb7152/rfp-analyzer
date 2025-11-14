@@ -7,16 +7,19 @@ Créer une interface cohérente avec le design system existant, optimisée pour 
 ## 🎨 Principes de Design
 
 ### 1. **Cohérence Visuelle**
+
 - Utiliser le même palette de couleurs que les pages existantes
 - Conserver les composants UI existants (cards, tables, badges)
 - Maintenir la structure de navigation (sidebar, header)
 
 ### 2. **Responsive Design**
+
 - Adaptation mobile/desktop avec breakpoints cohérents
 - Tableaux scrollables horizontalement sur mobile
 - Collapsible sections pour optimiser l'espace
 
 ### 3. **Performance**
+
 - Virtualisation pour les grandes quantités de données
 - Lazy loading des sections complexes
 - Optimisation des re-renders avec React.memo
@@ -49,6 +52,7 @@ Créer une interface cohérente avec le design system existant, optimisée pour 
 ### 1. **Section Avancement Global**
 
 #### `GlobalProgressCard`
+
 ```typescript
 interface GlobalProgressCardProps {
   completionPercentage: number;
@@ -65,12 +69,14 @@ interface GlobalProgressCardProps {
 ```
 
 **Éléments**:
+
 - Progression circulaire principale (gros cercle avec pourcentage)
 - KPIs en grille (4 colonnes x 2-3 lignes)
 - Graphique mini de progression par catégorie
 - Timeline des dernières activités
 
 #### `CategoryProgressBars`
+
 ```typescript
 interface CategoryProgressBarsProps {
   categories: Array<{
@@ -84,6 +90,7 @@ interface CategoryProgressBarsProps {
 ```
 
 **Éléments**:
+
 - Barres de progression horizontales
 - Scores moyens pondérés
 - Indicateurs de tendance (flèches)
@@ -91,6 +98,7 @@ interface CategoryProgressBarsProps {
 ### 2. **Section Analyse Comparative des Fournisseurs**
 
 #### `SuppliersComparisonTable`
+
 ```typescript
 interface SuppliersComparisonTableProps {
   suppliers: Array<{
@@ -100,7 +108,7 @@ interface SuppliersComparisonTableProps {
     categoryScores: Record<string, number>;
     ranking: number;
     previousRanking?: number;
-    trend: 'up' | 'down' | 'stable';
+    trend: "up" | "down" | "stable";
   }>;
   onSupplierSelect: (supplierId: string) => void;
   onWeightEdit: () => void;
@@ -108,12 +116,14 @@ interface SuppliersComparisonTableProps {
 ```
 
 **Caractéristiques**:
+
 - Tri automatique par score final (décroissant)
 - Mise en évidence du meilleur score
 - Indicateurs de variation (flèches colorées)
 - Actions rapides (voir détails, exporter)
 
 #### `PerformanceMatrix`
+
 ```typescript
 interface PerformanceMatrixProps {
   suppliers: string[];
@@ -124,6 +134,7 @@ interface PerformanceMatrixProps {
 ```
 
 **Caractéristiques**:
+
 - Matrice interactive avec coloration automatique
 - Tooltips sur hover avec détails
 - Légende dynamique des scores
@@ -132,6 +143,7 @@ interface PerformanceMatrixProps {
 ### 3. **Section Analyse par Catégorie**
 
 #### `CategoryAnalysisView`
+
 ```typescript
 interface CategoryAnalysisViewProps {
   categories: Array<{
@@ -142,7 +154,7 @@ interface CategoryAnalysisViewProps {
     requirementCount: number;
     averageScore: number;
     completionRate: number;
-    trend: 'improving' | 'stable' | 'declining';
+    trend: "improving" | "stable" | "declining";
   }>;
   onCategorySelect: (categoryId: string) => void;
   onWeightChange: (categoryId: string, weight: number) => void;
@@ -150,11 +162,13 @@ interface CategoryAnalysisViewProps {
 ```
 
 **Caractéristiques**:
+
 - Tableau triable par poids ou score
 - Indicateurs visuels de progression
 - Actions drill-down vers détail exigences
 
 #### `RequirementsDrillDown`
+
 ```typescript
 interface RequirementsDrillDownProps {
   categoryId: string;
@@ -164,7 +178,7 @@ interface RequirementsDrillDownProps {
     title: string;
     currentWeight: number;
     averageScore: number;
-    status: 'pass' | 'partial' | 'fail' | 'pending';
+    status: "pass" | "partial" | "fail" | "pending";
     evaluationCount: number;
   }>;
   onRequirementSelect: (requirementId: string) => void;
@@ -174,6 +188,7 @@ interface RequirementsDrillDownProps {
 ### 4. **Section Configuration des Poids**
 
 #### `WeightsConfigurationPanel`
+
 ```typescript
 interface WeightsConfigurationPanelProps {
   categories: Array<{
@@ -194,12 +209,14 @@ interface WeightsConfigurationPanelProps {
 ```
 
 **Caractéristiques**:
+
 - Sliders synchronisés pour les poids
 - Validation en temps réel (somme = 100%)
 - Visualisation de l'impact sur scores
 - Boutons de reset et sauvegarde
 
 #### `WeightImpactPreview`
+
 ```typescript
 interface WeightImpactPreviewProps {
   beforeScores: Record<string, number>;
@@ -215,37 +232,39 @@ interface WeightImpactPreviewProps {
 ## 🎨 Thème et Couleurs
 
 ### Palette Cohérente
+
 ```css
 :root {
   --primary-50: #eff6ff;
   --primary-500: #3b82f6;
   --primary-600: #2563eb;
-  
+
   --success-50: #10b981;
   --success-500: #059669;
   --success-600: #047857;
-  
+
   --warning-50: #fbbf24;
   --warning-500: #f59e0b;
   --warning-600: #d97706;
-  
+
   --danger-50: #fef2f2;
   --danger-500: #ef4444;
   --danger-600: #dc2626;
-  
+
   --slate-50: #f8fafc;
   --slate-900: #0f172a;
 }
 ```
 
 ### Codes Couleur pour les Scores
+
 ```typescript
 const getScoreColor = (score: number, maxScore: number = 5) => {
   const percentage = (score / maxScore) * 100;
-  if (percentage >= 80) return 'text-green-600 bg-green-50';
-  if (percentage >= 60) return 'text-blue-600 bg-blue-50';
-  if (percentage >= 40) return 'text-yellow-600 bg-yellow-50';
-  return 'text-red-600 bg-red-50';
+  if (percentage >= 80) return "text-green-600 bg-green-50";
+  if (percentage >= 60) return "text-blue-600 bg-blue-50";
+  if (percentage >= 40) return "text-yellow-600 bg-yellow-50";
+  return "text-red-600 bg-red-50";
 };
 ```
 
@@ -283,16 +302,18 @@ const getScoreColor = (score: number, maxScore: number = 5) => {
 ## 🔄 États et Interactions
 
 ### États de Chargement
+
 ```typescript
 interface DashboardLoadingState {
-  globalProgress: 'loading' | 'loaded' | 'error';
-  suppliersAnalysis: 'loading' | 'loaded' | 'error';
-  categoriesAnalysis: 'loading' | 'loaded' | 'error';
-  weightsConfiguration: 'loading' | 'loaded' | 'error';
+  globalProgress: "loading" | "loaded" | "error";
+  suppliersAnalysis: "loading" | "loaded" | "error";
+  categoriesAnalysis: "loading" | "loaded" | "error";
+  weightsConfiguration: "loading" | "loaded" | "error";
 }
 ```
 
 ### Patterns d'Interaction
+
 - **Clic-droit** pour actions rapides
 - **Drag-and-drop** pour réorganiser les sections
 - **Keyboard shortcuts** pour la navigation
@@ -301,6 +322,7 @@ interface DashboardLoadingState {
 ## 🎯 Composants Réutilisables
 
 ### `DashboardCard`
+
 ```typescript
 interface DashboardCardProps {
   title: string;
@@ -312,23 +334,25 @@ interface DashboardCardProps {
 ```
 
 ### `ScoreIndicator`
+
 ```typescript
 interface ScoreIndicatorProps {
   score: number;
   maxScore: number;
-  size: 'sm' | 'md' | 'lg';
+  size: "sm" | "md" | "lg";
   showValue?: boolean;
-  trend?: 'up' | 'down' | 'stable';
+  trend?: "up" | "down" | "stable";
 }
 ```
 
 ### `ProgressBar`
+
 ```typescript
 interface ProgressBarProps {
   value: number;
   max: number;
-  size: 'sm' | 'md' | 'lg';
-  color?: 'primary' | 'success' | 'warning' | 'danger';
+  size: "sm" | "md" | "lg";
+  color?: "primary" | "success" | "warning" | "danger";
   showPercentage?: boolean;
 }
 ```
@@ -336,6 +360,7 @@ interface ProgressBarProps {
 ## 📊 Visualisations
 
 ### Graphique en Barres Comparatif
+
 ```typescript
 interface ComparisonChartProps {
   data: Array<{
@@ -350,6 +375,7 @@ interface ComparisonChartProps {
 ```
 
 ### Radar Chart des Performances
+
 ```typescript
 interface RadarChartProps {
   suppliers: Array<{

@@ -7,6 +7,7 @@ Complete implementation of PDF upload and storage for RFP-Analyzer using **Verce
 ## 📦 What Was Implemented
 
 ### 1. **Database Migrations** ✅
+
 - Created `rfp_documents` table for storing PDF metadata
 - Created `document_access_logs` table for audit trail
 - Implemented Row Level Security (RLS) policies
@@ -15,53 +16,63 @@ Complete implementation of PDF upload and storage for RFP-Analyzer using **Verce
 **File**: `supabase/migrations/009_create_rfp_documents_table.sql`
 
 ### 2. **API Routes** ✅
+
 Four new API endpoints for document management:
 
 #### Upload Intent
+
 - **POST** `/api/rfps/[rfpId]/documents/upload-intent`
 - Validates file metadata and generates signed GCS URL
 - Returns: `uploadUrl`, `documentId`, `objectName`, `expiresAt`
 
 #### Commit Upload
+
 - **POST** `/api/rfps/[rfpId]/documents/commit`
 - Finalizes upload after file is in GCS
 - Saves metadata to database
 - Logs the upload action
 
 #### Get Documents
+
 - **GET** `/api/rfps/[rfpId]/documents`
 - Lists all documents for an RFP
 - **DELETE** (same endpoint with query param)
 - Soft-deletes documents and cleans up GCS
 
 #### View URL
+
 - **GET** `/api/rfps/[rfpId]/documents/[documentId]/view-url`
 - Generates signed URL for viewing/downloading
 - Logs the view action for audit trail
 
 **Files**:
+
 - `app/api/rfps/[rfpId]/documents/upload-intent/route.ts`
 - `app/api/rfps/[rfpId]/documents/commit/route.ts`
 - `app/api/rfps/[rfpId]/documents/route.ts`
 - `app/api/rfps/[rfpId]/documents/[documentId]/view-url/route.ts`
 
 ### 3. **Upload Hook** ✅
+
 React hook for managing file uploads with progress tracking
 
 **File**: `hooks/useRFPDocumentUpload.ts`
 
 Features:
+
 - 3-step upload process (intent → upload → commit)
 - Progress tracking per file
 - Error handling and cleanup
 - Type-safe responses
 
 ### 4. **Upload Component** ✅
+
 React component for drag-and-drop PDF uploads
 
 **File**: `components/RFPDocumentUpload.tsx`
 
 Features:
+
 - Drag-and-drop interface
 - Progress bars with status indicators
 - Error messages
@@ -69,11 +80,13 @@ Features:
 - Visual feedback (uploading, success, error states)
 
 ### 5. **Documents Management Page** ✅
+
 Full page for managing RFP documents
 
 **File**: `app/dashboard/rfp/[rfpId]/documents/page.tsx`
 
 Features:
+
 - Upload new documents
 - List all documents with metadata
 - Display file sizes and dates
@@ -82,6 +95,7 @@ Features:
 ### 6. **Testing & Documentation** ✅
 
 **Files**:
+
 - `scripts/test-pdf-upload.sh` - Automated test script
 - `docs/PDF-UPLOAD-TESTING.md` - Comprehensive testing guide
 - `docs/IMPLEMENTATION-SUMMARY.md` - This file
@@ -156,6 +170,7 @@ Features:
 ## 📊 Database Schema
 
 ### rfp_documents
+
 ```sql
 id UUID PRIMARY KEY
 rfp_id UUID REFERENCES rfps
@@ -180,6 +195,7 @@ Indexes:
 ```
 
 ### document_access_logs
+
 ```sql
 id UUID PRIMARY KEY
 document_id UUID REFERENCES rfp_documents
@@ -205,6 +221,7 @@ Indexes:
 To complete the feature, these components still need to be implemented:
 
 ### 1. **PDF Viewer Component**
+
 ```typescript
 // components/RFPDocumentViewer.tsx
 - Display PDF with react-pdf
@@ -214,7 +231,9 @@ To complete the feature, these components still need to be implemented:
 ```
 
 ### 2. **Integration with ComparisonView**
+
 Add to `components/ComparisonView.tsx`:
+
 ```typescript
 <div className="grid grid-cols-2">
   <SupplierResponseCard />
@@ -223,13 +242,16 @@ Add to `components/ComparisonView.tsx`:
 ```
 
 ### 3. **Document Management UI**
+
 In `app/dashboard/rfp/[rfpId]/documents/page.tsx`:
+
 - Download button (generate signed URL)
 - Delete button with confirmation
 - Reorder documents (drag-and-drop)
 - Document type selector
 
 ### 4. **PDF Content Extraction** (Optional)
+
 - Extract text from PDFs
 - Match with requirements
 - Create cross-references
@@ -237,6 +259,7 @@ In `app/dashboard/rfp/[rfpId]/documents/page.tsx`:
 ## 🧪 Testing
 
 ### Quick Start
+
 ```bash
 # 1. Make sure Supabase and GCS are configured
 # 2. Run the app
@@ -250,7 +273,9 @@ npm run dev
 ```
 
 ### Full Testing Guide
+
 See [docs/PDF-UPLOAD-TESTING.md](./PDF-UPLOAD-TESTING.md) for:
+
 - cURL examples
 - Error handling
 - Performance testing
@@ -276,13 +301,13 @@ MAX_FILE_SIZE_MB=50
 
 ## 🐛 Common Issues & Solutions
 
-| Issue | Solution |
-|-------|----------|
-| 401 Unauthorized | Check auth cookie validity |
-| 403 Forbidden | Verify user belongs to organization |
-| 404 RFP not found | Check RFP ID is correct |
-| File not found in GCS | Verify GCP credentials and bucket |
-| Signed URL failed | Ensure GCS permissions are correct |
+| Issue                 | Solution                            |
+| --------------------- | ----------------------------------- |
+| 401 Unauthorized      | Check auth cookie validity          |
+| 403 Forbidden         | Verify user belongs to organization |
+| 404 RFP not found     | Check RFP ID is correct             |
+| File not found in GCS | Verify GCP credentials and bucket   |
+| Signed URL failed     | Ensure GCS permissions are correct  |
 
 ## 📚 File Structure
 
@@ -339,6 +364,7 @@ RFP-Analyer/
 ## 📞 Support
 
 For issues or questions:
+
 1. Check [PDF-UPLOAD-TESTING.md](./PDF-UPLOAD-TESTING.md) for troubleshooting
 2. Review API logs: `vercel logs <project-name>`
 3. Check GCS bucket: `gsutil ls gs://rfp-analyzer-storage/`

@@ -47,10 +47,7 @@ import {
 import { useResponses } from "@/hooks/use-responses";
 import { useResponseMutation } from "@/hooks/use-response-mutation";
 import type { TreeNode } from "@/hooks/use-requirements";
-import {
-  Requirement,
-  getRequirementById,
-} from "@/lib/fake-data";
+import { Requirement, getRequirementById } from "@/lib/fake-data";
 
 interface ComparisonViewProps {
   selectedRequirementId: string;
@@ -395,25 +392,30 @@ export function ComparisonView({
     requirementResponses.every((r) => responseStates[r.id]?.isChecked ?? false);
 
   // Handle opening supplier documents in PDF viewer
-  const handleOpenSupplierDocuments = useCallback(async (supplierId: string) => {
-    if (!rfpId) return;
+  const handleOpenSupplierDocuments = useCallback(
+    async (supplierId: string) => {
+      if (!rfpId) return;
 
-    setLoadingSupplierDocs(true);
-    try {
-      const response = await fetch(`/api/rfps/${rfpId}/documents?supplierId=${supplierId}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch supplier documents");
+      setLoadingSupplierDocs(true);
+      try {
+        const response = await fetch(
+          `/api/rfps/${rfpId}/documents?supplierId=${supplierId}`,
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch supplier documents");
+        }
+        const data = await response.json();
+        setSupplierDocuments(data.documents || []);
+        setIsPdfViewerOpen(true);
+      } catch (error) {
+        console.error("Error fetching supplier documents:", error);
+        setSupplierDocuments([]);
+      } finally {
+        setLoadingSupplierDocs(false);
       }
-      const data = await response.json();
-      setSupplierDocuments(data.documents || []);
-      setIsPdfViewerOpen(true);
-    } catch (error) {
-      console.error("Error fetching supplier documents:", error);
-      setSupplierDocuments([]);
-    } finally {
-      setLoadingSupplierDocs(false);
-    }
-  }, [rfpId]);
+    },
+    [rfpId],
+  );
 
   // If a category is selected, show requirements table
   if (isCategory) {
@@ -761,76 +763,80 @@ export function ComparisonView({
 
                 <div className="space-y-2">
                   {suppliers.map((supplier) => {
-                  const response = requirementResponses.find(
-                    (r) => r.supplier_id === supplier.id,
-                  );
-                  if (!response) return null;
+                    const response = requirementResponses.find(
+                      (r) => r.supplier_id === supplier.id,
+                    );
+                    if (!response) return null;
 
-                  const statusValue = response.status || "pending";
-                  const state = responseStates[response.id] || {
-                    expanded: false,
-                    manualScore: response.manual_score ?? undefined,
-                    status: statusValue as "pass" | "partial" | "fail" | "pending",
-                    isChecked: response.is_checked || false,
-                    manualComment: response.manual_comment || "",
-                    question: response.question || "",
-                    isSaving: false,
-                    showSaved: false,
-                  };
+                    const statusValue = response.status || "pending";
+                    const state = responseStates[response.id] || {
+                      expanded: false,
+                      manualScore: response.manual_score ?? undefined,
+                      status: statusValue as
+                        | "pass"
+                        | "partial"
+                        | "fail"
+                        | "pending",
+                      isChecked: response.is_checked || false,
+                      manualComment: response.manual_comment || "",
+                      question: response.question || "",
+                      isSaving: false,
+                      showSaved: false,
+                    };
 
-                  return (
-                    <SupplierResponseCard
-                      key={response.id}
-                      supplierId={supplier.id}
-                      supplierName={supplier.name}
-                      responseId={response.id}
-                      responseText={response.response_text || ""}
-                      aiScore={response.ai_score ?? 0}
-                      aiComment={response.ai_comment ?? ""}
-                      status={state.status}
-                      isChecked={state.isChecked}
-                      manualScore={state.manualScore}
-                      manualComment={state.manualComment}
-                      questionText={state.question}
-                      isSaving={state.isSaving}
-                      showSaved={state.showSaved}
-                      isExpanded={state.expanded}
-                      onExpandChange={(expanded) =>
-                        updateResponseState(response.id, { expanded })
-                      }
-                      onStatusChange={(status) =>
-                        updateResponseState(response.id, { status })
-                      }
-                      onCheckChange={(isChecked) =>
-                        updateResponseState(response.id, { isChecked })
-                      }
-                      onScoreChange={(manualScore) =>
-                        updateResponseState(response.id, { manualScore })
-                      }
-                      onCommentChange={(manualComment) =>
-                        updateResponseState(response.id, { manualComment })
-                      }
-                      onQuestionChange={(question) =>
-                        updateResponseState(response.id, { question })
-                      }
-                      onCommentBlur={() =>
-                        updateResponseState(
-                          response.id,
-                          { manualComment: state.manualComment },
-                          true,
-                        )
-                      }
-                      onQuestionBlur={() =>
-                        updateResponseState(
-                          response.id,
-                          { question: state.question },
-                          true,
-                        )
-                      }
-                      onOpenDocuments={handleOpenSupplierDocuments}
-                    />
-                  );
-                })}
+                    return (
+                      <SupplierResponseCard
+                        key={response.id}
+                        supplierId={supplier.id}
+                        supplierName={supplier.name}
+                        responseId={response.id}
+                        responseText={response.response_text || ""}
+                        aiScore={response.ai_score ?? 0}
+                        aiComment={response.ai_comment ?? ""}
+                        status={state.status}
+                        isChecked={state.isChecked}
+                        manualScore={state.manualScore}
+                        manualComment={state.manualComment}
+                        questionText={state.question}
+                        isSaving={state.isSaving}
+                        showSaved={state.showSaved}
+                        isExpanded={state.expanded}
+                        onExpandChange={(expanded) =>
+                          updateResponseState(response.id, { expanded })
+                        }
+                        onStatusChange={(status) =>
+                          updateResponseState(response.id, { status })
+                        }
+                        onCheckChange={(isChecked) =>
+                          updateResponseState(response.id, { isChecked })
+                        }
+                        onScoreChange={(manualScore) =>
+                          updateResponseState(response.id, { manualScore })
+                        }
+                        onCommentChange={(manualComment) =>
+                          updateResponseState(response.id, { manualComment })
+                        }
+                        onQuestionChange={(question) =>
+                          updateResponseState(response.id, { question })
+                        }
+                        onCommentBlur={() =>
+                          updateResponseState(
+                            response.id,
+                            { manualComment: state.manualComment },
+                            true,
+                          )
+                        }
+                        onQuestionBlur={() =>
+                          updateResponseState(
+                            response.id,
+                            { question: state.question },
+                            true,
+                          )
+                        }
+                        onOpenDocuments={handleOpenSupplierDocuments}
+                      />
+                    );
+                  })}
                 </div>
               </>
             )}
