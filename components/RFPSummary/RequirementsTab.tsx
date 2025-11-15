@@ -152,11 +152,7 @@ function CategoryTagDialog({ node, tags, onApply }: CategoryTagDialogProps) {
           )}
         </div>
         <div className="mt-6 flex gap-2 justify-end pt-4 border-t border-slate-200 dark:border-slate-800">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsOpen(false)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setIsOpen(false)}>
             Cancel
           </Button>
           <Button
@@ -253,13 +249,18 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
                 metadata[requirementId].tags = reqTagsData.tags || [];
               }
             } catch (err) {
-              console.error(`Error loading tags for requirement ${requirementId}:`, err);
+              console.error(
+                `Error loading tags for requirement ${requirementId}:`,
+                err,
+              );
             }
           }
           setRequirementMetadata(metadata);
         } else {
           // Fall back to default tags if API fails
-          setTags(DEFAULT_TAGS.map((tag, idx) => ({ id: `tag-${idx}`, ...tag })));
+          setTags(
+            DEFAULT_TAGS.map((tag, idx) => ({ id: `tag-${idx}`, ...tag })),
+          );
         }
       } catch (err) {
         console.error("Error loading data:", err);
@@ -391,7 +392,10 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
   };
 
   // Get all requirements under a category (cascade)
-  const getChildRequirements = (nodeId: string, nodes: TreeNode[] = data): string[] => {
+  const getChildRequirements = (
+    nodeId: string,
+    nodes: TreeNode[] = data,
+  ): string[] => {
     const requirementIds: string[] = [];
 
     function traverse(items: TreeNode[]) {
@@ -450,7 +454,9 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
       // Save requirement-tag associations to database
       const savePromises: Promise<Response>[] = [];
 
-      for (const [requirementId, metadata] of Object.entries(requirementMetadata)) {
+      for (const [requirementId, metadata] of Object.entries(
+        requirementMetadata,
+      )) {
         if (metadata.tags && metadata.tags.length > 0) {
           const tagIds = metadata.tags.map((t) => t.id);
           savePromises.push(
@@ -553,19 +559,28 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
         {/* Tags Display - Different for categories vs requirements */}
         <TableCell className="py-3">
           <div className="flex flex-wrap gap-1 items-center">
-            {node.type === "requirement" && (requirementMetadata[node.id]?.tags || []).map((tag) => (
-              <div
-                key={tag.id}
-                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-300"
-              >
-                <span
-                  className="h-1.5 w-1.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: tag.color || "#6B7280" }}
-                  aria-hidden="true"
-                />
-                {tag.name}
-              </div>
-            ))}
+            {node.type === "requirement" &&
+              (requirementMetadata[node.id]?.tags || []).map((tag) => (
+                <div
+                  key={tag.id}
+                  className="group inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <span
+                    className="h-1.5 w-1.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: tag.color || "#6B7280" }}
+                    aria-hidden="true"
+                  />
+                  {tag.name}
+                  <button
+                    onClick={() => toggleTag(node.id, tag)}
+                    className="ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 hover:text-red-600 dark:hover:text-red-400"
+                    title="Remove tag"
+                    type="button"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
             {node.type === "requirement" && (
               <Dialog>
                 <DialogTrigger asChild>

@@ -130,10 +130,7 @@ export async function POST(
       .maybeSingle();
 
     if (!userOrg || !["admin", "evaluator"].includes(userOrg.role)) {
-      return NextResponse.json(
-        { error: "Permission denied" },
-        { status: 403 },
-      );
+      return NextResponse.json({ error: "Permission denied" }, { status: 403 });
     }
 
     // Verify requirement exists
@@ -251,10 +248,7 @@ export async function DELETE(
       .maybeSingle();
 
     if (!userOrg || !["admin", "evaluator"].includes(userOrg.role)) {
-      return NextResponse.json(
-        { error: "Permission denied" },
-        { status: 403 },
-      );
+      return NextResponse.json({ error: "Permission denied" }, { status: 403 });
     }
 
     // Delete the requirement-tag relation

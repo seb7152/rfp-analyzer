@@ -107,7 +107,10 @@ export async function POST(
     }
 
     if (!name || name.trim().length === 0) {
-      return NextResponse.json({ error: "Tag name is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Tag name is required" },
+        { status: 400 },
+      );
     }
 
     // Get authenticated user
@@ -139,7 +142,11 @@ export async function POST(
       .eq("organization_id", rfp.organization_id)
       .maybeSingle();
 
-    if (userOrgError || !userOrg || !["admin", "evaluator"].includes(userOrg.role)) {
+    if (
+      userOrgError ||
+      !userOrg ||
+      !["admin", "evaluator"].includes(userOrg.role)
+    ) {
       return NextResponse.json(
         { error: "Permission denied to create tags" },
         { status: 403 },
