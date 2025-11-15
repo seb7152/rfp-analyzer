@@ -232,8 +232,35 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
         initializeMetadata(treeData || []);
         setRequirementMetadata(metadata);
 
-        // Load default tags
-        setTags(DEFAULT_TAGS.map((tag, idx) => ({ id: `tag-${idx}`, ...tag })));
+        // Fetch tags from database
+        const tagsResponse = await fetch(`/api/rfps/${rfpId}/tags`, {
+          cache: "no-store",
+        });
+
+        if (tagsResponse.ok) {
+          const tagsData = await tagsResponse.json();
+          setTags(tagsData.tags || []);
+
+          // Load requirement-tag associations for all requirements
+          for (const [requirementId] of Object.entries(metadata)) {
+            try {
+              const reqTagsResponse = await fetch(
+                `/api/rfps/${rfpId}/requirements/${requirementId}/tags`,
+                { cache: "no-store" },
+              );
+              if (reqTagsResponse.ok) {
+                const reqTagsData = await reqTagsResponse.json();
+                metadata[requirementId].tags = reqTagsData.tags || [];
+              }
+            } catch (err) {
+              console.error(`Error loading tags for requirement ${requirementId}:`, err);
+            }
+          }
+          setRequirementMetadata(metadata);
+        } else {
+          // Fall back to default tags if API fails
+          setTags(DEFAULT_TAGS.map((tag, idx) => ({ id: `tag-${idx}`, ...tag })));
+        }
       } catch (err) {
         console.error("Error loading data:", err);
         setError(err instanceof Error ? err.message : "Error loading data");
@@ -268,6 +295,16 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
       const newTags = hasTag
         ? current.tags.filter((t) => t.id !== tag.id)
         : [...current.tags, tag];
+
+      // Persist to database immediately if tag is being removed
+      if (hasTag) {
+        fetch(`/api/rfps/${rfpId}/requirements/${requirementId}/tags`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tagId: tag.id }),
+        }).catch((err) => console.error("Error removing tag:", err));
+      }
+      // Adding tags will be handled by the Save button
 
       return {
         ...prev,
@@ -304,18 +341,41 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
     });
   };
 
-  const addTag = () => {
+  const addTag = async () => {
     if (!newTagName.trim()) return;
 
-    const newTag = {
-      id: `tag-${Date.now()}`,
-      name: newTagName,
-      color: TAG_COLORS[selectedColorIndex % TAG_COLORS.length],
-    };
+    try {
+      const color = TAG_COLORS[selectedColorIndex % TAG_COLORS.length];
+      const response = await fetch(`/api/rfps/${rfpId}/tags`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newTagName.trim(),
+          color,
+          description: null,
+        }),
+      });
 
-    setTags([...tags, newTag]);
-    setNewTagName("");
-    setSelectedColorIndex((prev) => (prev + 1) % TAG_COLORS.length);
+      if (!response.ok) {
+        const error = await response.json();
+        setSaveMessage({
+          type: "error",
+          text: error.error || "Failed to create tag",
+        });
+        return;
+      }
+
+      const { tag } = await response.json();
+      setTags([...tags, tag]);
+      setNewTagName("");
+      setSelectedColorIndex((prev) => (prev + 1) % TAG_COLORS.length);
+    } catch (err) {
+      console.error("Error adding tag:", err);
+      setSaveMessage({
+        type: "error",
+        text: "Failed to create tag",
+      });
+    }
   };
 
   const removeTag = (tagId: string) => {
@@ -387,23 +447,43 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
       setSaving(true);
       setSaveMessage(null);
 
-      // Save metadata (in a real implementation, this would save to the database)
-      // For now, we'll just store it in localStorage for demo purposes
-      localStorage.setItem(
-        `requirement-metadata-${rfpId}`,
-        JSON.stringify({ tags, requirementMetadata }),
-      );
+      // Save requirement-tag associations to database
+      const savePromises: Promise<Response>[] = [];
 
-      setSaveMessage({
-        type: "success",
-        text: "Metadata saved successfully!",
-      });
-      setTimeout(() => setSaveMessage(null), 3000);
+      for (const [requirementId, metadata] of Object.entries(requirementMetadata)) {
+        if (metadata.tags && metadata.tags.length > 0) {
+          const tagIds = metadata.tags.map((t) => t.id);
+          savePromises.push(
+            fetch(`/api/rfps/${rfpId}/requirements/${requirementId}/tags`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ tagIds }),
+            }),
+          );
+        }
+      }
+
+      // Wait for all tag assignments to complete
+      const results = await Promise.all(savePromises);
+      const hasErrors = results.some((r) => !r.ok);
+
+      if (hasErrors) {
+        setSaveMessage({
+          type: "error",
+          text: "Some tags failed to save",
+        });
+      } else {
+        setSaveMessage({
+          type: "success",
+          text: "Tags saved successfully!",
+        });
+        setTimeout(() => setSaveMessage(null), 3000);
+      }
     } catch (err) {
-      console.error("Error saving metadata:", err);
+      console.error("Error saving tags:", err);
       setSaveMessage({
         type: "error",
-        text: err instanceof Error ? err.message : "Error saving metadata",
+        text: err instanceof Error ? err.message : "Error saving tags",
       });
     } finally {
       setSaving(false);
