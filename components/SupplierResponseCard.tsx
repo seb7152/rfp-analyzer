@@ -150,6 +150,7 @@ export function SupplierResponseCard({
             size="md"
             showLabel={true}
             isManual={manualScore !== undefined && manualScore !== null}
+            allowHalfStars={true}
           />
           {/* Show which score is being displayed */}
           {manualScore !== undefined && manualScore !== null ? (

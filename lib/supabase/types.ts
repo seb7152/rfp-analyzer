@@ -179,9 +179,9 @@ export interface Response {
   requirement_id: string;
   supplier_id: string;
   response_text: string | null;
-  ai_score: number | null;
+  ai_score: number | null; // Now supports decimal values (0.5 increments)
   ai_comment: string | null;
-  manual_score: number | null;
+  manual_score: number | null; // Now supports decimal values (0.5 increments)
   status: "pending" | "pass" | "partial" | "fail";
   is_checked: boolean;
   manual_comment: string | null;
@@ -192,7 +192,7 @@ export interface Response {
 }
 
 export interface ResponseUpdate {
-  manual_score?: number | null;
+  manual_score?: number | null; // Now supports decimal values (0.5 increments)
   status?: "pending" | "pass" | "partial" | "fail";
   is_checked?: boolean;
   manual_comment?: string | null;

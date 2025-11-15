@@ -355,7 +355,7 @@ export default function RFPSynthesisPage() {
                       >
                         <p className="font-medium">{supplier.supplierName}</p>
                         <p className="text-sm text-slate-600">
-                          Score: {supplier.finalScore}
+                          Score: {supplier.finalScore.toFixed(1)}
                         </p>
                         <p className="text-xs text-slate-500">
                           Classement: {supplier.ranking}
