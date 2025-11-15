@@ -14,6 +14,7 @@ import {
   Save,
   Loader2,
   ChevronUp,
+  CheckCircle2,
 } from "lucide-react";
 import {
   Table,
@@ -178,6 +179,9 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
   const [error, setError] = useState<string | null>(null);
   const [requirementMetadata, setRequirementMetadata] =
     useState<RequirementMetadata>({});
+  const [initialMetadata, setInitialMetadata] = useState<RequirementMetadata>(
+    {},
+  );
   const [tags, setTags] = useState<TagData[]>([]);
   const [newTagName, setNewTagName] = useState("");
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
@@ -187,6 +191,37 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
     text: string;
   } | null>(null);
   const [showTagsManager, setShowTagsManager] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(
+    null,
+  );
+
+  // Check for unsaved changes
+  const hasChanges = (): boolean => {
+    return (
+      JSON.stringify(requirementMetadata) !== JSON.stringify(initialMetadata)
+    );
+  };
+
+  // Update hasUnsavedChanges when metadata changes
+  useEffect(() => {
+    setHasUnsavedChanges(hasChanges());
+  }, [requirementMetadata, initialMetadata]);
+
+  // Handle beforeunload event
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   // Load data
   useEffect(() => {
@@ -227,6 +262,7 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
         }
         initializeMetadata(treeData || []);
         setRequirementMetadata(metadata);
+        setInitialMetadata(JSON.parse(JSON.stringify(metadata)));
 
         // Fetch tags from database
         const tagsResponse = await fetch(`/api/rfps/${rfpId}/tags`, {
@@ -451,40 +487,55 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
       setSaving(true);
       setSaveMessage(null);
 
-      // Save requirement-tag associations to database
-      const savePromises: Promise<Response>[] = [];
+      // Helper function to check if ID is a valid UUID
+      const isValidUUID = (id: string): boolean => {
+        const uuidRegex =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(id);
+      };
+
+      // Build bulk assignments array
+      const assignments: Array<{ requirementId: string; tagIds: string[] }> =
+        [];
 
       for (const [requirementId, metadata] of Object.entries(
         requirementMetadata,
       )) {
         if (metadata.tags && metadata.tags.length > 0) {
-          const tagIds = metadata.tags.map((t) => t.id);
-          savePromises.push(
-            fetch(`/api/rfps/${rfpId}/requirements/${requirementId}/tags`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ tagIds }),
-            }),
-          );
+          // Filter out fallback tags (those with non-UUID IDs like "tag-0")
+          const validTags = metadata.tags.filter((t) => isValidUUID(t.id));
+
+          if (validTags.length > 0) {
+            const tagIds = validTags.map((t) => t.id);
+            assignments.push({ requirementId, tagIds });
+          }
         }
       }
 
-      // Wait for all tag assignments to complete
-      const results = await Promise.all(savePromises);
-      const hasErrors = results.some((r) => !r.ok);
+      // Send all assignments in a single API call
+      if (assignments.length > 0) {
+        const response = await fetch(
+          `/api/rfps/${rfpId}/tags/bulk-assign`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ assignments }),
+          },
+        );
 
-      if (hasErrors) {
-        setSaveMessage({
-          type: "error",
-          text: "Some tags failed to save",
-        });
-      } else {
-        setSaveMessage({
-          type: "success",
-          text: "Tags saved successfully!",
-        });
-        setTimeout(() => setSaveMessage(null), 3000);
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to save tags");
+        }
       }
+
+      setSaveMessage({
+        type: "success",
+        text: "✓ All changes saved successfully!",
+      });
+      // Reset initial metadata to reflect saved state
+      setInitialMetadata(JSON.parse(JSON.stringify(requirementMetadata)));
+      setTimeout(() => setSaveMessage(null), 3000);
     } catch (err) {
       console.error("Error saving tags:", err);
       setSaveMessage({
@@ -664,13 +715,18 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
 
       {saveMessage && (
         <div
-          className={`p-3 rounded-lg text-sm flex gap-2 ${
+          className={`fixed bottom-6 right-6 p-4 rounded-xl text-sm flex gap-3 shadow-lg border animate-in fade-in slide-in-from-bottom-4 duration-300 ${
             saveMessage.type === "success"
-              ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-200"
-              : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200"
+              ? "bg-green-50 dark:bg-green-950/80 text-green-700 dark:text-green-200 border-green-200 dark:border-green-800"
+              : "bg-red-50 dark:bg-red-950/80 text-red-700 dark:text-red-200 border-red-200 dark:border-red-800"
           }`}
         >
-          {saveMessage.text}
+          {saveMessage.type === "success" ? (
+            <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
+          ) : (
+            <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+          )}
+          <span className="font-medium">{saveMessage.text}</span>
         </div>
       )}
 
@@ -793,6 +849,63 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
           </>
         )}
       </Button>
+
+      {/* Unsaved Changes Modal */}
+      <Dialog open={showUnsavedModal} onOpenChange={setShowUnsavedModal}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <div className="flex gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <DialogTitle>Unsaved Changes</DialogTitle>
+            </div>
+          </DialogHeader>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            You have unsaved changes to tags and requirements. Do you want to
+            save them before leaving?
+          </p>
+          <div className="flex gap-2 justify-end pt-4 border-t border-slate-200 dark:border-slate-800">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowUnsavedModal(false);
+                if (pendingNavigation) {
+                  setPendingNavigation(null);
+                }
+              }}
+            >
+              Discard
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowUnsavedModal(false);
+                handleSave().then(() => {
+                  if (pendingNavigation) {
+                    // Navigate after save
+                    window.location.href = pendingNavigation;
+                  }
+                });
+              }}
+            >
+              Save First
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setShowUnsavedModal(false);
+                if (pendingNavigation) {
+                  window.location.href = pendingNavigation;
+                }
+              }}
+            >
+              Leave Anyway
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
