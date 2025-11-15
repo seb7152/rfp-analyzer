@@ -99,6 +99,37 @@ export interface RequirementWithChildren extends Requirement {
 }
 
 // ============================================================================
+// TAG TYPES
+// ============================================================================
+
+export interface Tag {
+  id: string;
+  rfp_id: string;
+  name: string;
+  color: string | null;
+  description: string | null;
+  created_at: string;
+  created_by: string | null;
+}
+
+export interface RequirementTag {
+  id: string;
+  requirement_id: string;
+  tag_id: string;
+  created_at: string;
+  created_by: string | null;
+}
+
+export interface RequirementWithTags extends Requirement {
+  tags?: Tag[];
+}
+
+export interface RequirementWithChildrenAndTags extends RequirementWithChildren {
+  tags?: Tag[];
+  children?: RequirementWithChildrenAndTags[];
+}
+
+// ============================================================================
 // CATEGORY TYPES
 // ============================================================================
 

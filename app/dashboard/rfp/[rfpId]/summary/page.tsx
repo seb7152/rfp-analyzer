@@ -11,6 +11,7 @@ import { SuppliersTab } from "@/components/RFPSummary/SuppliersTab";
 import { AnalystsTab } from "@/components/RFPSummary/AnalystsTab";
 import { AnalysisTab } from "@/components/RFPSummary/AnalysisTab";
 import { WeightsTab } from "@/components/RFPSummary/WeightsTab";
+import { RequirementsTab } from "@/components/RFPSummary/RequirementsTab";
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
 import { useAnalyzeRFP } from "@/hooks/use-analyze-rfp";
 import {
@@ -27,6 +28,7 @@ import {
   ChevronUp,
   LayoutDashboard,
   Sliders,
+  ListChecks,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -229,6 +231,13 @@ export default function RFPSummaryPage() {
                 <span className="hidden sm:inline">Analystes</span>
               </TabsTrigger>
               <TabsTrigger
+                value="requirements"
+                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+              >
+                <ListChecks className="h-4 w-4" />
+                <span className="hidden sm:inline">Exigences</span>
+              </TabsTrigger>
+              <TabsTrigger
                 value="analysis"
                 className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
               >
@@ -317,6 +326,14 @@ export default function RFPSummaryPage() {
                 <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 p-6">
                   <AnalystsTab rfpId={rfpId} />
                 </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="requirements" className="space-y-6">
+              {loading ? (
+                <Skeleton className="h-64 rounded-2xl" />
+              ) : (
+                <RequirementsTab rfpId={rfpId} />
               )}
             </TabsContent>
 
