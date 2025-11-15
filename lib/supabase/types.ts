@@ -124,7 +124,8 @@ export interface RequirementWithTags extends Requirement {
   tags?: Tag[];
 }
 
-export interface RequirementWithChildrenAndTags extends RequirementWithChildren {
+export interface RequirementWithChildrenAndTags
+  extends RequirementWithChildren {
   tags?: Tag[];
   children?: RequirementWithChildrenAndTags[];
 }
