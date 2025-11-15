@@ -273,22 +273,30 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
           const tagsData = await tagsResponse.json();
           setTags(tagsData.tags || []);
 
-          // Load requirement-tag associations for all requirements
-          for (const [requirementId] of Object.entries(metadata)) {
+          // Load requirement-tag associations for all requirements in bulk
+          const requirementIds = Object.keys(metadata);
+          if (requirementIds.length > 0) {
             try {
-              const reqTagsResponse = await fetch(
-                `/api/rfps/${rfpId}/requirements/${requirementId}/tags`,
-                { cache: "no-store" },
+              const bulkTagsResponse = await fetch(
+                `/api/rfps/${rfpId}/tags/bulk-fetch`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ requirementIds }),
+                  cache: "no-store",
+                },
               );
-              if (reqTagsResponse.ok) {
-                const reqTagsData = await reqTagsResponse.json();
-                metadata[requirementId].tags = reqTagsData.tags || [];
+              if (bulkTagsResponse.ok) {
+                const bulkTagsData = await bulkTagsResponse.json();
+                const tagsByRequirement = bulkTagsData.tagsByRequirement || {};
+                for (const [requirementId, tags] of Object.entries(
+                  tagsByRequirement,
+                )) {
+                  metadata[requirementId].tags = (tags as any[]) || [];
+                }
               }
             } catch (err) {
-              console.error(
-                `Error loading tags for requirement ${requirementId}:`,
-                err,
-              );
+              console.error("Error loading tags in bulk:", err);
             }
           }
           setRequirementMetadata(metadata);
