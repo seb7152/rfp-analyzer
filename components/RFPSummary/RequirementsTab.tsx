@@ -12,7 +12,6 @@ import {
   Tag,
   AlertCircle,
   Save,
-  Loader2,
   ChevronUp,
   CheckCircle2,
 } from "lucide-react";
@@ -261,7 +260,6 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
           }
         }
         initializeMetadata(treeData || []);
-        setRequirementMetadata(metadata);
         setInitialMetadata(JSON.parse(JSON.stringify(metadata)));
 
         // Fetch tags from database
@@ -299,13 +297,13 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
               console.error("Error loading tags in bulk:", err);
             }
           }
-          setRequirementMetadata(metadata);
         } else {
           // Fall back to default tags if API fails
           setTags(
             DEFAULT_TAGS.map((tag, idx) => ({ id: `tag-${idx}`, ...tag })),
           );
         }
+        setRequirementMetadata(metadata);
       } catch (err) {
         console.error("Error loading data:", err);
         setError(err instanceof Error ? err.message : "Error loading data");
@@ -423,10 +421,13 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
 
       if (!response.ok) {
         const error = await response.json();
+        console.error("Error response from API:", error);
         setSaveMessage({
           type: "error",
           text: error.error || "Failed to create tag",
         });
+        // Keep error message visible for longer
+        setTimeout(() => setSaveMessage(null), 5000);
         return;
       }
 
@@ -434,25 +435,65 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
       setTags([...tags, tag]);
       setNewTagName("");
       setSelectedColorIndex((prev) => (prev + 1) % TAG_COLORS.length);
+      setSaveMessage({
+        type: "success",
+        text: "✓ Tag created successfully!",
+      });
+      setTimeout(() => setSaveMessage(null), 3000);
     } catch (err) {
       console.error("Error adding tag:", err);
       setSaveMessage({
         type: "error",
-        text: "Failed to create tag",
+        text: err instanceof Error ? err.message : "Failed to create tag",
       });
+      setTimeout(() => setSaveMessage(null), 5000);
     }
   };
 
-  const removeTag = (tagId: string) => {
-    setTags(tags.filter((t) => t.id !== tagId));
-    // Also remove from all requirements
-    setRequirementMetadata((prev) => {
-      const updated = { ...prev };
-      for (const reqId in updated) {
-        updated[reqId].tags = updated[reqId].tags.filter((t) => t.id !== tagId);
+  const removeTag = async (tagId: string) => {
+    try {
+      // Delete tag from database
+      const response = await fetch(`/api/rfps/${rfpId}/tags/${tagId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error("Error response from API:", error);
+        setSaveMessage({
+          type: "error",
+          text: error.error || "Failed to delete tag",
+        });
+        setTimeout(() => setSaveMessage(null), 5000);
+        return;
       }
-      return updated;
-    });
+
+      // Remove from local state after successful deletion
+      setTags(tags.filter((t) => t.id !== tagId));
+      // Also remove from all requirements
+      setRequirementMetadata((prev) => {
+        const updated = { ...prev };
+        for (const reqId in updated) {
+          updated[reqId].tags = updated[reqId].tags.filter(
+            (t) => t.id !== tagId,
+          );
+        }
+        return updated;
+      });
+
+      setSaveMessage({
+        type: "success",
+        text: "✓ Tag deleted successfully!",
+      });
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch (err) {
+      console.error("Error deleting tag:", err);
+      setSaveMessage({
+        type: "error",
+        text: err instanceof Error ? err.message : "Failed to delete tag",
+      });
+      setTimeout(() => setSaveMessage(null), 5000);
+    }
   };
 
   // Get all requirements under a category (cascade)
