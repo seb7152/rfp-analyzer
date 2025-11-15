@@ -1,6 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: { rfpId: string } },
+) {
+  try {
+    const { rfpId } = params;
+
+    if (!rfpId) {
+      return NextResponse.json(
+        { error: "RFP ID is required" },
+        { status: 400 },
+      );
+    }
+
+    const supabase = await createServerClient();
+
+    // Get the RFP details
+    const { data: rfp, error: rfpError } = await supabase
+      .from("rfps")
+      .select(
+        "id, title, description, organization_id, created_by, created_at, updated_at",
+      )
+      .eq("id", rfpId)
+      .single();
+
+    if (rfpError || !rfp) {
+      return NextResponse.json({ error: "RFP not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(rfp, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching RFP:", error);
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
+      { status: 500 },
+    );
+  }
+}
+
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: { rfpId: string } },
