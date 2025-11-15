@@ -321,6 +321,26 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
     setExpandedNodeIds(newSet);
   };
 
+  const handleCollapseAll = () => {
+    setExpandedNodeIds(new Set());
+  };
+
+  const handleExpandAll = () => {
+    const allCategoryIds = new Set<string>();
+    function collectCategoryIds(nodes: TreeNode[]) {
+      for (const node of nodes) {
+        if (node.type === "category") {
+          allCategoryIds.add(node.id);
+        }
+        if (node.children) {
+          collectCategoryIds(node.children);
+        }
+      }
+    }
+    collectCategoryIds(data);
+    setExpandedNodeIds(allCategoryIds);
+  };
+
   const toggleTag = (requirementId: string, tag: TagData) => {
     setRequirementMetadata((prev) => {
       const current = prev[requirementId] || {
@@ -514,14 +534,11 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
 
       // Send all assignments in a single API call
       if (assignments.length > 0) {
-        const response = await fetch(
-          `/api/rfps/${rfpId}/tags/bulk-assign`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ assignments }),
-          },
-        );
+        const response = await fetch(`/api/rfps/${rfpId}/tags/bulk-assign`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ assignments }),
+        });
 
         if (!response.ok) {
           const error = await response.json();
@@ -807,6 +824,36 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
         )}
       </Card>
 
+      {/* Control Buttons */}
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleCollapseAll}
+          className="gap-2"
+        >
+          <ChevronDown className="h-4 w-4" />
+          Condenser
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExpandAll}
+          className="gap-2"
+        >
+          <ChevronUp className="h-4 w-4" />
+          Étendre
+        </Button>
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          className="gap-2 ml-auto"
+        >
+          <Save className="h-4 w-4" />
+          {saving ? "Enregistrement..." : "Enregistrer"}
+        </Button>
+      </div>
+
       {/* Requirements Tree with Checkboxes */}
       <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
         <div className="p-6 space-y-4">
@@ -829,26 +876,6 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
           </div>
         </div>
       </Card>
-
-      {/* Save Button */}
-      <Button
-        onClick={handleSave}
-        disabled={saving}
-        size="lg"
-        className="w-full"
-      >
-        {saving ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Saving...
-          </>
-        ) : (
-          <>
-            <Save className="h-4 w-4 mr-2" />
-            Save Changes
-          </>
-        )}
-      </Button>
 
       {/* Unsaved Changes Modal */}
       <Dialog open={showUnsavedModal} onOpenChange={setShowUnsavedModal}>
