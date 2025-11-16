@@ -257,47 +257,59 @@ export function ComparisonView({
     };
   }, [handleKeyDown, flatReqs.length]);
 
-  // Sync response state with fresh data from React Query after refetch
-  // This ensures that when data is refetched, local UI state is updated with persisted values
+  // Initialize and sync response states with data from database
+  // This ensures all response data is loaded on initial render
   useEffect(() => {
     if (!responses.length) return;
 
-    // Update responseStates with fresh data from the query
     setResponseStates((prev) => {
       const updated = { ...prev };
       let hasChanges = false;
 
       responses.forEach((response) => {
         const state = prev[response.id];
-        if (state) {
-          // If state exists, sync with fresh database values
+
+        if (!state) {
+          // First time seeing this response - initialize with full DB data
+          updated[response.id] = {
+            expanded: false,
+            manualScore: response.manual_score ?? undefined,
+            status:
+              (response.status as "pass" | "partial" | "fail" | "pending") ||
+              "pending",
+            isChecked: response.is_checked || false,
+            manualComment: response.manual_comment || "",
+            question: response.question || "",
+            isSaving: false,
+            showSaved: false,
+          };
+          hasChanges = true;
+        } else {
+          // State already exists - sync with DB values if they changed
           const newState = { ...state };
 
-          // Only update fields from DB if they were changed by the mutation
-          // (we can detect this by checking if the UI values match DB values now)
-          if (
-            state.manualScore === response.manual_score &&
-            state.status === response.status &&
-            state.manualComment === (response.manual_comment || "") &&
-            state.question === (response.question || "") &&
-            state.isChecked === response.is_checked
-          ) {
-            // No conflicts, state is already correct
-            return;
+          // Check if DB values differ from local state
+          const dbChanged =
+            state.manualScore !== response.manual_score ||
+            state.status !== response.status ||
+            state.manualComment !== (response.manual_comment || "") ||
+            state.question !== (response.question || "") ||
+            state.isChecked !== response.is_checked;
+
+          if (dbChanged) {
+            // DB was updated (likely by refetch after save)
+            // Sync local state with fresh data
+            newState.manualScore = response.manual_score ?? undefined;
+            newState.status =
+              (response.status as "pass" | "partial" | "fail" | "pending") ||
+              "pending";
+            newState.manualComment = response.manual_comment || "";
+            newState.question = response.question || "";
+            newState.isChecked = response.is_checked || false;
+
+            updated[response.id] = newState;
+            hasChanges = true;
           }
-
-          // If there are differences, it means the DB was updated
-          // Update the local state to reflect the fresh data
-          newState.manualScore = response.manual_score ?? undefined;
-          newState.status =
-            (response.status as "pass" | "partial" | "fail" | "pending") ||
-            "pending";
-          newState.manualComment = response.manual_comment || "";
-          newState.question = response.question || "";
-          newState.isChecked = response.is_checked || false;
-
-          updated[response.id] = newState;
-          hasChanges = true;
         }
       });
 
