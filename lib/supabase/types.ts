@@ -304,6 +304,47 @@ export interface ImportRequirementsRequest {
 }
 
 // ============================================================================
+// DASHBOARD CONFIGURATION TYPES
+// ============================================================================
+
+export type DashboardConfigType = "radar" | "bar" | "line" | "scatter";
+
+export interface RadarConfigData {
+  selectedTagIds: string[];
+  supplierId: string;
+}
+
+export type DashboardConfigData = RadarConfigData;
+
+export interface DashboardConfiguration {
+  id: string;
+  rfp_id: string;
+  name: string;
+  type: DashboardConfigType;
+  config: DashboardConfigData;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+}
+
+// ============================================================================
+// RADAR DATA TYPES
+// ============================================================================
+
+export interface RadarDataPoint {
+  axis: string;
+  value: number;
+  tagId?: string;
+}
+
+export interface RadarChartData {
+  type: "radar";
+  data: RadarDataPoint[];
+  supplierName?: string;
+  rfpId?: string;
+}
+
+// ============================================================================
 // ERROR TYPES
 // ============================================================================
 

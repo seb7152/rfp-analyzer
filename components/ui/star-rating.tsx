@@ -73,7 +73,7 @@ export function StarRating({
     const currentScore = score ?? 0;
     let isFilled = false;
     let isHalfFilled = false;
-    
+
     if (allowHalfStars) {
       // Logique pour les demi-étoiles
       if (currentScore >= starNumber) {
@@ -92,10 +92,13 @@ export function StarRating({
         <Star
           className={`${sizeClasses[size]} text-slate-300 dark:text-slate-600`}
         />
-        
+
         {/* Étoile remplie (demi ou complète) */}
         {allowHalfStars ? (
-          <div className="absolute top-0 left-0 overflow-hidden" style={{ width: isHalfFilled ? '50%' : isFilled ? '100%' : '0%' }}>
+          <div
+            className="absolute top-0 left-0 overflow-hidden"
+            style={{ width: isHalfFilled ? "50%" : isFilled ? "100%" : "0%" }}
+          >
             <Star
               className={`${sizeClasses[size]} fill-yellow-400 text-yellow-400`}
             />
@@ -107,7 +110,7 @@ export function StarRating({
             />
           )
         )}
-        
+
         {/* Zones cliquables pour les demi-étoiles */}
         {interactive && allowHalfStars && (
           <>
@@ -123,7 +126,7 @@ export function StarRating({
             />
           </>
         )}
-        
+
         {/* Bouton normal pour le mode sans demi-étoiles */}
         {interactive && !allowHalfStars && (
           <button
@@ -143,9 +146,7 @@ export function StarRating({
   return (
     <div className={`flex items-center gap-1 ${className}`}>
       {/* Stars */}
-      <div className="flex gap-0.5">
-        {[1, 2, 3, 4, 5].map(renderStar)}
-      </div>
+      <div className="flex gap-0.5">{[1, 2, 3, 4, 5].map(renderStar)}</div>
 
       {/* Score label with distinct styling for manual scores */}
       {showLabel && (
