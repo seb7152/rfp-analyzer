@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -12,77 +11,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BarChart3, FileText, Edit2, Eye, Trash2, File } from "lucide-react";
-import { AIAnalysisButton } from "@/components/AIAnalysisButton";
+import { FileText, Eye, Trash2 } from "lucide-react";
 import type { RFP } from "@/lib/supabase/types";
 
 interface RFPsTableProps {
   rfps: RFP[];
   isLoading: boolean;
   onDelete?: (rfpId: string) => Promise<void> | void;
-  onAnalysisStarted?: (rfpId: string) => void;
 }
 
 export function RFPsTable({
   rfps,
   isLoading,
   onDelete,
-  onAnalysisStarted,
 }: RFPsTableProps) {
   const router = useRouter();
-  const [rfpStats, setRfpStats] = useState<
-    Record<string, { responsesCount: number; hasUnanalyzed: boolean }>
-  >({});
-
-  // Fetch RFP stats (responses count and unanalyzed status) for each RFP
-  useEffect(() => {
-    const fetchRFPStats = async () => {
-      console.log(`[RFPsTable] Fetching stats for ${rfps.length} RFPs`);
-      const stats: Record<
-        string,
-        { responsesCount: number; hasUnanalyzed: boolean }
-      > = {};
-
-      for (const rfp of rfps) {
-        try {
-          console.log(`[RFPsTable] Fetching responses for RFP: ${rfp.id}`);
-          const response = await fetch(`/api/rfps/${rfp.id}/responses`, {
-            credentials: "include",
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            const responses = data.responses || [];
-            // Check if any response has no AI score (unanalyzed)
-            const unanalyzedResponses = responses.filter(
-              (r: any) => !r.ai_score,
-            );
-            stats[rfp.id] = {
-              responsesCount: unanalyzedResponses.length,
-              hasUnanalyzed: unanalyzedResponses.length > 0,
-            };
-            console.log(
-              `[RFPsTable] RFP ${rfp.id}: ${unanalyzedResponses.length}/${responses.length} unanalyzed`,
-            );
-          } else {
-            console.warn(
-              `[RFPsTable] Failed to fetch responses for RFP ${rfp.id}: ${response.status}`,
-            );
-          }
-        } catch (error) {
-          console.error(`Failed to fetch stats for RFP ${rfp.id}:`, error);
-        }
-      }
-
-      setRfpStats(stats);
-    };
-
-    if (rfps.length > 0) {
-      fetchRFPStats();
-    } else {
-      console.log(`[RFPsTable] No RFPs to fetch stats for`);
-    }
-  }, [rfps]);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { bg: string; text: string }> = {
@@ -180,7 +123,10 @@ export function RFPsTable({
               {rfps.map((rfp) => (
                 <tr
                   key={rfp.id}
-                  className="hover:bg-slate-100/50 transition-colors dark:hover:bg-slate-800/50"
+                  className="hover:bg-slate-100/50 transition-colors dark:hover:bg-slate-800/50 cursor-pointer"
+                  onDoubleClick={() =>
+                    router.push(`/dashboard/rfp/${rfp.id}/summary`)
+                  }
                 >
                   <td className="px-4 py-3">
                     <div>
@@ -200,68 +146,27 @@ export function RFPsTable({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
-                      {/* T139-T145: AI Analysis Button with all features */}
-                      <div className="flex items-center gap-1">
-                        <AIAnalysisButton
-                          rfp={rfp}
-                          responsesCount={rfpStats[rfp.id]?.responsesCount || 0}
-                          hasUnanalyzedResponses={
-                            rfpStats[rfp.id]?.hasUnanalyzed || false
-                          }
-                          onAnalysisStarted={() => onAnalysisStarted?.(rfp.id)}
-                        />
-                      </div>
-
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() =>
-                          router.push(`/dashboard/rfp/${rfp.id}/evaluate`)
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/dashboard/rfp/${rfp.id}/summary`);
+                        }}
                         className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-slate-800"
-                        title="Évaluer RFP"
+                        title="Consulter RFP"
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() =>
-                          router.push(`/dashboard/rfp/${rfp.id}/synthesis`)
-                        }
-                        className="text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-slate-800"
-                        title="Synthèse RFP"
-                      >
-                        <BarChart3 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          router.push(`/dashboard/rfp/${rfp.id}/documents`)
-                        }
-                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-slate-800"
-                        title="Gérer les documents PDF"
-                      >
-                        <File className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          router.push(`/dashboard/rfp/${rfp.id}/import`)
-                        }
-                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-100 dark:text-amber-400 dark:hover:text-amber-300 dark:hover:bg-slate-800"
-                        title="Import/Edit data"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => onDelete?.(rfp.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete?.(rfp.id);
+                        }}
                         className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-slate-800"
-                        title="Delete RFP"
+                        title="Supprimer RFP"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
