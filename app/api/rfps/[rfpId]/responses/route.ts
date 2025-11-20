@@ -45,8 +45,40 @@ export async function GET(
     // Fetch responses with supplier information
     const responses = await getResponsesForRFP(rfpId, requirementId);
 
+    // Fetch document availability for these suppliers
+    // 1. Get all document IDs for this RFP
+    const { data: rfpDocs } = await supabase
+      .from("rfp_documents")
+      .select("id")
+      .eq("rfp_id", rfpId)
+      .is("deleted_at", null);
+
+    const rfpDocIds = rfpDocs?.map((d) => d.id) || [];
+    const supplierIds = Array.from(new Set(responses.map((r) => r.supplier_id)));
+    const suppliersWithDocs = new Set<string>();
+
+    // 2. Check which suppliers are linked to these documents
+    if (rfpDocIds.length > 0 && supplierIds.length > 0) {
+      const { data: docSuppliers } = await supabase
+        .from("document_suppliers")
+        .select("supplier_id")
+        .in("document_id", rfpDocIds)
+        .in("supplier_id", supplierIds);
+
+      docSuppliers?.forEach((ds) => suppliersWithDocs.add(ds.supplier_id));
+    }
+
+    // 3. Enrich responses with has_documents flag
+    const enrichedResponses = responses.map((response) => ({
+      ...response,
+      supplier: {
+        ...response.supplier,
+        has_documents: suppliersWithDocs.has(response.supplier_id),
+      },
+    }));
+
     return NextResponse.json({
-      responses,
+      responses: enrichedResponses,
       meta: {
         total: responses.length,
         byStatus: {

@@ -12,7 +12,9 @@ import {
   Check,
   Loader2,
   FileText,
+  Maximize2,
 } from "lucide-react";
+import { ResponseFocusModal } from "@/components/ResponseFocusModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +22,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { RoundCheckbox } from "@/components/ui/round-checkbox";
 import { StatusSwitch } from "@/components/ui/status-switch";
 import { StarRating } from "@/components/ui/star-rating";
+import { cn } from "@/lib/utils";
 
 export interface SupplierResponseCardProps {
   supplierId?: string;
@@ -45,6 +48,8 @@ export interface SupplierResponseCardProps {
   isExpanded?: boolean;
   onExpandChange?: (expanded: boolean) => void;
   onOpenDocuments?: (supplierId: string) => void;
+  collapsible?: boolean;
+  hasDocuments?: boolean;
 }
 
 export function SupplierResponseCard({
@@ -71,7 +76,10 @@ export function SupplierResponseCard({
   isExpanded = false,
   onExpandChange,
   onOpenDocuments,
+  collapsible = true,
+  hasDocuments,
 }: SupplierResponseCardProps) {
+  const [isFocusModalOpen, setIsFocusModalOpen] = React.useState(false);
   const currentScore = manualScore ?? aiScore;
 
   const getStatusBadge = () => {
@@ -112,18 +120,21 @@ export function SupplierResponseCard({
       {/* Main row - Collapsed view */}
       <div className="flex items-center gap-4 p-4 bg-white dark:bg-slate-950">
         {/* Expand button with animation */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onExpandChange?.(!isExpanded)}
-          className="flex-shrink-0 transition-transform duration-200"
-        >
-          {isExpanded ? (
-            <ChevronDown className="w-4 h-4" />
-          ) : (
-            <ChevronRight className="w-4 h-4" />
-          )}
-        </Button>
+        {/* Expand button with animation */}
+        {collapsible && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onExpandChange?.(!isExpanded)}
+            className="flex-shrink-0 transition-transform duration-200"
+          >
+            {isExpanded ? (
+              <ChevronDown className="w-4 h-4" />
+            ) : (
+              <ChevronRight className="w-4 h-4" />
+            )}
+          </Button>
+        )}
 
         {/* Checkbox - left side */}
         <RoundCheckbox
@@ -142,7 +153,7 @@ export function SupplierResponseCard({
         </div>
 
         {/* Final score - prominently displayed with manual score (interactive stars) */}
-        <div className="flex-shrink-0 flex flex-col items-end gap-1">
+        <div className="flex-shrink-0 flex flex-col items-end gap-1 ml-auto">
           <StarRating
             score={currentScore}
             interactive={true}
@@ -179,20 +190,50 @@ export function SupplierResponseCard({
               <div className="flex items-center justify-between mb-2">
                 <div className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                   Réponse complète
-                  {supplierId && onOpenDocuments && (
+                  <div className="flex items-center gap-1">
+                    {supplierId && onOpenDocuments && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (hasDocuments !== false) {
+                            onOpenDocuments(supplierId);
+                          }
+                        }}
+                        disabled={hasDocuments === false}
+                        className={cn(
+                          "h-6 w-6 p-0",
+                          hasDocuments === false
+                            ? "opacity-50 cursor-not-allowed"
+                            : "hover:bg-slate-200 dark:hover:bg-slate-800"
+                        )}
+                        title={
+                          hasDocuments === false
+                            ? "Aucun document disponible"
+                            : "Ouvrir les documents du fournisseur"
+                        }
+                      >
+                        <FileText
+                          className={cn(
+                            "h-3.5 w-3.5",
+                            hasDocuments === false
+                              ? "text-slate-300 dark:text-slate-600"
+                              : "text-slate-500 dark:text-slate-400"
+                          )}
+                        />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenDocuments(supplierId);
-                      }}
-                      className="h-5 w-5 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
-                      title="Ouvrir les documents du fournisseur"
+                      onClick={() => setIsFocusModalOpen(true)}
+                      className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-800"
+                      title="Agrandir (Lecture & Édition)"
                     >
-                      <FileText className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                      <Maximize2 className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                     </Button>
-                  )}
+                  </div>
                 </div>
               </div>
               <textarea
@@ -307,6 +348,20 @@ export function SupplierResponseCard({
           </div>
         </div>
       )}
+      {/* Focus Modal */}
+      <ResponseFocusModal
+        isOpen={isFocusModalOpen}
+        onOpenChange={setIsFocusModalOpen}
+        supplierName={supplierName}
+        responseText={responseText}
+        aiComment={aiComment}
+        manualComment={manualComment}
+        onCommentChange={onCommentChange}
+        onCommentBlur={onCommentBlur}
+        questionText={questionText}
+        onQuestionChange={onQuestionChange}
+        onQuestionBlur={onQuestionBlur}
+      />
     </div>
   );
 }

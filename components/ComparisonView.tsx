@@ -54,6 +54,7 @@ interface ComparisonViewProps {
   allRequirements: Requirement[];
   onRequirementChange: (id: string) => void;
   rfpId?: string;
+  supplierId?: string;
 }
 
 interface ResponseState {
@@ -74,6 +75,7 @@ export function ComparisonView({
   allRequirements,
   onRequirementChange,
   rfpId,
+  supplierId,
 }: ComparisonViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,11 +107,16 @@ export function ComparisonView({
     const supplierMap = new Map();
     responses.forEach((response) => {
       if (response.supplier && !supplierMap.has(response.supplier.id)) {
+        if (supplierId && response.supplier.id !== supplierId) {
+          return;
+        }
         supplierMap.set(response.supplier.id, response.supplier);
       }
     });
     return Array.from(supplierMap.values());
-  }, [responses]);
+  }, [responses, supplierId]);
+
+  const isSingleSupplierView = suppliers.length === 1;
 
   // Find the selected node in the tree to check its type
   const isCategory = useMemo(() => {
@@ -147,7 +154,14 @@ export function ComparisonView({
     allRequirements,
   );
   // Filter responses for current requirement (already filtered by useResponses hook)
-  const requirementResponses = responses || [];
+  // and optionally by supplierId
+  const requirementResponses = useMemo(() => {
+    const all = responses || [];
+    if (supplierId) {
+      return all.filter((r) => r.supplier_id === supplierId);
+    }
+    return all;
+  }, [responses, supplierId]);
 
   // Build breadcrumb path with codes from tree
   const breadcrumbPath = useMemo(() => {
@@ -674,9 +688,8 @@ export function ComparisonView({
             </div>
             <div className="relative">
               <p
-                className={`text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap ${
-                  !descriptionExpanded ? "line-clamp-5" : ""
-                }`}
+                className={`text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap ${!descriptionExpanded ? "line-clamp-5" : ""
+                  }`}
               >
                 {requirement.description}
               </p>
@@ -691,9 +704,8 @@ export function ComparisonView({
                     >
                       {descriptionExpanded ? "Voir moins" : "Voir plus"}
                       <ChevronDown
-                        className={`w-3 h-3 transition-transform ${
-                          descriptionExpanded ? "rotate-180" : ""
-                        }`}
+                        className={`w-3 h-3 transition-transform ${descriptionExpanded ? "rotate-180" : ""
+                          }`}
                       />
                     </button>
                   </div>
@@ -803,26 +815,28 @@ export function ComparisonView({
             ) : (
               <>
                 {/* Expand/Collapse all button - discreet placement */}
-                <div className="flex justify-end mb-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={toggleExpandAll}
-                    className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-                  >
-                    {allExpanded ? (
-                      <>
-                        <ChevronsUp className="w-3.5 h-3.5 mr-1.5" />
-                        Tout réduire
-                      </>
-                    ) : (
-                      <>
-                        <ChevronsDown className="w-3.5 h-3.5 mr-1.5" />
-                        Tout déplier
-                      </>
-                    )}
-                  </Button>
-                </div>
+                {!isSingleSupplierView && (
+                  <div className="flex justify-end mb-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={toggleExpandAll}
+                      className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                    >
+                      {allExpanded ? (
+                        <>
+                          <ChevronsUp className="w-3.5 h-3.5 mr-1.5" />
+                          Tout réduire
+                        </>
+                      ) : (
+                        <>
+                          <ChevronsDown className="w-3.5 h-3.5 mr-1.5" />
+                          Tout déplier
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   {suppliers.map((supplier) => {
@@ -863,7 +877,8 @@ export function ComparisonView({
                         questionText={state.question}
                         isSaving={state.isSaving}
                         showSaved={state.showSaved}
-                        isExpanded={state.expanded}
+                        isExpanded={isSingleSupplierView ? true : state.expanded}
+                        collapsible={!isSingleSupplierView}
                         onExpandChange={(expanded) =>
                           updateResponseState(response.id, { expanded })
                         }
@@ -897,6 +912,7 @@ export function ComparisonView({
                           )
                         }
                         onOpenDocuments={handleOpenSupplierDocuments}
+                        hasDocuments={response.supplier?.has_documents}
                       />
                     );
                   })}

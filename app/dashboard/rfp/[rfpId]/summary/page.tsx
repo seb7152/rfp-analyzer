@@ -12,6 +12,7 @@ import { AnalystsTab } from "@/components/RFPSummary/AnalystsTab";
 import { AnalysisTab } from "@/components/RFPSummary/AnalysisTab";
 import { WeightsTab } from "@/components/RFPSummary/WeightsTab";
 import { RequirementsTab } from "@/components/RFPSummary/RequirementsTab";
+import { RequirementsHeatmap } from "@/components/RFPSummary/RequirementsHeatmap";
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
 import { useAnalyzeRFP } from "@/hooks/use-analyze-rfp";
 import {
@@ -29,6 +30,7 @@ import {
   LayoutDashboard,
   Sliders,
   ListChecks,
+  Grid,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -244,6 +246,13 @@ export default function RFPSummaryPage() {
                 <Activity className="h-4 w-4" />
                 <span className="hidden sm:inline">Analyse</span>
               </TabsTrigger>
+              <TabsTrigger
+                value="heatmap"
+                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+              >
+                <Grid className="h-4 w-4" />
+                <span className="hidden sm:inline">Heatmap</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="dashboard" className="space-y-6">
@@ -344,6 +353,14 @@ export default function RFPSummaryPage() {
                 <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 p-6">
                   <AnalysisTab rfpId={rfpId} />
                 </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="heatmap" className="space-y-6">
+              {loading ? (
+                <Skeleton className="h-64 rounded-2xl" />
+              ) : (
+                <RequirementsHeatmap rfpId={rfpId} />
               )}
             </TabsContent>
           </Tabs>

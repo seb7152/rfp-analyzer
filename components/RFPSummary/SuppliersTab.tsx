@@ -11,7 +11,9 @@ import {
 } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, ChevronDown, ChevronUp, ArrowUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, ChevronDown, ChevronUp, ArrowUpDown, Zap } from "lucide-react";
+import Link from "next/link";
 
 interface SupplierDocument {
   id: string;
@@ -230,6 +232,7 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
                 </div>
               </TableHead>
               <TableHead>Fichiers</TableHead>
+              <TableHead className="w-10">Actions</TableHead>
               <TableHead className="w-10"></TableHead>
             </TableRow>
           </TableHeader>
@@ -270,6 +273,17 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
                     <Badge variant="outline">
                       {supplier.documents.length} fichier(s)
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Link
+                      href={`/dashboard/rfp/${rfpId}/evaluate?supplierId=${supplier.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      title="Évaluer ce fournisseur"
+                    >
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Zap className="h-4 w-4 text-blue-600" />
+                      </Button>
+                    </Link>
                   </TableCell>
                   <TableCell className="w-10">
                     {supplier.hasDocuments && (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useRequirements } from "@/hooks/use-requirements";
 import { useRFPCompletion } from "@/hooks/use-completion";
@@ -30,6 +30,8 @@ function normalizeRequirement(req: any): any {
 
 export default function EvaluatePage({ params }: EvaluatePageProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const supplierId = searchParams.get("supplierId");
   const { user, isLoading: authLoading } = useAuth();
   const [selectedRequirementId, setSelectedRequirementId] = useState<
     string | null
@@ -194,6 +196,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
               )}
               onRequirementChange={setSelectedRequirementId}
               rfpId={params.rfpId}
+              supplierId={supplierId || undefined}
             />
           )}
         </div>

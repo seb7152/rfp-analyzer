@@ -25,6 +25,7 @@ export interface ResponseWithSupplier {
     contact_email: string | null;
     contact_phone: string | null;
     created_at: string;
+    has_documents?: boolean;
   };
 }
 
