@@ -7,6 +7,8 @@ interface TreeNode {
   code: string;
   title: string;
   level: number;
+  is_mandatory?: boolean;
+  is_optional?: boolean;
   children?: TreeNode[];
 }
 
@@ -97,7 +99,7 @@ export async function GET(
     const { data: requirements, error: reqError } = await supabase
       .from("requirements")
       .select(
-        "id, requirement_id_external, title, category_id, level, display_order",
+        "id, requirement_id_external, title, category_id, level, display_order, is_mandatory, is_optional",
       )
       .eq("rfp_id", rfpId)
       .order("display_order", { ascending: true });
@@ -147,6 +149,8 @@ export async function GET(
         code: req.requirement_id_external,
         title: req.title,
         level: req.level,
+        is_mandatory: req.is_mandatory,
+        is_optional: req.is_optional,
       };
 
       if (req.category_id) {

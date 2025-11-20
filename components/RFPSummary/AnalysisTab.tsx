@@ -1,20 +1,11 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
+import { RequirementsHeatmap } from "@/components/RFPSummary/RequirementsHeatmap";
 
 interface AnalysisTabProps {
   rfpId: string;
 }
 
-export function AnalysisTab({}: AnalysisTabProps) {
-  return (
-    <Card className="p-8 text-center">
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Analyse</h3>
-        <p className="text-muted-foreground">
-          Cette fonctionnalité sera disponible prochainement.
-        </p>
-      </div>
-    </Card>
-  );
+export function AnalysisTab({ rfpId }: AnalysisTabProps) {
+  return <RequirementsHeatmap rfpId={rfpId} />;
 }

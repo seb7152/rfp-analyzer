@@ -688,8 +688,9 @@ export function ComparisonView({
             </div>
             <div className="relative">
               <p
-                className={`text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap ${!descriptionExpanded ? "line-clamp-5" : ""
-                  }`}
+                className={`text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap ${
+                  !descriptionExpanded ? "line-clamp-5" : ""
+                }`}
               >
                 {requirement.description}
               </p>
@@ -704,8 +705,9 @@ export function ComparisonView({
                     >
                       {descriptionExpanded ? "Voir moins" : "Voir plus"}
                       <ChevronDown
-                        className={`w-3 h-3 transition-transform ${descriptionExpanded ? "rotate-180" : ""
-                          }`}
+                        className={`w-3 h-3 transition-transform ${
+                          descriptionExpanded ? "rotate-180" : ""
+                        }`}
                       />
                     </button>
                   </div>
@@ -877,7 +879,9 @@ export function ComparisonView({
                         questionText={state.question}
                         isSaving={state.isSaving}
                         showSaved={state.showSaved}
-                        isExpanded={isSingleSupplierView ? true : state.expanded}
+                        isExpanded={
+                          isSingleSupplierView ? true : state.expanded
+                        }
                         collapsible={!isSingleSupplierView}
                         onExpandChange={(expanded) =>
                           updateResponseState(response.id, { expanded })

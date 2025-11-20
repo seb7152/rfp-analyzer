@@ -349,7 +349,13 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
   const stats = calculateRequirementStats();
 
   if (loading) {
-    return <div className="p-4 text-slate-600">Loading weights...</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-sm text-slate-500">
+          Chargement des pondérations...
+        </div>
+      </div>
+    );
   }
 
   if (error) {

@@ -37,7 +37,7 @@ export async function GET(_request: Request, { params }: { params: Params }) {
         id,
         role,
         joined_at,
-        user:users (
+        users!user_id (
           id,
           email,
           full_name,
@@ -57,10 +57,10 @@ export async function GET(_request: Request, { params }: { params: Params }) {
 
     return NextResponse.json({
       members: members.map((m: any) => ({
-        id: m.user.id,
-        email: m.user.email,
-        full_name: m.user.full_name,
-        avatar_url: m.user.avatar_url,
+        id: m.users.id,
+        email: m.users.email,
+        full_name: m.users.full_name,
+        avatar_url: m.users.avatar_url,
         role: m.role,
         joined_at: m.joined_at,
         membershipId: m.id,

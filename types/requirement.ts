@@ -12,6 +12,8 @@ export interface Requirement {
   parent_id: string | null;
   level: 1 | 2 | 3 | 4;
   weight: number;
+  is_mandatory: boolean;
+  is_optional: boolean;
   position_in_pdf: {
     page?: number;
     coordinates?: {

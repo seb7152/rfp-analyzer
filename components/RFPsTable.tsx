@@ -20,11 +20,7 @@ interface RFPsTableProps {
   onDelete?: (rfpId: string) => Promise<void> | void;
 }
 
-export function RFPsTable({
-  rfps,
-  isLoading,
-  onDelete,
-}: RFPsTableProps) {
+export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
   const router = useRouter();
 
   const getStatusBadge = (status: string) => {

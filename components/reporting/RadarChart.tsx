@@ -165,7 +165,10 @@ export function RadarChart({
             config={chartConfig}
             className="mx-auto aspect-square max-h-[400px]"
           >
-            <RechartsRadarChart data={data.data} margin={{ top: 20, right: 80, bottom: 20, left: 80 }}>
+            <RechartsRadarChart
+              data={data.data}
+              margin={{ top: 20, right: 80, bottom: 20, left: 80 }}
+            >
               <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
               <PolarAngleAxis dataKey="axis" />
               <PolarGrid />

@@ -12,7 +12,13 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, ChevronDown, ChevronUp, ArrowUpDown, Zap } from "lucide-react";
+import {
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  ArrowUpDown,
+  Zap,
+} from "lucide-react";
 import Link from "next/link";
 
 interface SupplierDocument {
@@ -142,7 +148,13 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
   }, [rfpId]);
 
   if (loading) {
-    return <div className="p-4">Chargement des fournisseurs...</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-sm text-slate-500">
+          Chargement des fournisseurs...
+        </div>
+      </div>
+    );
   }
 
   if (error) {

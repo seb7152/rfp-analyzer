@@ -37,6 +37,8 @@ interface TreeNode {
   code: string;
   title: string;
   level: number;
+  is_mandatory?: boolean;
+  is_optional?: boolean;
   children?: TreeNode[];
 }
 
@@ -250,8 +252,8 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
             if (node.type === "requirement") {
               metadata[node.id] = {
                 tags: [],
-                isOptional: false,
-                isMandatory: false,
+                isOptional: node.is_optional || false,
+                isMandatory: node.is_mandatory || false,
               };
             }
             if (node.children) {
@@ -595,6 +597,50 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
         }
       }
 
+      // Build bulk flag updates array
+      const flagUpdates: Array<{
+        requirementId: string;
+        is_mandatory: boolean;
+        is_optional: boolean;
+      }> = [];
+
+      for (const [requirementId, metadata] of Object.entries(
+        requirementMetadata,
+      )) {
+        // Check if flags have changed from initial state
+        const initialMeta = initialMetadata[requirementId];
+        if (
+          initialMeta &&
+          (metadata.isMandatory !== initialMeta.isMandatory ||
+            metadata.isOptional !== initialMeta.isOptional)
+        ) {
+          flagUpdates.push({
+            requirementId,
+            is_mandatory: metadata.isMandatory,
+            is_optional: metadata.isOptional,
+          });
+        }
+      }
+
+      // Send all flag updates in a single API call
+      if (flagUpdates.length > 0) {
+        const flagResponse = await fetch(
+          `/api/rfps/${rfpId}/requirements/bulk-update-flags`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ updates: flagUpdates }),
+          },
+        );
+
+        if (!flagResponse.ok) {
+          const error = await flagResponse.json();
+          throw new Error(
+            error.error || "Failed to save mandatory/optional flags",
+          );
+        }
+      }
+
       setSaveMessage({
         type: "success",
         text: "✓ All changes saved successfully!",
@@ -767,7 +813,13 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
   };
 
   if (loading) {
-    return <div className="p-4">Loading requirements...</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-sm text-slate-500">
+          Chargement des exigences...
+        </div>
+      </div>
+    );
   }
 
   return (

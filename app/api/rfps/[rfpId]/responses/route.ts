@@ -54,7 +54,9 @@ export async function GET(
       .is("deleted_at", null);
 
     const rfpDocIds = rfpDocs?.map((d) => d.id) || [];
-    const supplierIds = Array.from(new Set(responses.map((r) => r.supplier_id)));
+    const supplierIds = Array.from(
+      new Set(responses.map((r) => r.supplier_id)),
+    );
     const suppliersWithDocs = new Set<string>();
 
     // 2. Check which suppliers are linked to these documents

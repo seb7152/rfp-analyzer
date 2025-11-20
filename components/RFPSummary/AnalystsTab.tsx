@@ -204,7 +204,13 @@ export function AnalystsTab({ rfpId }: AnalystsTabProps) {
   );
 
   if (loading) {
-    return <div className="p-4">Chargement des analystes...</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-sm text-slate-500">
+          Chargement des analystes...
+        </div>
+      </div>
+    );
   }
 
   return (
