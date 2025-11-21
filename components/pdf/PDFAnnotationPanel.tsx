@@ -1,30 +1,38 @@
-import React, { useState, useMemo } from 'react';
-import type { PDFAnnotation } from './types/annotation.types';
-import { AnnotationList } from './annotations/AnnotationList';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Search, Filter, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+"use client";
+
+import React, { useState, useMemo } from "react";
+import type { PDFAnnotation } from "./types/annotation.types";
+import { AnnotationList } from "./annotations/AnnotationList";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Search, Filter, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface PDFAnnotationPanelProps {
   annotations: PDFAnnotation[];
   className?: string;
 }
 
-export function PDFAnnotationPanel({ annotations, className = '' }: PDFAnnotationPanelProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<string>('all');
+export function PDFAnnotationPanel({
+  annotations,
+  className = "",
+}: PDFAnnotationPanelProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState<string>("all");
 
   // Filtrer et rechercher
   const filteredAnnotations = useMemo(() => {
     return annotations.filter((a) => {
       const matchesSearch =
-        searchTerm === '' ||
+        searchTerm === "" ||
         a.highlightedText?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         a.noteContent?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        a.tags?.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+        a.tags?.some((tag) =>
+          tag.toLowerCase().includes(searchTerm.toLowerCase()),
+        );
 
-      const matchesType = filterType === 'all' || a.annotationType === filterType;
+      const matchesType =
+        filterType === "all" || a.annotationType === filterType;
 
       return matchesSearch && matchesType;
     });
@@ -39,7 +47,7 @@ export function PDFAnnotationPanel({ annotations, className = '' }: PDFAnnotatio
         acc[page].push(annotation);
         return acc;
       },
-      {} as Record<number, PDFAnnotation[]>
+      {} as Record<number, PDFAnnotation[]>,
     );
   }, [filteredAnnotations]);
 
@@ -73,7 +81,7 @@ export function PDFAnnotationPanel({ annotations, className = '' }: PDFAnnotatio
               variant="ghost"
               size="sm"
               className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
-              onClick={() => setSearchTerm('')}
+              onClick={() => setSearchTerm("")}
             >
               <X className="w-3 h-3" />
             </Button>
@@ -81,7 +89,11 @@ export function PDFAnnotationPanel({ annotations, className = '' }: PDFAnnotatio
         </div>
 
         {/* Filtres par type */}
-        <Tabs value={filterType} onValueChange={setFilterType} className="w-full">
+        <Tabs
+          value={filterType}
+          onValueChange={setFilterType}
+          className="w-full"
+        >
           <TabsList className="grid grid-cols-4 w-full">
             <TabsTrigger value="all" className="text-xs">
               Tout
@@ -106,14 +118,21 @@ export function PDFAnnotationPanel({ annotations, className = '' }: PDFAnnotatio
             <div className="text-gray-400 mb-2">
               <Filter className="w-12 h-12 mx-auto mb-2" />
             </div>
-            <p className="text-sm text-gray-600 font-medium">Aucune annotation trouvée</p>
+            <p className="text-sm text-gray-600 font-medium">
+              Aucune annotation trouvée
+            </p>
             <p className="text-xs text-gray-500 mt-1">
               {searchTerm
-                ? 'Essayez avec des mots-clés différents'
-                : 'Surlignez du texte pour créer votre première annotation'}
+                ? "Essayez avec des mots-clés différents"
+                : "Surlignez du texte pour créer votre première annotation"}
             </p>
             {searchTerm && (
-              <Button variant="outline" size="sm" className="mt-3" onClick={() => setSearchTerm('')}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => setSearchTerm("")}
+              >
                 Effacer la recherche
               </Button>
             )}
@@ -124,10 +143,10 @@ export function PDFAnnotationPanel({ annotations, className = '' }: PDFAnnotatio
               <div key={page}>
                 <div className="sticky top-0 bg-white/95 backdrop-blur-sm py-2 mb-2 border-b">
                   <h4 className="font-medium text-sm text-gray-700">
-                    Page {page}{' '}
+                    Page {page}{" "}
                     <span className="text-xs text-gray-500 font-normal">
                       ({groupedByPage[page].length} annotation
-                      {groupedByPage[page].length > 1 ? 's' : ''})
+                      {groupedByPage[page].length > 1 ? "s" : ""})
                     </span>
                   </h4>
                 </div>
@@ -145,19 +164,25 @@ export function PDFAnnotationPanel({ annotations, className = '' }: PDFAnnotatio
             <div>
               <p className="text-xs text-gray-600">Surlignages</p>
               <p className="text-lg font-semibold text-yellow-600">
-                {annotations.filter((a) => a.annotationType === 'highlight').length}
+                {
+                  annotations.filter((a) => a.annotationType === "highlight")
+                    .length
+                }
               </p>
             </div>
             <div>
               <p className="text-xs text-gray-600">Signets</p>
               <p className="text-lg font-semibold text-blue-600">
-                {annotations.filter((a) => a.annotationType === 'bookmark').length}
+                {
+                  annotations.filter((a) => a.annotationType === "bookmark")
+                    .length
+                }
               </p>
             </div>
             <div>
               <p className="text-xs text-gray-600">Notes</p>
               <p className="text-lg font-semibold text-green-600">
-                {annotations.filter((a) => a.annotationType === 'note').length}
+                {annotations.filter((a) => a.annotationType === "note").length}
               </p>
             </div>
           </div>

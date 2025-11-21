@@ -1,11 +1,13 @@
-import { useEffect } from 'react';
-import { usePDFAnnotationNavigation } from '../contexts/PDFAnnotationContext';
+"use client";
+
+import { useEffect } from "react";
+import { usePDFAnnotationNavigation } from "../contexts/PDFAnnotationContext";
 
 export function usePDFNavigation(
   documentId: string | null,
   currentPage: number,
   onPageChange: (page: number) => void,
-  onDocumentChange?: (documentId: string) => void
+  onDocumentChange?: (documentId: string) => void,
 ) {
   const { navigationTarget, clearNavigation } = usePDFAnnotationNavigation();
 
@@ -31,20 +33,20 @@ export function usePDFNavigation(
       // Attendre que la page soit chargée avant de scroller
       const scrollToAnnotation = () => {
         const element = document.querySelector(
-          `[data-annotation-id="${navigationTarget.annotationId}"]`
+          `[data-annotation-id="${navigationTarget.annotationId}"]`,
         );
         if (element) {
           element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'nearest',
+            behavior: "smooth",
+            block: "center",
+            inline: "nearest",
           });
 
           // Ajouter un effet de flash/highlight temporaire
           if (navigationTarget.highlight) {
-            element.classList.add('annotation-highlight-flash');
+            element.classList.add("annotation-highlight-flash");
             setTimeout(() => {
-              element.classList.remove('annotation-highlight-flash');
+              element.classList.remove("annotation-highlight-flash");
             }, 2000);
           }
         }
@@ -58,5 +60,12 @@ export function usePDFNavigation(
     // Nettoyer après navigation (avec un petit délai)
     const cleanupTimer = setTimeout(clearNavigation, 1000);
     return () => clearTimeout(cleanupTimer);
-  }, [navigationTarget, documentId, currentPage, onPageChange, onDocumentChange, clearNavigation]);
+  }, [
+    navigationTarget,
+    documentId,
+    currentPage,
+    onPageChange,
+    onDocumentChange,
+    clearNavigation,
+  ]);
 }

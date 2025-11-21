@@ -1,6 +1,6 @@
 // Types pour le système d'annotations PDF
 
-export type AnnotationType = 'highlight' | 'bookmark' | 'note' | 'area';
+export type AnnotationType = "highlight" | "bookmark" | "note" | "area";
 
 export interface AnnotationRect {
   x: number;

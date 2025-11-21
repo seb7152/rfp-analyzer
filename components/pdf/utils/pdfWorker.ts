@@ -1,14 +1,17 @@
 "use client";
 
-// Only import and configure on client side
-if (typeof window !== "undefined") {
-  // Dynamic import to avoid SSR issues
-  import("pdfjs-dist").then((pdfjsLib) => {
-    if (pdfjsLib.GlobalWorkerOptions) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
-    }
-  });
-}
+// We need to ensure the worker is configured before using the library
+export const getPdfJs = async () => {
+  const pdfjsLib = await import("pdfjs-dist");
 
-// Export all named exports from pdfjs-dist
-export * as pdfjs from "pdfjs-dist";
+  // Handle both ES modules and CommonJS
+  // @ts-ignore - Handle potential default export mismatch
+  const lib = pdfjsLib.default || pdfjsLib;
+
+  if (typeof window !== "undefined" && lib.GlobalWorkerOptions) {
+    // Use the specific version to ensure compatibility
+    lib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${lib.version}/build/pdf.worker.min.js`;
+  }
+
+  return lib;
+};

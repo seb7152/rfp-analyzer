@@ -1,6 +1,11 @@
-import { useState, useCallback } from 'react';
-import type { AnnotationRect } from '../types/annotation.types';
-import { screenToPDFCoordinates, mergeOverlappingRects } from '../utils/pdfCoordinates';
+"use client";
+
+import { useState, useCallback } from "react";
+import type { AnnotationRect } from "../types/annotation.types";
+import {
+  screenToPDFCoordinates,
+  mergeOverlappingRects,
+} from "../utils/pdfCoordinates";
 
 interface TextSelection {
   text: string;
@@ -21,7 +26,7 @@ export function useTextSelection() {
       pageHeight: number,
       pageWidth: number,
       containerRect: DOMRect,
-      scale: number
+      scale: number,
     ) => {
       // Convertir les coordonnées écran en coordonnées PDF
       const pdfRects = screenToPDFCoordinates(domRects, containerRect, scale);
@@ -37,7 +42,7 @@ export function useTextSelection() {
         pageWidth,
       });
     },
-    []
+    [],
   );
 
   const clearSelection = useCallback(() => {

@@ -1,4 +1,4 @@
-import type { AnnotationRect } from '../types/annotation.types';
+import type { AnnotationRect } from "../types/annotation.types";
 
 /**
  * Convertit les coordonnées d'écran en coordonnées PDF
@@ -6,7 +6,7 @@ import type { AnnotationRect } from '../types/annotation.types';
 export function screenToPDFCoordinates(
   screenRects: DOMRect[],
   containerRect: DOMRect,
-  scale: number
+  scale: number,
 ): AnnotationRect[] {
   return screenRects.map((rect) => ({
     x: (rect.left - containerRect.left) / scale,
@@ -21,7 +21,7 @@ export function screenToPDFCoordinates(
  */
 export function pdfToScreenCoordinates(
   pdfRects: AnnotationRect[],
-  scale: number
+  scale: number,
 ): AnnotationRect[] {
   return pdfRects.map((rect) => ({
     x: rect.x * scale,
@@ -34,7 +34,9 @@ export function pdfToScreenCoordinates(
 /**
  * Fusionne les rectangles qui se chevauchent sur la même ligne
  */
-export function mergeOverlappingRects(rects: AnnotationRect[]): AnnotationRect[] {
+export function mergeOverlappingRects(
+  rects: AnnotationRect[],
+): AnnotationRect[] {
   if (rects.length === 0) return [];
 
   const sorted = [...rects].sort((a, b) => {
@@ -49,9 +51,13 @@ export function mergeOverlappingRects(rects: AnnotationRect[]): AnnotationRect[]
     const last = merged[merged.length - 1];
 
     // Vérifier si sur la même ligne (tolérance de 5px)
-    if (Math.abs(current.y - last.y) < 5 && current.x <= last.x + last.width + 10) {
+    if (
+      Math.abs(current.y - last.y) < 5 &&
+      current.x <= last.x + last.width + 10
+    ) {
       // Fusionner
-      last.width = Math.max(last.x + last.width, current.x + current.width) - last.x;
+      last.width =
+        Math.max(last.x + last.width, current.x + current.width) - last.x;
       last.height = Math.max(last.height, current.height);
     } else {
       merged.push(current);
@@ -67,7 +73,7 @@ export function mergeOverlappingRects(rects: AnnotationRect[]): AnnotationRect[]
 export function normalizeCoordinates(
   rect: AnnotationRect,
   pageHeight: number,
-  rotation: number = 0
+  rotation: number = 0,
 ): AnnotationRect {
   let normalized = { ...rect };
 

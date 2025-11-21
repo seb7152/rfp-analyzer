@@ -1,8 +1,19 @@
-import React from 'react';
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, Highlighter, Bookmark, MousePointer } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import type { PDFToolbarProps } from './types/pdf.types';
+"use client";
+
+import React from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Highlighter,
+  Bookmark,
+  MousePointer,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import type { PDFToolbarProps } from "./types/pdf.types";
 
 export function PDFToolbar({
   currentPage,
@@ -12,9 +23,9 @@ export function PDFToolbar({
   onZoomIn,
   onZoomOut,
   onResetZoom,
-  annotationMode = 'select',
+  annotationMode = "select",
   onAnnotationModeChange,
-  selectedColor = '#FFEB3B',
+  selectedColor = "#FFEB3B",
   onColorChange,
 }: PDFToolbarProps) {
   const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,7 +84,12 @@ export function PDFToolbar({
           <ZoomIn className="w-4 h-4" />
         </Button>
 
-        <Button variant="outline" size="sm" onClick={onResetZoom} title="Réinitialiser le zoom">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onResetZoom}
+          title="Réinitialiser le zoom"
+        >
           <Maximize2 className="w-4 h-4" />
         </Button>
       </div>
@@ -82,9 +98,9 @@ export function PDFToolbar({
       {onAnnotationModeChange && (
         <div className="flex items-center gap-2 border-l pl-2">
           <Button
-            variant={annotationMode === 'select' ? 'primary' : 'outline'}
+            variant={annotationMode === "select" ? "primary" : "outline"}
             size="sm"
-            onClick={() => onAnnotationModeChange('select')}
+            onClick={() => onAnnotationModeChange("select")}
             title="Mode sélection"
           >
             <MousePointer className="w-4 h-4 mr-1" />
@@ -92,9 +108,9 @@ export function PDFToolbar({
           </Button>
 
           <Button
-            variant={annotationMode === 'highlight' ? 'primary' : 'outline'}
+            variant={annotationMode === "highlight" ? "primary" : "outline"}
             size="sm"
-            onClick={() => onAnnotationModeChange('highlight')}
+            onClick={() => onAnnotationModeChange("highlight")}
             title="Mode surlignage"
           >
             <Highlighter className="w-4 h-4 mr-1" />
@@ -102,9 +118,9 @@ export function PDFToolbar({
           </Button>
 
           <Button
-            variant={annotationMode === 'bookmark' ? 'primary' : 'outline'}
+            variant={annotationMode === "bookmark" ? "primary" : "outline"}
             size="sm"
-            onClick={() => onAnnotationModeChange('bookmark')}
+            onClick={() => onAnnotationModeChange("bookmark")}
             title="Ajouter un signet"
           >
             <Bookmark className="w-4 h-4 mr-1" />
@@ -112,7 +128,7 @@ export function PDFToolbar({
           </Button>
 
           {/* Color picker - seulement en mode surlignage */}
-          {annotationMode === 'highlight' && onColorChange && (
+          {annotationMode === "highlight" && onColorChange && (
             <div className="flex items-center gap-1 border-l pl-2">
               <span className="text-xs text-gray-600">Couleur:</span>
               <button
@@ -120,7 +136,13 @@ export function PDFToolbar({
                 style={{ backgroundColor: selectedColor }}
                 onClick={() => {
                   // Pour l'instant, on bascule entre quelques couleurs
-                  const colors = ['#FFEB3B', '#4CAF50', '#2196F3', '#FF9800', '#E91E63'];
+                  const colors = [
+                    "#FFEB3B",
+                    "#4CAF50",
+                    "#2196F3",
+                    "#FF9800",
+                    "#E91E63",
+                  ];
                   const currentIndex = colors.indexOf(selectedColor);
                   const nextColor = colors[(currentIndex + 1) % colors.length];
                   onColorChange(nextColor);

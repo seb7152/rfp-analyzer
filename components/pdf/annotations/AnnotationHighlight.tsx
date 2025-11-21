@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
-import type { PDFAnnotation } from '../types/annotation.types';
-import { Trash2, Edit2, Save, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Textarea } from '@/components/ui/textarea';
+"use client";
+
+import React, { useState } from "react";
+import type { PDFAnnotation } from "../types/annotation.types";
+import { Trash2, Edit2, Save, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Textarea } from "@/components/ui/textarea";
 
 interface AnnotationHighlightProps {
   annotation: PDFAnnotation;
@@ -19,7 +25,7 @@ export function AnnotationHighlight({
   onUpdate,
 }: AnnotationHighlightProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [noteContent, setNoteContent] = useState(annotation.noteContent || '');
+  const [noteContent, setNoteContent] = useState(annotation.noteContent || "");
 
   const handleSave = () => {
     onUpdate(annotation.id, noteContent);
@@ -27,7 +33,7 @@ export function AnnotationHighlight({
   };
 
   const handleCancel = () => {
-    setNoteContent(annotation.noteContent || '');
+    setNoteContent(annotation.noteContent || "");
     setIsEditing(false);
   };
 
@@ -45,10 +51,10 @@ export function AnnotationHighlight({
                 height: rect.height * scale,
                 backgroundColor: annotation.color,
                 opacity: 0.4,
-                pointerEvents: 'auto',
-                borderRadius: '2px',
+                pointerEvents: "auto",
+                borderRadius: "2px",
               }}
-              title={annotation.highlightedText || 'Annotation'}
+              title={annotation.highlightedText || "Annotation"}
             />
           </PopoverTrigger>
 
@@ -57,9 +63,9 @@ export function AnnotationHighlight({
               {/* En-tête avec type d'annotation */}
               <div className="flex items-center justify-between pb-2 border-b">
                 <span className="text-xs font-medium text-gray-500 uppercase">
-                  {annotation.annotationType === 'highlight' && '🖍️ Surlignage'}
-                  {annotation.annotationType === 'bookmark' && '📌 Signet'}
-                  {annotation.annotationType === 'note' && '📝 Note'}
+                  {annotation.annotationType === "highlight" && "🖍️ Surlignage"}
+                  {annotation.annotationType === "bookmark" && "📌 Signet"}
+                  {annotation.annotationType === "note" && "📝 Note"}
                 </span>
                 <Button
                   size="sm"
@@ -74,8 +80,10 @@ export function AnnotationHighlight({
 
               {/* Texte surligné */}
               {annotation.highlightedText && (
-                <div className="text-sm text-gray-700 border-l-4 pl-2 py-1 italic bg-gray-50 rounded"
-                  style={{ borderColor: annotation.color }}>
+                <div
+                  className="text-sm text-gray-700 border-l-4 pl-2 py-1 italic bg-gray-50 rounded"
+                  style={{ borderColor: annotation.color }}
+                >
                   "{annotation.highlightedText}"
                 </div>
               )}
@@ -117,7 +125,9 @@ export function AnnotationHighlight({
                     className="w-full"
                   >
                     <Edit2 className="w-3 h-3 mr-1" />
-                    {annotation.noteContent ? 'Modifier la note' : 'Ajouter une note'}
+                    {annotation.noteContent
+                      ? "Modifier la note"
+                      : "Ajouter une note"}
                   </Button>
                 </>
               )}
@@ -126,11 +136,11 @@ export function AnnotationHighlight({
               <div className="text-xs text-gray-500 pt-2 border-t flex items-center justify-between">
                 <span>Page {annotation.pageNumber}</span>
                 <span>
-                  {new Date(annotation.createdAt).toLocaleDateString('fr-FR', {
-                    day: '2-digit',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit',
+                  {new Date(annotation.createdAt).toLocaleDateString("fr-FR", {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
                   })}
                 </span>
               </div>

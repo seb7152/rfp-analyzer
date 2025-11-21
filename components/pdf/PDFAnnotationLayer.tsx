@@ -1,6 +1,8 @@
-import React from 'react';
-import type { PDFAnnotation } from './types/annotation.types';
-import { AnnotationHighlight } from './annotations/AnnotationHighlight';
+"use client";
+
+import React from "react";
+import type { PDFAnnotation } from "./types/annotation.types";
+import { AnnotationHighlight } from "./annotations/AnnotationHighlight";
 
 interface PDFAnnotationLayerProps {
   annotations: PDFAnnotation[];
@@ -22,7 +24,9 @@ export function PDFAnnotationLayer({
   onUpdateAnnotation,
 }: PDFAnnotationLayerProps) {
   // Filtrer les annotations pour cette page
-  const pageAnnotations = annotations.filter((a) => a.pageNumber === pageNumber);
+  const pageAnnotations = annotations.filter(
+    (a) => a.pageNumber === pageNumber,
+  );
 
   if (pageAnnotations.length === 0) {
     return null;
@@ -38,9 +42,9 @@ export function PDFAnnotationLayer({
     >
       {pageAnnotations.map((annotation) => {
         switch (annotation.annotationType) {
-          case 'highlight':
-          case 'bookmark':
-          case 'note':
+          case "highlight":
+          case "bookmark":
+          case "note":
             return (
               <AnnotationHighlight
                 key={annotation.id}

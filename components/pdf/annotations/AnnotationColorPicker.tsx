@@ -1,40 +1,46 @@
-import React from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { Palette } from 'lucide-react';
+"use client";
+
+import React from "react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Palette } from "lucide-react";
 
 export const ANNOTATION_COLORS = [
-  { name: 'Jaune', value: '#FFEB3B', bg: 'bg-yellow-300' },
-  { name: 'Vert', value: '#4CAF50', bg: 'bg-green-500' },
-  { name: 'Bleu', value: '#2196F3', bg: 'bg-blue-500' },
-  { name: 'Orange', value: '#FF9800', bg: 'bg-orange-500' },
-  { name: 'Rose', value: '#E91E63', bg: 'bg-pink-500' },
-  { name: 'Violet', value: '#9C27B0', bg: 'bg-purple-600' },
-  { name: 'Rouge', value: '#F44336', bg: 'bg-red-500' },
-  { name: 'Cyan', value: '#00BCD4', bg: 'bg-cyan-500' },
+  { name: "Jaune", value: "#FFEB3B", bg: "bg-yellow-300" },
+  { name: "Vert", value: "#4CAF50", bg: "bg-green-500" },
+  { name: "Bleu", value: "#2196F3", bg: "bg-blue-500" },
+  { name: "Orange", value: "#FF9800", bg: "bg-orange-500" },
+  { name: "Rose", value: "#E91E63", bg: "bg-pink-500" },
+  { name: "Violet", value: "#9C27B0", bg: "bg-purple-600" },
+  { name: "Rouge", value: "#F44336", bg: "bg-red-500" },
+  { name: "Cyan", value: "#00BCD4", bg: "bg-cyan-500" },
 ];
 
 interface AnnotationColorPickerProps {
   selectedColor: string;
   onColorChange: (color: string) => void;
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
 }
 
 export function AnnotationColorPicker({
   selectedColor,
   onColorChange,
-  size = 'md',
+  size = "md",
 }: AnnotationColorPickerProps) {
   const sizeClasses = {
-    sm: 'w-6 h-6',
-    md: 'w-8 h-8',
-    lg: 'w-10 h-10',
+    sm: "w-6 h-6",
+    md: "w-8 h-8",
+    lg: "w-10 h-10",
   };
 
   const gridSizeClasses = {
-    sm: 'w-6 h-6',
-    md: 'w-8 h-8',
-    lg: 'w-10 h-10',
+    sm: "w-6 h-6",
+    md: "w-8 h-8",
+    lg: "w-10 h-10",
   };
 
   return (
@@ -63,8 +69,8 @@ export function AnnotationColorPicker({
                 key={color.value}
                 className={`${gridSizeClasses[size]} rounded border-2 transition-all ${
                   selectedColor === color.value
-                    ? 'border-blue-600 scale-110 shadow-md'
-                    : 'border-gray-300 hover:border-gray-400 hover:scale-105'
+                    ? "border-blue-600 scale-110 shadow-md"
+                    : "border-gray-300 hover:border-gray-400 hover:scale-105"
                 }`}
                 style={{ backgroundColor: color.value }}
                 onClick={() => onColorChange(color.value)}
@@ -92,7 +98,10 @@ export function AnnotationColorPicker({
           {/* Aperçu */}
           <div className="pt-2 border-t">
             <p className="text-xs text-gray-600 mb-1">Aperçu:</p>
-            <div className="h-6 rounded" style={{ backgroundColor: selectedColor, opacity: 0.4 }}>
+            <div
+              className="h-6 rounded"
+              style={{ backgroundColor: selectedColor, opacity: 0.4 }}
+            >
               <p className="text-xs px-2 py-1 text-gray-700">Texte surligné</p>
             </div>
           </div>

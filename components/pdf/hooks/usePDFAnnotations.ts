@@ -1,22 +1,35 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase/client';
-import type { PDFAnnotation, CreateAnnotationDTO, UpdateAnnotationDTO } from '../types/annotation.types';
+"use client";
 
-export function usePDFAnnotations(documentId: string | null, organizationId: string) {
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase/client";
+import type {
+  PDFAnnotation,
+  CreateAnnotationDTO,
+  UpdateAnnotationDTO,
+} from "../types/annotation.types";
+
+export function usePDFAnnotations(
+  documentId: string | null,
+  organizationId: string,
+) {
   const queryClient = useQueryClient();
 
   // Récupérer les annotations d'un document
-  const { data: annotations, isLoading, error } = useQuery({
-    queryKey: ['pdf-annotations', documentId],
+  const {
+    data: annotations,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["pdf-annotations", documentId],
     queryFn: async () => {
       if (!documentId) return [];
 
       const { data, error } = await supabase
-        .from('pdf_annotations')
-        .select('*')
-        .eq('document_id', documentId)
-        .is('deleted_at', null)
-        .order('page_number', { ascending: true });
+        .from("pdf_annotations")
+        .select("*")
+        .eq("document_id", documentId)
+        .is("deleted_at", null)
+        .order("page_number", { ascending: true });
 
       if (error) throw error;
       return data as PDFAnnotation[];
@@ -27,23 +40,28 @@ export function usePDFAnnotations(documentId: string | null, organizationId: str
   // Créer une annotation
   const createAnnotation = useMutation({
     mutationFn: async (dto: CreateAnnotationDTO) => {
-      const { data, error } = await supabase.rpc('create_annotation_with_context', {
-        p_organization_id: organizationId,
-        p_document_id: dto.documentId,
-        p_requirement_id: dto.requirementId || null,
-        p_annotation_type: dto.annotationType,
-        p_page_number: dto.pageNumber,
-        p_position: dto.position as any, // JSONB
-        p_highlighted_text: dto.highlightedText || null,
-        p_note_content: dto.noteContent || null,
-        p_color: dto.color || '#FFEB3B',
-      });
+      const { data, error } = await supabase.rpc(
+        "create_annotation_with_context",
+        {
+          p_organization_id: organizationId,
+          p_document_id: dto.documentId,
+          p_requirement_id: dto.requirementId || null,
+          p_annotation_type: dto.annotationType,
+          p_page_number: dto.pageNumber,
+          p_position: dto.position as any, // JSONB
+          p_highlighted_text: dto.highlightedText || null,
+          p_note_content: dto.noteContent || null,
+          p_color: dto.color || "#FFEB3B",
+        },
+      );
 
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pdf-annotations', documentId] });
+      queryClient.invalidateQueries({
+        queryKey: ["pdf-annotations", documentId],
+      });
     },
   });
 
@@ -51,14 +69,16 @@ export function usePDFAnnotations(documentId: string | null, organizationId: str
   const deleteAnnotation = useMutation({
     mutationFn: async (annotationId: string) => {
       const { error } = await supabase
-        .from('pdf_annotations')
+        .from("pdf_annotations")
         .update({ deleted_at: new Date().toISOString() })
-        .eq('id', annotationId);
+        .eq("id", annotationId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pdf-annotations', documentId] });
+      queryClient.invalidateQueries({
+        queryKey: ["pdf-annotations", documentId],
+      });
     },
   });
 
@@ -69,19 +89,22 @@ export function usePDFAnnotations(documentId: string | null, organizationId: str
         updated_at: new Date().toISOString(),
       };
 
-      if (dto.noteContent !== undefined) updateData.note_content = dto.noteContent;
+      if (dto.noteContent !== undefined)
+        updateData.note_content = dto.noteContent;
       if (dto.color !== undefined) updateData.color = dto.color;
       if (dto.tags !== undefined) updateData.tags = dto.tags;
 
       const { error } = await supabase
-        .from('pdf_annotations')
+        .from("pdf_annotations")
         .update(updateData)
-        .eq('id', dto.id);
+        .eq("id", dto.id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pdf-annotations', documentId] });
+      queryClient.invalidateQueries({
+        queryKey: ["pdf-annotations", documentId],
+      });
     },
   });
 

@@ -1,5 +1,5 @@
 // Types pour PDF.js
-import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
+import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist";
 
 export type { PDFDocumentProxy, PDFPageProxy };
 
@@ -26,8 +26,8 @@ export interface PDFToolbarProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onResetZoom: () => void;
-  annotationMode?: 'select' | 'highlight' | 'bookmark';
-  onAnnotationModeChange?: (mode: 'select' | 'highlight' | 'bookmark') => void;
+  annotationMode?: "select" | "highlight" | "bookmark";
+  onAnnotationModeChange?: (mode: "select" | "highlight" | "bookmark") => void;
   selectedColor?: string;
   onColorChange?: (color: string) => void;
 }

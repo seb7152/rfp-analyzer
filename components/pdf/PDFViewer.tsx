@@ -1,23 +1,25 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useCallback } from 'react';
-import { usePDFDocument } from './hooks/usePDFDocument';
-import { PDFPage } from './PDFPage';
-import { PDFToolbar } from './PDFToolbar';
-import { Loader2 } from 'lucide-react';
-import type { PDFViewerProps } from './types/pdf.types';
+import React, { useState, useRef, useCallback } from "react";
+import { usePDFDocument } from "./hooks/usePDFDocument";
+import { PDFPage } from "./PDFPage";
+import { PDFToolbar } from "./PDFToolbar";
+import { Loader2 } from "lucide-react";
+import type { PDFViewerProps } from "./types/pdf.types";
 
 export function PDFViewer({
   url,
   initialPage = 1,
   onPageChange,
-  className = '',
+  className = "",
 }: PDFViewerProps) {
   const { document, numPages, isLoading, error } = usePDFDocument(url);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [scale, setScale] = useState(1.2);
-  const [annotationMode, setAnnotationMode] = useState<'select' | 'highlight' | 'bookmark'>('select');
-  const [selectedColor, setSelectedColor] = useState('#FFEB3B');
+  const [annotationMode, setAnnotationMode] = useState<
+    "select" | "highlight" | "bookmark"
+  >("select");
+  const [selectedColor, setSelectedColor] = useState("#FFEB3B");
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handlePageChange = useCallback(
@@ -27,7 +29,7 @@ export function PDFViewer({
         onPageChange?.(page);
       }
     },
-    [numPages, onPageChange]
+    [numPages, onPageChange],
   );
 
   const handleZoomIn = useCallback(() => {
@@ -88,10 +90,7 @@ export function PDFViewer({
         onColorChange={setSelectedColor}
       />
 
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-auto bg-gray-100 p-4"
-      >
+      <div ref={containerRef} className="flex-1 overflow-auto bg-gray-100 p-4">
         <div className="flex flex-col items-center gap-4">
           <PDFPage
             document={document}
@@ -103,10 +102,12 @@ export function PDFViewer({
       </div>
 
       {/* Afficher le mode actif */}
-      {annotationMode !== 'select' && (
+      {annotationMode !== "select" && (
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg text-sm font-medium">
-          {annotationMode === 'highlight' && '✏️ Mode surlignage actif - Sélectionnez du texte'}
-          {annotationMode === 'bookmark' && '📌 Mode signet actif - Cliquez pour ajouter un signet'}
+          {annotationMode === "highlight" &&
+            "✏️ Mode surlignage actif - Sélectionnez du texte"}
+          {annotationMode === "bookmark" &&
+            "📌 Mode signet actif - Cliquez pour ajouter un signet"}
         </div>
       )}
     </div>

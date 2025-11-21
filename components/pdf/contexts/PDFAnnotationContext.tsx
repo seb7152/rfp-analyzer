@@ -1,6 +1,12 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  ReactNode,
+} from "react";
 
 interface NavigationTarget {
   documentId: string;
@@ -15,14 +21,19 @@ interface PDFAnnotationContextValue {
   clearNavigation: () => void;
 }
 
-const PDFAnnotationContext = createContext<PDFAnnotationContextValue | undefined>(undefined);
+const PDFAnnotationContext = createContext<
+  PDFAnnotationContextValue | undefined
+>(undefined);
 
 interface PDFAnnotationProviderProps {
   children: ReactNode;
 }
 
-export function PDFAnnotationProvider({ children }: PDFAnnotationProviderProps) {
-  const [navigationTarget, setNavigationTarget] = useState<NavigationTarget | null>(null);
+export function PDFAnnotationProvider({
+  children,
+}: PDFAnnotationProviderProps) {
+  const [navigationTarget, setNavigationTarget] =
+    useState<NavigationTarget | null>(null);
 
   const navigateToAnnotation = useCallback((target: NavigationTarget) => {
     setNavigationTarget(target);
@@ -44,7 +55,9 @@ export function PDFAnnotationProvider({ children }: PDFAnnotationProviderProps) 
 export function usePDFAnnotationNavigation() {
   const context = useContext(PDFAnnotationContext);
   if (!context) {
-    throw new Error('usePDFAnnotationNavigation must be used within PDFAnnotationProvider');
+    throw new Error(
+      "usePDFAnnotationNavigation must be used within PDFAnnotationProvider",
+    );
   }
   return context;
 }

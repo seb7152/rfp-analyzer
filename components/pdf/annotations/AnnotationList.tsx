@@ -1,9 +1,11 @@
-import React from 'react';
-import type { PDFAnnotation } from '../types/annotation.types';
-import { usePDFAnnotationNavigation } from '../contexts/PDFAnnotationContext';
-import { FileText, MapPin, MessageSquare, Highlighter } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+"use client";
+
+import React from "react";
+import type { PDFAnnotation } from "../types/annotation.types";
+import { usePDFAnnotationNavigation } from "../contexts/PDFAnnotationContext";
+import { FileText, MapPin, MessageSquare, Highlighter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 interface AnnotationListProps {
   annotations: PDFAnnotation[];
@@ -28,25 +30,25 @@ export function AnnotationList({
   if (filteredAnnotations.length === 0) {
     return (
       <div className="text-sm text-gray-500 italic p-4 text-center bg-gray-50 rounded">
-        Aucune annotation{requirementId ? ' pour ce requirement' : ''}
+        Aucune annotation{requirementId ? " pour ce requirement" : ""}
       </div>
     );
   }
 
   const getAnnotationIcon = (type: string, color?: string) => {
     switch (type) {
-      case 'highlight':
+      case "highlight":
         return (
           <div
             className="w-5 h-5 rounded flex items-center justify-center"
-            style={{ backgroundColor: color || '#FFEB3B' }}
+            style={{ backgroundColor: color || "#FFEB3B" }}
           >
             <Highlighter className="w-3 h-3 text-gray-700" />
           </div>
         );
-      case 'bookmark':
+      case "bookmark":
         return <MapPin className="w-5 h-5 text-blue-600" />;
-      case 'note':
+      case "note":
         return <MessageSquare className="w-5 h-5 text-green-600" />;
       default:
         return <FileText className="w-5 h-5 text-gray-600" />;
@@ -57,11 +59,11 @@ export function AnnotationList({
     <div className="space-y-2">
       {title && <h4 className="font-medium text-sm mb-3">{title}</h4>}
 
-      <div className={`space-y-${compact ? '1' : '2'}`}>
+      <div className={`space-y-${compact ? "1" : "2"}`}>
         {filteredAnnotations.map((annotation) => (
           <Card
             key={annotation.id}
-            className={`${compact ? 'p-2' : 'p-3'} hover:bg-gray-50 transition-colors cursor-pointer`}
+            className={`${compact ? "p-2" : "p-3"} hover:bg-gray-50 transition-colors cursor-pointer`}
             onClick={() =>
               navigateToAnnotation({
                 documentId: annotation.documentId,
@@ -82,7 +84,7 @@ export function AnnotationList({
                 {/* Texte surligné */}
                 {annotation.highlightedText && (
                   <p
-                    className={`${compact ? 'text-xs' : 'text-sm'} text-gray-700 line-clamp-2 italic mb-1`}
+                    className={`${compact ? "text-xs" : "text-sm"} text-gray-700 line-clamp-2 italic mb-1`}
                   >
                     "{annotation.highlightedText}"
                   </p>
@@ -91,7 +93,7 @@ export function AnnotationList({
                 {/* Note */}
                 {annotation.noteContent && (
                   <p
-                    className={`${compact ? 'text-xs' : 'text-sm'} text-gray-600 line-clamp-2`}
+                    className={`${compact ? "text-xs" : "text-sm"} text-gray-600 line-clamp-2`}
                   >
                     💬 {annotation.noteContent}
                   </p>
@@ -99,13 +101,18 @@ export function AnnotationList({
 
                 {/* Métadonnées */}
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-gray-500">Page {annotation.pageNumber}</span>
+                  <span className="text-xs text-gray-500">
+                    Page {annotation.pageNumber}
+                  </span>
                   <span className="text-xs text-gray-400">•</span>
                   <span className="text-xs text-gray-500">
-                    {new Date(annotation.createdAt).toLocaleDateString('fr-FR', {
-                      day: '2-digit',
-                      month: 'short',
-                    })}
+                    {new Date(annotation.createdAt).toLocaleDateString(
+                      "fr-FR",
+                      {
+                        day: "2-digit",
+                        month: "short",
+                      },
+                    )}
                   </span>
                   {annotation.tags && annotation.tags.length > 0 && (
                     <>
@@ -152,7 +159,8 @@ export function AnnotationList({
 
       {/* Compteur */}
       <div className="text-xs text-gray-500 text-center pt-2 border-t">
-        {filteredAnnotations.length} annotation{filteredAnnotations.length > 1 ? 's' : ''}
+        {filteredAnnotations.length} annotation
+        {filteredAnnotations.length > 1 ? "s" : ""}
       </div>
     </div>
   );

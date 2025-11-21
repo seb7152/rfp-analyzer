@@ -1,5 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
-import type { PDFDocumentProxy, PDFPageProxy } from './types/pdf.types';
+"use client";
+
+import React, { useEffect, useRef, useState } from "react";
+import type { PDFDocumentProxy, PDFPageProxy } from "./types/pdf.types";
 
 interface PDFPageProps {
   document: PDFDocumentProxy;
@@ -16,7 +18,7 @@ export function PDFPage({
   scale,
   onPageLoad,
   className,
-  children
+  children,
 }: PDFPageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -28,14 +30,17 @@ export function PDFPage({
   useEffect(() => {
     let isCancelled = false;
 
-    document.getPage(pageNumber).then((pdfPage) => {
-      if (!isCancelled) {
-        setPage(pdfPage);
-        onPageLoad?.(pdfPage);
-      }
-    }).catch((error) => {
-      console.error('Error loading page:', error);
-    });
+    document
+      .getPage(pageNumber)
+      .then((pdfPage) => {
+        if (!isCancelled) {
+          setPage(pdfPage);
+          onPageLoad?.(pdfPage);
+        }
+      })
+      .catch((error) => {
+        console.error("Error loading page:", error);
+      });
 
     return () => {
       isCancelled = true;
@@ -47,7 +52,7 @@ export function PDFPage({
     if (!page || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext("2d");
     if (!context) return;
 
     // Annuler le rendu précédent s'il existe
@@ -76,8 +81,8 @@ export function PDFPage({
         renderTaskRef.current = null;
       })
       .catch((err) => {
-        if (err.name !== 'RenderingCancelledException') {
-          console.error('Error rendering page:', err);
+        if (err.name !== "RenderingCancelledException") {
+          console.error("Error rendering page:", err);
         }
         setRendering(false);
         renderTaskRef.current = null;
@@ -107,12 +112,12 @@ export function PDFPage({
       style={{
         width: viewport.width,
         height: viewport.height,
-        position: 'relative',
-        backgroundColor: 'white'
+        position: "relative",
+        backgroundColor: "white",
       }}
       data-page-number={pageNumber}
     >
-      <canvas ref={canvasRef} style={{ display: 'block' }} />
+      <canvas ref={canvasRef} style={{ display: "block" }} />
 
       {/* Indicateur de rendu */}
       {rendering && (

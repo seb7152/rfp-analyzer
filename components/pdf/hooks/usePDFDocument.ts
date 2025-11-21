@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { pdfjs } from '../utils/pdfWorker';
-import type { PDFDocumentProxy } from '../types/pdf.types';
+"use client";
+
+import { useState, useEffect } from "react";
+import type { PDFDocumentProxy } from "../types/pdf.types";
 
 interface UsePDFDocumentResult {
   document: PDFDocumentProxy | null;
@@ -26,27 +27,51 @@ export function usePDFDocument(url: string | null): UsePDFDocumentResult {
     setIsLoading(true);
     setError(null);
 
-    const loadingTask = pdfjs.getDocument(url);
+    // Lazy import pdfjs to avoid SSR issues
+    import("../utils/pdfWorker")
+      .then(async ({ getPdfJs }) => {
+        if (isCancelled) return;
 
-    loadingTask.promise
-      .then((pdf) => {
-        if (!isCancelled) {
-          setDocument(pdf);
-          setNumPages(pdf.numPages);
-          setIsLoading(false);
+        try {
+          const pdfjs = await getPdfJs();
+
+          if (isCancelled) return;
+
+          const loadingTask = pdfjs.getDocument(url);
+
+          loadingTask.promise
+            .then((pdf) => {
+              if (!isCancelled) {
+                setDocument(pdf);
+                setNumPages(pdf.numPages);
+                setIsLoading(false);
+              }
+            })
+            .catch((err) => {
+              if (!isCancelled) {
+                console.error("Error loading PDF:", err);
+                setError(err);
+                setIsLoading(false);
+              }
+            });
+        } catch (err) {
+          if (!isCancelled) {
+            console.error("Error initializing pdfjs:", err);
+            setError(err as Error);
+            setIsLoading(false);
+          }
         }
       })
-      .catch((err) => {
+      .catch((importError) => {
         if (!isCancelled) {
-          console.error('Error loading PDF:', err);
-          setError(err);
+          console.error("Error importing pdfWorker:", importError);
+          setError(importError as Error);
           setIsLoading(false);
         }
       });
 
     return () => {
       isCancelled = true;
-      loadingTask.destroy();
     };
   }, [url]);
 
