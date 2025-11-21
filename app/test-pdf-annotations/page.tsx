@@ -5,6 +5,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
+// Force dynamic rendering - PDF.js requires browser APIs
+export const dynamic = 'force-dynamic';
+
 /**
  * Page de test pour le système d'annotations PDF
  *
