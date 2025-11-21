@@ -74,7 +74,7 @@ CREATE POLICY "Users can view annotations in their organization"
   FOR SELECT
   USING (
     organization_id IN (
-      SELECT organization_id FROM organization_members
+      SELECT organization_id FROM user_organizations
       WHERE user_id = auth.uid()
     )
   );
@@ -85,7 +85,7 @@ CREATE POLICY "Users can create annotations in their organization"
   FOR INSERT
   WITH CHECK (
     organization_id IN (
-      SELECT organization_id FROM organization_members
+      SELECT organization_id FROM user_organizations
       WHERE user_id = auth.uid()
     )
   );
@@ -134,7 +134,7 @@ CREATE POLICY "Users can view annotation groups in their organization"
   FOR SELECT
   USING (
     organization_id IN (
-      SELECT organization_id FROM organization_members
+      SELECT organization_id FROM user_organizations
       WHERE user_id = auth.uid()
     )
   );
@@ -144,7 +144,7 @@ CREATE POLICY "Users can create annotation groups in their organization"
   FOR INSERT
   WITH CHECK (
     organization_id IN (
-      SELECT organization_id FROM organization_members
+      SELECT organization_id FROM user_organizations
       WHERE user_id = auth.uid()
     )
   );
@@ -160,7 +160,7 @@ CREATE POLICY "Users can view annotation group members"
       SELECT 1 FROM annotation_groups ag
       WHERE ag.id = group_id
       AND ag.organization_id IN (
-        SELECT organization_id FROM organization_members
+        SELECT organization_id FROM user_organizations
         WHERE user_id = auth.uid()
       )
     )
@@ -185,7 +185,7 @@ SELECT
   a.updated_at,
   d.filename as document_filename,
   d.original_filename as document_original_filename,
-  r.number as requirement_number,
+  r.requirement_id_external as requirement_number,
   r.title as requirement_title,
   s.name as supplier_name,
   u.email as created_by_email,
@@ -200,7 +200,8 @@ LEFT JOIN rfp_documents d ON a.document_id = d.id
 LEFT JOIN requirements r ON a.requirement_id = r.id
 LEFT JOIN suppliers s ON a.supplier_id = s.id
 LEFT JOIN auth.users u ON a.created_by = u.id
-WHERE a.deleted_at IS NULL;
+WHERE a.deleted_at IS NULL
+ORDER BY a.created_at DESC;
 
 -- Fonction helper pour créer une annotation avec lien automatique
 CREATE OR REPLACE FUNCTION create_annotation_with_context(

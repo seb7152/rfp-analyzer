@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { X, Loader2, AlertCircle, ChevronRight } from "lucide-react";
+import { PDFViewerWithAnnotations } from "@/components/pdf/PDFViewerWithAnnotations";
 
 export interface PDFDocument {
   id: string;
@@ -23,6 +24,8 @@ interface PDFViewerSheetProps {
   onOpenChange: (open: boolean) => void;
   documents: PDFDocument[];
   rfpId?: string;
+  organizationId: string;
+  requirementId?: string;
 }
 
 export function PDFViewerSheet({
@@ -30,14 +33,14 @@ export function PDFViewerSheet({
   onOpenChange,
   documents,
   rfpId,
+  organizationId,
+  requirementId,
 }: PDFViewerSheetProps) {
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [currentPage, setCurrentPage] = useState<number | null>(null);
-  const iframeRef = React.useRef<HTMLIFrameElement>(null);
 
   // Helper to get storage key for PDF position
   const getPdfPositionKey = (docId: string) => `pdf-position-${docId}`;
@@ -114,67 +117,16 @@ export function PDFViewerSheet({
     fetchPdfUrl();
   }, [selectedDoc, rfpId]);
 
-  // Handle page changes from iframe - PDF.js updates the iframe URL hash when navigating
-  useEffect(() => {
-    if (!iframeRef.current || !selectedDoc) return;
-
-    let lastDetectedPage: number | null = null;
-
-    const checkCurrentPage = () => {
-      if (!iframeRef.current?.src) return;
-
-      // Check the iframe src for page fragment
-      const hashMatch = iframeRef.current.src.match(/#page=(\d+)/);
-      if (hashMatch && hashMatch[1]) {
-        const page = parseInt(hashMatch[1], 10);
-        // Only save if page changed
-        if (page !== lastDetectedPage && page > 0) {
-          lastDetectedPage = page;
-          setCurrentPage(page);
-          savePdfPosition(selectedDoc.id, page);
-        }
-      }
-
-      // Also try to access PDFViewerApplication directly for more reliable detection
-      try {
-        const iframeWindow = iframeRef.current?.contentWindow as any;
-        if (
-          iframeWindow?.PDFViewerApplication?.page &&
-          typeof iframeWindow.PDFViewerApplication.page === "number"
-        ) {
-          const page = iframeWindow.PDFViewerApplication.page;
-          if (page !== lastDetectedPage && page > 0) {
-            lastDetectedPage = page;
-            setCurrentPage(page);
-            savePdfPosition(selectedDoc.id, page);
-          }
-        }
-      } catch (e) {
-        // Silently ignore cross-origin errors
-      }
-    };
-
-    // Poll frequently for page changes
-    const interval = setInterval(checkCurrentPage, 500);
-
-    return () => clearInterval(interval);
-  }, [selectedDoc]);
-
   const handleDocumentChange = (docId: string) => {
     setSelectedDocId(docId);
   };
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      // Save current page position before closing
-      if (selectedDoc && currentPage) {
-        savePdfPosition(selectedDoc.id, currentPage);
-      }
       // Reset state when actually closing the viewer
       setPdfUrl(null);
       setUrlError(null);
       setSelectedDocId(null);
-      setCurrentPage(null);
     }
     onOpenChange(open);
   };
@@ -240,33 +192,36 @@ export function PDFViewerSheet({
           </div>
         </div>
 
-        {/* PDF Viewer Area */}
-        <div className="flex-1 overflow-auto bg-slate-100 flex items-center justify-center p-4">
-          {isLoadingPdf && (
-            <div className="flex flex-col items-center gap-2 text-slate-600">
-              <Loader2 className="h-8 w-8 animate-spin" />
-              <p>Loading PDF...</p>
-            </div>
-          )}
+        {/* PDF Viewer Area - Using new PDFViewerWithAnnotations */}
+        {isLoadingPdf && (
+          <div className="flex-1 flex flex-col items-center justify-center gap-2 text-slate-600 bg-slate-100">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p>Loading PDF...</p>
+          </div>
+        )}
 
-          {urlError && (
-            <div className="flex flex-col items-center gap-2 text-red-600 bg-red-50 p-4 rounded-lg">
-              <AlertCircle className="h-8 w-8" />
-              <p className="text-sm">{urlError}</p>
-            </div>
-          )}
+        {urlError && (
+          <div className="flex-1 flex flex-col items-center justify-center gap-2 text-red-600 bg-red-50 p-4">
+            <AlertCircle className="h-8 w-8" />
+            <p className="text-sm">{urlError}</p>
+          </div>
+        )}
 
-          {pdfUrl && !isLoadingPdf && (
-            <div className="bg-white rounded-lg shadow-lg w-full h-full">
-              <iframe
-                ref={iframeRef}
-                src={pdfUrl}
-                className="w-full h-full border-0"
-                title="PDF Viewer"
-              />
-            </div>
-          )}
-        </div>
+        {pdfUrl && !isLoadingPdf && (
+          <PDFViewerWithAnnotations
+            url={pdfUrl}
+            documentId={selectedDocId}
+            organizationId={organizationId}
+            requirementId={requirementId}
+            showAnnotationPanel={true}
+            onPageChange={(page) => {
+              if (selectedDoc) {
+                savePdfPosition(selectedDoc.id, page);
+              }
+            }}
+            className="flex-1"
+          />
+        )}
       </div>
 
       {/* Overlay backdrop when panel is open */}

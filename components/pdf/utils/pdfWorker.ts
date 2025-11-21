@@ -1,8 +1,12 @@
-import * as pdfjsLib from 'pdfjs-dist';
+"use client";
 
-// Configuration du worker PDF.js
-if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+// Only import and configure on client side
+if (typeof window !== "undefined") {
+  // Dynamic import to avoid SSR issues
+  import("pdfjs-dist").then((pdfjsLib) => {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+  });
 }
 
-export { pdfjsLib as pdfjs };
+// Export the library for use (lazy loaded)
+export { default as pdfjs } from "pdfjs-dist";

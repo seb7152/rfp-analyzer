@@ -46,6 +46,7 @@ import {
 } from "@/hooks/use-requirements";
 import { useResponses } from "@/hooks/use-responses";
 import { useResponseMutation } from "@/hooks/use-response-mutation";
+import { useAuth } from "@/hooks/use-auth";
 import type { TreeNode } from "@/hooks/use-requirements";
 import { Requirement, getRequirementById } from "@/lib/fake-data";
 
@@ -77,6 +78,9 @@ export function ComparisonView({
   rfpId,
   supplierId,
 }: ComparisonViewProps) {
+  const { user } = useAuth();
+  const organizationId = user?.organizations[0]?.id || "";
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [contextExpanded, setContextExpanded] = useState(false);
@@ -933,6 +937,8 @@ export function ComparisonView({
         onOpenChange={setIsPdfViewerOpen}
         documents={supplierDocuments}
         rfpId={rfpId}
+        organizationId={organizationId}
+        requirementId={selectedRequirementId}
       />
     </div>
   );
