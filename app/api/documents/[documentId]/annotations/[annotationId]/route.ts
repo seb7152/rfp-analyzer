@@ -73,7 +73,7 @@ export async function PUT(
  * Supprime (soft delete) une annotation
  */
 export async function DELETE(
-  request: Request,
+  _request: Request,
   { params }: { params: { documentId: string; annotationId: string } }
 ) {
   try {
