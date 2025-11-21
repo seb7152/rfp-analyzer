@@ -82,7 +82,7 @@ export function PDFToolbar({
       {onAnnotationModeChange && (
         <div className="flex items-center gap-2 border-l pl-2">
           <Button
-            variant={annotationMode === 'select' ? 'default' : 'outline'}
+            variant={annotationMode === 'select' ? 'primary' : 'outline'}
             size="sm"
             onClick={() => onAnnotationModeChange('select')}
             title="Mode sélection"
@@ -92,7 +92,7 @@ export function PDFToolbar({
           </Button>
 
           <Button
-            variant={annotationMode === 'highlight' ? 'default' : 'outline'}
+            variant={annotationMode === 'highlight' ? 'primary' : 'outline'}
             size="sm"
             onClick={() => onAnnotationModeChange('highlight')}
             title="Mode surlignage"
@@ -102,7 +102,7 @@ export function PDFToolbar({
           </Button>
 
           <Button
-            variant={annotationMode === 'bookmark' ? 'default' : 'outline'}
+            variant={annotationMode === 'bookmark' ? 'primary' : 'outline'}
             size="sm"
             onClick={() => onAnnotationModeChange('bookmark')}
             title="Ajouter un signet"

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { PDFAnnotation } from './types/annotation.types';
 import { AnnotationList } from './annotations/AnnotationList';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Search, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';

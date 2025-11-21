@@ -13,7 +13,6 @@ export function PDFTextLayer({ page, scale, onTextSelected }: PDFTextLayerProps)
   useEffect(() => {
     if (!textLayerRef.current) return;
 
-    const viewport = page.getViewport({ scale });
     const textLayerDiv = textLayerRef.current;
 
     // Nettoyer le contenu existant

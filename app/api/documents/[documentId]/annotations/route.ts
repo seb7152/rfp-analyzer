@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
  * Récupère toutes les annotations d'un document
  */
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: { documentId: string } }
 ) {
   try {

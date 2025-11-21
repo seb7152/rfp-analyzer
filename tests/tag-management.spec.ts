@@ -113,7 +113,7 @@ test.describe('Tag Management System', () => {
       await page.waitForLoadState('networkidle');
 
       // Find requirement R - 1 row
-      const requirement Row = page.locator('text=R - 1').first();
+      const requirementRow = page.locator('text=R - 1').first();
       await expect(requirementRow).toBeVisible();
 
       // Find the + button in the Tags column for this row

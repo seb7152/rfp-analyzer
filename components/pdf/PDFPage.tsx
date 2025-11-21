@@ -66,7 +66,7 @@ export function PDFPage({
     const renderTask = page.render({
       canvasContext: context,
       viewport: viewport,
-    });
+    } as any);
 
     renderTaskRef.current = renderTask;
 
