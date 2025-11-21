@@ -195,7 +195,7 @@ export function Sidebar({
           </div>
         ) : error ? (
           <div className="p-4 text-red-600 dark:text-red-400">
-            Error loading tree: {error.message}
+            Error loading tree: {String(error)}
           </div>
         ) : filteredTree.length === 0 ? (
           <div className="p-4 text-slate-500 dark:text-slate-400">
