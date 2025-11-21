@@ -6,30 +6,39 @@ export const getPdfJs = async () => {
   console.log("[pdfWorker] Window available:", typeof window !== "undefined");
 
   try {
-    console.log("[pdfWorker] Importing pdfjs-dist...");
-    const pdfjsLib = await import("pdfjs-dist");
+    console.log("[pdfWorker] Importing pdfjs-dist/legacy/build/pdf.mjs...");
+    // Use the legacy build to avoid ESM compatibility issues with Next.js
+    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
     console.log("[pdfWorker] pdfjs-dist imported:", typeof pdfjsLib);
-    console.log("[pdfWorker] pdfjsLib.default:", typeof pdfjsLib.default);
-    console.log("[pdfWorker] pdfjsLib keys:", Object.keys(pdfjsLib).slice(0, 10));
+    console.log(
+      "[pdfWorker] pdfjsLib keys:",
+      Object.keys(pdfjsLib).slice(0, 10),
+    );
 
-    // Handle both ES modules and CommonJS
-    // @ts-ignore - Handle potential default export mismatch
-    const lib = pdfjsLib.default || pdfjsLib;
-    console.log("[pdfWorker] Using lib:", typeof lib);
-    console.log("[pdfWorker] lib.GlobalWorkerOptions:", typeof lib.GlobalWorkerOptions);
-    console.log("[pdfWorker] lib.getDocument:", typeof lib.getDocument);
+    // Legacy build exports directly, no default
+    console.log("[pdfWorker] Using lib:", typeof pdfjsLib);
+    console.log(
+      "[pdfWorker] lib.GlobalWorkerOptions:",
+      typeof pdfjsLib.GlobalWorkerOptions,
+    );
+    console.log("[pdfWorker] lib.getDocument:", typeof pdfjsLib.getDocument);
 
-    if (typeof window !== "undefined" && lib.GlobalWorkerOptions) {
+    if (typeof window !== "undefined" && pdfjsLib.GlobalWorkerOptions) {
       // Use the specific version to ensure compatibility
-      console.log("[pdfWorker] Setting worker source, version:", lib.version);
-      lib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${lib.version}/build/pdf.worker.min.js`;
-      console.log("[pdfWorker] Worker source set to:", lib.GlobalWorkerOptions.workerSrc);
+      console.log("[pdfWorker] Setting worker source, version:", pdfjsLib.version);
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/legacy/build/pdf.worker.min.mjs`;
+      console.log(
+        "[pdfWorker] Worker source set to:",
+        pdfjsLib.GlobalWorkerOptions.workerSrc,
+      );
     } else {
-      console.warn("[pdfWorker] Cannot set worker source - window or GlobalWorkerOptions not available");
+      console.warn(
+        "[pdfWorker] Cannot set worker source - window or GlobalWorkerOptions not available",
+      );
     }
 
-    console.log("[pdfWorker] Returning lib");
-    return lib;
+    console.log("[pdfWorker] Returning pdfjsLib");
+    return pdfjsLib;
   } catch (error) {
     console.error("[pdfWorker] Error in getPdfJs:", error);
     throw error;
