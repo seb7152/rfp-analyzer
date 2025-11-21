@@ -28,20 +28,36 @@ export function usePDFDocument(url: string | null): UsePDFDocumentResult {
     setError(null);
 
     // Lazy import pdfjs to avoid SSR issues
+    console.log("[usePDFDocument] Starting PDF load for URL:", url);
+    console.log("[usePDFDocument] Window available:", typeof window !== "undefined");
+
     import("../utils/pdfWorker")
-      .then(async ({ getPdfJs }) => {
-        if (isCancelled) return;
+      .then(async (module) => {
+        console.log("[usePDFDocument] pdfWorker module loaded:", module);
+
+        if (isCancelled) {
+          console.log("[usePDFDocument] Load cancelled after module import");
+          return;
+        }
 
         try {
-          const pdfjs = await getPdfJs();
+          console.log("[usePDFDocument] Calling getPdfJs()...");
+          const pdfjs = await module.getPdfJs();
+          console.log("[usePDFDocument] getPdfJs() returned:", pdfjs ? "object" : "null");
+          console.log("[usePDFDocument] pdfjs.getDocument available:", typeof pdfjs?.getDocument);
 
-          if (isCancelled) return;
+          if (isCancelled) {
+            console.log("[usePDFDocument] Load cancelled after getPdfJs");
+            return;
+          }
 
+          console.log("[usePDFDocument] Creating loading task for URL:", url);
           const loadingTask = pdfjs.getDocument(url);
 
           loadingTask.promise
             .then((pdf) => {
               if (!isCancelled) {
+                console.log("[usePDFDocument] PDF loaded successfully, pages:", pdf.numPages);
                 setDocument(pdf);
                 setNumPages(pdf.numPages);
                 setIsLoading(false);
@@ -49,14 +65,14 @@ export function usePDFDocument(url: string | null): UsePDFDocumentResult {
             })
             .catch((err) => {
               if (!isCancelled) {
-                console.error("Error loading PDF:", err);
+                console.error("[usePDFDocument] Error loading PDF:", err);
                 setError(err);
                 setIsLoading(false);
               }
             });
         } catch (err) {
           if (!isCancelled) {
-            console.error("Error initializing pdfjs:", err);
+            console.error("[usePDFDocument] Error initializing pdfjs:", err);
             setError(err as Error);
             setIsLoading(false);
           }
@@ -64,7 +80,7 @@ export function usePDFDocument(url: string | null): UsePDFDocumentResult {
       })
       .catch((importError) => {
         if (!isCancelled) {
-          console.error("Error importing pdfWorker:", importError);
+          console.error("[usePDFDocument] Error importing pdfWorker:", importError);
           setError(importError as Error);
           setIsLoading(false);
         }
