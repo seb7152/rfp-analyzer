@@ -1,19 +1,19 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { usePDFDocument } from "./hooks/usePDFDocument";
-import { useTextSelection } from "./hooks/useTextSelection";
 import { usePDFAnnotations } from "./hooks/usePDFAnnotations";
 import { usePDFNavigation } from "./hooks/usePDFNavigation";
 import { PDFPage } from "./PDFPage";
 import { PDFToolbar } from "./PDFToolbar";
-import { PDFTextLayer } from "./PDFTextLayer";
 import { PDFAnnotationLayer } from "./PDFAnnotationLayer";
-import { PDFAnnotationPanel } from "./PDFAnnotationPanel";
-import { Loader2, SidebarClose, SidebarOpen } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import type { PDFPageProxy } from "./types/pdf.types";
-import type { CreateAnnotationDTO } from "./types/annotation.types";
+import type {
+  CreateAnnotationDTO,
+  RequirementInfo,
+  UpdateAnnotationDTO,
+} from "./types/annotation.types";
 
 interface PDFViewerWithAnnotationsProps {
   url: string | null;
@@ -24,6 +24,7 @@ interface PDFViewerWithAnnotationsProps {
   onPageChange?: (page: number) => void;
   className?: string;
   showAnnotationPanel?: boolean;
+  requirements?: RequirementInfo[];
 }
 
 export function PDFViewerWithAnnotations({
@@ -34,16 +35,14 @@ export function PDFViewerWithAnnotations({
   requirementId,
   onPageChange,
   className = "",
-  showAnnotationPanel = true,
+  requirements = [],
 }: PDFViewerWithAnnotationsProps) {
   const { document, numPages, isLoading, error } = usePDFDocument(url);
   const [currentPage, setCurrentPage] = useState(initialPage);
-  const [scale, setScale] = useState(1.2);
-  const [annotationMode, setAnnotationMode] = useState<
-    "select" | "highlight" | "bookmark"
-  >("select");
-  const [selectedColor, setSelectedColor] = useState("#FFEB3B");
-  const [isPanelOpen, setIsPanelOpen] = useState(showAnnotationPanel);
+  const [scale, setScale] = useState(1); // Zoom par défaut: 100%
+  const [annotationMode, setAnnotationMode] = useState<"select" | "bookmark">(
+    "select",
+  );
   const [loadedPage, setLoadedPage] = useState<PDFPageProxy | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -56,8 +55,6 @@ export function PDFViewerWithAnnotations({
     updateAnnotation,
     isCreating,
   } = usePDFAnnotations(documentId, organizationId);
-
-  const { selection, handleTextSelected, clearSelection } = useTextSelection();
 
   // Hook de navigation
   usePDFNavigation(documentId, currentPage, setCurrentPage);
@@ -81,75 +78,12 @@ export function PDFViewerWithAnnotations({
   }, []);
 
   const handleResetZoom = useCallback(() => {
-    setScale(1.2);
+    setScale(1);
   }, []);
 
   const handlePageLoad = useCallback((page: PDFPageProxy) => {
     setLoadedPage(page);
   }, []);
-
-  // Gérer la sélection de texte
-  const handleTextSelection = useCallback(
-    (text: string, rects: DOMRect[]) => {
-      if (
-        !loadedPage ||
-        !containerRef.current ||
-        annotationMode !== "highlight"
-      )
-        return;
-
-      const viewport = loadedPage.getViewport({ scale });
-      const containerRect = containerRef.current.getBoundingClientRect();
-
-      handleTextSelected(
-        text,
-        rects,
-        currentPage,
-        viewport.height,
-        viewport.width,
-        containerRect,
-        scale,
-      );
-    },
-    [loadedPage, scale, currentPage, handleTextSelected, annotationMode],
-  );
-
-  // Créer une annotation depuis la sélection
-  useEffect(() => {
-    if (!selection || !documentId || annotationMode !== "highlight") return;
-
-    const createHighlight = async () => {
-      const annotationDTO: CreateAnnotationDTO = {
-        documentId,
-        requirementId,
-        annotationType: "highlight",
-        pageNumber: selection.pageNumber,
-        position: {
-          type: "highlight",
-          pageHeight: selection.pageHeight,
-          pageWidth: selection.pageWidth,
-          rects: selection.rects,
-        },
-        highlightedText: selection.text,
-        color: selectedColor,
-      };
-
-      createAnnotation(annotationDTO);
-      clearSelection();
-    };
-
-    // Petit délai pour permettre à l'utilisateur de voir la sélection
-    const timer = setTimeout(createHighlight, 300);
-    return () => clearTimeout(timer);
-  }, [
-    selection,
-    documentId,
-    requirementId,
-    selectedColor,
-    annotationMode,
-    createAnnotation,
-    clearSelection,
-  ]);
 
   // Gérer le clic pour créer un bookmark
   const handleCanvasClick = useCallback(
@@ -196,8 +130,8 @@ export function PDFViewerWithAnnotations({
   );
 
   const handleUpdateAnnotation = useCallback(
-    (id: string, noteContent: string) => {
-      updateAnnotation({ id, noteContent });
+    (dto: UpdateAnnotationDTO) => {
+      updateAnnotation(dto);
     },
     [updateAnnotation],
   );
@@ -248,8 +182,8 @@ export function PDFViewerWithAnnotations({
           onResetZoom={handleResetZoom}
           annotationMode={annotationMode}
           onAnnotationModeChange={setAnnotationMode}
-          selectedColor={selectedColor}
-          onColorChange={setSelectedColor}
+          annotations={annotations}
+          requirements={requirements}
         />
 
         <div
@@ -271,15 +205,6 @@ export function PDFViewerWithAnnotations({
                 onPageLoad={handlePageLoad}
                 className="shadow-lg"
               >
-                {/* Couche de texte pour sélection */}
-                {loadedPage && annotationMode === "highlight" && (
-                  <PDFTextLayer
-                    page={loadedPage}
-                    scale={scale}
-                    onTextSelected={handleTextSelection}
-                  />
-                )}
-
                 {/* Couche d'annotations */}
                 {loadedPage && viewport && (
                   <PDFAnnotationLayer
@@ -290,6 +215,7 @@ export function PDFViewerWithAnnotations({
                     pageHeight={viewport.height}
                     onDeleteAnnotation={handleDeleteAnnotation}
                     onUpdateAnnotation={handleUpdateAnnotation}
+                    requirements={requirements}
                   />
                 )}
               </PDFPage>
@@ -298,12 +224,9 @@ export function PDFViewerWithAnnotations({
         </div>
 
         {/* Indicateur de mode actif */}
-        {annotationMode !== "select" && (
+        {annotationMode === "bookmark" && (
           <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg text-sm font-medium z-10">
-            {annotationMode === "highlight" &&
-              "✏️ Mode surlignage - Sélectionnez du texte"}
-            {annotationMode === "bookmark" &&
-              "📌 Mode signet - Cliquez pour ajouter"}
+            📌 Mode signet - Cliquez pour ajouter
           </div>
         )}
 
@@ -315,43 +238,6 @@ export function PDFViewerWithAnnotations({
           </div>
         )}
       </div>
-
-      {/* Panel d'annotations (pliable) */}
-      {showAnnotationPanel && (
-        <>
-          {isPanelOpen ? (
-            <div className="w-80 flex flex-col border-l">
-              <div className="p-2 border-b flex items-center justify-between bg-gray-50">
-                <h3 className="font-medium text-sm">Annotations</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsPanelOpen(false)}
-                  className="h-7 w-7 p-0"
-                >
-                  <SidebarClose className="w-4 h-4" />
-                </Button>
-              </div>
-              <PDFAnnotationPanel
-                annotations={annotations}
-                className="flex-1"
-              />
-            </div>
-          ) : (
-            <div className="w-12 border-l flex items-center justify-center bg-gray-50">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsPanelOpen(true)}
-                className="h-10 w-10 p-0"
-                title="Ouvrir le panneau d'annotations"
-              >
-                <SidebarOpen className="w-5 h-5" />
-              </Button>
-            </div>
-          )}
-        </>
-      )}
     </div>
   );
 }

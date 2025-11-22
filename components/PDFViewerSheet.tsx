@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { X, Loader2, AlertCircle, ChevronRight } from "lucide-react";
 import { PDFViewerWithAnnotations } from "@/components/pdf/PDFViewerWithAnnotations";
+import type { RequirementInfo } from "@/components/pdf/types/annotation.types";
 
 export interface PDFDocument {
   id: string;
@@ -26,6 +27,9 @@ interface PDFViewerSheetProps {
   rfpId?: string;
   organizationId: string;
   requirementId?: string;
+  requirements?: RequirementInfo[];
+  initialDocumentId?: string | null;
+  initialPage?: number | null;
 }
 
 export function PDFViewerSheet({
@@ -35,6 +39,9 @@ export function PDFViewerSheet({
   rfpId,
   organizationId,
   requirementId,
+  requirements = [],
+  initialDocumentId,
+  initialPage,
 }: PDFViewerSheetProps) {
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
@@ -54,6 +61,11 @@ export function PDFViewerSheet({
 
   // Restore PDF page position by appending page fragment to URL
   const getPdfUrlWithPosition = (docId: string, baseUrl: string): string => {
+    // If initialPage is provided and matches current doc, use it
+    if (initialPage && docId === initialDocumentId) {
+      return `${baseUrl}#page=${initialPage}`;
+    }
+
     const savedPage = localStorage.getItem(getPdfPositionKey(docId));
     if (savedPage) {
       // Append page fragment to URL - PDF.js viewer will respect this
@@ -70,10 +82,17 @@ export function PDFViewerSheet({
 
   // Initialize selected document
   useEffect(() => {
-    if (isOpen && pdfDocuments.length > 0 && !selectedDocId) {
-      setSelectedDocId(pdfDocuments[0].id);
+    if (isOpen && pdfDocuments.length > 0) {
+      if (
+        initialDocumentId &&
+        pdfDocuments.find((d) => d.id === initialDocumentId)
+      ) {
+        setSelectedDocId(initialDocumentId);
+      } else if (!selectedDocId) {
+        setSelectedDocId(pdfDocuments[0].id);
+      }
     }
-  }, [isOpen, pdfDocuments, selectedDocId]);
+  }, [isOpen, pdfDocuments, initialDocumentId]);
 
   // Fetch PDF URL when selected document changes
   useEffect(() => {
@@ -115,7 +134,7 @@ export function PDFViewerSheet({
     };
 
     fetchPdfUrl();
-  }, [selectedDoc, rfpId]);
+  }, [selectedDoc, rfpId, initialPage]);
 
   const handleDocumentChange = (docId: string) => {
     setSelectedDocId(docId);
@@ -213,6 +232,7 @@ export function PDFViewerSheet({
             documentId={selectedDocId}
             organizationId={organizationId}
             requirementId={requirementId}
+            requirements={requirements}
             showAnnotationPanel={true}
             onPageChange={(page) => {
               if (selectedDoc) {

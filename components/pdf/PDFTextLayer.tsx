@@ -101,7 +101,8 @@ export function PDFTextLayer({
         width: viewport.width,
         height: viewport.height,
         lineHeight: 1,
-        opacity: 0.2, // Rendre le texte transparent pour voir le PDF en dessous
+        opacity: 0, // Complètement transparent pour ne pas masquer le PDF
+        zIndex: 20, // Au-dessus des annotations pour permettre la sélection
       }}
     />
   );

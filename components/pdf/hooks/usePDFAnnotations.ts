@@ -1,12 +1,30 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase/client";
 import type {
   PDFAnnotation,
   CreateAnnotationDTO,
   UpdateAnnotationDTO,
 } from "../types/annotation.types";
+
+// Helper pour mapper les champs snake_case -> camelCase
+const mapAnnotationFromDB = (raw: any): PDFAnnotation => ({
+  id: raw.id,
+  organizationId: raw.organization_id,
+  documentId: raw.document_id,
+  requirementId: raw.requirement_id,
+  supplierId: raw.supplier_id,
+  annotationType: raw.annotation_type,
+  pageNumber: raw.page_number,
+  position: raw.position,
+  highlightedText: raw.highlighted_text,
+  noteContent: raw.note_content,
+  color: raw.color,
+  tags: raw.tags,
+  createdBy: raw.created_by,
+  createdAt: raw.created_at,
+  updatedAt: raw.updated_at,
+});
 
 export function usePDFAnnotations(
   documentId: string | null,
@@ -14,7 +32,7 @@ export function usePDFAnnotations(
 ) {
   const queryClient = useQueryClient();
 
-  // Récupérer les annotations d'un document
+  // Récupérer les annotations d'un document via l'API
   const {
     data: annotations,
     isLoading,
@@ -24,38 +42,60 @@ export function usePDFAnnotations(
     queryFn: async () => {
       if (!documentId) return [];
 
-      const { data, error } = await supabase
-        .from("pdf_annotations")
-        .select("*")
-        .eq("document_id", documentId)
-        .is("deleted_at", null)
-        .order("page_number", { ascending: true });
+      try {
+        const response = await fetch(
+          `/api/documents/${documentId}/annotations`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          },
+        );
 
-      if (error) throw error;
-      return data as PDFAnnotation[];
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to fetch annotations");
+        }
+
+        const data = await response.json();
+        console.log("[usePDFAnnotations] Fetched annotations:", data);
+
+        // Mapper les données depuis la base
+        return (data as any[]).map(mapAnnotationFromDB);
+      } catch (err) {
+        console.error("[usePDFAnnotations] Error fetching:", err);
+        throw err;
+      }
     },
     enabled: !!documentId,
   });
 
-  // Créer une annotation
+  // Créer une annotation via l'API
   const createAnnotation = useMutation({
     mutationFn: async (dto: CreateAnnotationDTO) => {
-      const { data, error } = await supabase.rpc(
-        "create_annotation_with_context",
+      const response = await fetch(
+        `/api/documents/${dto.documentId}/annotations`,
         {
-          p_organization_id: organizationId,
-          p_document_id: dto.documentId,
-          p_requirement_id: dto.requirementId || null,
-          p_annotation_type: dto.annotationType,
-          p_page_number: dto.pageNumber,
-          p_position: dto.position as any, // JSONB
-          p_highlighted_text: dto.highlightedText || null,
-          p_note_content: dto.noteContent || null,
-          p_color: dto.color || "#FFEB3B",
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            requirementId: dto.requirementId || null,
+            annotationType: dto.annotationType,
+            pageNumber: dto.pageNumber,
+            position: dto.position,
+            highlightedText: dto.highlightedText || null,
+            noteContent: dto.noteContent || null,
+            color: dto.color || "#FFEB3B",
+          }),
         },
       );
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create annotation");
+      }
+
+      const data = await response.json();
+      console.log("[usePDFAnnotations] Created annotation:", data);
       return data;
     },
     onSuccess: () => {
@@ -65,15 +105,25 @@ export function usePDFAnnotations(
     },
   });
 
-  // Supprimer une annotation (soft delete)
+  // Supprimer une annotation (soft delete) via l'API
   const deleteAnnotation = useMutation({
     mutationFn: async (annotationId: string) => {
-      const { error } = await supabase
-        .from("pdf_annotations")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("id", annotationId);
+      const response = await fetch(
+        `/api/documents/${documentId}/annotations/${annotationId}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete annotation");
+      }
+
+      const data = await response.json();
+      console.log("[usePDFAnnotations] Deleted annotation:", data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -82,24 +132,31 @@ export function usePDFAnnotations(
     },
   });
 
-  // Mettre à jour une annotation
+  // Mettre à jour une annotation via l'API
   const updateAnnotation = useMutation({
     mutationFn: async (dto: UpdateAnnotationDTO) => {
-      const updateData: any = {
-        updated_at: new Date().toISOString(),
-      };
+      const response = await fetch(
+        `/api/documents/${documentId}/annotations/${dto.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            noteContent: dto.noteContent,
+            color: dto.color,
+            tags: dto.tags,
+            position: dto.position,
+          }),
+        },
+      );
 
-      if (dto.noteContent !== undefined)
-        updateData.note_content = dto.noteContent;
-      if (dto.color !== undefined) updateData.color = dto.color;
-      if (dto.tags !== undefined) updateData.tags = dto.tags;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update annotation");
+      }
 
-      const { error } = await supabase
-        .from("pdf_annotations")
-        .update(updateData)
-        .eq("id", dto.id);
-
-      if (error) throw error;
+      const data = await response.json();
+      console.log("[usePDFAnnotations] Updated annotation:", data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({

@@ -11,12 +11,14 @@ Ce système permet d'annoter des documents PDF avec des surlignages, des signets
 **Fichier:** `supabase/migrations/020_create_pdf_annotations_system.sql`
 
 Tables créées :
+
 - `pdf_annotations` : Stocke les annotations (surlignages, signets, notes)
 - `annotation_groups` : Groupes d'annotations liées
 - `annotation_group_members` : Liaison annotations ↔ groupes
 - `annotation_details` : Vue consolidée avec jointures
 
 Fonctionnalités :
+
 - ✅ Row Level Security (RLS) par organisation
 - ✅ Soft delete (deleted_at)
 - ✅ Recherche full-text sur le contenu
@@ -68,6 +70,7 @@ components/pdf/
    - `DELETE` : Supprimer (soft delete) une annotation
 
 Sécurité :
+
 - ✅ Authentification Supabase
 - ✅ Vérification des permissions par organisation
 - ✅ RLS au niveau base de données
@@ -75,6 +78,7 @@ Sécurité :
 ### 4. Fonctionnalités implémentées
 
 #### Surlignage de texte
+
 - ✅ Sélection de texte dans le PDF
 - ✅ Conversion coordonnées écran → PDF
 - ✅ Fusion de rectangles multi-lignes
@@ -82,20 +86,24 @@ Sécurité :
 - ✅ Sauvegarde du texte surligné
 
 #### Signets
+
 - ✅ Placement de marqueurs par clic
 - ✅ Navigation directe vers la position
 
 #### Notes
+
 - ✅ Ajout de commentaires aux annotations
 - ✅ Édition inline avec popover
 
 #### Navigation bidirectionnelle
+
 - ✅ Clic sur annotation → Ouvre le PDF à la bonne page
 - ✅ Contexte partagé via React Context
 - ✅ Animation de highlight temporaire
 - ✅ Scroll automatique vers l'annotation
 
 #### Panel d'annotations
+
 - ✅ Liste groupée par page
 - ✅ Recherche full-text
 - ✅ Filtres par type (surlignage, signet, note)
@@ -115,8 +123,8 @@ npx supabase db push
 ### 2. Utiliser le composant PDFViewerWithAnnotations
 
 ```tsx
-import { PDFViewerWithAnnotations } from '@/components/pdf/PDFViewerWithAnnotations';
-import { PDFAnnotationProvider } from '@/components/pdf/contexts/PDFAnnotationContext';
+import { PDFViewerWithAnnotations } from "@/components/pdf/PDFViewerWithAnnotations";
+import { PDFAnnotationProvider } from "@/components/pdf/contexts/PDFAnnotationContext";
 
 export function MyComponent() {
   return (
@@ -125,10 +133,10 @@ export function MyComponent() {
         url="https://example.com/document.pdf"
         documentId="doc-123"
         organizationId="org-456"
-        requirementId="req-789"  // Optionnel
+        requirementId="req-789" // Optionnel
         initialPage={1}
         showAnnotationPanel={true}
-        onPageChange={(page) => console.log('Page:', page)}
+        onPageChange={(page) => console.log("Page:", page)}
       />
     </PDFAnnotationProvider>
   );
@@ -140,8 +148,8 @@ export function MyComponent() {
 Dans `ComparisonView.tsx` ou `SupplierResponseCard.tsx` :
 
 ```tsx
-import { AnnotationList } from '@/components/pdf/annotations/AnnotationList';
-import { usePDFAnnotations } from '@/components/pdf/hooks/usePDFAnnotations';
+import { AnnotationList } from "@/components/pdf/annotations/AnnotationList";
+import { usePDFAnnotations } from "@/components/pdf/hooks/usePDFAnnotations";
 
 // Dans le composant
 const { annotations } = usePDFAnnotations(currentDocumentId, organizationId);
@@ -154,13 +162,13 @@ const { annotations } = usePDFAnnotations(currentDocumentId, organizationId);
     title="📎 Preuves documentaires"
     compact
   />
-</div>
+</div>;
 ```
 
 ### 4. Navigation vers une annotation
 
 ```tsx
-import { usePDFAnnotationNavigation } from '@/components/pdf/contexts/PDFAnnotationContext';
+import { usePDFAnnotationNavigation } from "@/components/pdf/contexts/PDFAnnotationContext";
 
 function MyAnnotationButton({ annotation }) {
   const { navigateToAnnotation } = usePDFAnnotationNavigation();
@@ -172,7 +180,7 @@ function MyAnnotationButton({ annotation }) {
           documentId: annotation.documentId,
           pageNumber: annotation.pageNumber,
           annotationId: annotation.id,
-          highlight: true,  // Anime l'annotation
+          highlight: true, // Anime l'annotation
         })
       }
     >
@@ -237,20 +245,22 @@ function MyAnnotationButton({ annotation }) {
 ### Variables d'environnement
 
 Aucune variable supplémentaire nécessaire. Le système utilise :
+
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 ### Configuration PDF.js Worker
 
 Le worker est chargé depuis unpkg CDN :
+
 ```typescript
-pdfjs.GlobalWorkerOptions.workerSrc =
-  `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 ```
 
 Pour une version self-hosted en production :
+
 ```typescript
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
 ```
 
 ## 🐛 Debugging et résolution de problèmes
@@ -327,8 +337,8 @@ Modifier `components/pdf/annotations/AnnotationColorPicker.tsx` :
 
 ```typescript
 export const ANNOTATION_COLORS = [
-  { name: 'Jaune', value: '#FFEB3B', bg: 'bg-yellow-300' },
-  { name: 'Vert', value: '#4CAF50', bg: 'bg-green-500' },
+  { name: "Jaune", value: "#FFEB3B", bg: "bg-yellow-300" },
+  { name: "Vert", value: "#4CAF50", bg: "bg-green-500" },
   // Ajouter vos couleurs
 ];
 ```
@@ -341,8 +351,8 @@ Modifier `components/pdf/annotations/AnnotationHighlight.tsx` :
 <div
   style={{
     backgroundColor: annotation.color,
-    opacity: 0.4,  // Changer l'opacité
-    borderRadius: '2px',  // Changer la bordure
+    opacity: 0.4, // Changer l'opacité
+    borderRadius: "2px", // Changer la bordure
   }}
 />
 ```
@@ -364,6 +374,7 @@ Modifier `components/pdf/annotations/AnnotationHighlight.tsx` :
 ## 🤝 Support
 
 Pour toute question ou problème :
+
 1. Consulter ce README
 2. Vérifier les logs de la console navigateur
 3. Vérifier les logs Supabase

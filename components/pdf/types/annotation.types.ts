@@ -66,4 +66,12 @@ export interface UpdateAnnotationDTO {
   noteContent?: string;
   color?: string;
   tags?: string[];
+  position?: AnnotationPosition;
+}
+
+export interface RequirementInfo {
+  id: string;
+  title: string;
+  requirement_id_external: string;
+  description?: string;
 }

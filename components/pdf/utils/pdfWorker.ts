@@ -1,46 +1,56 @@
 "use client";
 
-// We need to ensure the worker is configured before using the library
+// Load PDF.js from CDN to avoid Webpack/Next.js compatibility issues
+const PDFJS_VERSION = "4.0.379";
+const PDFJS_CDN = `https://unpkg.com/pdfjs-dist@${PDFJS_VERSION}/build/pdf.min.mjs`;
+const PDFJS_WORKER_CDN = `https://unpkg.com/pdfjs-dist@${PDFJS_VERSION}/build/pdf.worker.min.mjs`;
+
+let pdfjsLibPromise: Promise<any> | null = null;
+
+// Load PDF.js script dynamically from CDN
 export const getPdfJs = async () => {
   console.log("[pdfWorker] getPdfJs() called");
   console.log("[pdfWorker] Window available:", typeof window !== "undefined");
 
-  try {
-    console.log("[pdfWorker] Importing pdfjs-dist/legacy/build/pdf.mjs...");
-    // Use the legacy build to avoid ESM compatibility issues with Next.js
-    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    console.log("[pdfWorker] pdfjs-dist imported:", typeof pdfjsLib);
-    console.log(
-      "[pdfWorker] pdfjsLib keys:",
-      Object.keys(pdfjsLib).slice(0, 10),
-    );
-
-    // Legacy build exports directly, no default
-    console.log("[pdfWorker] Using lib:", typeof pdfjsLib);
-    console.log(
-      "[pdfWorker] lib.GlobalWorkerOptions:",
-      typeof pdfjsLib.GlobalWorkerOptions,
-    );
-    console.log("[pdfWorker] lib.getDocument:", typeof pdfjsLib.getDocument);
-
-    if (typeof window !== "undefined" && pdfjsLib.GlobalWorkerOptions) {
-      // Use the specific version to ensure compatibility
-      console.log("[pdfWorker] Setting worker source, version:", pdfjsLib.version);
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/legacy/build/pdf.worker.min.mjs`;
-      console.log(
-        "[pdfWorker] Worker source set to:",
-        pdfjsLib.GlobalWorkerOptions.workerSrc,
-      );
-    } else {
-      console.warn(
-        "[pdfWorker] Cannot set worker source - window or GlobalWorkerOptions not available",
-      );
-    }
-
-    console.log("[pdfWorker] Returning pdfjsLib");
-    return pdfjsLib;
-  } catch (error) {
-    console.error("[pdfWorker] Error in getPdfJs:", error);
-    throw error;
+  if (typeof window === "undefined") {
+    throw new Error("PDF.js can only be loaded in the browser");
   }
+
+  // Return cached promise if already loading/loaded
+  if (pdfjsLibPromise) {
+    console.log("[pdfWorker] Returning cached pdfjs promise");
+    return pdfjsLibPromise;
+  }
+
+  pdfjsLibPromise = (async () => {
+    try {
+      console.log("[pdfWorker] Loading PDF.js from CDN:", PDFJS_CDN);
+
+      // Load PDF.js from CDN using dynamic import with webpackIgnore
+      const pdfjsLib = await import(/* webpackIgnore: true */ PDFJS_CDN);
+      console.log("[pdfWorker] PDF.js loaded from CDN");
+      console.log("[pdfWorker] pdfjsLib type:", typeof pdfjsLib);
+      console.log(
+        "[pdfWorker] pdfjsLib keys:",
+        Object.keys(pdfjsLib).slice(0, 10),
+      );
+
+      // Configure worker
+      if (pdfjsLib.GlobalWorkerOptions) {
+        console.log("[pdfWorker] Setting worker source to:", PDFJS_WORKER_CDN);
+        pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN;
+      } else {
+        console.warn("[pdfWorker] GlobalWorkerOptions not available");
+      }
+
+      console.log("[pdfWorker] PDF.js ready, version:", pdfjsLib.version);
+      return pdfjsLib;
+    } catch (error) {
+      console.error("[pdfWorker] Error loading PDF.js from CDN:", error);
+      pdfjsLibPromise = null; // Reset on error so we can retry
+      throw error;
+    }
+  })();
+
+  return pdfjsLibPromise;
 };

@@ -53,7 +53,7 @@ components/
 ```typescript
 // components/pdf/types/annotation.types.ts
 
-export type AnnotationType = 'highlight' | 'bookmark' | 'note' | 'area';
+export type AnnotationType = "highlight" | "bookmark" | "note" | "area";
 
 export interface AnnotationRect {
   x: number;
@@ -120,6 +120,7 @@ export interface CreateAnnotationDTO {
 ## Phase 1 : Migration vers react-pdf (2-3 jours)
 
 ### Objectif
+
 Remplacer l'iframe par un viewer PDF.js contrôlable programmatiquement
 
 ### Étape 1.1 : Installation des dépendances
@@ -134,10 +135,10 @@ npm install @types/pdfjs-dist --save-dev
 **Fichier: `components/pdf/utils/pdfWorker.ts`**
 
 ```typescript
-import { pdfjs } from 'react-pdf';
+import { pdfjs } from "react-pdf";
 
 // Configuration du worker PDF.js
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 }
 
@@ -149,9 +150,9 @@ export { pdfjs };
 **Fichier: `components/pdf/hooks/usePDFDocument.ts`**
 
 ```typescript
-import { useState, useEffect } from 'react';
-import { pdfjs } from '../utils/pdfWorker';
-import type { PDFDocumentProxy } from 'pdfjs-dist';
+import { useState, useEffect } from "react";
+import { pdfjs } from "../utils/pdfWorker";
+import type { PDFDocumentProxy } from "pdfjs-dist";
 
 interface UsePDFDocumentResult {
   document: PDFDocumentProxy | null;
@@ -189,7 +190,7 @@ export function usePDFDocument(url: string | null): UsePDFDocumentResult {
       })
       .catch((err) => {
         if (!isCancelled) {
-          console.error('Error loading PDF:', err);
+          console.error("Error loading PDF:", err);
           setError(err);
           setIsLoading(false);
         }
@@ -520,6 +521,7 @@ export function PDFViewerSheet({ /* props existants */ }) {
 ## Phase 2 : Système d'annotations (3-4 jours)
 
 ### Objectif
+
 Implémenter la sélection de texte, le surlignage, et le stockage des annotations
 
 ### Étape 2.1 : Couche de texte pour la sélection
@@ -614,8 +616,8 @@ export function PDFTextLayer({ page, scale, onTextSelected }: PDFTextLayerProps)
 **Fichier: `components/pdf/hooks/useTextSelection.ts`**
 
 ```typescript
-import { useState, useCallback } from 'react';
-import type { AnnotationRect } from '../types/annotation.types';
+import { useState, useCallback } from "react";
+import type { AnnotationRect } from "../types/annotation.types";
 
 interface TextSelection {
   text: string;
@@ -635,7 +637,7 @@ export function useTextSelection() {
       pageNumber: number,
       pageHeight: number,
       pageWidth: number,
-      containerRect: DOMRect
+      containerRect: DOMRect,
     ) => {
       // Convertir les coordonnées écran en coordonnées PDF
       const rects: AnnotationRect[] = domRects.map((rect) => ({
@@ -653,7 +655,7 @@ export function useTextSelection() {
         pageWidth,
       });
     },
-    []
+    [],
   );
 
   const clearSelection = useCallback(() => {
@@ -674,25 +676,31 @@ export function useTextSelection() {
 **Fichier: `components/pdf/hooks/usePDFAnnotations.ts`**
 
 ```typescript
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase/client';
-import type { PDFAnnotation, CreateAnnotationDTO } from '../types/annotation.types';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase/client";
+import type {
+  PDFAnnotation,
+  CreateAnnotationDTO,
+} from "../types/annotation.types";
 
-export function usePDFAnnotations(documentId: string | null, organizationId: string) {
+export function usePDFAnnotations(
+  documentId: string | null,
+  organizationId: string,
+) {
   const queryClient = useQueryClient();
 
   // Récupérer les annotations
   const { data: annotations, isLoading } = useQuery({
-    queryKey: ['pdf-annotations', documentId],
+    queryKey: ["pdf-annotations", documentId],
     queryFn: async () => {
       if (!documentId) return [];
 
       const { data, error } = await supabase
-        .from('pdf_annotations')
-        .select('*')
-        .eq('document_id', documentId)
-        .is('deleted_at', null)
-        .order('page_number', { ascending: true });
+        .from("pdf_annotations")
+        .select("*")
+        .eq("document_id", documentId)
+        .is("deleted_at", null)
+        .order("page_number", { ascending: true });
 
       if (error) throw error;
       return data as PDFAnnotation[];
@@ -703,23 +711,28 @@ export function usePDFAnnotations(documentId: string | null, organizationId: str
   // Créer une annotation
   const createAnnotation = useMutation({
     mutationFn: async (dto: CreateAnnotationDTO) => {
-      const { data, error } = await supabase.rpc('create_annotation_with_context', {
-        p_organization_id: organizationId,
-        p_document_id: dto.documentId,
-        p_requirement_id: dto.requirementId || null,
-        p_annotation_type: dto.annotationType,
-        p_page_number: dto.pageNumber,
-        p_position: dto.position,
-        p_highlighted_text: dto.highlightedText || null,
-        p_note_content: dto.noteContent || null,
-        p_color: dto.color || '#FFEB3B',
-      });
+      const { data, error } = await supabase.rpc(
+        "create_annotation_with_context",
+        {
+          p_organization_id: organizationId,
+          p_document_id: dto.documentId,
+          p_requirement_id: dto.requirementId || null,
+          p_annotation_type: dto.annotationType,
+          p_page_number: dto.pageNumber,
+          p_position: dto.position,
+          p_highlighted_text: dto.highlightedText || null,
+          p_note_content: dto.noteContent || null,
+          p_color: dto.color || "#FFEB3B",
+        },
+      );
 
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pdf-annotations', documentId] });
+      queryClient.invalidateQueries({
+        queryKey: ["pdf-annotations", documentId],
+      });
     },
   });
 
@@ -727,33 +740,45 @@ export function usePDFAnnotations(documentId: string | null, organizationId: str
   const deleteAnnotation = useMutation({
     mutationFn: async (annotationId: string) => {
       const { error } = await supabase
-        .from('pdf_annotations')
+        .from("pdf_annotations")
         .update({ deleted_at: new Date().toISOString() })
-        .eq('id', annotationId);
+        .eq("id", annotationId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pdf-annotations', documentId] });
+      queryClient.invalidateQueries({
+        queryKey: ["pdf-annotations", documentId],
+      });
     },
   });
 
   // Mettre à jour une annotation
   const updateAnnotation = useMutation({
-    mutationFn: async ({ id, noteContent, color }: { id: string; noteContent?: string; color?: string }) => {
+    mutationFn: async ({
+      id,
+      noteContent,
+      color,
+    }: {
+      id: string;
+      noteContent?: string;
+      color?: string;
+    }) => {
       const { error } = await supabase
-        .from('pdf_annotations')
+        .from("pdf_annotations")
         .update({
           note_content: noteContent,
           color: color,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pdf-annotations', documentId] });
+      queryClient.invalidateQueries({
+        queryKey: ["pdf-annotations", documentId],
+      });
     },
   });
 
@@ -994,6 +1019,7 @@ return (
 ## Phase 3 : Navigation bidirectionnelle (1-2 jours)
 
 ### Objectif
+
 Permettre de naviguer depuis l'évaluation vers une annotation et vice-versa
 
 ### Étape 3.1 : Ajout d'un contexte d'annotation
@@ -1049,14 +1075,14 @@ export function usePDFAnnotationNavigation() {
 **Fichier: `components/pdf/hooks/usePDFNavigation.ts`**
 
 ```typescript
-import { useEffect } from 'react';
-import { usePDFAnnotationNavigation } from '../contexts/PDFAnnotationContext';
+import { useEffect } from "react";
+import { usePDFAnnotationNavigation } from "../contexts/PDFAnnotationContext";
 
 export function usePDFNavigation(
   documentId: string | null,
   currentPage: number,
   onPageChange: (page: number) => void,
-  onDocumentChange?: (documentId: string) => void
+  onDocumentChange?: (documentId: string) => void,
 ) {
   const { navigationTarget, clearNavigation } = usePDFAnnotationNavigation();
 
@@ -1077,15 +1103,24 @@ export function usePDFNavigation(
     if (navigationTarget.annotationId) {
       // TODO: Animer/scroller vers l'annotation
       setTimeout(() => {
-        const element = document.getElementById(`annotation-${navigationTarget.annotationId}`);
-        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const element = document.getElementById(
+          `annotation-${navigationTarget.annotationId}`,
+        );
+        element?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 300);
     }
 
     // Nettoyer après navigation
     const timer = setTimeout(clearNavigation, 1000);
     return () => clearTimeout(timer);
-  }, [navigationTarget, documentId, currentPage, onPageChange, onDocumentChange, clearNavigation]);
+  }, [
+    navigationTarget,
+    documentId,
+    currentPage,
+    onPageChange,
+    onDocumentChange,
+    clearNavigation,
+  ]);
 }
 ```
 
@@ -1445,21 +1480,21 @@ export function PDFAnnotationPanel({ annotations, onNavigate }: PDFAnnotationPan
 **Fichier: `app/api/documents/[documentId]/annotations/route.ts`**
 
 ```typescript
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 export async function GET(
   request: Request,
-  { params }: { params: { documentId: string } }
+  { params }: { params: { documentId: string } },
 ) {
   const supabase = createRouteHandlerClient({ cookies });
 
   const { data, error } = await supabase
-    .from('annotation_details')
-    .select('*')
-    .eq('document_id', params.documentId)
-    .order('page_number', { ascending: true });
+    .from("annotation_details")
+    .select("*")
+    .eq("document_id", params.documentId)
+    .order("page_number", { ascending: true });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -1474,12 +1509,14 @@ export async function GET(
 ## Résumé de l'implémentation
 
 ### Phase 1 (2-3 jours) : Fondations PDF.js
+
 - ✅ Migration de l'iframe vers react-pdf
 - ✅ Rendu multi-pages avec canvas
 - ✅ Navigation et zoom
 - ✅ Barre d'outils
 
 ### Phase 2 (3-4 jours) : Annotations
+
 - ✅ Couche de texte sélectionnable
 - ✅ Création de surlignages
 - ✅ Stockage en base de données
@@ -1487,12 +1524,14 @@ export async function GET(
 - ✅ Édition et suppression
 
 ### Phase 3 (1-2 jours) : Navigation
+
 - ✅ Contexte de navigation
 - ✅ Navigation depuis l'évaluation vers le PDF
 - ✅ Liste des annotations par requirement
 - ✅ Intégration dans ComparisonView
 
 ### Phase 4 (2 jours) : Finitions
+
 - ✅ Modes d'annotation (sélection, surlignage, bookmark)
 - ✅ Sélecteur de couleur
 - ✅ Panel latéral d'annotations

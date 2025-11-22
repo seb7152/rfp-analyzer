@@ -57,71 +57,27 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
     const fetchSuppliers = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/rfps/${rfpId}/suppliers`);
+        // Use the optimized endpoint with includeStats=true
+        const response = await fetch(
+          `/api/rfps/${rfpId}/suppliers?includeStats=true`,
+        );
         if (!response.ok) throw new Error("Failed to fetch suppliers");
 
         const responseData = await response.json();
         const data = responseData.suppliers || [];
-        const suppliersWithDocs = await Promise.all(
-          data.map(async (supplier: any) => {
-            // Fetch documents
-            const docsResponse = await fetch(
-              `/api/rfps/${rfpId}/documents?supplierId=${supplier.id}`,
-            );
-            const docsData = docsResponse.ok
-              ? await docsResponse.json()
-              : { documents: [] };
-            const documents = (docsData.documents || []).map((doc: any) => ({
-              id: doc.id,
-              name: doc.filename || doc.original_filename || "Document",
-              uploadedAt: doc.created_at || doc.uploadedAt || "",
-            }));
 
-            // Fetch supplier score (weighted completion)
-            let scorePercentage = 0;
-            try {
-              const completionResponse = await fetch(
-                `/api/rfps/${rfpId}/suppliers/${supplier.id}/completion`,
-              );
-              if (completionResponse.ok) {
-                const completionData = await completionResponse.json();
-                scorePercentage = completionData.completionPercentage || 0;
-              }
-            } catch (err) {
-              console.error("Error fetching supplier score:", err);
-            }
-
-            // Fetch response completion stats (checked responses)
-            let responseCompletionPercentage = 0;
-            let checkedResponses = 0;
-            let totalResponses = 0;
-            try {
-              const responseStatsResponse = await fetch(
-                `/api/rfps/${rfpId}/suppliers/${supplier.id}/responses`,
-              );
-              if (responseStatsResponse.ok) {
-                const responseStats = await responseStatsResponse.json();
-                responseCompletionPercentage =
-                  responseStats.completionPercentage || 0;
-                checkedResponses = responseStats.checkedResponses || 0;
-                totalResponses = responseStats.totalResponses || 0;
-              }
-            } catch (err) {
-              console.error("Error fetching response stats:", err);
-            }
-
-            return {
-              id: supplier.id,
-              name: supplier.name,
-              scorePercentage,
-              responseCompletionPercentage,
-              checkedResponses,
-              totalResponses,
-              documents: documents,
-              hasDocuments: documents.length > 0,
-            };
-          }),
-        );
+        // Map the data (which now includes stats and documents)
+        const suppliersWithDocs = data.map((supplier: any) => ({
+          id: supplier.id,
+          name: supplier.name,
+          scorePercentage: supplier.scorePercentage || 0,
+          responseCompletionPercentage:
+            supplier.responseCompletionPercentage || 0,
+          checkedResponses: supplier.checkedResponses || 0,
+          totalResponses: supplier.totalResponses || 0,
+          documents: supplier.documents || [],
+          hasDocuments: (supplier.documents || []).length > 0,
+        }));
 
         // Add ranking position and sort by score
         const sortedSuppliers = [...suppliersWithDocs].sort(

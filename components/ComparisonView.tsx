@@ -49,6 +49,7 @@ import { useResponseMutation } from "@/hooks/use-response-mutation";
 import { useAuth } from "@/hooks/use-auth";
 import type { TreeNode } from "@/hooks/use-requirements";
 import { Requirement, getRequirementById } from "@/lib/fake-data";
+import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
 
 interface ComparisonViewProps {
   selectedRequirementId: string;
@@ -89,6 +90,10 @@ export function ComparisonView({
   const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
   const [supplierDocuments, setSupplierDocuments] = useState<PDFDocument[]>([]);
   const [_loadingSupplierDocs, setLoadingSupplierDocs] = useState(false);
+  const [initialPdfState, setInitialPdfState] = useState<{
+    documentId: string | null;
+    page: number | null;
+  }>({ documentId: null, page: null });
 
   // Initialize mutation hook for persisting changes
   const mutation = useResponseMutation();
@@ -104,6 +109,13 @@ export function ComparisonView({
     rfpId || "",
     selectedRequirementId,
   );
+
+  // Fetch annotations for the selected requirement
+  // Now handled by individual SupplierResponseCard components
+  // const {
+  //   annotations: requirementAnnotations,
+  //   deleteAnnotation,
+  // } = useRequirementAnnotations(selectedRequirementId);
 
   const responses = responsesData?.responses || [];
   const suppliers = useMemo(() => {
@@ -497,6 +509,48 @@ export function ComparisonView({
     },
     [rfpId],
   );
+
+  const handleOpenBookmark = useCallback(
+    async (bookmark: PDFAnnotation) => {
+      if (!bookmark.supplierId || !rfpId) return;
+
+      // Set initial state for PDF viewer
+      setInitialPdfState({
+        documentId: bookmark.documentId,
+        page: bookmark.pageNumber,
+      });
+
+      // Fetch documents if needed (reusing logic from handleOpenSupplierDocuments)
+      // We always fetch to ensure we have the latest list and the viewer works correctly
+      setLoadingSupplierDocs(true);
+      try {
+        const response = await fetch(
+          `/api/rfps/${rfpId}/documents?supplierId=${bookmark.supplierId}`,
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch supplier documents");
+        }
+        const data = await response.json();
+        setSupplierDocuments(data.documents || []);
+        setIsPdfViewerOpen(true);
+      } catch (error) {
+        console.error("Error fetching supplier documents:", error);
+        setSupplierDocuments([]);
+      } finally {
+        setLoadingSupplierDocs(false);
+      }
+    },
+    [rfpId],
+  );
+
+  // const handleDeleteBookmark = useCallback(
+  //   (bookmark: PDFAnnotation) => {
+  //     if (confirm("Êtes-vous sûr de vouloir supprimer ce signet ?")) {
+  //       deleteAnnotation({ id: bookmark.id, documentId: bookmark.documentId });
+  //     }
+  //   },
+  //   [deleteAnnotation],
+  // );
 
   // If a category is selected, show requirements table
   if (isCategory) {
@@ -921,6 +975,8 @@ export function ComparisonView({
                         }
                         onOpenDocuments={handleOpenSupplierDocuments}
                         hasDocuments={response.supplier?.has_documents}
+                        requirementId={selectedRequirementId}
+                        onOpenBookmark={handleOpenBookmark}
                       />
                     );
                   })}
@@ -939,6 +995,14 @@ export function ComparisonView({
         rfpId={rfpId}
         organizationId={organizationId}
         requirementId={selectedRequirementId}
+        requirements={allRequirements.map((r) => ({
+          id: r.id,
+          title: r.title,
+          requirement_id_external: (r as any).requirement_id_external || r.id,
+          description: r.description,
+        }))}
+        initialDocumentId={initialPdfState.documentId}
+        initialPage={initialPdfState.page}
       />
     </div>
   );

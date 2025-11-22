@@ -139,20 +139,25 @@ export function PDFAnnotationPanel({
           </div>
         ) : (
           <div className="p-4 space-y-6">
-            {pages.map((page) => (
-              <div key={page}>
-                <div className="sticky top-0 bg-white/95 backdrop-blur-sm py-2 mb-2 border-b">
-                  <h4 className="font-medium text-sm text-gray-700">
-                    Page {page}{" "}
-                    <span className="text-xs text-gray-500 font-normal">
-                      ({groupedByPage[page].length} annotation
-                      {groupedByPage[page].length > 1 ? "s" : ""})
-                    </span>
-                  </h4>
+            {pages.map((page) => {
+              const pageAnnotations = groupedByPage[page];
+              if (!pageAnnotations || pageAnnotations.length === 0) return null;
+
+              return (
+                <div key={page}>
+                  <div className="sticky top-0 bg-white/95 backdrop-blur-sm py-2 mb-2 border-b">
+                    <h4 className="font-medium text-sm text-gray-700">
+                      Page {page}{" "}
+                      <span className="text-xs text-gray-500 font-normal">
+                        ({pageAnnotations.length} annotation
+                        {pageAnnotations.length > 1 ? "s" : ""})
+                      </span>
+                    </h4>
+                  </div>
+                  <AnnotationList annotations={pageAnnotations} compact />
                 </div>
-                <AnnotationList annotations={groupedByPage[page]} compact />
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

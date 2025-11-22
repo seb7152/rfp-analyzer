@@ -13,10 +13,10 @@ Si vous voulez juste remplacer votre viewer actuel par le nouveau avec annotatio
 
 ```tsx
 // Avant
-import { PDFViewerSheet } from '@/components/PDFViewerSheet';
+import { PDFViewerSheet } from "@/components/PDFViewerSheet";
 
 // Après - créer un nouveau wrapper
-import { PDFViewerWithAnnotations } from '@/components/pdf/PDFViewerWithAnnotations';
+import { PDFViewerWithAnnotations } from "@/components/pdf/PDFViewerWithAnnotations";
 
 // Dans votre composant
 <PDFViewerWithAnnotations
@@ -25,7 +25,7 @@ import { PDFViewerWithAnnotations } from '@/components/pdf/PDFViewerWithAnnotati
   organizationId={organizationId}
   initialPage={1}
   showAnnotationPanel={true}
-/>
+/>;
 ```
 
 ### Option 2 : Dans une page dédiée (pour tester)
@@ -34,10 +34,10 @@ Créez une page de test pour essayer le système :
 
 ```tsx
 // app/test-pdf/page.tsx
-'use client';
+"use client";
 
-import { PDFViewerWithAnnotations } from '@/components/pdf/PDFViewerWithAnnotations';
-import { useState, useEffect } from 'react';
+import { PDFViewerWithAnnotations } from "@/components/pdf/PDFViewerWithAnnotations";
+import { useState, useEffect } from "react";
 
 export default function TestPDFPage() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -46,10 +46,12 @@ export default function TestPDFPage() {
   // Charger un PDF depuis votre API
   useEffect(() => {
     async function loadPDF() {
-      const response = await fetch('/api/rfps/YOUR_RFP_ID/documents/YOUR_DOC_ID/view-url');
+      const response = await fetch(
+        "/api/rfps/YOUR_RFP_ID/documents/YOUR_DOC_ID/view-url",
+      );
       const data = await response.json();
       setPdfUrl(data.url);
-      setDocumentId('YOUR_DOC_ID');
+      setDocumentId("YOUR_DOC_ID");
     }
     loadPDF();
   }, []);
@@ -81,9 +83,15 @@ Modifiez votre `PDFViewerSheet.tsx` existant pour utiliser le nouveau viewer :
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { X, ChevronRight } from "lucide-react";
-import { PDFViewerWithAnnotations } from './pdf/PDFViewerWithAnnotations';
+import { PDFViewerWithAnnotations } from "./pdf/PDFViewerWithAnnotations";
 
 export interface PDFDocument {
   id: string;
@@ -113,8 +121,10 @@ export function PDFViewerSheet({
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
 
-  const pdfDocuments = documents.filter(doc => doc.mime_type === "application/pdf");
-  const selectedDoc = pdfDocuments.find(doc => doc.id === selectedDocId);
+  const pdfDocuments = documents.filter(
+    (doc) => doc.mime_type === "application/pdf",
+  );
+  const selectedDoc = pdfDocuments.find((doc) => doc.id === selectedDocId);
 
   // Charger le PDF quand le document change
   useEffect(() => {
@@ -125,11 +135,13 @@ export function PDFViewerSheet({
 
     async function fetchPdfUrl() {
       try {
-        const response = await fetch(`/api/rfps/${rfpId}/documents/${selectedDoc.id}/view-url`);
+        const response = await fetch(
+          `/api/rfps/${rfpId}/documents/${selectedDoc.id}/view-url`,
+        );
         const data = await response.json();
         setPdfUrl(data.url);
       } catch (err) {
-        console.error('Error fetching PDF URL:', err);
+        console.error("Error fetching PDF URL:", err);
       }
     }
 
@@ -217,16 +229,20 @@ Dans votre interface d'évaluation, ajoutez une section pour voir les annotation
 
 ```tsx
 // components/ComparisonView.tsx
-import { AnnotationList } from '@/components/pdf/annotations/AnnotationList';
-import { usePDFAnnotations } from '@/components/pdf/hooks/usePDFAnnotations';
+import { AnnotationList } from "@/components/pdf/annotations/AnnotationList";
+import { usePDFAnnotations } from "@/components/pdf/hooks/usePDFAnnotations";
 
-function ComparisonView({ /* vos props */ }) {
+function ComparisonView(
+  {
+    /* vos props */
+  },
+) {
   const currentRequirement = requirements[currentIndex];
 
   // Récupérer les annotations du document du fournisseur actuel
   const { annotations } = usePDFAnnotations(
     currentSupplierDocumentId, // ID du document PDF du fournisseur
-    organizationId
+    organizationId,
   );
 
   return (
@@ -252,7 +268,7 @@ function ComparisonView({ /* vos props */ }) {
 Pour naviguer depuis une annotation vers le PDF :
 
 ```tsx
-import { usePDFAnnotationNavigation } from '@/components/pdf/contexts/PDFAnnotationContext';
+import { usePDFAnnotationNavigation } from "@/components/pdf/contexts/PDFAnnotationContext";
 
 function MyComponent() {
   const { navigateToAnnotation } = usePDFAnnotationNavigation();
@@ -278,14 +294,14 @@ function MyComponent() {
 
 ```typescript
 interface PDFViewerWithAnnotationsProps {
-  url: string | null;                 // URL signée du PDF
-  documentId: string | null;          // ID du document dans la DB
-  organizationId: string;             // ID de l'organisation (pour RLS)
-  initialPage?: number;               // Page initiale (défaut: 1)
-  requirementId?: string;             // Pour filtrer les annotations
-  onPageChange?: (page: number) => void;  // Callback changement de page
-  className?: string;                 // Classes CSS additionnelles
-  showAnnotationPanel?: boolean;      // Afficher le panel latéral (défaut: true)
+  url: string | null; // URL signée du PDF
+  documentId: string | null; // ID du document dans la DB
+  organizationId: string; // ID de l'organisation (pour RLS)
+  initialPage?: number; // Page initiale (défaut: 1)
+  requirementId?: string; // Pour filtrer les annotations
+  onPageChange?: (page: number) => void; // Callback changement de page
+  className?: string; // Classes CSS additionnelles
+  showAnnotationPanel?: boolean; // Afficher le panel latéral (défaut: true)
 }
 ```
 
@@ -324,6 +340,7 @@ npx supabase db push
 ```
 
 Cela créera les tables :
+
 - `pdf_annotations`
 - `annotation_groups`
 - `annotation_group_members`
@@ -332,15 +349,17 @@ Cela créera les tables :
 ## 🐛 Debugging
 
 ### Le PDF ne se charge pas
+
 ```tsx
 // Vérifier que l'URL est valide
-console.log('PDF URL:', pdfUrl);
+console.log("PDF URL:", pdfUrl);
 
 // Vérifier les CORS si PDF externe
 // Vérifier que documentId n'est pas null
 ```
 
 ### Les annotations ne s'affichent pas
+
 ```tsx
 // Vérifier que organizationId est correct
 // Vérifier que la migration est appliquée
@@ -348,6 +367,7 @@ console.log('PDF URL:', pdfUrl);
 ```
 
 ### Erreur "PDFAnnotationProvider not found"
+
 ```tsx
 // Vérifier que app/providers.tsx a été mis à jour
 // et contient <PDFAnnotationProvider>
@@ -356,6 +376,7 @@ console.log('PDF URL:', pdfUrl);
 ## 📚 Exemples complets
 
 Consultez :
+
 - `PDF_ANNOTATIONS_README.md` - Documentation technique complète
 - `IMPLEMENTATION_PLAN_PDF_ANNOTATIONS.md` - Architecture détaillée
 

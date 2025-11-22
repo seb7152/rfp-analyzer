@@ -14,6 +14,8 @@ import {
   FileText,
   Maximize2,
 } from "lucide-react";
+import { SupplierBookmarks } from "@/components/SupplierBookmarks";
+import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
 import { ResponseFocusModal } from "@/components/ResponseFocusModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,7 +51,10 @@ export interface SupplierResponseCardProps {
   onExpandChange?: (expanded: boolean) => void;
   onOpenDocuments?: (supplierId: string) => void;
   collapsible?: boolean;
+  collapsible?: boolean;
   hasDocuments?: boolean;
+  requirementId?: string;
+  onOpenBookmark?: (bookmark: PDFAnnotation) => void;
 }
 
 export function SupplierResponseCard({
@@ -78,6 +83,8 @@ export function SupplierResponseCard({
   onOpenDocuments,
   collapsible = true,
   hasDocuments,
+  requirementId,
+  onOpenBookmark,
 }: SupplierResponseCardProps) {
   const [isFocusModalOpen, setIsFocusModalOpen] = React.useState(false);
   const currentScore = manualScore ?? aiScore;
@@ -346,6 +353,15 @@ export function SupplierResponseCard({
               />
             </div>
           </div>
+
+          {/* Bookmarks section - Lazy loaded */}
+          {requirementId && supplierId && (
+            <SupplierBookmarks
+              requirementId={requirementId}
+              supplierId={supplierId}
+              onOpenBookmark={onOpenBookmark}
+            />
+          )}
         </div>
       )}
       {/* Focus Modal */}

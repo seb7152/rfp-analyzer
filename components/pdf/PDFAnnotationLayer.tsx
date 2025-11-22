@@ -1,7 +1,11 @@
 "use client";
 
 import React from "react";
-import type { PDFAnnotation } from "./types/annotation.types";
+import type {
+  PDFAnnotation,
+  RequirementInfo,
+  UpdateAnnotationDTO,
+} from "./types/annotation.types";
 import { AnnotationHighlight } from "./annotations/AnnotationHighlight";
 
 interface PDFAnnotationLayerProps {
@@ -11,7 +15,8 @@ interface PDFAnnotationLayerProps {
   pageWidth: number;
   pageHeight: number;
   onDeleteAnnotation: (id: string) => void;
-  onUpdateAnnotation: (id: string, noteContent: string) => void;
+  onUpdateAnnotation: (dto: UpdateAnnotationDTO) => void;
+  requirements?: RequirementInfo[];
 }
 
 export function PDFAnnotationLayer({
@@ -22,6 +27,7 @@ export function PDFAnnotationLayer({
   pageHeight,
   onDeleteAnnotation,
   onUpdateAnnotation,
+  requirements = [],
 }: PDFAnnotationLayerProps) {
   // Filtrer les annotations pour cette page
   const pageAnnotations = annotations.filter(
@@ -52,6 +58,7 @@ export function PDFAnnotationLayer({
                 scale={scale}
                 onDelete={onDeleteAnnotation}
                 onUpdate={onUpdateAnnotation}
+                requirements={requirements}
               />
             );
 

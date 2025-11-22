@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { PDFViewerWithAnnotations } from '@/components/pdf/PDFViewerWithAnnotations';
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { PDFViewerWithAnnotations } from "@/components/pdf/PDFViewerWithAnnotations";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 // Force dynamic rendering - PDF.js requires browser APIs
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 /**
  * Page de test pour le système d'annotations PDF
@@ -18,31 +18,33 @@ export const dynamic = 'force-dynamic';
  * 4. Tester les annotations !
  */
 export default function TestPDFAnnotationsPage() {
-  const [pdfUrl, setPdfUrl] = useState<string>('');
-  const [documentId, setDocumentId] = useState<string>('');
-  const [organizationId, setOrganizationId] = useState<string>('');
+  const [pdfUrl, setPdfUrl] = useState<string>("");
+  const [documentId, setDocumentId] = useState<string>("");
+  const [organizationId, setOrganizationId] = useState<string>("");
   const [isReady, setIsReady] = useState(false);
 
   const handleLoadPDF = () => {
     if (pdfUrl && documentId && organizationId) {
       setIsReady(true);
     } else {
-      alert('Veuillez remplir tous les champs');
+      alert("Veuillez remplir tous les champs");
     }
   };
 
   const handleReset = () => {
     setIsReady(false);
-    setPdfUrl('');
-    setDocumentId('');
-    setOrganizationId('');
+    setPdfUrl("");
+    setDocumentId("");
+    setOrganizationId("");
   };
 
   if (!isReady) {
     return (
       <div className="min-h-screen bg-gray-50 p-8">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-bold mb-2">🧪 Test des Annotations PDF</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            🧪 Test des Annotations PDF
+          </h1>
           <p className="text-gray-600 mb-8">
             Page de test pour essayer le système d'annotations PDF
           </p>
@@ -59,7 +61,9 @@ export default function TestPDFAnnotationsPage() {
                 onChange={(e) => setPdfUrl(e.target.value)}
               />
               <p className="text-xs text-gray-500 mt-1">
-                💡 Astuce : Utilisez /api/rfps/[rfpId]/documents/[docId]/view-url pour obtenir une URL signée
+                💡 Astuce : Utilisez
+                /api/rfps/[rfpId]/documents/[docId]/view-url pour obtenir une
+                URL signée
               </p>
             </div>
 
@@ -103,9 +107,16 @@ export default function TestPDFAnnotationsPage() {
               📚 Comment obtenir ces informations ?
             </h3>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• <strong>URL du PDF</strong> : Via votre API de documents</li>
-              <li>• <strong>Document ID</strong> : Depuis la table rfp_documents</li>
-              <li>• <strong>Organization ID</strong> : Depuis votre session utilisateur</li>
+              <li>
+                • <strong>URL du PDF</strong> : Via votre API de documents
+              </li>
+              <li>
+                • <strong>Document ID</strong> : Depuis la table rfp_documents
+              </li>
+              <li>
+                • <strong>Organization ID</strong> : Depuis votre session
+                utilisateur
+              </li>
             </ul>
           </div>
 
@@ -132,7 +143,8 @@ export default function TestPDFAnnotationsPage() {
         <div>
           <h1 className="text-xl font-bold">🧪 Test des Annotations PDF</h1>
           <p className="text-sm text-gray-600">
-            Essayez de surligner du texte, créer des signets et ajouter des notes !
+            Essayez de surligner du texte, créer des signets et ajouter des
+            notes !
           </p>
         </div>
         <Button variant="outline" onClick={handleReset}>
@@ -143,9 +155,15 @@ export default function TestPDFAnnotationsPage() {
       {/* Instructions rapides */}
       <div className="bg-blue-50 border-b px-6 py-2">
         <div className="flex gap-6 text-sm">
-          <span>🖍️ <strong>Surligner</strong> : Sélectionnez du texte</span>
-          <span>📌 <strong>Signet</strong> : Cliquez dans le document</span>
-          <span>📝 <strong>Note</strong> : Cliquez sur une annotation existante</span>
+          <span>
+            🖍️ <strong>Surligner</strong> : Sélectionnez du texte
+          </span>
+          <span>
+            📌 <strong>Signet</strong> : Cliquez dans le document
+          </span>
+          <span>
+            📝 <strong>Note</strong> : Cliquez sur une annotation existante
+          </span>
         </div>
       </div>
 

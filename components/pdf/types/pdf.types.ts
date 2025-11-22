@@ -26,8 +26,8 @@ export interface PDFToolbarProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onResetZoom: () => void;
-  annotationMode?: "select" | "highlight" | "bookmark";
-  onAnnotationModeChange?: (mode: "select" | "highlight" | "bookmark") => void;
-  selectedColor?: string;
-  onColorChange?: (color: string) => void;
+  annotationMode?: "select" | "bookmark";
+  onAnnotationModeChange?: (mode: "select" | "bookmark") => void;
+  annotations?: any[]; // Using any[] to avoid circular dependency or complex imports for now, or I should import PDFAnnotation
+  requirements?: any[];
 }

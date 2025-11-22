@@ -29,7 +29,10 @@ export function usePDFDocument(url: string | null): UsePDFDocumentResult {
 
     // Lazy import pdfjs to avoid SSR issues
     console.log("[usePDFDocument] Starting PDF load for URL:", url);
-    console.log("[usePDFDocument] Window available:", typeof window !== "undefined");
+    console.log(
+      "[usePDFDocument] Window available:",
+      typeof window !== "undefined",
+    );
 
     import("../utils/pdfWorker")
       .then(async (module) => {
@@ -43,8 +46,14 @@ export function usePDFDocument(url: string | null): UsePDFDocumentResult {
         try {
           console.log("[usePDFDocument] Calling getPdfJs()...");
           const pdfjs = await module.getPdfJs();
-          console.log("[usePDFDocument] getPdfJs() returned:", pdfjs ? "object" : "null");
-          console.log("[usePDFDocument] pdfjs.getDocument available:", typeof pdfjs?.getDocument);
+          console.log(
+            "[usePDFDocument] getPdfJs() returned:",
+            pdfjs ? "object" : "null",
+          );
+          console.log(
+            "[usePDFDocument] pdfjs.getDocument available:",
+            typeof pdfjs?.getDocument,
+          );
 
           if (isCancelled) {
             console.log("[usePDFDocument] Load cancelled after getPdfJs");
@@ -57,7 +66,10 @@ export function usePDFDocument(url: string | null): UsePDFDocumentResult {
           loadingTask.promise
             .then((pdf) => {
               if (!isCancelled) {
-                console.log("[usePDFDocument] PDF loaded successfully, pages:", pdf.numPages);
+                console.log(
+                  "[usePDFDocument] PDF loaded successfully, pages:",
+                  pdf.numPages,
+                );
                 setDocument(pdf);
                 setNumPages(pdf.numPages);
                 setIsLoading(false);
@@ -80,7 +92,10 @@ export function usePDFDocument(url: string | null): UsePDFDocumentResult {
       })
       .catch((importError) => {
         if (!isCancelled) {
-          console.error("[usePDFDocument] Error importing pdfWorker:", importError);
+          console.error(
+            "[usePDFDocument] Error importing pdfWorker:",
+            importError,
+          );
           setError(importError as Error);
           setIsLoading(false);
         }
