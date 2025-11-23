@@ -51,7 +51,6 @@ export interface SupplierResponseCardProps {
   onExpandChange?: (expanded: boolean) => void;
   onOpenDocuments?: (supplierId: string) => void;
   collapsible?: boolean;
-  collapsible?: boolean;
   hasDocuments?: boolean;
   requirementId?: string;
   onOpenBookmark?: (bookmark: PDFAnnotation) => void;
