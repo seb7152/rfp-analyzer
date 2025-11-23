@@ -113,11 +113,11 @@ export function ComparisonView({
   //   deleteAnnotation,
   // } = useRequirementAnnotations(selectedRequirementId);
 
-  const responses = responsesData?.responses || [];
+  const responses: any[] = (responsesData as any)?.responses || [];
   const suppliers = useMemo(() => {
     // Extract unique suppliers from responses
     const supplierMap = new Map();
-    responses.forEach((response) => {
+    responses.forEach((response: any) => {
       if (response.supplier && !supplierMap.has(response.supplier.id)) {
         if (supplierId && response.supplier.id !== supplierId) {
           return;
@@ -167,10 +167,10 @@ export function ComparisonView({
   );
   // Filter responses for current requirement (already filtered by useResponses hook)
   // and optionally by supplierId
-  const requirementResponses = useMemo(() => {
+  const requirementResponses: any[] = useMemo(() => {
     const all = responses || [];
     if (supplierId) {
-      return all.filter((r) => r.supplier_id === supplierId);
+      return all.filter((r: any) => r.supplier_id === supplierId);
     }
     return all;
   }, [responses, supplierId]);
@@ -292,7 +292,7 @@ export function ComparisonView({
       const updated = { ...prev };
       let hasChanges = false;
 
-      responses.forEach((response) => {
+      responses.forEach((response: any) => {
         const state = prev[response.id];
 
         if (!state) {
@@ -451,7 +451,7 @@ export function ComparisonView({
   const toggleExpandAll = () => {
     // Check if all are currently expanded
     const allExpanded = requirementResponses.every(
-      (r) => responseStates[r.id]?.expanded ?? false,
+      (r: any) => responseStates[r.id]?.expanded ?? false,
     );
 
     // Toggle all to the opposite state
@@ -460,7 +460,7 @@ export function ComparisonView({
     // Update all response states
     setResponseStates((prev) => {
       const newStates = { ...prev };
-      requirementResponses.forEach((response) => {
+      requirementResponses.forEach((response: any) => {
         newStates[response.id] = {
           ...newStates[response.id],
           expanded: newExpandedState,

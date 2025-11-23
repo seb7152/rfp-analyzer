@@ -49,9 +49,9 @@ export interface GetResponsesResponse {
 export function useResponses(
   rfpId: string,
   requirementId?: string,
-): UseQueryResult<GetResponsesResponse> {
-  return useQuery({
-    queryKey: ["responses", rfpId, requirementId],
+) {
+  return useQuery<GetResponsesResponse>({
+    queryKey: ["responses", rfpId, requirementId] as const,
     queryFn: async () => {
       const params = new URLSearchParams();
       if (requirementId) {
@@ -66,12 +66,12 @@ export function useResponses(
         throw new Error("Failed to fetch responses");
       }
 
-      return response.json();
+      return await response.json();
     },
     enabled: !!rfpId,
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
-  });
+  } as any);
 }
 
 /**
@@ -89,9 +89,9 @@ export function useRequirementResponses(
  */
 export function useResponse(
   responseId: string,
-): UseQueryResult<{ response: ResponseWithSupplier }> {
-  return useQuery({
-    queryKey: ["response", responseId],
+) {
+  return useQuery<{ response: ResponseWithSupplier }>({
+    queryKey: ["response", responseId] as const,
     queryFn: async () => {
       const response = await fetch(`/api/responses/${responseId}`);
 
@@ -99,10 +99,10 @@ export function useResponse(
         throw new Error("Failed to fetch response");
       }
 
-      return response.json();
+      return await response.json();
     },
     enabled: !!responseId,
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
-  });
+  } as any);
 }
