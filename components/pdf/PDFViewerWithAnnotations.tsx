@@ -20,7 +20,6 @@ import type {
 interface PDFViewerWithAnnotationsProps {
   url: string | null;
   documentId: string | null;
-  organizationId: string;
   initialPage?: number;
   requirementId?: string;
   onPageChange?: (page: number) => void;
@@ -32,7 +31,6 @@ interface PDFViewerWithAnnotationsProps {
 export function PDFViewerWithAnnotations({
   url,
   documentId,
-  organizationId,
   initialPage = 1,
   requirementId,
   onPageChange,
@@ -66,7 +64,7 @@ export function PDFViewerWithAnnotations({
     deleteAnnotation,
     updateAnnotation,
     isCreating,
-  } = usePDFAnnotations(documentId, organizationId);
+  } = usePDFAnnotations(documentId);
 
   // Hook de navigation
   usePDFNavigation(documentId, currentPage, setCurrentPage);

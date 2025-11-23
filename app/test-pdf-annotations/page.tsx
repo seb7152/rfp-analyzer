@@ -172,7 +172,6 @@ export default function TestPDFAnnotationsPage() {
         <PDFViewerWithAnnotations
           url={pdfUrl}
           documentId={documentId}
-          organizationId={organizationId}
           showAnnotationPanel={true}
         />
       </div>

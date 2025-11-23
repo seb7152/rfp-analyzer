@@ -26,10 +26,7 @@ const mapAnnotationFromDB = (raw: any): PDFAnnotation => ({
   updatedAt: raw.updated_at,
 });
 
-export function usePDFAnnotations(
-  documentId: string | null,
-  organizationId: string,
-) {
+export function usePDFAnnotations(documentId: string | null) {
   const queryClient = useQueryClient();
 
   // Récupérer les annotations d'un document via l'API

@@ -230,7 +230,6 @@ export function PDFViewerSheet({
           <PDFViewerWithAnnotations
             url={pdfUrl}
             documentId={selectedDocId}
-            organizationId={organizationId}
             requirementId={requirementId}
             requirements={requirements}
             showAnnotationPanel={true}
