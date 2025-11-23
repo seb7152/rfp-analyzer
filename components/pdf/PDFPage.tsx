@@ -2,12 +2,14 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy, PDFPageProxy } from "./types/pdf.types";
+import { PDFTextLayer } from "./PDFTextLayer";
 
 interface PDFPageProps {
   document: PDFDocumentProxy;
   pageNumber: number;
   scale: number;
   onPageLoad?: (page: PDFPageProxy) => void;
+  onTextSelected?: (text: string, rects: DOMRect[]) => void;
   className?: string;
   children?: React.ReactNode; // Pour les couches d'annotations et de texte
 }
@@ -17,6 +19,7 @@ export function PDFPage({
   pageNumber,
   scale,
   onPageLoad,
+  onTextSelected,
   className,
   children,
 }: PDFPageProps) {
@@ -126,6 +129,15 @@ export function PDFPage({
             Rendu en cours...
           </div>
         </div>
+      )}
+
+      {/* Couche de texte pour la sélection */}
+      {page && onTextSelected && (
+        <PDFTextLayer
+          page={page}
+          scale={scale}
+          onTextSelected={onTextSelected}
+        />
       )}
 
       {/* Couches supplémentaires (texte, annotations) */}

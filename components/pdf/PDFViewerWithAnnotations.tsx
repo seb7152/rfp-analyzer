@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { usePDFDocument } from "./hooks/usePDFDocument";
 import { usePDFAnnotations } from "./hooks/usePDFAnnotations";
 import { usePDFNavigation } from "./hooks/usePDFNavigation";
 import { PDFPage } from "./PDFPage";
 import { PDFToolbar } from "./PDFToolbar";
 import { PDFAnnotationLayer } from "./PDFAnnotationLayer";
+import { SelectionToolbar } from "./SelectionToolbar";
+import { SelectionDialog } from "./SelectionDialog";
 import { Loader2 } from "lucide-react";
 import type { PDFPageProxy } from "./types/pdf.types";
 import type {
@@ -45,7 +47,17 @@ export function PDFViewerWithAnnotations({
   );
   const [loadedPage, setLoadedPage] = useState<PDFPageProxy | null>(null);
 
+  // État pour la sélection de texte
+  const [textSelection, setTextSelection] = useState<{
+    text: string;
+    rects: DOMRect[];
+    pageNumber: number;
+    viewport: { width: number; height: number };
+  } | null>(null);
+  const [showSelectionDialog, setShowSelectionDialog] = useState(false);
+
   const containerRef = useRef<HTMLDivElement>(null);
+  const pdfPageRef = useRef<HTMLDivElement>(null);
 
   // Hooks pour les annotations
   const {
@@ -70,20 +82,192 @@ export function PDFViewerWithAnnotations({
   );
 
   const handleZoomIn = useCallback(() => {
-    setScale((prev) => Math.min(prev + 0.2, 3));
+    setScale((prev) => Math.min(prev + 0.05, 3));
   }, []);
 
   const handleZoomOut = useCallback(() => {
-    setScale((prev) => Math.max(prev - 0.2, 0.5));
+    setScale((prev) => Math.max(prev - 0.05, 0.5));
   }, []);
 
   const handleResetZoom = useCallback(() => {
-    setScale(1);
-  }, []);
+    if (!loadedPage || !containerRef.current) {
+      setScale(1);
+      return;
+    }
+
+    // Calculer le scale pour "Fit to Width"
+    // clientWidth inclut le padding mais exclut la scrollbar verticale
+    // Le container a p-4 (16px * 2 = 32px)
+    const availableWidth = containerRef.current.clientWidth - 32;
+    const viewport = loadedPage.getViewport({ scale: 1 });
+
+    // On laisse une petite marge de sécurité (ex: 4px) pour éviter les arrondis qui créent une scrollbar horizontale
+    const newScale = (availableWidth - 4) / viewport.width;
+
+    setScale(newScale);
+  }, [loadedPage]);
 
   const handlePageLoad = useCallback((page: PDFPageProxy) => {
     setLoadedPage(page);
   }, []);
+
+  // Callback pour gérer la sélection de texte
+  const handleTextSelected = useCallback(
+    (text: string, rects: DOMRect[]) => {
+      console.log("[PDFViewer] handleTextSelected called", {
+        text,
+        rectsLength: rects.length,
+      });
+      if (!loadedPage || text.length === 0) {
+        console.log("[PDFViewer] Clearing selection (no page or empty text)");
+        setTextSelection(null);
+        return;
+      }
+
+      const viewport = loadedPage.getViewport({ scale });
+
+      console.log("[PDFViewer] Setting text selection state");
+      setTextSelection({
+        text,
+        rects,
+        pageNumber: currentPage,
+        viewport: {
+          width: viewport.width,
+          height: viewport.height,
+        },
+      });
+    },
+    [loadedPage, scale, currentPage],
+  );
+
+  // Effacer la sélection lors du changement de page
+  useEffect(() => {
+    console.log("[PDFViewer] Page changed, clearing selection");
+    setTextSelection(null);
+  }, [currentPage]);
+
+  // Effacer la sélection lors du scroll
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      console.log("[PDFViewer] Scroll detected, clearing selection");
+      setTextSelection(null);
+      window.getSelection()?.removeAllRanges();
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Effacer la sélection lors du clic à l'extérieur
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+
+      // Ne pas effacer si on clique sur le toolbar de sélection
+      if (target.closest(".selection-toolbar")) {
+        console.log("[PDFViewer] Click on toolbar, ignoring");
+        return;
+      }
+
+      // Ne pas effacer si on clique dans le PDF text layer
+      if (target.closest(".pdf-text-layer")) {
+        console.log("[PDFViewer] Click on text layer, ignoring");
+        return;
+      }
+
+      // Ne pas effacer si le dialog de sélection est ouvert
+      if (showSelectionDialog) {
+        console.log("[PDFViewer] Dialog is open, ignoring click");
+        return;
+      }
+
+      console.log(
+        "[PDFViewer] Click outside, clearing selection. Target:",
+        target,
+      );
+      setTextSelection(null);
+    };
+
+    window.document.addEventListener("mousedown", handleClickOutside);
+    return () =>
+      window.document.removeEventListener("mousedown", handleClickOutside);
+  }, [showSelectionDialog]);
+
+  // Debug: Log textSelection changes
+  useEffect(() => {
+    console.log("[PDFViewer] textSelection state changed:", textSelection);
+  }, [textSelection]);
+
+  // Handler pour ouvrir le dialog
+  const handleCreateBookmarkClick = useCallback(() => {
+    console.log("[PDFViewer] handleCreateBookmarkClick called");
+    if (!textSelection) {
+      console.log("[PDFViewer] No text selection, ignoring");
+      return;
+    }
+    setShowSelectionDialog(true);
+  }, [textSelection]);
+
+  // Handler pour confirmer la création
+  const handleConfirmBookmark = useCallback(
+    (noteContent: string, requirementId?: string) => {
+      if (!textSelection || !documentId || !loadedPage) return;
+
+      const viewport = loadedPage.getViewport({ scale });
+      // Utiliser la référence de la page PDF pour le calcul des coordonnées
+      const pageRect = pdfPageRef.current?.getBoundingClientRect();
+
+      if (!pageRect) {
+        console.error("[PDFViewer] No page rect found");
+        return;
+      }
+
+      // Calculer la position du bookmark en conservant tous les rectangles de sélection
+      const pageRects = textSelection.rects.map((rect) => {
+        const relativeX = rect.left - pageRect.left;
+        const relativeY = rect.top - pageRect.top;
+
+        return {
+          x: Math.max(0, relativeX / scale),
+          y: Math.max(0, relativeY / scale),
+          width: rect.width / scale,
+          height: rect.height / scale,
+        };
+      });
+
+      console.log("[PDFViewer] Creating bookmark with rects:", pageRects);
+
+      const annotationDTO: CreateAnnotationDTO = {
+        documentId,
+        requirementId: requirementId === "none" ? undefined : requirementId,
+        annotationType: "bookmark",
+        pageNumber: textSelection.pageNumber,
+        position: {
+          type: "bookmark",
+          pageHeight: viewport.height,
+          pageWidth: viewport.width,
+          rects: pageRects,
+        },
+        highlightedText: textSelection.text,
+        noteContent: noteContent || undefined,
+        color: "#2196F3",
+      };
+
+      // Utiliser la même syntaxe que handleCanvasClick - sans callbacks
+      createAnnotation(annotationDTO);
+
+      // Fermer le dialog et effacer la sélection immédiatement
+      // (l'invalidation des queries se fera automatiquement via le hook)
+      console.log("[PDFViewer] Bookmark creation triggered");
+      setShowSelectionDialog(false);
+      setTextSelection(null);
+      window.getSelection()?.removeAllRanges();
+    },
+    [textSelection, documentId, loadedPage, scale, createAnnotation],
+  );
 
   // Gérer le clic pour créer un bookmark
   const handleCanvasClick = useCallback(
@@ -192,6 +376,7 @@ export function PDFViewerWithAnnotations({
         >
           <div className="flex flex-col items-center gap-4">
             <div
+              ref={pdfPageRef}
               className="relative"
               onClick={handleCanvasClick}
               style={{
@@ -203,6 +388,7 @@ export function PDFViewerWithAnnotations({
                 pageNumber={currentPage}
                 scale={scale}
                 onPageLoad={handlePageLoad}
+                onTextSelected={handleTextSelected}
                 className="shadow-lg"
               >
                 {/* Couche d'annotations */}
@@ -238,6 +424,27 @@ export function PDFViewerWithAnnotations({
           </div>
         )}
       </div>
+      {/* Toolbar de sélection (Fixed positioning) - Masqué si le dialog est ouvert */}
+      {textSelection && !showSelectionDialog && (
+        <SelectionToolbar
+          selection={textSelection}
+          onClear={() => setTextSelection(null)}
+          onCreateBookmark={handleCreateBookmarkClick}
+        />
+      )}
+
+      {/* Dialog de création de signet */}
+      {showSelectionDialog && textSelection && (
+        <SelectionDialog
+          open={showSelectionDialog}
+          onOpenChange={setShowSelectionDialog}
+          onConfirm={handleConfirmBookmark}
+          selectedText={textSelection.text}
+          isCreating={isCreating}
+          requirements={requirements}
+          defaultRequirementId={requirementId}
+        />
+      )}
     </div>
   );
 }

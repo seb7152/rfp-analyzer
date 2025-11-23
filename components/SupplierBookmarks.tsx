@@ -74,9 +74,9 @@ export function SupplierBookmarks({
     );
   }
 
-  if (bookmarks.length === 0) {
-    return null;
-  }
+  // if (bookmarks.length === 0) {
+  //   return null;
+  // }
 
   return (
     <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">

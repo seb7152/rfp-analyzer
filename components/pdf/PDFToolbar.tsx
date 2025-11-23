@@ -57,7 +57,9 @@ export function PDFToolbar({
           ...bookmark,
           displayName: req
             ? `${req.requirement_id_external} - ${req.title}`
-            : bookmark.noteContent || `Signet page ${bookmark.pageNumber}`,
+            : bookmark.noteContent ||
+              bookmark.highlightedText ||
+              `Signet page ${bookmark.pageNumber}`,
         };
       })
       .filter((b) =>

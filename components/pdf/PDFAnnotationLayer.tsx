@@ -44,6 +44,7 @@ export function PDFAnnotationLayer({
       style={{
         width: pageWidth * scale,
         height: pageHeight * scale,
+        zIndex: 30, // Au-dessus du text layer (20)
       }}
     >
       {pageAnnotations.map((annotation) => {

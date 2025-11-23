@@ -111,7 +111,8 @@ export function AnnotationHighlight({
       e.stopPropagation();
       return;
     }
-    e.stopPropagation();
+    // Ne pas stopper la propagation ici pour permettre au Popover de s'ouvrir
+    // e.stopPropagation();
   };
 
   const handleMouseMove = useCallback(
@@ -225,80 +226,80 @@ export function AnnotationHighlight({
         return (
           <Popover key={`${annotation.id}-${index}`}>
             <PopoverTrigger asChild>
-              {annotation.annotationType === "bookmark" ? (
+              <div
+                className="absolute group"
+                style={{
+                  left: rect.x * scale,
+                  top: rect.y * scale,
+                  width: rect.width * scale,
+                  height: rect.height * scale,
+                  pointerEvents: "auto",
+                }}
+              >
+                {/* Highlight Rectangle */}
                 <div
-                  className={`absolute z-10 group ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+                  className="absolute inset-0 cursor-pointer hover:opacity-70 transition-opacity"
                   style={{
-                    left: rect.x * scale,
-                    top: rect.y * scale,
-                    pointerEvents: "auto",
-                  }}
-                  onClick={handleHighlightClick}
-                  onMouseDown={handleMouseDown}
-                  onMouseEnter={() => setIsHovered(true)}
-                  onMouseLeave={() => setIsHovered(false)}
-                >
-                  <div className="relative">
-                    {/* Bookmark Icon */}
-                    <div
-                      className={`relative -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-1.5 shadow-md border border-gray-200 group-hover:border-blue-400 transition-all duration-200 ${isDragging ? "scale-110" : "group-hover:scale-110"}`}
-                      style={{ color: annotation.color }}
-                    >
-                      <Bookmark className="w-5 h-5 fill-current" />
-                      {linkedRequirement && (
-                        <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-white" />
-                      )}
-                    </div>
-
-                    {/* Animated requirement badge - unfolds from the right edge at center */}
-                    {linkedRequirement && (
-                      <div className="absolute left-1/2 top-1/2 -translate-y-1/2">
-                        <div
-                          className={`
-                          flex items-center gap-1.5 px-3 py-1.5
-                          bg-white
-                          text-blue-700 text-xs font-medium 
-                          rounded-full shadow-md border border-blue-200
-                          whitespace-nowrap
-                          transition-all duration-300 ease-out
-                          ${
-                            isHovered
-                              ? "opacity-100 w-auto pl-3 pr-3"
-                              : "opacity-0 w-0 pl-0 pr-0 border-transparent overflow-hidden"
-                          }
-                        `}
-                          style={{
-                            transformOrigin: "left center",
-                          }}
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
-                            <span className="text-[11px] font-semibold tracking-wide">
-                              {linkedRequirement.requirement_id_external}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className="absolute cursor-pointer hover:opacity-70 transition-opacity"
-                  style={{
-                    left: rect.x * scale,
-                    top: rect.y * scale,
-                    width: rect.width * scale,
-                    height: rect.height * scale,
                     backgroundColor: annotation.color,
                     opacity: 0.4,
-                    pointerEvents: "auto",
                     borderRadius: "2px",
                   }}
-                  title={annotation.highlightedText || "Annotation"}
                   onClick={handleHighlightClick}
+                  title={annotation.highlightedText || "Annotation"}
                 />
-              )}
+
+                {/* Bookmark Icon (Only for first rect of a bookmark) */}
+                {annotation.annotationType === "bookmark" && index === 0 && (
+                  <div
+                    className={`absolute -top-3 -left-3 z-10 ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+                    onClick={handleHighlightClick}
+                    onMouseDown={handleMouseDown}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                  >
+                    <div className="relative">
+                      {/* Bookmark Icon */}
+                      <div
+                        className={`relative bg-white rounded-full p-1.5 shadow-md border border-gray-200 group-hover:border-blue-400 transition-all duration-200 ${isDragging ? "scale-110" : "group-hover:scale-110"}`}
+                        style={{ color: annotation.color }}
+                      >
+                        <Bookmark className="w-5 h-5 fill-current" />
+                        {linkedRequirement && (
+                          <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border border-white" />
+                        )}
+                      </div>
+
+                      {/* Animated requirement badge */}
+                      {linkedRequirement && (
+                        <div className="absolute left-1/2 top-1/2 -translate-y-1/2 pl-4 pointer-events-none">
+                          <div
+                            className={`
+                            flex items-center gap-1.5 px-3 py-1.5
+                            bg-white
+                            text-blue-700 text-xs font-medium 
+                            rounded-full shadow-md border border-blue-200
+                            whitespace-nowrap
+                            transition-all duration-300 ease-out
+                            ${
+                              isHovered
+                                ? "opacity-100 translate-x-0"
+                                : "opacity-0 -translate-x-2"
+                            }
+                          `}
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                              <span className="text-[11px] font-semibold tracking-wide">
+                                {linkedRequirement.requirement_id_external}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </PopoverTrigger>
 
             <PopoverContent

@@ -72,35 +72,47 @@ export function usePDFAnnotations(
   // Créer une annotation via l'API
   const createAnnotation = useMutation({
     mutationFn: async (dto: CreateAnnotationDTO) => {
+      console.log("[usePDFAnnotations] Creating annotation with DTO:", dto);
+
+      const payload = {
+        requirementId: dto.requirementId || null,
+        annotationType: dto.annotationType,
+        pageNumber: dto.pageNumber,
+        position: dto.position,
+        highlightedText: dto.highlightedText || null,
+        noteContent: dto.noteContent || null,
+        color: dto.color || "#FFEB3B",
+      };
+
+      console.log("[usePDFAnnotations] Sending payload:", payload);
+
       const response = await fetch(
         `/api/documents/${dto.documentId}/annotations`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            requirementId: dto.requirementId || null,
-            annotationType: dto.annotationType,
-            pageNumber: dto.pageNumber,
-            position: dto.position,
-            highlightedText: dto.highlightedText || null,
-            noteContent: dto.noteContent || null,
-            color: dto.color || "#FFEB3B",
-          }),
+          body: JSON.stringify(payload),
         },
       );
 
+      console.log("[usePDFAnnotations] Response status:", response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("[usePDFAnnotations] Error response:", errorData);
         throw new Error(errorData.error || "Failed to create annotation");
       }
 
       const data = await response.json();
-      console.log("[usePDFAnnotations] Created annotation:", data);
+      console.log("[usePDFAnnotations] Created annotation successfully:", data);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["pdf-annotations", documentId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["requirement-annotations"],
       });
     },
   });
@@ -128,6 +140,9 @@ export function usePDFAnnotations(
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["pdf-annotations", documentId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["requirement-annotations"],
       });
     },
   });

@@ -22,7 +22,7 @@ const mapAnnotationFromDB = (
   createdBy: raw.created_by,
   createdAt: raw.created_at,
   updatedAt: raw.updated_at,
-  documentName: raw.document_name,
+  documentName: raw.document_original_filename || raw.document_filename,
 });
 
 export function useSupplierAnnotations(
