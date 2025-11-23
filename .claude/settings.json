@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/user/.claude/hooks/pre-commit-quality-checks.sh",
+            "command": ".claude/hooks/pre-commit-quality-checks.sh",
             "timeout": 300
           }
         ]
