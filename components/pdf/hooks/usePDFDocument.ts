@@ -64,7 +64,7 @@ export function usePDFDocument(url: string | null): UsePDFDocumentResult {
           const loadingTask = pdfjs.getDocument(url);
 
           loadingTask.promise
-            .then((pdf) => {
+            .then((pdf: PDFDocumentProxy) => {
               if (!isCancelled) {
                 console.log(
                   "[usePDFDocument] PDF loaded successfully, pages:",
@@ -75,7 +75,7 @@ export function usePDFDocument(url: string | null): UsePDFDocumentResult {
                 setIsLoading(false);
               }
             })
-            .catch((err) => {
+            .catch((err: Error) => {
               if (!isCancelled) {
                 console.error("[usePDFDocument] Error loading PDF:", err);
                 setError(err);
