@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { RFPDocument } from "@/hooks/useRFPDocuments";
 import { PDFViewerSheet } from "@/components/PDFViewerSheet";
-import { useAuth } from "@/hooks/use-auth";
 
 interface RFPDocumentsListProps {
   documents: RFPDocument[];
@@ -88,9 +87,6 @@ export function RFPDocumentsList({
   onDelete,
   rfpId,
 }: RFPDocumentsListProps) {
-  const { user } = useAuth();
-  const organizationId = user?.organizations[0]?.id || "";
-
   const [deleting, setDeleting] = React.useState<string | null>(null);
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
   const [supplierNames, setSupplierNames] = React.useState<
@@ -252,7 +248,6 @@ export function RFPDocumentsList({
         onOpenChange={setPdfViewerOpen}
         documents={documents}
         rfpId={rfpId}
-        organizationId={organizationId}
       />
     </div>
   );

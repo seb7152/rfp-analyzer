@@ -25,7 +25,6 @@ interface PDFViewerSheetProps {
   onOpenChange: (open: boolean) => void;
   documents: PDFDocument[];
   rfpId?: string;
-  organizationId: string;
   requirementId?: string;
   requirements?: RequirementInfo[];
   initialDocumentId?: string | null;
@@ -37,7 +36,6 @@ export function PDFViewerSheet({
   onOpenChange,
   documents,
   rfpId,
-  organizationId,
   requirementId,
   requirements = [],
   initialDocumentId,
