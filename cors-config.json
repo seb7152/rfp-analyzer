@@ -1,13 +1,19 @@
 [
   {
+    "maxAgeSeconds": 3600,
+    "method": ["GET", "HEAD", "DELETE", "PUT", "POST"],
     "origin": [
-      "http://localhost:3003",
       "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:3003",
       "https://rfp-analyzer-ashy.vercel.app",
       "https://*.vercel.app"
     ],
-    "method": ["GET", "HEAD", "DELETE", "PUT", "POST"],
-    "responseHeader": ["Content-Type", "x-goog-meta-*"],
-    "maxAgeSeconds": 3600
+    "responseHeader": [
+      "Content-Type",
+      "x-goog-meta-*",
+      "Content-Range",
+      "Content-Length"
+    ]
   }
 ]
