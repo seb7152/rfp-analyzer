@@ -7,6 +7,7 @@ import {
 } from "@/lib/supabase/queries";
 import { validateRequirementsJSON } from "@/lib/supabase/validators";
 import type { ImportRequirementsRequest, Category } from "@/lib/supabase/types";
+import { v4 as uuidv4 } from "uuid";
 
 export async function POST(
   _request: NextRequest,
@@ -95,10 +96,11 @@ export async function POST(
       suppliersCount = supplierResult.count;
     }
 
-    // Import requirements (filter out any without id)
-    const validRequirements = data.requirements.filter(
-      (req: any) => req.id
-    ) as Array<{
+    // Generate IDs for requirements that don't have one
+    const requirementsWithIds = data.requirements.map((req: any) => ({
+      ...req,
+      id: req.id || uuidv4(),
+    })) as Array<{
       id: string;
       code?: string;
       title: string;
@@ -109,9 +111,17 @@ export async function POST(
       is_optional?: boolean;
       order?: number;
     }>;
+
+    if (requirementsWithIds.length === 0) {
+      return NextResponse.json(
+        { error: "No valid requirements to import" },
+        { status: 400 }
+      );
+    }
+
     const requirementsResult = await importRequirements(
       params.rfpId,
-      validRequirements,
+      requirementsWithIds,
       user.id
     );
 
