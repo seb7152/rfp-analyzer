@@ -86,7 +86,7 @@ export function ComparisonView({
   const [responseStates, setResponseStates] = useState<ResponseState>({});
   const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
   const [supplierDocuments, setSupplierDocuments] = useState<PDFDocument[]>([]);
-  const [_loadingSupplierDocs, setLoadingSupplierDocs] = useState(false);
+  const [loadingSupplierDocs, setLoadingSupplierDocs] = useState(false);
   const [initialPdfState, setInitialPdfState] = useState<{
     documentId: string | null;
     page: number | null;
@@ -1064,7 +1064,7 @@ export function ComparisonView({
           id: r.id,
           title: r.title,
           requirement_id_external: (r as any).requirement_id_external || r.id,
-          description: r.description,
+          description: r.description ?? undefined,
         }))}
         initialDocumentId={initialPdfState.documentId}
         initialPage={initialPdfState.page}
