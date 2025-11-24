@@ -5,6 +5,7 @@ const nextConfig = {
     config.resolve.alias.canvas = false;
     return config;
   },
+  serverComponentsExternalPackages: ["xlsx"],
 };
 
 module.exports = nextConfig;
