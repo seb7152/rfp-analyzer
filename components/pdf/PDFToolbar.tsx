@@ -51,7 +51,7 @@ export function PDFToolbar({
       .filter((a) => a.annotationType === "bookmark")
       .map((bookmark) => {
         const req = (requirements as RequirementInfo[]).find(
-          (r) => r.id === bookmark.requirementId,
+          (r) => r.id === bookmark.requirementId
         );
         return {
           ...bookmark,
@@ -63,7 +63,7 @@ export function PDFToolbar({
         };
       })
       .filter((b) =>
-        b.displayName.toLowerCase().includes(searchTerm.toLowerCase()),
+        b.displayName.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .sort((a, b) => a.pageNumber - b.pageNumber);
   }, [annotations, requirements, searchTerm]);

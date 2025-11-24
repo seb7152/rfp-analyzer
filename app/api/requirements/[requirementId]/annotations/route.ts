@@ -7,7 +7,7 @@ import { NextResponse } from "next/server";
  */
 export async function GET(
   _request: Request,
-  { params }: { params: { requirementId: string } },
+  { params }: { params: { requirementId: string } }
 ) {
   try {
     const supabase = await createClient();
@@ -44,7 +44,7 @@ export async function GET(
       console.error("Error fetching requirement annotations:", error);
       return NextResponse.json(
         { error: "Erreur lors de la récupération des annotations" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -53,7 +53,7 @@ export async function GET(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Erreur interne du serveur" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

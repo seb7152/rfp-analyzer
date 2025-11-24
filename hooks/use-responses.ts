@@ -46,10 +46,7 @@ export interface GetResponsesResponse {
  * Hook to fetch all responses for a specific RFP
  * Optionally filters by requirement ID
  */
-export function useResponses(
-  rfpId: string,
-  requirementId?: string,
-) {
+export function useResponses(rfpId: string, requirementId?: string) {
   return useQuery<GetResponsesResponse>({
     queryKey: ["responses", rfpId, requirementId] as const,
     queryFn: async () => {
@@ -59,7 +56,7 @@ export function useResponses(
       }
 
       const response = await fetch(
-        `/api/rfps/${rfpId}/responses?${params.toString()}`,
+        `/api/rfps/${rfpId}/responses?${params.toString()}`
       );
 
       if (!response.ok) {
@@ -79,7 +76,7 @@ export function useResponses(
  */
 export function useRequirementResponses(
   rfpId: string,
-  requirementId: string,
+  requirementId: string
 ): UseQueryResult<GetResponsesResponse> {
   return useResponses(rfpId, requirementId);
 }
@@ -87,9 +84,7 @@ export function useRequirementResponses(
 /**
  * Hook to fetch a single response by ID
  */
-export function useResponse(
-  responseId: string,
-) {
+export function useResponse(responseId: string) {
   return useQuery<{ response: ResponseWithSupplier }>({
     queryKey: ["response", responseId] as const,
     queryFn: async () => {

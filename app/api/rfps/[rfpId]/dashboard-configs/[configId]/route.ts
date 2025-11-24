@@ -9,7 +9,7 @@ import { DashboardConfiguration } from "@/lib/supabase/types";
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { rfpId: string; configId: string } },
+  { params }: { params: { rfpId: string; configId: string } }
 ) {
   try {
     const { rfpId, configId } = params;
@@ -18,7 +18,7 @@ export async function GET(
     if (!rfpId || !configId) {
       return NextResponse.json(
         { error: "Invalid RFP ID or Config ID" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -54,7 +54,7 @@ export async function GET(
     if (userOrgError || !userOrg) {
       return NextResponse.json(
         { error: "Access denied to this RFP" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -70,14 +70,14 @@ export async function GET(
       console.error("Error fetching config:", configError);
       return NextResponse.json(
         { error: "Failed to fetch configuration" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
     if (!config) {
       return NextResponse.json(
         { error: "Configuration not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -86,7 +86,7 @@ export async function GET(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -98,7 +98,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { rfpId: string; configId: string } },
+  { params }: { params: { rfpId: string; configId: string } }
 ) {
   try {
     const { rfpId, configId } = params;
@@ -108,21 +108,21 @@ export async function PUT(
     if (!rfpId || !configId) {
       return NextResponse.json(
         { error: "Invalid RFP ID or Config ID" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     if (name && name.trim().length === 0) {
       return NextResponse.json(
         { error: "Configuration name cannot be empty" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     if (config && typeof config !== "object") {
       return NextResponse.json(
         { error: "Configuration data must be an object" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -162,7 +162,7 @@ export async function PUT(
     ) {
       return NextResponse.json(
         { error: "Permission denied to update configurations" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -177,7 +177,7 @@ export async function PUT(
     if (fetchError || !existingConfig) {
       return NextResponse.json(
         { error: "Configuration not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -201,12 +201,12 @@ export async function PUT(
           {
             error: "Configuration with this name already exists for this RFP",
           },
-          { status: 409 },
+          { status: 409 }
         );
       }
       return NextResponse.json(
         { error: "Failed to update configuration" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -217,7 +217,7 @@ export async function PUT(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -229,7 +229,7 @@ export async function PUT(
  */
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { rfpId: string; configId: string } },
+  { params }: { params: { rfpId: string; configId: string } }
 ) {
   try {
     const { rfpId, configId } = params;
@@ -238,7 +238,7 @@ export async function DELETE(
     if (!rfpId || !configId) {
       return NextResponse.json(
         { error: "Invalid RFP ID or Config ID" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -274,7 +274,7 @@ export async function DELETE(
     if (userOrgError || !userOrg || userOrg.role !== "admin") {
       return NextResponse.json(
         { error: "Permission denied to delete configurations" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -289,7 +289,7 @@ export async function DELETE(
       console.error("Error deleting config:", deleteError);
       return NextResponse.json(
         { error: "Failed to delete configuration" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -298,7 +298,7 @@ export async function DELETE(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

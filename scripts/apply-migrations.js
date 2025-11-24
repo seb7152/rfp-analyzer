@@ -19,7 +19,7 @@ async function applyMigration(migrationFile, migrationName) {
     const path = require("path");
     const migrationSQL = fs.readFileSync(
       path.join(__dirname, "..", "supabase", "migrations", migrationFile),
-      "utf8",
+      "utf8"
     );
 
     const { error } = await supabase.rpc("exec_sql", { sql: migrationSQL });

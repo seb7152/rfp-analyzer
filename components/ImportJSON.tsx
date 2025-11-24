@@ -116,7 +116,7 @@ export function ImportJSON({
       setError(null);
     } catch (err) {
       setError(
-        `Invalid JSON format: ${err instanceof Error ? err.message : "Unknown error"}`,
+        `Invalid JSON format: ${err instanceof Error ? err.message : "Unknown error"}`
       );
       setIsValidJSON(false);
     }
@@ -151,7 +151,7 @@ export function ImportJSON({
       if (!response.ok) {
         const errorData = await response.json();
         setError(
-          errorData.error || `Import failed with status ${response.status}`,
+          errorData.error || `Import failed with status ${response.status}`
         );
         return;
       }
@@ -166,7 +166,7 @@ export function ImportJSON({
       }, 1500);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "An error occurred during import",
+        err instanceof Error ? err.message : "An error occurred during import"
       );
     } finally {
       setIsLoading(false);

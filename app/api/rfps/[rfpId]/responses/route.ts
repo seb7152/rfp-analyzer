@@ -13,7 +13,7 @@ import { getResponsesForRFP } from "@/lib/supabase/queries";
  */
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ rfpId: string }> },
+  context: { params: Promise<{ rfpId: string }> }
 ) {
   try {
     const params = await context.params;
@@ -55,7 +55,7 @@ export async function GET(
 
     const rfpDocIds = rfpDocs?.map((d) => d.id) || [];
     const supplierIds = Array.from(
-      new Set(responses.map((r) => r.supplier_id)),
+      new Set(responses.map((r) => r.supplier_id))
     );
     const suppliersWithDocs = new Set<string>();
 
@@ -95,7 +95,7 @@ export async function GET(
     console.error("Error fetching responses:", error);
     return NextResponse.json(
       { error: "Failed to fetch responses" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

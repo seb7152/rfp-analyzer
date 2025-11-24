@@ -10,7 +10,7 @@ import { DashboardConfiguration } from "@/lib/supabase/types";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -44,7 +44,7 @@ export async function GET(
       console.error("Error fetching RFP:", rfpError);
       return NextResponse.json(
         { error: "Failed to verify RFP" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -63,7 +63,7 @@ export async function GET(
     if (userOrgError || !userOrg) {
       return NextResponse.json(
         { error: "Access denied to this RFP" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -86,7 +86,7 @@ export async function GET(
       console.error("Error fetching dashboard configs:", configsError);
       return NextResponse.json(
         { error: "Failed to fetch configurations" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -97,7 +97,7 @@ export async function GET(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -109,7 +109,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -123,21 +123,21 @@ export async function POST(
     if (!name || name.trim().length === 0) {
       return NextResponse.json(
         { error: "Configuration name is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     if (!type || !["radar", "bar", "line", "scatter"].includes(type)) {
       return NextResponse.json(
         { error: "Invalid configuration type" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     if (!config || typeof config !== "object") {
       return NextResponse.json(
         { error: "Configuration data is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -151,14 +151,14 @@ export async function POST(
       ) {
         return NextResponse.json(
           { error: "Radar config must have 3-8 selected tags" },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
       if (!config.supplierId) {
         return NextResponse.json(
           { error: "Radar config must have a supplier ID" },
-          { status: 400 },
+          { status: 400 }
         );
       }
     }
@@ -199,7 +199,7 @@ export async function POST(
     ) {
       return NextResponse.json(
         { error: "Permission denied to create configurations" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -226,24 +226,24 @@ export async function POST(
           {
             error: "Configuration with this name already exists for this RFP",
           },
-          { status: 409 },
+          { status: 409 }
         );
       }
       return NextResponse.json(
         { error: "Failed to create configuration" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
     return NextResponse.json(
       { config: createdConfig as DashboardConfiguration },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error) {
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -28,14 +28,14 @@ export function PDFTextLayer({
     // Récupérer et afficher le contenu textuel
     console.log(
       "[PDFTextLayer] Loading text content for page",
-      page.pageNumber,
+      page.pageNumber
     );
     page
       .getTextContent()
       .then((textContent) => {
         console.log(
           "[PDFTextLayer] Text content loaded, items:",
-          textContent.items.length,
+          textContent.items.length
         );
         // Créer les éléments de texte
         textContent.items.forEach((item: any) => {

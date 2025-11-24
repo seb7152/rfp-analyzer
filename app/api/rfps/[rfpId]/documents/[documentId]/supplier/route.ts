@@ -7,7 +7,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
  */
 export async function GET(
   _request: NextRequest,
-  context: { params: Promise<{ rfpId: string; documentId: string }> },
+  context: { params: Promise<{ rfpId: string; documentId: string }> }
 ) {
   try {
     const params = await context.params;
@@ -54,7 +54,7 @@ export async function GET(
           id,
           name
         )
-      `,
+      `
       )
       .eq("document_id", documentId)
       .single();
@@ -77,7 +77,7 @@ export async function GET(
       {
         supplierName,
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Error fetching supplier name:", error);
@@ -85,7 +85,7 @@ export async function GET(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -55,7 +55,7 @@ export default function RegisterPage() {
       if (!response.ok) {
         const data = await response.json();
         throw new Error(
-          data.message || "Erreur lors de l'ajout à l'organisation",
+          data.message || "Erreur lors de l'ajout à l'organisation"
         );
       }
 
@@ -139,7 +139,7 @@ export default function RegisterPage() {
                 value={organizationCode}
                 onChange={(e) =>
                   setOrganizationCode(
-                    e.target.value.replace(/\D/g, "").slice(0, 10),
+                    e.target.value.replace(/\D/g, "").slice(0, 10)
                   )
                 }
                 placeholder="Entrez le code à 10 chiffres"

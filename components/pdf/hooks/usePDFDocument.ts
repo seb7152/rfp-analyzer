@@ -31,7 +31,7 @@ export function usePDFDocument(url: string | null): UsePDFDocumentResult {
     console.log("[usePDFDocument] Starting PDF load for URL:", url);
     console.log(
       "[usePDFDocument] Window available:",
-      typeof window !== "undefined",
+      typeof window !== "undefined"
     );
 
     import("../utils/pdfWorker")
@@ -48,11 +48,11 @@ export function usePDFDocument(url: string | null): UsePDFDocumentResult {
           const pdfjs = await module.getPdfJs();
           console.log(
             "[usePDFDocument] getPdfJs() returned:",
-            pdfjs ? "object" : "null",
+            pdfjs ? "object" : "null"
           );
           console.log(
             "[usePDFDocument] pdfjs.getDocument available:",
-            typeof pdfjs?.getDocument,
+            typeof pdfjs?.getDocument
           );
 
           if (isCancelled) {
@@ -68,7 +68,7 @@ export function usePDFDocument(url: string | null): UsePDFDocumentResult {
               if (!isCancelled) {
                 console.log(
                   "[usePDFDocument] PDF loaded successfully, pages:",
-                  pdf.numPages,
+                  pdf.numPages
                 );
                 setDocument(pdf);
                 setNumPages(pdf.numPages);
@@ -94,7 +94,7 @@ export function usePDFDocument(url: string | null): UsePDFDocumentResult {
         if (!isCancelled) {
           console.error(
             "[usePDFDocument] Error importing pdfWorker:",
-            importError,
+            importError
           );
           setError(importError as Error);
           setIsLoading(false);

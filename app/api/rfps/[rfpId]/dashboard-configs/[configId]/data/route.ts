@@ -17,7 +17,7 @@ import {
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { rfpId: string; configId: string } },
+  { params }: { params: { rfpId: string; configId: string } }
 ) {
   try {
     const { rfpId, configId } = params;
@@ -26,7 +26,7 @@ export async function GET(
     if (!rfpId || !configId) {
       return NextResponse.json(
         { error: "Invalid RFP ID or Config ID" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -62,7 +62,7 @@ export async function GET(
     if (userOrgError || !userOrg) {
       return NextResponse.json(
         { error: "Access denied to this RFP" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -78,7 +78,7 @@ export async function GET(
       console.error("Error fetching config:", configError);
       return NextResponse.json(
         { error: "Configuration not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -89,7 +89,7 @@ export async function GET(
       const radarData = await calculateRadarData(
         supabase,
         rfpId,
-        dashConfig.config as RadarConfigData,
+        dashConfig.config as RadarConfigData
       );
       return NextResponse.json(radarData);
     }
@@ -104,7 +104,7 @@ export async function GET(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -117,7 +117,7 @@ export async function GET(
 async function calculateRadarData(
   supabase: any,
   rfpId: string,
-  config: RadarConfigData,
+  config: RadarConfigData
 ): Promise<RadarChartData> {
   const { selectedTagIds, supplierId } = config;
 
@@ -134,7 +134,7 @@ async function calculateRadarData(
   }
 
   const tagMap = new Map<string, Tag>(
-    (tags || []).map((tag: Tag) => [tag.id, tag]),
+    (tags || []).map((tag: Tag) => [tag.id, tag])
   );
 
   // Fetch supplier info
@@ -182,8 +182,8 @@ async function calculateRadarData(
       new Set(
         (reqTags || [])
           .filter((rt: any) => rt.tag_id === tagId)
-          .map((rt: any) => rt.requirement_id),
-      ),
+          .map((rt: any) => rt.requirement_id)
+      )
     );
   });
 
@@ -207,7 +207,7 @@ async function calculateRadarData(
 
   // Build requirement map for weights
   const reqMap = new Map<string, any>(
-    (requirements || []).map((r: any) => [r.id, r]),
+    (requirements || []).map((r: any) => [r.id, r])
   );
 
   // Calculate weighted scores per tag

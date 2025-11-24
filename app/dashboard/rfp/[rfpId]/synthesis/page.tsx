@@ -96,10 +96,10 @@ export default function RFPSynthesisPage() {
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [_selectedSupplier, _setSelectedSupplier] = useState<string | null>(
-    null,
+    null
   );
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(
-    null,
+    null
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -341,8 +341,8 @@ export default function RFPSynthesisPage() {
                   Meilleur score:{" "}
                   {Math.max(
                     ...suppliersAnalysis.comparisonTable.map(
-                      (s) => s.totalScore,
-                    ),
+                      (s) => s.totalScore
+                    )
                   )}
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -412,7 +412,7 @@ export default function RFPSynthesisPage() {
                               acc[cat.id] = cat.defaultWeight;
                               return acc;
                             },
-                            {} as Record<string, number>,
+                            {} as Record<string, number>
                           ),
                           requirements:
                             weightsConfiguration.requirements.reduce(
@@ -420,7 +420,7 @@ export default function RFPSynthesisPage() {
                                 acc[req.id] = req.defaultWeight;
                                 return acc;
                               },
-                              {} as Record<string, number>,
+                              {} as Record<string, number>
                             ),
                         };
                         handleWeightsChange(defaultWeights);
@@ -445,7 +445,7 @@ export default function RFPSynthesisPage() {
                                 "Content-Type": "application/json",
                               },
                               body: JSON.stringify(modifiedWeights),
-                            },
+                            }
                           );
 
                           if (!response.ok) {

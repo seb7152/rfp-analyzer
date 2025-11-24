@@ -14,7 +14,7 @@ import type {
 // ============================================================================
 
 export function validateCategoryPayload(
-  category: unknown,
+  category: unknown
 ): category is ImportCategoryPayload {
   if (!category || typeof category !== "object") return false;
 
@@ -39,7 +39,7 @@ export function validateCategoryPayload(
 }
 
 export function validateCategoriesRequest(
-  data: unknown,
+  data: unknown
 ): data is ImportCategoriesRequest {
   if (!data || typeof data !== "object") return false;
 
@@ -119,7 +119,7 @@ export function validateCategoriesJSON(jsonString: string): {
 // ============================================================================
 
 export function validateRequirementPayload(
-  requirement: unknown,
+  requirement: unknown
 ): requirement is ImportRequirementPayload {
   if (!requirement || typeof requirement !== "object") return false;
 
@@ -160,7 +160,7 @@ export function validateSupplierPayload(supplier: unknown): boolean {
 }
 
 export function validateRequirementsRequest(
-  data: unknown,
+  data: unknown
 ): data is ImportRequirementsRequest {
   if (!data || typeof data !== "object") return false;
 
@@ -187,7 +187,7 @@ export function validateRequirementsRequest(
 
 export function validateRequirementsJSON(
   jsonString: string,
-  availableCategories: string[],
+  availableCategories: string[]
 ): {
   valid: boolean;
   data?: ImportRequirementsRequest;

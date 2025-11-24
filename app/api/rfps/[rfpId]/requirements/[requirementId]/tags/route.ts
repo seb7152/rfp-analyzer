@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { rfpId: string; requirementId: string } },
+  { params }: { params: { rfpId: string; requirementId: string } }
 ) {
   try {
     const { rfpId, requirementId } = params;
@@ -16,7 +16,7 @@ export async function GET(
     if (!rfpId || !requirementId) {
       return NextResponse.json(
         { error: "Invalid RFP ID or Requirement ID" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -42,7 +42,7 @@ export async function GET(
     if (!requirement) {
       return NextResponse.json(
         { error: "Requirement not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -56,7 +56,7 @@ export async function GET(
       console.error("Error fetching requirement tags:", tagsError);
       return NextResponse.json(
         { error: "Failed to fetch tags" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -68,7 +68,7 @@ export async function GET(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -80,7 +80,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { rfpId: string; requirementId: string } },
+  { params }: { params: { rfpId: string; requirementId: string } }
 ) {
   try {
     const { rfpId, requirementId } = params;
@@ -89,14 +89,14 @@ export async function POST(
     if (!rfpId || !requirementId) {
       return NextResponse.json(
         { error: "Invalid RFP ID or Requirement ID" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     if (!Array.isArray(tagIds) || tagIds.length === 0) {
       return NextResponse.json(
         { error: "Tag IDs array is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -144,7 +144,7 @@ export async function POST(
     if (!requirement) {
       return NextResponse.json(
         { error: "Requirement not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -155,7 +155,7 @@ export async function POST(
       .eq("requirement_id", requirementId);
 
     const existingTagIds = new Set(
-      existingRelations?.map((r: any) => r.tag_id) || [],
+      existingRelations?.map((r: any) => r.tag_id) || []
     );
 
     // Filter out tags that are already assigned
@@ -164,7 +164,7 @@ export async function POST(
     if (newTagIds.length === 0) {
       return NextResponse.json(
         { message: "All tags are already assigned" },
-        { status: 200 },
+        { status: 200 }
       );
     }
 
@@ -176,7 +176,7 @@ export async function POST(
           requirement_id: requirementId,
           tag_id: tagId,
           created_by: user.id,
-        })),
+        }))
       )
       .select();
 
@@ -184,7 +184,7 @@ export async function POST(
       console.error("Error adding tags:", insertError);
       return NextResponse.json(
         { error: "Failed to add tags" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -193,7 +193,7 @@ export async function POST(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -205,7 +205,7 @@ export async function POST(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { rfpId: string; requirementId: string } },
+  { params }: { params: { rfpId: string; requirementId: string } }
 ) {
   try {
     const { rfpId, requirementId } = params;
@@ -214,7 +214,7 @@ export async function DELETE(
     if (!rfpId || !requirementId || !tagId) {
       return NextResponse.json(
         { error: "Invalid parameters" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -262,7 +262,7 @@ export async function DELETE(
       console.error("Error removing tag:", deleteError);
       return NextResponse.json(
         { error: "Failed to remove tag" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -271,7 +271,7 @@ export async function DELETE(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

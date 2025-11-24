@@ -35,7 +35,7 @@ const cardVariants = cva(
     defaultVariants: {
       variant: "default",
     },
-  },
+  }
 );
 
 const cardHeaderVariants = cva(
@@ -50,7 +50,7 @@ const cardHeaderVariants = cva(
     defaultVariants: {
       variant: "default",
     },
-  },
+  }
 );
 
 const cardContentVariants = cva("grow p-5", {
@@ -202,7 +202,7 @@ function CardTitle({
       data-slot="card-title"
       className={cn(
         "text-base font-semibold leading-none tracking-tight",
-        className,
+        className
       )}
       {...props}
     />

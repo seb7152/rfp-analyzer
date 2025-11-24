@@ -29,7 +29,7 @@ function Progress({ className, value, max = 100, ...props }: ProgressProps) {
     <div
       className={cn(
         "relative h-4 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800",
-        className,
+        className
       )}
     >
       <div
@@ -37,7 +37,7 @@ function Progress({ className, value, max = 100, ...props }: ProgressProps) {
         className={cn(
           "h-full flex items-center justify-center text-xs font-medium text-slate-900 dark:text-slate-50",
           valueAsPercentage === 100 ? "bg-green-600" : "bg-blue-600",
-          "transition-all duration-300 ease-out",
+          "transition-all duration-300 ease-out"
         )}
         {...props}
       />

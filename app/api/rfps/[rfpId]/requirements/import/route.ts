@@ -10,7 +10,7 @@ import type { ImportRequirementsRequest, Category } from "@/lib/supabase/types";
 
 export async function POST(
   _request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     // Get authenticated user
@@ -31,7 +31,7 @@ export async function POST(
     if (typeof body.json !== "string") {
       return NextResponse.json(
         { error: "Missing 'json' field in request body" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -61,7 +61,7 @@ export async function POST(
     // Get available categories
     const categories = await getCategories(params.rfpId);
     const categoryNames = (categories as unknown as Category[]).map(
-      (c) => c.title,
+      (c) => c.title
     );
 
     // Validate JSON format
@@ -83,14 +83,14 @@ export async function POST(
     if (data.suppliers && data.suppliers.length > 0) {
       const supplierResult = await importSuppliers(
         params.rfpId,
-        data.suppliers,
+        data.suppliers
       );
       suppliersCount = supplierResult.count;
     }
 
     // Import requirements (filter out any without id)
     const validRequirements = data.requirements.filter(
-      (req: any) => req.id,
+      (req: any) => req.id
     ) as Array<{
       id: string;
       code?: string;
@@ -103,7 +103,7 @@ export async function POST(
     const requirementsResult = await importRequirements(
       params.rfpId,
       validRequirements,
-      user.id,
+      user.id
     );
 
     if (!requirementsResult.success) {
@@ -112,7 +112,7 @@ export async function POST(
           error: requirementsResult.error,
           count: requirementsResult.count,
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -123,7 +123,7 @@ export async function POST(
         requirements: requirementsResult.count,
         suppliers: suppliersCount,
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error) {
     console.error("Requirements import error:", error);
@@ -131,7 +131,7 @@ export async function POST(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

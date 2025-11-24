@@ -807,7 +807,7 @@ ORDER BY usage_count DESC;
 ```typescript
 const getChildRequirements = (
   nodeId: string,
-  nodes: TreeNode[] = data,
+  nodes: TreeNode[] = data
 ): string[] => {
   const requirementIds: string[] = [];
 

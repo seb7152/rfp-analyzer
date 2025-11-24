@@ -7,7 +7,7 @@ import { NextResponse } from "next/server";
  */
 export async function GET(
   _request: Request,
-  { params }: { params: { documentId: string } },
+  { params }: { params: { documentId: string } }
 ) {
   try {
     const supabase = await createClient();
@@ -34,7 +34,7 @@ export async function GET(
       console.error("Error fetching annotations:", error);
       return NextResponse.json(
         { error: "Erreur lors de la récupération des annotations" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -43,7 +43,7 @@ export async function GET(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Erreur interne du serveur" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -54,7 +54,7 @@ export async function GET(
  */
 export async function POST(
   request: Request,
-  { params }: { params: { documentId: string } },
+  { params }: { params: { documentId: string } }
 ) {
   try {
     const supabase = await createClient();
@@ -81,7 +81,7 @@ export async function POST(
     if (!orgMember) {
       return NextResponse.json(
         { error: "Organisation non trouvée" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -98,14 +98,14 @@ export async function POST(
         p_highlighted_text: body.highlightedText || null,
         p_note_content: body.noteContent || null,
         p_color: body.color || "#FFEB3B",
-      },
+      }
     );
 
     if (error) {
       console.error("Error creating annotation:", error);
       return NextResponse.json(
         { error: "Erreur lors de la création de l'annotation" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -114,7 +114,7 @@ export async function POST(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Erreur interne du serveur" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

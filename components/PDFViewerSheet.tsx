@@ -74,7 +74,7 @@ export function PDFViewerSheet({
 
   // Filter to only PDF documents
   const pdfDocuments = documents.filter(
-    (doc) => doc.mime_type === "application/pdf",
+    (doc) => doc.mime_type === "application/pdf"
   );
   const selectedDoc = pdfDocuments.find((doc) => doc.id === selectedDocId);
 
@@ -110,7 +110,7 @@ export function PDFViewerSheet({
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },
-          },
+          }
         );
 
         if (!response.ok) {

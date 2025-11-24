@@ -17,7 +17,7 @@ import { getRFPCompletionPercentage } from "@/lib/supabase/queries";
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -39,7 +39,7 @@ export async function GET(
     if (rfpError || !rfp) {
       return NextResponse.json(
         { error: "RFP not found or access denied" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -51,7 +51,7 @@ export async function GET(
     console.error("Error getting RFP completion:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

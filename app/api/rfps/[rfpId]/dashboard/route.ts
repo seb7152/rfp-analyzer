@@ -82,7 +82,7 @@ interface DashboardResponse {
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -90,7 +90,7 @@ export async function GET(
     if (!rfpId) {
       return NextResponse.json(
         { error: "RFP ID is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -141,7 +141,7 @@ export async function GET(
     // Calculate global progress
     const completionPercentage = await getRFPCompletionPercentage(rfpId);
     const evaluatedRequirements = Math.round(
-      (completionPercentage / 100) * totalRequirements,
+      (completionPercentage / 100) * totalRequirements
     );
 
     // Status distribution
@@ -164,7 +164,7 @@ export async function GET(
     });
     Object.keys(averageScores).forEach((supplierId) => {
       averageScores[supplierId] /= allResponses.filter(
-        (r) => r.supplier_id === supplierId,
+        (r) => r.supplier_id === supplierId
       ).length;
     });
 
@@ -173,7 +173,7 @@ export async function GET(
     const suppliersData = await Promise.all(
       suppliers.map(async (supplierId) => {
         const supplierResponses = allResponses.filter(
-          (r) => r.supplier_id === supplierId,
+          (r) => r.supplier_id === supplierId
         );
         const supplierName =
           supplierResponses[0]?.supplier.name || `Fournisseur ${supplierId}`;
@@ -182,22 +182,22 @@ export async function GET(
         const categoryScores: Record<string, number> = {};
         categories.forEach((category: any) => {
           const categoryReqs = requirements.filter(
-            (r) => r.category_id === category.id,
+            (r) => r.category_id === category.id
           );
           const categoryResponses = supplierResponses.filter((sr) =>
-            categoryReqs.some((cr) => cr.id === sr.requirement_id),
+            categoryReqs.some((cr) => cr.id === sr.requirement_id)
           );
           const avgCategoryScore =
             categoryResponses.reduce(
               (sum, resp) => sum + (resp.manual_score || resp.ai_score || 0),
-              0,
+              0
             ) / Math.max(categoryResponses.length, 1);
           categoryScores[category.id] = avgCategoryScore;
         });
 
         const totalScore = Object.values(categoryScores).reduce(
           (sum, score) => sum + score,
-          0,
+          0
         );
 
         return {
@@ -207,12 +207,12 @@ export async function GET(
           categoryScores,
           ranking: 0, // To be calculated later
         };
-      }),
+      })
     );
 
     // Calculate rankings
     const rankedSuppliers = [...suppliersData].sort(
-      (a, b) => b.totalScore - a.totalScore,
+      (a, b) => b.totalScore - a.totalScore
     );
     rankedSuppliers.forEach((supplier, index) => {
       supplier.ranking = index + 1;
@@ -223,8 +223,8 @@ export async function GET(
     const categoryNames = categories.map((c: any) => c.title);
     const scoresMatrix = rankedSuppliers.map((supplier: any) =>
       categories.map(
-        (category: any) => supplier.categoryScores[category.id] || 0,
-      ),
+        (category: any) => supplier.categoryScores[category.id] || 0
+      )
     );
 
     const performanceMatrix = {
@@ -248,16 +248,16 @@ export async function GET(
     // Categories analysis
     const categoriesAnalysis = categories.map((category: any) => {
       const categoryReqs = requirements.filter(
-        (r) => r.category_id === category.id,
+        (r) => r.category_id === category.id
       );
       const categoryResponses = allResponses.filter((ar) =>
-        categoryReqs.some((cr) => cr.id === ar.requirement_id),
+        categoryReqs.some((cr) => cr.id === ar.requirement_id)
       );
       const requirementCount = categoryReqs.length;
       const avgScore =
         categoryResponses.reduce(
           (sum, resp) => sum + (resp.manual_score || resp.ai_score || 0),
-          0,
+          0
         ) / Math.max(categoryResponses.length, 1);
       const completionRate =
         (categoryResponses.filter((r) => r.is_checked).length /
@@ -287,16 +287,16 @@ export async function GET(
     > = {};
     categories.forEach((category: any) => {
       const categoryReqs = requirements.filter(
-        (r) => r.category_id === category.id,
+        (r) => r.category_id === category.id
       );
       requirementsByCategory[category.id] = categoryReqs.map((req) => {
         const reqResponses = allResponses.filter(
-          (ar) => ar.requirement_id === req.id,
+          (ar) => ar.requirement_id === req.id
         );
         const avgScore =
           reqResponses.reduce(
             (sum, resp) => sum + (resp.manual_score || resp.ai_score || 0),
-            0,
+            0
           ) / Math.max(reqResponses.length, 1);
         const checkedCount = reqResponses.filter((r) => r.is_checked).length;
         const totalCount = reqResponses.length;
@@ -359,7 +359,7 @@ export async function GET(
     console.error("Error fetching dashboard data:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

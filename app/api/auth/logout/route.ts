@@ -11,7 +11,7 @@ export async function POST() {
     if (error) {
       return NextResponse.json(
         { error: "Failed to sign out", message: error.message },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -20,7 +20,7 @@ export async function POST() {
     console.error("Logout error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

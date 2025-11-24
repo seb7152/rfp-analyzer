@@ -46,10 +46,10 @@ export function RadarConfigModal({
 }: RadarConfigModalProps) {
   const [name, setName] = useState(initialConfig.name);
   const [selectedTags, setSelectedTags] = useState<string[]>(
-    (initialConfig.config as RadarConfigData).selectedTagIds || [],
+    (initialConfig.config as RadarConfigData).selectedTagIds || []
   );
   const [supplierId, setSupplierId] = useState<string>(
-    (initialConfig.config as RadarConfigData).supplierId || "",
+    (initialConfig.config as RadarConfigData).supplierId || ""
   );
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -140,7 +140,7 @@ export function RadarConfigModal({
               supplierId,
             },
           }),
-        },
+        }
       );
 
       if (!response.ok) {

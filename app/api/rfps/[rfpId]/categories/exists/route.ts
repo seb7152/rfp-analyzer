@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -63,7 +63,7 @@ export async function GET(
       console.error("Error checking categories:", catError);
       return NextResponse.json(
         { error: "Failed to check categories" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -72,13 +72,13 @@ export async function GET(
         exists: (categories?.length ?? 0) > 0,
         count: categories?.length ?? 0,
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Error in GET /api/rfps/[rfpId]/categories/exists:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

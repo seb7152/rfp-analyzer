@@ -67,7 +67,7 @@ export function useRequirements(rfpId: string | null, search?: string) {
 
       const url = new URL(
         `/api/rfps/${rfpId}/requirements`,
-        window.location.origin,
+        window.location.origin
       );
 
       if (search) {
@@ -111,7 +111,7 @@ export function useRequirement(requirementId: string | null) {
         `/api/requirements/${requirementId}?includeBreadcrumb=true`,
         {
           credentials: "include",
-        },
+        }
       );
 
       if (!response.ok) {
@@ -139,7 +139,7 @@ export function useRequirement(requirementId: string | null) {
  * Utility to flatten a hierarchical tree for easier iteration
  */
 export function flattenRequirementTree(
-  requirements: RequirementWithChildren[],
+  requirements: RequirementWithChildren[]
 ): Requirement[] {
   const result: Requirement[] = [];
 
@@ -162,7 +162,7 @@ export function flattenRequirementTree(
  */
 export function useCategoryRequirements(
   rfpId: string | null,
-  categoryId: string | null,
+  categoryId: string | null
 ) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["category-requirements", rfpId, categoryId],
@@ -175,12 +175,12 @@ export function useCategoryRequirements(
         `/api/rfps/${rfpId}/categories/${categoryId}/requirements`,
         {
           credentials: "include",
-        },
+        }
       );
 
       if (!response.ok) {
         throw new Error(
-          `Failed to fetch category requirements: ${response.statusText}`,
+          `Failed to fetch category requirements: ${response.statusText}`
         );
       }
 
@@ -212,7 +212,7 @@ export function useCategoryRequirements(
  */
 export function searchRequirementTree(
   requirements: RequirementWithChildren[],
-  query: string,
+  query: string
 ): RequirementWithChildren[] {
   if (!query || query.trim().length === 0) {
     return requirements;
@@ -221,7 +221,7 @@ export function searchRequirementTree(
   const lowerQuery = query.toLowerCase();
 
   function traverse(
-    nodes: RequirementWithChildren[],
+    nodes: RequirementWithChildren[]
   ): RequirementWithChildren[] {
     return nodes.reduce<RequirementWithChildren[]>((acc, node) => {
       const matches =

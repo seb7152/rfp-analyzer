@@ -117,7 +117,7 @@ export function useAuth() {
     email: string,
     password: string,
     fullName: string,
-    organizationName: string,
+    organizationName: string
   ) => {
     try {
       setIsLoading(true);

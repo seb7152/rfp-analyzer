@@ -24,7 +24,7 @@ export async function updateSession(request: NextRequest) {
           });
         },
       },
-    },
+    }
   );
 
   // Refresh session

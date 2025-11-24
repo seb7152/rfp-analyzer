@@ -637,7 +637,7 @@ export function useTextSelection() {
       pageNumber: number,
       pageHeight: number,
       pageWidth: number,
-      containerRect: DOMRect,
+      containerRect: DOMRect
     ) => {
       // Convertir les coordonnées écran en coordonnées PDF
       const rects: AnnotationRect[] = domRects.map((rect) => ({
@@ -655,7 +655,7 @@ export function useTextSelection() {
         pageWidth,
       });
     },
-    [],
+    []
   );
 
   const clearSelection = useCallback(() => {
@@ -685,7 +685,7 @@ import type {
 
 export function usePDFAnnotations(
   documentId: string | null,
-  organizationId: string,
+  organizationId: string
 ) {
   const queryClient = useQueryClient();
 
@@ -723,7 +723,7 @@ export function usePDFAnnotations(
           p_highlighted_text: dto.highlightedText || null,
           p_note_content: dto.noteContent || null,
           p_color: dto.color || "#FFEB3B",
-        },
+        }
       );
 
       if (error) throw error;
@@ -1082,7 +1082,7 @@ export function usePDFNavigation(
   documentId: string | null,
   currentPage: number,
   onPageChange: (page: number) => void,
-  onDocumentChange?: (documentId: string) => void,
+  onDocumentChange?: (documentId: string) => void
 ) {
   const { navigationTarget, clearNavigation } = usePDFAnnotationNavigation();
 
@@ -1104,7 +1104,7 @@ export function usePDFNavigation(
       // TODO: Animer/scroller vers l'annotation
       setTimeout(() => {
         const element = document.getElementById(
-          `annotation-${navigationTarget.annotationId}`,
+          `annotation-${navigationTarget.annotationId}`
         );
         element?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 300);
@@ -1486,7 +1486,7 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   request: Request,
-  { params }: { params: { documentId: string } },
+  { params }: { params: { documentId: string } }
 ) {
   const supabase = createRouteHandlerClient({ cookies });
 

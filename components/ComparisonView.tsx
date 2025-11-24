@@ -103,7 +103,7 @@ export function ComparisonView({
   // Fetch responses for the selected requirement
   const { data: responsesData, refetch: refetchResponses } = useResponses(
     rfpId || "",
-    selectedRequirementId,
+    selectedRequirementId
   );
 
   // Fetch annotations for the selected requirement
@@ -158,12 +158,12 @@ export function ComparisonView({
     error: categoryError,
   } = useCategoryRequirements(
     rfpId || null,
-    isCategory ? selectedRequirementId : null,
+    isCategory ? selectedRequirementId : null
   );
 
   const requirement = getRequirementById(
     selectedRequirementId,
-    allRequirements,
+    allRequirements
   );
   // Filter responses for current requirement (already filtered by useResponses hook)
   // and optionally by supplierId
@@ -182,7 +182,7 @@ export function ComparisonView({
     const findPathWithCodes = (
       nodes: TreeNode[],
       targetId: string,
-      path: Array<{ id: string; code: string; title: string }> = [],
+      path: Array<{ id: string; code: string; title: string }> = []
     ): Array<{ id: string; code: string; title: string }> | null => {
       for (const node of nodes) {
         const currentPath = [
@@ -198,7 +198,7 @@ export function ComparisonView({
           const result = findPathWithCodes(
             node.children,
             targetId,
-            currentPath,
+            currentPath
           );
           if (result) return result;
         }
@@ -233,7 +233,7 @@ export function ComparisonView({
   }, [tree]);
 
   const currentIndex = flatReqs.findIndex(
-    (r) => r.id === selectedRequirementId,
+    (r) => r.id === selectedRequirementId
   );
   const totalPages = flatReqs.length;
 
@@ -268,7 +268,7 @@ export function ComparisonView({
         }
       }
     },
-    [currentIndex, totalPages, flatReqs],
+    [currentIndex, totalPages, flatReqs]
   );
 
   // Keyboard navigation: arrow keys for previous/next
@@ -346,7 +346,7 @@ export function ComparisonView({
   const updateResponseState = (
     responseId: string,
     updates: Partial<ResponseState[string]>,
-    immediate: boolean = false,
+    immediate: boolean = false
   ) => {
     // Update local state immediately for UI responsiveness
     setResponseStates((prev) => ({
@@ -441,7 +441,7 @@ export function ComparisonView({
                 },
               }));
             },
-          },
+          }
         );
       }
     }
@@ -451,7 +451,7 @@ export function ComparisonView({
   const toggleExpandAll = () => {
     // Check if all are currently expanded
     const allExpanded = requirementResponses.every(
-      (r: any) => responseStates[r.id]?.expanded ?? false,
+      (r: any) => responseStates[r.id]?.expanded ?? false
     );
 
     // Toggle all to the opposite state
@@ -488,7 +488,7 @@ export function ComparisonView({
       setLoadingSupplierDocs(true);
       try {
         const response = await fetch(
-          `/api/rfps/${rfpId}/documents?supplierId=${supplierId}`,
+          `/api/rfps/${rfpId}/documents?supplierId=${supplierId}`
         );
         if (!response.ok) {
           throw new Error("Failed to fetch supplier documents");
@@ -503,7 +503,7 @@ export function ComparisonView({
         setLoadingSupplierDocs(false);
       }
     },
-    [rfpId],
+    [rfpId]
   );
 
   const handleOpenBookmark = useCallback(
@@ -521,7 +521,7 @@ export function ComparisonView({
       setLoadingSupplierDocs(true);
       try {
         const response = await fetch(
-          `/api/rfps/${rfpId}/documents?supplierId=${bookmark.supplierId}`,
+          `/api/rfps/${rfpId}/documents?supplierId=${bookmark.supplierId}`
         );
         if (!response.ok) {
           throw new Error("Failed to fetch supplier documents");
@@ -536,7 +536,7 @@ export function ComparisonView({
         setLoadingSupplierDocs(false);
       }
     },
-    [rfpId],
+    [rfpId]
   );
 
   // const handleDeleteBookmark = useCallback(
@@ -897,7 +897,7 @@ export function ComparisonView({
                 <div className="space-y-2">
                   {suppliers.map((supplier) => {
                     const response = requirementResponses.find(
-                      (r) => r.supplier_id === supplier.id,
+                      (r) => r.supplier_id === supplier.id
                     );
                     if (!response) return null;
 
@@ -959,14 +959,14 @@ export function ComparisonView({
                           updateResponseState(
                             response.id,
                             { manualComment: state.manualComment },
-                            true,
+                            true
                           )
                         }
                         onQuestionBlur={() =>
                           updateResponseState(
                             response.id,
                             { question: state.question },
-                            true,
+                            true
                           )
                         }
                         onOpenDocuments={handleOpenSupplierDocuments}

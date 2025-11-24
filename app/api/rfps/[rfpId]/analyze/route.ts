@@ -18,7 +18,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
  */
 export async function POST(
   _request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -40,7 +40,7 @@ export async function POST(
     if (rfpError || !rfp) {
       return NextResponse.json(
         { error: "RFP not found or access denied" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -54,7 +54,7 @@ export async function POST(
     if (reqError || !requirements) {
       return NextResponse.json(
         { error: "Failed to fetch requirements" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -71,14 +71,14 @@ export async function POST(
           supplier_id_external,
           name
         )
-      `,
+      `
       )
       .eq("rfp_id", rfpId);
 
     if (respError || !responses) {
       return NextResponse.json(
         { error: "Failed to fetch responses" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -88,7 +88,7 @@ export async function POST(
     if (leafRequirements.length === 0) {
       return NextResponse.json(
         { error: "No leaf requirements found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -101,7 +101,7 @@ export async function POST(
     if (supplierError) {
       return NextResponse.json(
         { error: "Failed to fetch suppliers" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -140,7 +140,7 @@ export async function POST(
     if (!webhookUrl) {
       return NextResponse.json(
         { error: "N8N_WEBHOOK_PROD environment variable not configured" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -159,14 +159,14 @@ export async function POST(
     if (!webhookResponse.ok) {
       const errorText = await webhookResponse.text();
       console.error(
-        `[N8N] Webhook failed: ${webhookResponse.status} - ${errorText}`,
+        `[N8N] Webhook failed: ${webhookResponse.status} - ${errorText}`
       );
       return NextResponse.json(
         {
           error: "Failed to send analysis request to N8N",
           details: errorText,
         },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -182,7 +182,7 @@ export async function POST(
         suppliers_count: suppliers?.length || 0,
         total_responses: responses.length,
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("[N8N] Error triggering analysis:", error);
@@ -191,7 +191,7 @@ export async function POST(
         error: "Internal server error",
         message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

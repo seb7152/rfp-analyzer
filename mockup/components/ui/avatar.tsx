@@ -19,7 +19,7 @@ const avatarStatusVariants = cva(
     defaultVariants: {
       variant: "online",
     },
-  },
+  }
 );
 
 function Avatar({
@@ -59,7 +59,7 @@ function AvatarFallback({
       data-slot="avatar-fallback"
       className={cn(
         "flex h-full w-full items-center justify-center rounded-full border border-border bg-accent text-accent-foreground text-xs",
-        className,
+        className
       )}
       {...props}
     />
@@ -75,7 +75,7 @@ function AvatarIndicator({
       data-slot="avatar-indicator"
       className={cn(
         "absolute flex size-6 items-center justify-center",
-        className,
+        className
       )}
       {...props}
     />

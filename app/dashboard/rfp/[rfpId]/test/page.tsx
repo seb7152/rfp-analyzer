@@ -26,7 +26,7 @@ export default function TestPage({ params }: TestPageProps) {
       setLoading(true);
       setError(null);
       const response = await fetch(
-        `/api/rfps/${rfpId}/dashboard-configs?type=radar`,
+        `/api/rfps/${rfpId}/dashboard-configs?type=radar`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch configurations");

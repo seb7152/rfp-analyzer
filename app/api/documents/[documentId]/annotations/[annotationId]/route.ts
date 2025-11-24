@@ -7,7 +7,7 @@ import { NextResponse } from "next/server";
  */
 export async function PUT(
   request: Request,
-  { params }: { params: { documentId: string; annotationId: string } },
+  { params }: { params: { documentId: string; annotationId: string } }
 ) {
   try {
     const supabase = await createClient();
@@ -49,14 +49,14 @@ export async function PUT(
       console.error("Error updating annotation:", error);
       return NextResponse.json(
         { error: "Erreur lors de la mise à jour de l'annotation" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
     if (!data) {
       return NextResponse.json(
         { error: "Annotation non trouvée ou non autorisée" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -65,7 +65,7 @@ export async function PUT(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Erreur interne du serveur" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -76,7 +76,7 @@ export async function PUT(
  */
 export async function DELETE(
   _request: Request,
-  { params }: { params: { documentId: string; annotationId: string } },
+  { params }: { params: { documentId: string; annotationId: string } }
 ) {
   try {
     const supabase = await createClient();
@@ -105,14 +105,14 @@ export async function DELETE(
       console.error("Error deleting annotation:", error);
       return NextResponse.json(
         { error: "Erreur lors de la suppression de l'annotation" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
     if (!data) {
       return NextResponse.json(
         { error: "Annotation non trouvée ou non autorisée" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -121,7 +121,7 @@ export async function DELETE(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Erreur interne du serveur" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

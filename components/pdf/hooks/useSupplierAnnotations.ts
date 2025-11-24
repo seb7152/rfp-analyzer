@@ -5,7 +5,7 @@ import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
 
 // Helper pour mapper les champs snake_case -> camelCase (dupliqué de usePDFAnnotations pour l'instant)
 const mapAnnotationFromDB = (
-  raw: any,
+  raw: any
 ): PDFAnnotation & { documentName?: string } => ({
   id: raw.id,
   organizationId: raw.organization_id,
@@ -27,7 +27,7 @@ const mapAnnotationFromDB = (
 
 export function useSupplierAnnotations(
   requirementId: string,
-  supplierId: string,
+  supplierId: string
 ) {
   const queryClient = useQueryClient();
 
@@ -47,7 +47,7 @@ export function useSupplierAnnotations(
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },
-          },
+          }
         );
 
         if (!response.ok) {
@@ -72,7 +72,7 @@ export function useSupplierAnnotations(
         {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
 
       if (!response.ok) {

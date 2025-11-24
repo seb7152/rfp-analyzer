@@ -47,7 +47,7 @@ export default function TestPDFPage() {
   useEffect(() => {
     async function loadPDF() {
       const response = await fetch(
-        "/api/rfps/YOUR_RFP_ID/documents/YOUR_DOC_ID/view-url",
+        "/api/rfps/YOUR_RFP_ID/documents/YOUR_DOC_ID/view-url"
       );
       const data = await response.json();
       setPdfUrl(data.url);
@@ -122,7 +122,7 @@ export function PDFViewerSheet({
   const [isMinimized, setIsMinimized] = useState(false);
 
   const pdfDocuments = documents.filter(
-    (doc) => doc.mime_type === "application/pdf",
+    (doc) => doc.mime_type === "application/pdf"
   );
   const selectedDoc = pdfDocuments.find((doc) => doc.id === selectedDocId);
 
@@ -136,7 +136,7 @@ export function PDFViewerSheet({
     async function fetchPdfUrl() {
       try {
         const response = await fetch(
-          `/api/rfps/${rfpId}/documents/${selectedDoc.id}/view-url`,
+          `/api/rfps/${rfpId}/documents/${selectedDoc.id}/view-url`
         );
         const data = await response.json();
         setPdfUrl(data.url);
@@ -235,14 +235,14 @@ import { usePDFAnnotations } from "@/components/pdf/hooks/usePDFAnnotations";
 function ComparisonView(
   {
     /* vos props */
-  },
+  }
 ) {
   const currentRequirement = requirements[currentIndex];
 
   // Récupérer les annotations du document du fournisseur actuel
   const { annotations } = usePDFAnnotations(
     currentSupplierDocumentId, // ID du document PDF du fournisseur
-    organizationId,
+    organizationId
   );
 
   return (

@@ -68,7 +68,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
   const [requirementsJson, setRequirementsJson] = useState<string>("");
   const [requirementsValid, setRequirementsValid] = useState(false);
   const [existingRequirements, setExistingRequirements] = useState<string[]>(
-    [],
+    []
   );
 
   // Step 3: Suppliers
@@ -114,7 +114,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
             titles.push(node.title);
             if (node.children) {
               extractTitles(
-                node.children.filter((c: any) => c.type === "category"),
+                node.children.filter((c: any) => c.type === "category")
               );
             }
           }
@@ -202,7 +202,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
   const handleJsonChange = (
     value: string,
     setter: Function,
-    validSetter: Function,
+    validSetter: Function
   ) => {
     setter(value);
     validSetter(validateJSON(value));
@@ -213,7 +213,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
   const handleFormatJSON = (
     json: string,
     setter: Function,
-    validSetter: Function,
+    validSetter: Function
   ) => {
     try {
       const parsed = JSON.parse(json.trim());
@@ -223,7 +223,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
       setError(null);
     } catch (err) {
       setError(
-        `JSON invalide: ${err instanceof Error ? err.message : "Erreur inconnue"}`,
+        `JSON invalide: ${err instanceof Error ? err.message : "Erreur inconnue"}`
       );
       validSetter(false);
     }
@@ -349,7 +349,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
 
   const handleImportSupplierResponses = async (
     supplierId: string,
-    json: string,
+    json: string
   ) => {
     if (!validateSupplierJSON(json)) {
       setError("JSON invalide pour ce fournisseur");
@@ -475,7 +475,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                 size="sm"
                 onClick={() =>
                   handleCopyExample(
-                    `[{"id":"DOM1","code":"DOM1","title":"Domaine 1","short_name":"D1","level":1,"parent_id":null},{"id":"DOM1.1","code":"DOM1.1","title":"Sous-domaine","short_name":"SD1","level":2,"parent_id":"DOM1"}]`,
+                    `[{"id":"DOM1","code":"DOM1","title":"Domaine 1","short_name":"D1","level":1,"parent_id":null},{"id":"DOM1.1","code":"DOM1.1","title":"Sous-domaine","short_name":"SD1","level":2,"parent_id":"DOM1"}]`
                   )
                 }
                 className="mt-2 text-xs"
@@ -491,7 +491,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                 handleJsonChange(
                   e.target.value,
                   setCategoriesJson,
-                  setCategoriesValid,
+                  setCategoriesValid
                 )
               }
               language="json"
@@ -539,7 +539,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                 level: number;
                                 order?: number;
                               },
-                              idx: number,
+                              idx: number
                             ) => (
                               <TableRow key={idx}>
                                 <TableCell className="font-mono text-xs">
@@ -558,7 +558,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                   {category.level}
                                 </TableCell>
                               </TableRow>
-                            ),
+                            )
                           );
                         } catch {
                           return null;
@@ -577,7 +577,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                   handleFormatJSON(
                     categoriesJson,
                     setCategoriesJson,
-                    setCategoriesValid,
+                    setCategoriesValid
                   )
                 }
                 size="sm"
@@ -629,7 +629,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                 size="sm"
                 onClick={() =>
                   handleCopyExample(
-                    `[{"code":"REQ001","title":"Exigence 1","weight":0.8,"category_name":"Functionnal requirements"},{"code":"REQ002","title":"Exigence 2","weight":0.6,"category_name":"Required solution capabilities"}]`,
+                    `[{"code":"REQ001","title":"Exigence 1","weight":0.8,"category_name":"Functionnal requirements"},{"code":"REQ002","title":"Exigence 2","weight":0.6,"category_name":"Required solution capabilities"}]`
                   )
                 }
                 className="mt-2 text-xs"
@@ -701,11 +701,11 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                 category_name: string;
                                 weight: number;
                               },
-                              idx: number,
+                              idx: number
                             ) => {
                               const categoryExists =
                                 existingCategories.includes(
-                                  requirement.category_name,
+                                  requirement.category_name
                                 );
                               return (
                                 <TableRow key={idx}>
@@ -732,7 +732,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                   </TableCell>
                                 </TableRow>
                               );
-                            },
+                            }
                           );
                         } catch {
                           return null;
@@ -751,7 +751,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                   handleFormatJSON(
                     requirementsJson,
                     setRequirementsJson,
-                    setRequirementsValid,
+                    setRequirementsValid
                   )
                 }
                 size="sm"
@@ -1012,7 +1012,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                             size="sm"
                             onClick={() =>
                               handleCopyExample(
-                                `[{"requirement_id_external":"REQ001","response_text":"...","ai_score":4,"ai_comment":"..."}]`,
+                                `[{"requirement_id_external":"REQ001","response_text":"...","ai_score":4,"ai_comment":"..."}]`
                               )
                             }
                             className="mt-2 text-xs"
@@ -1089,11 +1089,11 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                             response_text: string;
                                             ai_score?: number;
                                           },
-                                          idx: number,
+                                          idx: number
                                         ) => {
                                           const requirementExists =
                                             existingRequirements.includes(
-                                              response.requirement_id_external,
+                                              response.requirement_id_external
                                             );
                                           return (
                                             <TableRow key={idx}>
@@ -1114,7 +1114,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                               <TableCell className="text-sm text-slate-600 dark:text-slate-400 truncate max-w-xs">
                                                 {response.response_text?.substring(
                                                   0,
-                                                  50,
+                                                  50
                                                 )}
                                                 {response.response_text
                                                   ?.length > 50
@@ -1134,7 +1134,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                               </TableCell>
                                             </TableRow>
                                           );
-                                        },
+                                        }
                                       );
                                     } catch {
                                       return null;
@@ -1155,7 +1155,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                 const formatted = JSON.stringify(
                                   JSON.parse(json.trim()),
                                   null,
-                                  2,
+                                  2
                                 );
                                 setSupplierResponses((prev) => ({
                                   ...prev,

@@ -570,7 +570,7 @@ Object.entries(data).forEach(([supplierName, responses]) => {
 
 fs.writeFileSync(
   "./imports/api_format.json",
-  JSON.stringify({ responses: apiPayload }, null, 2),
+  JSON.stringify({ responses: apiPayload }, null, 2)
 );
 ```
 

@@ -3,7 +3,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -11,7 +11,7 @@ export async function GET(
     if (!rfpId) {
       return NextResponse.json(
         { error: "RFP ID is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -21,7 +21,7 @@ export async function GET(
     const { data: rfp, error: rfpError } = await supabase
       .from("rfps")
       .select(
-        "id, title, description, organization_id, created_by, created_at, updated_at",
+        "id, title, description, organization_id, created_by, created_at, updated_at"
       )
       .eq("id", rfpId)
       .single();
@@ -37,14 +37,14 @@ export async function GET(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const supabase = await createServerClient();
@@ -64,7 +64,7 @@ export async function DELETE(
     if (!rfpId) {
       return NextResponse.json(
         { error: "RFP ID is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -90,7 +90,7 @@ export async function DELETE(
     if (userOrgError || !userOrg || userOrg.role !== "admin") {
       return NextResponse.json(
         { error: "Access denied. Only admins can delete RFPs." },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -103,7 +103,7 @@ export async function DELETE(
     if (deleteError) {
       return NextResponse.json(
         { error: `Failed to delete RFP: ${deleteError.message}` },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -112,7 +112,7 @@ export async function DELETE(
         success: true,
         message: "RFP deleted successfully",
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("RFP deletion error:", error);
@@ -120,7 +120,7 @@ export async function DELETE(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

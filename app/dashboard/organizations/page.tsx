@@ -183,7 +183,7 @@ export default function OrganizationsPage() {
                   {
                     label: "Member + Viewer",
                     value: organizations.filter(
-                      (org) => org.role === "member" || org.role === "viewer",
+                      (org) => org.role === "member" || org.role === "viewer"
                     ).length,
                   },
                 ].map((card) => (

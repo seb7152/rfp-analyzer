@@ -26,7 +26,7 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function GET(
   _request: NextRequest,
-  context: { params: Promise<{ rfpId: string; categoryId: string }> },
+  context: { params: Promise<{ rfpId: string; categoryId: string }> }
 ) {
   try {
     const params = await context.params;
@@ -40,7 +40,7 @@ export async function GET(
     if (!categoryId || categoryId.trim().length === 0) {
       return NextResponse.json(
         { error: "Invalid category ID" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -66,7 +66,7 @@ export async function GET(
       console.error("Error fetching RFP:", rfpError);
       return NextResponse.json(
         { error: "Failed to fetch RFP" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -86,7 +86,7 @@ export async function GET(
       console.error("Error checking user organization:", userOrgError);
       return NextResponse.json(
         { error: "Failed to verify access" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -106,14 +106,14 @@ export async function GET(
       console.error("Error fetching category:", categoryError);
       return NextResponse.json(
         { error: "Failed to fetch category" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
     if (!category) {
       return NextResponse.json(
         { error: "Category not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -127,7 +127,7 @@ export async function GET(
       console.error("Error fetching all categories:", allCategoriesError);
       return NextResponse.json(
         { error: "Failed to fetch categories" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -162,7 +162,7 @@ export async function GET(
           status,
           is_checked
         )
-      `,
+      `
       )
       .eq("rfp_id", rfpId)
       .in("category_id", descendantCategoryIds)
@@ -172,7 +172,7 @@ export async function GET(
       console.error("Error fetching requirements:", requirementsError);
       return NextResponse.json(
         { error: "Failed to fetch requirements" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -229,11 +229,11 @@ export async function GET(
   } catch (error) {
     console.error(
       "Error in GET /api/rfps/[rfpId]/categories/[categoryId]/requirements:",
-      error,
+      error
     );
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

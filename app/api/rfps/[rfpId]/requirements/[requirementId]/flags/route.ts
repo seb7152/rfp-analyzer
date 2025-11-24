@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function PATCH(
   request: NextRequest,
-  context: { params: Promise<{ rfpId: string; requirementId: string }> },
+  context: { params: Promise<{ rfpId: string; requirementId: string }> }
 ) {
   try {
     const { rfpId, requirementId } = await context.params;
@@ -19,7 +19,7 @@ export async function PATCH(
     if (!rfpId || !requirementId) {
       return NextResponse.json(
         { error: "RFP ID and Requirement ID are required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -29,7 +29,7 @@ export async function PATCH(
           error:
             "At least one flag (is_mandatory or is_optional) must be provided",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -37,7 +37,7 @@ export async function PATCH(
     if (is_mandatory === true && is_optional === true) {
       return NextResponse.json(
         { error: "A requirement cannot be both mandatory and optional" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -74,7 +74,7 @@ export async function PATCH(
     if (userOrgError || !userOrg) {
       return NextResponse.json(
         { error: "Access denied to this RFP" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -96,7 +96,7 @@ export async function PATCH(
       console.error("Error updating requirement flags:", updateError);
       return NextResponse.json(
         { error: "Failed to update requirement flags" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -105,7 +105,7 @@ export async function PATCH(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

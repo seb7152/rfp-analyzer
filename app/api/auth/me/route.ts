@@ -15,7 +15,7 @@ export async function GET() {
       console.error("Auth error:", authError);
       return NextResponse.json(
         { error: "Authentication error", message: authError.message },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -36,7 +36,7 @@ export async function GET() {
       console.error("User fetch error:", userError);
       return NextResponse.json(
         { error: "Failed to fetch user profile", message: userError.message },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -44,7 +44,7 @@ export async function GET() {
       console.error("User not found:", authUser.id);
       return NextResponse.json(
         { error: "User profile not found - please create one by registering" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -54,7 +54,7 @@ export async function GET() {
     const { data: userOrgs, error: orgsError } = await supabase
       .from("user_organizations")
       .select(
-        "role, organizations(id, name, slug, organization_code, subscription_tier, max_users, max_rfps, settings)",
+        "role, organizations(id, name, slug, organization_code, subscription_tier, max_users, max_rfps, settings)"
       )
       .eq("user_id", authUser.id);
 
@@ -98,7 +98,7 @@ export async function GET() {
     console.error("Get user error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

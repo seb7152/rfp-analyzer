@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -22,7 +22,7 @@ export async function POST(
     if (!Array.isArray(requirementIds) || requirementIds.length === 0) {
       return NextResponse.json(
         { error: "Requirement IDs array is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -58,7 +58,7 @@ export async function POST(
     if (userOrgError || !userOrg) {
       return NextResponse.json(
         { error: "Access denied to this RFP" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -72,7 +72,7 @@ export async function POST(
       console.error("Error fetching tags:", tagsError);
       return NextResponse.json(
         { error: "Failed to fetch tags" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -95,7 +95,7 @@ export async function POST(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

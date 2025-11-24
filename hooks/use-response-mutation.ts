@@ -85,7 +85,7 @@ export function useResponseMutation(): UseMutationResult<
                 updated_at: new Date().toISOString(),
               },
             };
-          },
+          }
         );
       }
 
@@ -120,7 +120,7 @@ export function useResponseMutation(): UseMutationResult<
                       : response.question,
                   updated_at: new Date().toISOString(),
                 }
-              : response,
+              : response
           );
 
           // Recalculate meta counts if status changed
@@ -154,7 +154,7 @@ export function useResponseMutation(): UseMutationResult<
       if (context?.previousResponse) {
         queryClient.setQueryData(
           ["response", variables.responseId],
-          context.previousResponse,
+          context.previousResponse
         );
       }
 
@@ -226,7 +226,7 @@ export function useUpdateResponseStatus() {
     ...mutation,
     updateStatus: (
       responseId: string,
-      status: "pending" | "pass" | "partial" | "fail",
+      status: "pending" | "pass" | "partial" | "fail"
     ) => mutation.mutate({ responseId, status }),
   };
 }

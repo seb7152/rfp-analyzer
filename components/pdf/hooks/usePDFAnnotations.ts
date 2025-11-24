@@ -45,7 +45,7 @@ export function usePDFAnnotations(documentId: string | null) {
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },
-          },
+          }
         );
 
         if (!response.ok) {
@@ -89,7 +89,7 @@ export function usePDFAnnotations(documentId: string | null) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        },
+        }
       );
 
       console.log("[usePDFAnnotations] Response status:", response.status);
@@ -122,7 +122,7 @@ export function usePDFAnnotations(documentId: string | null) {
         {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
 
       if (!response.ok) {
@@ -158,7 +158,7 @@ export function usePDFAnnotations(documentId: string | null) {
             tags: dto.tags,
             position: dto.position,
           }),
-        },
+        }
       );
 
       if (!response.ok) {

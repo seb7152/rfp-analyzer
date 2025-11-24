@@ -22,7 +22,7 @@ export const TreeItem = React.forwardRef<
     className={cn(
       "flex flex-col",
       isSelected && "bg-slate-100 dark:bg-slate-800",
-      className,
+      className
     )}
     {...props}
   />
@@ -41,7 +41,7 @@ export const TreeItemLabel = React.forwardRef<
     ref={ref}
     className={cn(
       "flex items-center gap-2 px-2 py-1.5 text-sm font-medium rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors",
-      className,
+      className
     )}
     style={{ paddingLeft: `${level * 16 + 8}px` }}
     {...props}

@@ -17,7 +17,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
  */
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { rfpId: string; userId: string } },
+  { params }: { params: { rfpId: string; userId: string } }
 ) {
   try {
     const { rfpId, userId } = params;
@@ -25,7 +25,7 @@ export async function DELETE(
     if (!rfpId || !userId) {
       return NextResponse.json(
         { error: "RFP ID and User ID are required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -51,7 +51,7 @@ export async function DELETE(
     if (rfpError || !rfp) {
       return NextResponse.json(
         { error: "RFP not found or access denied" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -72,7 +72,7 @@ export async function DELETE(
           error:
             "Access denied. Only RFP owner or organization admin can remove assignments.",
         },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -92,7 +92,7 @@ export async function DELETE(
         success: true,
         message: "Assignment removed successfully",
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Error removing RFP assignment:", error);
@@ -100,7 +100,7 @@ export async function DELETE(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

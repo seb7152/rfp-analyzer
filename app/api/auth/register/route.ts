@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     if (!userId || !email || !fullName || !organizationCode) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
           error: "Invalid organization code",
           message: "Code must be exactly 10 digits",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       console.error("User creation error:", userError);
       return NextResponse.json(
         { error: "Failed to create user profile", message: userError.message },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
           error: "Organization not found",
           message: `No organization found with code ${organizationCode}`,
         },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
           error: "Organization not found",
           message: `No organization found with code ${organizationCode}`,
         },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
           error: "Failed to join organization",
           message: linkError.message,
         },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -107,7 +107,7 @@ export async function POST(request: Request) {
     console.error("Registration error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

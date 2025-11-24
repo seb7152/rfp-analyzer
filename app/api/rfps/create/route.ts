@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     if (!title || !organizationId) {
       return NextResponse.json(
         { error: "Missing required fields: title, organizationId" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     if (userOrgError || !userOrg || userOrg.role !== "admin") {
       return NextResponse.json(
         { error: "Access denied. Only admins can create RFPs." },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     if (rfpError) {
       return NextResponse.json(
         { error: `Failed to create RFP: ${rfpError.message}` },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         message: "RFP created successfully",
         rfp,
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error) {
     console.error("RFP creation error:", error);
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

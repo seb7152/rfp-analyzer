@@ -31,7 +31,7 @@ export function PDFAnnotationLayer({
 }: PDFAnnotationLayerProps) {
   // Filtrer les annotations pour cette page
   const pageAnnotations = annotations.filter(
-    (a) => a.pageNumber === pageNumber,
+    (a) => a.pageNumber === pageNumber
   );
 
   if (pageAnnotations.length === 0) {

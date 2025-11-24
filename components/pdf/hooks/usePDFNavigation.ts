@@ -7,7 +7,7 @@ export function usePDFNavigation(
   documentId: string | null,
   currentPage: number,
   onPageChange: (page: number) => void,
-  onDocumentChange?: (documentId: string) => void,
+  onDocumentChange?: (documentId: string) => void
 ) {
   const { navigationTarget, clearNavigation } = usePDFAnnotationNavigation();
 
@@ -33,7 +33,7 @@ export function usePDFNavigation(
       // Attendre que la page soit chargée avant de scroller
       const scrollToAnnotation = () => {
         const element = document.querySelector(
-          `[data-annotation-id="${navigationTarget.annotationId}"]`,
+          `[data-annotation-id="${navigationTarget.annotationId}"]`
         );
         if (element) {
           element.scrollIntoView({

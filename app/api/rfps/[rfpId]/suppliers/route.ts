@@ -9,7 +9,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
  */
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ rfpId: string }> },
+  context: { params: Promise<{ rfpId: string }> }
 ) {
   try {
     const params = await context.params;
@@ -38,7 +38,7 @@ export async function GET(
       console.error("Error fetching suppliers:", error);
       return NextResponse.json(
         { error: "Failed to fetch suppliers" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -73,7 +73,7 @@ export async function GET(
       supabase
         .from("responses")
         .select(
-          "id, supplier_id, requirement_id, manual_score, ai_score, is_checked",
+          "id, supplier_id, requirement_id, manual_score, ai_score, is_checked"
         )
         .eq("rfp_id", rfpId),
       supabase
@@ -119,7 +119,7 @@ export async function GET(
       const supplierDocIds = new Set(
         documentSuppliers
           .filter((ds) => ds.supplier_id === supplier.id)
-          .map((ds) => ds.document_id),
+          .map((ds) => ds.document_id)
       );
 
       const supplierDocs =
@@ -146,7 +146,7 @@ export async function GET(
       const totalResponsesCount = supplierResponses.length;
 
       const checkedResponses = supplierResponses.filter(
-        (r) => r.is_checked,
+        (r) => r.is_checked
       ).length;
       const responseCompletionPercentage =
         totalResponsesCount > 0
@@ -179,7 +179,7 @@ export async function GET(
     console.error("Error in GET /api/rfps/[rfpId]/suppliers:", error);
     return NextResponse.json(
       { error: "Failed to fetch suppliers" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -28,7 +28,7 @@ export function PDFAnnotationPanel({
         a.highlightedText?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         a.noteContent?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         a.tags?.some((tag) =>
-          tag.toLowerCase().includes(searchTerm.toLowerCase()),
+          tag.toLowerCase().includes(searchTerm.toLowerCase())
         );
 
       const matchesType =
@@ -47,7 +47,7 @@ export function PDFAnnotationPanel({
         acc[page].push(annotation);
         return acc;
       },
-      {} as Record<number, PDFAnnotation[]>,
+      {} as Record<number, PDFAnnotation[]>
     );
   }, [filteredAnnotations]);
 

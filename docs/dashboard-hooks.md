@@ -45,7 +45,7 @@ interface SuppliersAnalysis {
 }
 
 export function useSuppliersAnalysis(
-  rfpId: string,
+  rfpId: string
 ): UseQueryResult<SuppliersAnalysis>;
 ```
 
@@ -68,7 +68,7 @@ interface WeightsConfiguration {
 }
 
 export function useWeightsManagement(
-  rfpId: string,
+  rfpId: string
 ): UseQueryResult<WeightsConfiguration>;
 ```
 
@@ -92,7 +92,7 @@ interface CategoriesAnalysis {
 }
 
 export function useCategoriesAnalysis(
-  rfpId: string,
+  rfpId: string
 ): UseQueryResult<CategoriesAnalysis>;
 ```
 
@@ -208,7 +208,7 @@ interface RequirementAnalysis {
 export function calculateWeightedScore(
   scores: Record<string, number>,
   categoryWeights: Record<string, number>,
-  requirementWeights: Record<string, number>,
+  requirementWeights: Record<string, number>
 ): number {
   let totalScore = 0;
 
@@ -227,7 +227,7 @@ export function calculateWeightedScore(
 
 ```typescript
 export function normalizeWeights(
-  weights: Record<string, number>,
+  weights: Record<string, number>
 ): Record<string, number> {
   const total = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
 
@@ -237,7 +237,7 @@ export function normalizeWeights(
     Object.entries(weights).map(([key, weight]) => [
       key,
       (weight / total) * 100,
-    ]),
+    ])
   );
 }
 ```
@@ -286,7 +286,7 @@ interface DashboardComponentProps {
   onWeightChange: (
     type: "category" | "requirement",
     id: string,
-    weight: number,
+    weight: number
   ) => void;
   onExportData: () => void;
   onRefreshData: () => void;

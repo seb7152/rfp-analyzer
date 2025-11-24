@@ -43,7 +43,7 @@ import {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { requirementId: string } },
+  { params }: { params: { requirementId: string } }
 ) {
   try {
     const { requirementId } = params;
@@ -53,7 +53,7 @@ export async function GET(
     if (!requirementId || requirementId.trim().length === 0) {
       return NextResponse.json(
         { error: "Invalid requirement ID" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -74,7 +74,7 @@ export async function GET(
     if (!requirement) {
       return NextResponse.json(
         { error: "Requirement not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -89,7 +89,7 @@ export async function GET(
       console.error("Error fetching RFP:", rfpError);
       return NextResponse.json(
         { error: "Failed to verify access" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -109,7 +109,7 @@ export async function GET(
       console.error("Error checking user organization:", userOrgError);
       return NextResponse.json(
         { error: "Failed to verify access" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -134,7 +134,7 @@ export async function GET(
     console.error("Error in GET /api/requirements/[requirementId]:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -157,7 +157,7 @@ export async function POST(
     }
 
     const templateBuffer = await templateResponse.arrayBuffer();
-    const { default: XLSX } = await import("xlsx");
+    const XLSX = require("xlsx");
     const workbook = XLSX.read(templateBuffer);
 
     // Get the specified worksheet

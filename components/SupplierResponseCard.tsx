@@ -212,7 +212,7 @@ export function SupplierResponseCard({
                           "h-6 w-6 p-0",
                           hasDocuments === false
                             ? "opacity-50 cursor-not-allowed"
-                            : "hover:bg-slate-200 dark:hover:bg-slate-800",
+                            : "hover:bg-slate-200 dark:hover:bg-slate-800"
                         )}
                         title={
                           hasDocuments === false
@@ -225,7 +225,7 @@ export function SupplierResponseCard({
                             "h-3.5 w-3.5",
                             hasDocuments === false
                               ? "text-slate-300 dark:text-slate-600"
-                              : "text-slate-500 dark:text-slate-400",
+                              : "text-slate-500 dark:text-slate-400"
                           )}
                         />
                       </Button>

@@ -343,7 +343,7 @@ export default function DashboardOverviewPage() {
                       >
                         {entry}
                       </div>
-                    ),
+                    )
                   )}
                 </CardContent>
               </Card>

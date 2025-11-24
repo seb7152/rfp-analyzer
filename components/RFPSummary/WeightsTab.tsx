@@ -23,7 +23,7 @@ interface WeightsTabProps {
 export function WeightsTab({ rfpId }: WeightsTabProps) {
   const [data, setData] = useState<TreeNode[]>([]);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
-    new Set(),
+    new Set()
   );
   const [selectedRequirementId, setSelectedRequirementId] = useState<
     string | null
@@ -100,19 +100,19 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
 
             const allRealWeights = new Map<string, number>();
             for (const [id, weight] of Object.entries(
-              weightsData.categories || {},
+              weightsData.categories || {}
             )) {
               allRealWeights.set(id as string, (weight as number) * 100);
             }
             for (const [id, weight] of Object.entries(
-              weightsData.requirements || {},
+              weightsData.requirements || {}
             )) {
               allRealWeights.set(id as string, (weight as number) * 100);
             }
 
             function assignLoadedWeights(
               nodes: TreeNode[],
-              parentRealWeight: number = 100,
+              parentRealWeight: number = 100
             ) {
               let calculatedParentWeight = 0;
               for (const node of nodes) {
@@ -213,7 +213,7 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
 
   const handleEquidistribute = (
     _parentId: string | null,
-    childrenIds: string[],
+    childrenIds: string[]
   ) => {
     if (childrenIds.length === 0) return;
 
@@ -230,7 +230,7 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
   const calculateRealWeight = (
     nodeId: string,
     nodes: TreeNode[] = data,
-    parentId: string | null = null,
+    parentId: string | null = null
   ): number => {
     const localWeight = weights[nodeId] || 0;
     if (!parentId) return localWeight;
@@ -268,11 +268,11 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
     const average = sum / requirements.length;
 
     const max = requirements.reduce((prev, current) =>
-      current.weight > prev.weight ? current : prev,
+      current.weight > prev.weight ? current : prev
     );
 
     const min = requirements.reduce((prev, current) =>
-      current.weight < prev.weight ? current : prev,
+      current.weight < prev.weight ? current : prev
     );
 
     return {

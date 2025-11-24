@@ -11,7 +11,7 @@ export function createClient() {
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
-      "Missing Supabase environment variables. Please check .env.local",
+      "Missing Supabase environment variables. Please check .env.local"
     );
   }
 

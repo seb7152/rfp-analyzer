@@ -3,7 +3,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { organizationId: string } },
+  { params }: { params: { organizationId: string } }
 ) {
   try {
     const supabase = await createServerClient();
@@ -43,7 +43,7 @@ export async function GET(
         updated_at,
         created_by,
         organization_id
-      `,
+      `
       )
       .eq("organization_id", params.organizationId)
       .order("created_at", { ascending: false });
@@ -51,7 +51,7 @@ export async function GET(
     if (rfpsError) {
       return NextResponse.json(
         { error: `Failed to fetch RFPs: ${rfpsError.message}` },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -60,7 +60,7 @@ export async function GET(
         rfps: rfps || [],
         total: rfps?.length || 0,
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("RFPs list error:", error);
@@ -68,7 +68,7 @@ export async function GET(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -945,7 +945,7 @@ console.log("[PDFViewerWithAnnotations] Creating bookmark:", {
 // Ligne ~60-90 : Vérifier le POST handler
 export async function POST(
   request: NextRequest,
-  { params }: { params: { documentId: string } },
+  { params }: { params: { documentId: string } }
 ) {
   // ... existing code ...
 
@@ -1244,7 +1244,7 @@ setTextSelection(null);
 // Animation : flash du bookmark créé
 setTimeout(() => {
   const createdBookmark = document.querySelector(
-    `[data-annotation-id="${newAnnotationId}"]`,
+    `[data-annotation-id="${newAnnotationId}"]`
   );
   createdBookmark?.classList.add("animate-pulse");
   setTimeout(() => {
@@ -1335,7 +1335,7 @@ const handleTextSelected = useCallback(
 
     // ... existing code ...
   },
-  [loadedPage, scale, currentPage],
+  [loadedPage, scale, currentPage]
 );
 ```
 

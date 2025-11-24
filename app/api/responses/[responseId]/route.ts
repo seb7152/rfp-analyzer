@@ -10,7 +10,7 @@ import { getResponse } from "@/lib/supabase/queries";
  */
 export async function GET(
   _request: NextRequest,
-  context: { params: Promise<{ responseId: string }> },
+  context: { params: Promise<{ responseId: string }> }
 ) {
   const params = await context.params;
   try {
@@ -32,7 +32,7 @@ export async function GET(
     if (!response) {
       return NextResponse.json(
         { error: "Response not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -43,7 +43,7 @@ export async function GET(
     console.error("Error fetching response:", error);
     return NextResponse.json(
       { error: "Failed to fetch response" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -62,7 +62,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  context: { params: Promise<{ responseId: string }> },
+  context: { params: Promise<{ responseId: string }> }
 ) {
   const params = await context.params;
 
@@ -92,7 +92,7 @@ export async function PUT(
       ) {
         return NextResponse.json(
           { error: "Manual score must be a number between 0 and 5" },
-          { status: 400 },
+          { status: 400 }
         );
       }
     }
@@ -103,7 +103,7 @@ export async function PUT(
       if (!validStatuses.includes(status)) {
         return NextResponse.json(
           { error: `Status must be one of: ${validStatuses.join(", ")}` },
-          { status: 400 },
+          { status: 400 }
         );
       }
     }
@@ -114,7 +114,7 @@ export async function PUT(
     if (!currentResponse) {
       return NextResponse.json(
         { error: "Response not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -129,14 +129,14 @@ export async function PUT(
     if (assignmentError || !assignment) {
       return NextResponse.json(
         { error: "Access denied: You must be assigned to this RFP" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
     if (!["owner", "evaluator"].includes(assignment.access_level)) {
       return NextResponse.json(
         { error: "Access denied: You must have evaluator or owner access" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -165,7 +165,7 @@ export async function PUT(
       console.error("Error updating response:", updateError);
       return NextResponse.json(
         { error: `Failed to update response: ${updateError.message}` },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -177,7 +177,7 @@ export async function PUT(
     console.error("Error updating response:", error);
     return NextResponse.json(
       { error: "Failed to update response" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

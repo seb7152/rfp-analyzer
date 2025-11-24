@@ -69,7 +69,7 @@ export function GlobalProgressCard({
               {Object.values(averageScores).length > 0
                 ? Math.round(
                     Object.values(averageScores).reduce((a, b) => a + b, 0) /
-                      Object.values(averageScores).length,
+                      Object.values(averageScores).length
                   )
                 : 0}
               /5

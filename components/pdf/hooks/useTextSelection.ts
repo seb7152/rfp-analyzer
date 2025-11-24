@@ -26,7 +26,7 @@ export function useTextSelection() {
       pageHeight: number,
       pageWidth: number,
       containerRect: DOMRect,
-      scale: number,
+      scale: number
     ) => {
       // Convertir les coordonnées écran en coordonnées PDF
       const pdfRects = screenToPDFCoordinates(domRects, containerRect, scale);
@@ -42,7 +42,7 @@ export function useTextSelection() {
         pageWidth,
       });
     },
-    [],
+    []
   );
 
   const clearSelection = useCallback(() => {
