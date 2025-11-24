@@ -69,6 +69,13 @@ export function PDFViewerWithAnnotations({
   // Hook de navigation
   usePDFNavigation(documentId, currentPage, setCurrentPage);
 
+  // Update current page when initialPage prop changes
+  useEffect(() => {
+    if (initialPage) {
+      setCurrentPage(initialPage);
+    }
+  }, [initialPage]);
+
   const handlePageChange = useCallback(
     (page: number) => {
       if (page >= 1 && page <= numPages) {
