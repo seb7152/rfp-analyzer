@@ -47,7 +47,8 @@ import {
 import { useResponses } from "@/hooks/use-responses";
 import { useResponseMutation } from "@/hooks/use-response-mutation";
 import type { TreeNode } from "@/hooks/use-requirements";
-import { Requirement, getRequirementById } from "@/lib/fake-data";
+import type { Requirement } from "@/lib/supabase/types";
+import { getRequirementById } from "@/lib/fake-data";
 import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
 
 interface ComparisonViewProps {
