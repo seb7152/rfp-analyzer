@@ -95,9 +95,11 @@ export async function POST(
       id: string;
       code?: string;
       title: string;
-      description?: string;
+      description: string;
       weight: number;
       category_name: string;
+      is_mandatory?: boolean;
+      is_optional?: boolean;
       order?: number;
     }>;
     const requirementsResult = await importRequirements(

@@ -132,12 +132,15 @@ export function validateRequirementPayload(
     req.code.trim().length > 0 &&
     typeof req.title === "string" &&
     req.title.trim().length > 0 &&
-    (req.description === undefined || typeof req.description === "string") &&
+    typeof req.description === "string" &&
+    req.description.trim().length > 0 &&
     typeof req.weight === "number" &&
     req.weight >= 0 &&
     req.weight <= 1 &&
     typeof req.category_name === "string" &&
-    req.category_name.trim().length > 0
+    req.category_name.trim().length > 0 &&
+    (req.is_mandatory === undefined || typeof req.is_mandatory === "boolean") &&
+    (req.is_optional === undefined || typeof req.is_optional === "boolean")
   );
 }
 
@@ -205,7 +208,7 @@ export function validateRequirementsJSON(
       return {
         valid: false,
         error:
-          "Invalid requirements format. Check required fields: code, title, weight (0-1), category_name. Optional: id, description",
+          "Invalid requirements format. Check required fields: code, title, description, weight (0-1), category_name. Optional: id, is_mandatory, is_optional",
       };
     }
 

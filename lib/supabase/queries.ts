@@ -413,9 +413,11 @@ export async function importRequirements(
     id: string;
     code?: string;
     title: string;
-    description?: string;
+    description: string;
     weight: number;
     category_name: string;
+    is_mandatory?: boolean;
+    is_optional?: boolean;
     order?: number;
   }>,
   userId: string
@@ -423,18 +425,22 @@ export async function importRequirements(
   const supabase = await createServerClient();
 
   try {
-    // First, fetch all categories to map names to IDs
+    // First, fetch all categories to map names/codes to IDs
     const { data: categories, error: catError } = await supabase
       .from("categories")
-      .select("id, title")
+      .select("id, title, code")
       .eq("rfp_id", rfpId);
 
     if (catError) {
       throw new Error(`Failed to fetch categories: ${catError.message}`);
     }
 
-    const categoryNameToId = new Map(
+    // Create maps for both title and code lookups
+    const categoryTitleToId = new Map(
       (categories || []).map((c) => [c.title, c.id])
+    );
+    const categoryCodeToId = new Map(
+      (categories || []).map((c) => [c.code, c.id])
     );
 
     // Auto-increment order for requirements without explicit order
@@ -442,11 +448,14 @@ export async function importRequirements(
     let upsertedCount = 0;
 
     for (const req of requirements) {
-      const categoryId = categoryNameToId.get(req.category_name);
+      // Try to find category by title first, then by code
+      const categoryId =
+        categoryTitleToId.get(req.category_name) ||
+        categoryCodeToId.get(req.category_name);
 
       if (!categoryId) {
         console.warn(
-          `Skipping requirement ${req.code}: category "${req.category_name}" not found`
+          `Skipping requirement ${req.code}: category "${req.category_name}" not found (searched by title and code)`
         );
         continue;
       }
@@ -460,10 +469,12 @@ export async function importRequirements(
             rfp_id: rfpId,
             requirement_id_external: req.code,
             title: req.title,
-            description: req.description || null,
+            description: req.description,
             weight: req.weight,
             category_id: categoryId,
             level: 4, // Requirements are always level 4
+            is_mandatory: req.is_mandatory ?? false,
+            is_optional: req.is_optional ?? false,
             display_order: displayOrder,
             created_by: userId,
           },

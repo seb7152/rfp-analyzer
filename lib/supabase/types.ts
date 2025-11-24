@@ -287,9 +287,11 @@ export interface ImportRequirementPayload {
   id?: string;
   code: string;
   title: string;
-  description?: string;
+  description: string;
   weight: number;
   category_name: string;
+  is_mandatory?: boolean;
+  is_optional?: boolean;
 }
 
 export interface ImportRequirementsRequest {

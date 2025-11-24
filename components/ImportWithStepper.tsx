@@ -603,7 +603,8 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                 Importer les exigences
               </h2>
               <p className="text-sm text-slate-600">
-                Collez le JSON des exigences/besoins
+                Collez le JSON des exigences/besoins. Le champ category_name
+                accepte soit le nom complet soit le code de la catégorie.
               </p>
             </div>
 
@@ -612,15 +613,21 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                 {`[
   {
     "code": "REQ001",
-    "title": "Exigence 1",
+    "title": "Titre de l'exigence 1",
+    "description": "Description détaillée de l'exigence",
     "weight": 0.8,
-    "category_name": "Functionnal requirements"
+    "category_name": "Functionnal requirements",
+    "is_mandatory": true,
+    "is_optional": false
   },
   {
     "code": "REQ002",
-    "title": "Exigence 2",
+    "title": "Titre de l'exigence 2",
+    "description": "Contenu de l'exigence optionnelle",
     "weight": 0.6,
-    "category_name": "Required solution capabilities"
+    "category_name": "DOM1",
+    "is_mandatory": false,
+    "is_optional": true
   }
 ]`}
               </pre>
@@ -629,7 +636,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                 size="sm"
                 onClick={() =>
                   handleCopyExample(
-                    `[{"code":"REQ001","title":"Exigence 1","weight":0.8,"category_name":"Functionnal requirements"},{"code":"REQ002","title":"Exigence 2","weight":0.6,"category_name":"Required solution capabilities"}]`
+                    `[{"code":"REQ001","title":"Titre de l'exigence 1","description":"Description détaillée de l'exigence","weight":0.8,"category_name":"Functionnal requirements","is_mandatory":true,"is_optional":false},{"code":"REQ002","title":"Titre de l'exigence 2","description":"Contenu de l'exigence optionnelle","weight":0.6,"category_name":"DOM1","is_mandatory":false,"is_optional":true}]`
                   )
                 }
                 className="mt-2 text-xs"
