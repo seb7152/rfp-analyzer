@@ -63,7 +63,9 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
   const [categoriesJson, setCategoriesJson] = useState<string>("");
   const [categoriesValid, setCategoriesValid] = useState(false);
   const [existingCategories, setExistingCategories] = useState<string[]>([]);
-  const [existingCategoryCodes, setExistingCategoryCodes] = useState<string[]>([]);
+  const [existingCategoryCodes, setExistingCategoryCodes] = useState<string[]>(
+    []
+  );
 
   // Step 2: Requirements
   const [requirementsJson, setRequirementsJson] = useState<string>("");
@@ -614,17 +616,19 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
               </p>
             </div>
 
-            <div className="bg-slate-100 dark:bg-slate-900 p-3 rounded text-xs font-mono text-slate-700 dark:text-slate-300 overflow-auto max-h-32">
+            <div className="bg-slate-100 dark:bg-slate-900 p-3 rounded text-xs font-mono text-slate-700 dark:text-slate-300 overflow-auto max-h-40">
               <pre>
                 {`[
   {
-    "code": "REQ001",
-    "title": "Titre de l'exigence 1",
-    "description": "Description détaillée de l'exigence",
-    "weight": 0.8,
-    "category_name": "Functionnal requirements",
-    "is_mandatory": true,
-    "is_optional": false
+    "code": "REQ001",                          // Obligatoire
+    "title": "Titre de l'exigence 1",         // Obligatoire
+    "description": "Description détaillée",    // Obligatoire
+    "weight": 0.8,                             // Obligatoire (0-1)
+    "category_name": "Functionnal requirements", // Obligatoire
+    "is_mandatory": true,                      // Optionnel (défaut: false)
+    "is_optional": false,                      // Optionnel (défaut: false)
+    "page_number": 5,                          // Optionnel
+    "rf_document_id": "uuid-doc-id"            // Optionnel
   },
   {
     "code": "REQ002",
@@ -633,7 +637,8 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
     "weight": 0.6,
     "category_name": "DOM1",
     "is_mandatory": false,
-    "is_optional": true
+    "is_optional": true,
+    "page_number": 10
   }
 ]`}
               </pre>
@@ -642,7 +647,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                 size="sm"
                 onClick={() =>
                   handleCopyExample(
-                    `[{"code":"REQ001","title":"Titre de l'exigence 1","description":"Description détaillée de l'exigence","weight":0.8,"category_name":"Functionnal requirements","is_mandatory":true,"is_optional":false},{"code":"REQ002","title":"Titre de l'exigence 2","description":"Contenu de l'exigence optionnelle","weight":0.6,"category_name":"DOM1","is_mandatory":false,"is_optional":true}]`
+                    `[{"code":"REQ001","title":"Titre de l'exigence 1","description":"Description détaillée de l'exigence","weight":0.8,"category_name":"Functionnal requirements","is_mandatory":true,"is_optional":false,"page_number":5},{"code":"REQ002","title":"Titre de l'exigence 2","description":"Contenu de l'exigence optionnelle","weight":0.6,"category_name":"DOM1","is_mandatory":false,"is_optional":true,"page_number":10}]`
                   )
                 }
                 className="mt-2 text-xs"

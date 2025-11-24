@@ -95,17 +95,17 @@ export function RequirementsTreeView({
                     >
                       {node.code}
                     </span>
-                    {node.type === "category" && (
-                      <span
-                        className={`truncate ${
-                          isSelected
-                            ? "text-white dark:text-slate-900"
-                            : "text-slate-700 dark:text-slate-300"
-                        }`}
-                      >
-                        {node.title}
-                      </span>
-                    )}
+                    <span
+                      className={`truncate ${
+                        node.type === "requirement" ? "italic" : ""
+                      } ${
+                        isSelected
+                          ? "text-white dark:text-slate-900"
+                          : "text-slate-700 dark:text-slate-300"
+                      }`}
+                    >
+                      {node.title}
+                    </span>
                   </div>
                 </div>
               </div>

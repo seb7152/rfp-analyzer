@@ -27,7 +27,7 @@ export async function getRequirements(rfpId: string): Promise<Requirement[]> {
       level,
       weight,
       position_in_pdf,
-      pdf_url,
+      rf_document_id,
       created_at,
       updated_at,
       created_by
@@ -67,7 +67,7 @@ export async function getRequirement(
       level,
       weight,
       position_in_pdf,
-      pdf_url,
+      rf_document_id,
       created_at,
       updated_at,
       created_by
@@ -136,7 +136,7 @@ export async function getRequirementChildren(
       level,
       weight,
       position_in_pdf,
-      pdf_url,
+      rf_document_id,
       created_at,
       updated_at,
       created_by
@@ -222,7 +222,7 @@ export async function getRequirementsByLevel(
       level,
       weight,
       position_in_pdf,
-      pdf_url,
+      rf_document_id,
       created_at,
       updated_at,
       created_by
@@ -270,7 +270,7 @@ export async function searchRequirements(
       level,
       weight,
       position_in_pdf,
-      pdf_url,
+      rf_document_id,
       created_at,
       updated_at,
       created_by
@@ -410,8 +410,8 @@ export async function getCategories(rfpId: string): Promise<Requirement[]> {
 export async function importRequirements(
   rfpId: string,
   requirements: Array<{
-    id: string;
-    code?: string;
+    id?: string;
+    code: string;
     title: string;
     description: string;
     weight: number;
@@ -419,6 +419,8 @@ export async function importRequirements(
     is_mandatory?: boolean;
     is_optional?: boolean;
     order?: number;
+    page_number?: number;
+    rf_document_id?: string;
   }>,
   userId: string
 ): Promise<{ success: boolean; count: number; error?: string }> {
@@ -463,6 +465,13 @@ export async function importRequirements(
       // Use explicit order if provided, otherwise auto-increment
       const displayOrder = req.order !== undefined ? req.order : currentOrder;
 
+      // Build position_in_pdf data if page information is provided
+      const positionInPdf = req.page_number
+        ? {
+            page_number: req.page_number,
+          }
+        : null;
+
       const { error } = await supabase.from("requirements").upsert(
         [
           {
@@ -476,6 +485,8 @@ export async function importRequirements(
             is_mandatory: req.is_mandatory ?? false,
             is_optional: req.is_optional ?? false,
             display_order: displayOrder,
+            position_in_pdf: positionInPdf,
+            rf_document_id: req.rf_document_id || null,
             created_by: userId,
           },
         ],

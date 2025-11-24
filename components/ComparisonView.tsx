@@ -47,7 +47,8 @@ import {
 import { useResponses } from "@/hooks/use-responses";
 import { useResponseMutation } from "@/hooks/use-response-mutation";
 import type { TreeNode } from "@/hooks/use-requirements";
-import { Requirement, getRequirementById } from "@/lib/fake-data";
+import type { Requirement } from "@/lib/supabase/types";
+import { getRequirementById } from "@/lib/fake-data";
 import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
 
 interface ComparisonViewProps {
@@ -85,7 +86,7 @@ export function ComparisonView({
   const [responseStates, setResponseStates] = useState<ResponseState>({});
   const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
   const [supplierDocuments, setSupplierDocuments] = useState<PDFDocument[]>([]);
-  const [_loadingSupplierDocs, setLoadingSupplierDocs] = useState(false);
+  const [loadingSupplierDocs, setLoadingSupplierDocs] = useState(false);
   const [initialPdfState, setInitialPdfState] = useState<{
     documentId: string | null;
     page: number | null;
@@ -539,6 +540,72 @@ export function ComparisonView({
     [rfpId]
   );
 
+  const handleOpenContextPDF = useCallback(async () => {
+    if (!rfpId || !requirement) return;
+
+    console.log("[ComparisonView] handleOpenContextPDF called", {
+      requirementId: requirement.id,
+      rf_document_id: requirement.rf_document_id,
+      position_in_pdf: requirement.position_in_pdf,
+      pageNumber: (requirement.position_in_pdf as any)?.page_number,
+    });
+
+    // Check if requirement has document reference and/or page number
+    if (
+      !requirement.rf_document_id &&
+      !requirement.position_in_pdf?.page_number
+    ) {
+      console.warn("Requirement has no document reference or page number");
+      return;
+    }
+
+    setLoadingSupplierDocs(true);
+    try {
+      // Fetch all RFP documents to find the one linked to this requirement
+      const response = await fetch(`/api/rfps/${rfpId}/documents`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch documents");
+      }
+      const data = await response.json();
+      const documents = data.documents || [];
+
+      // Find the document linked to this requirement
+      let targetDocumentId = requirement.rf_document_id;
+      if (!targetDocumentId && documents.length > 0) {
+        // If no specific document is linked, use the first cahier_charges document
+        const cahierChargesDoc = documents.find(
+          (doc: any) => doc.document_type === "cahier_charges"
+        );
+        targetDocumentId = cahierChargesDoc?.id || documents[0].id;
+      }
+
+      if (!targetDocumentId) {
+        console.warn("No document found to open");
+        return;
+      }
+
+      const pageNumber =
+        (requirement.position_in_pdf as any)?.page_number || null;
+      console.log("[ComparisonView] Opening PDF with state:", {
+        documentId: targetDocumentId,
+        page: pageNumber,
+      });
+
+      // Set up PDF viewer state
+      setInitialPdfState({
+        documentId: targetDocumentId,
+        page: pageNumber,
+      });
+
+      setSupplierDocuments(documents);
+      setIsPdfViewerOpen(true);
+    } catch (error) {
+      console.error("Error opening context PDF:", error);
+    } finally {
+      setLoadingSupplierDocs(false);
+    }
+  }, [rfpId, requirement]);
+
   // const handleDeleteBookmark = useCallback(
   //   (bookmark: PDFAnnotation) => {
   //     if (confirm("Êtes-vous sûr de vouloir supprimer ce signet ?")) {
@@ -817,8 +884,32 @@ export function ComparisonView({
             <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
               {requirement.context}
             </p>
-            <Button variant="outline" size="sm">
-              Ouvrir dans le PDF
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenContextPDF}
+              disabled={
+                loadingSupplierDocs ||
+                (!requirement.rf_document_id &&
+                  !requirement.position_in_pdf?.page_number)
+              }
+            >
+              {loadingSupplierDocs ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Ouverture...
+                </>
+              ) : (
+                <>
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Ouvrir dans le PDF
+                  {requirement.position_in_pdf?.page_number && (
+                    <span className="text-xs ml-2 opacity-70">
+                      (p. {requirement.position_in_pdf.page_number})
+                    </span>
+                  )}
+                </>
+              )}
             </Button>
           </div>
         )}
@@ -994,7 +1085,7 @@ export function ComparisonView({
           id: r.id,
           title: r.title,
           requirement_id_external: (r as any).requirement_id_external || r.id,
-          description: r.description,
+          description: r.description ?? undefined,
         }))}
         initialDocumentId={initialPdfState.documentId}
         initialPage={initialPdfState.page}
