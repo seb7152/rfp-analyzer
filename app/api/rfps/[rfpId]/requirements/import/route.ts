@@ -111,6 +111,14 @@ export async function POST(
       page_number?: number;
       rf_document_id?: string;
     }>;
+
+    if (validRequirements.length === 0) {
+      return NextResponse.json(
+        { error: "No valid requirements to import" },
+        { status: 400 }
+      );
+    }
+
     const requirementsResult = await importRequirements(
       params.rfpId,
       validRequirements,
