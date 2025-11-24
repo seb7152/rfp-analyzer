@@ -539,6 +539,55 @@ export function ComparisonView({
     [rfpId]
   );
 
+  const handleOpenContextPDF = useCallback(async () => {
+    if (!rfpId || !requirement) return;
+
+    // Check if requirement has document reference and/or page number
+    if (!requirement.rf_document_id && !requirement.position_in_pdf?.page_number) {
+      console.warn("Requirement has no document reference or page number");
+      return;
+    }
+
+    setLoadingSupplierDocs(true);
+    try {
+      // Fetch all RFP documents to find the one linked to this requirement
+      const response = await fetch(`/api/rfps/${rfpId}/documents`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch documents");
+      }
+      const data = await response.json();
+      const documents = data.documents || [];
+
+      // Find the document linked to this requirement
+      let targetDocumentId = requirement.rf_document_id;
+      if (!targetDocumentId && documents.length > 0) {
+        // If no specific document is linked, use the first cahier_charges document
+        const cahierChargesDoc = documents.find(
+          (doc: any) => doc.document_type === "cahier_charges"
+        );
+        targetDocumentId = cahierChargesDoc?.id || documents[0].id;
+      }
+
+      if (!targetDocumentId) {
+        console.warn("No document found to open");
+        return;
+      }
+
+      // Set up PDF viewer state
+      setInitialPdfState({
+        documentId: targetDocumentId,
+        page: requirement.position_in_pdf?.page_number || null,
+      });
+
+      setSupplierDocuments(documents);
+      setIsPdfViewerOpen(true);
+    } catch (error) {
+      console.error("Error opening context PDF:", error);
+    } finally {
+      setLoadingSupplierDocs(false);
+    }
+  }, [rfpId, requirement]);
+
   // const handleDeleteBookmark = useCallback(
   //   (bookmark: PDFAnnotation) => {
   //     if (confirm("Êtes-vous sûr de vouloir supprimer ce signet ?")) {
@@ -817,8 +866,28 @@ export function ComparisonView({
             <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
               {requirement.context}
             </p>
-            <Button variant="outline" size="sm">
-              Ouvrir dans le PDF
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenContextPDF}
+              disabled={loadingSupplierDocs || (!requirement.rf_document_id && !requirement.position_in_pdf?.page_number)}
+            >
+              {loadingSupplierDocs ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Ouverture...
+                </>
+              ) : (
+                <>
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Ouvrir dans le PDF
+                  {requirement.position_in_pdf?.page_number && (
+                    <span className="text-xs ml-2 opacity-70">
+                      (p. {requirement.position_in_pdf.page_number})
+                    </span>
+                  )}
+                </>
+              )}
             </Button>
           </div>
         )}
