@@ -66,3 +66,21 @@ CREATE POLICY "Admins can update requirement weights"
       )
     )
   );
+
+-- Migration 012: Add is_mandatory, is_optional, and display_order columns to requirements
+ALTER TABLE requirements
+ADD COLUMN IF NOT EXISTS is_mandatory BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE requirements
+ADD COLUMN IF NOT EXISTS is_optional BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE requirements
+ADD COLUMN IF NOT EXISTS display_order INTEGER;
+
+CREATE INDEX IF NOT EXISTS idx_requirements_is_mandatory ON requirements(rfp_id, is_mandatory);
+CREATE INDEX IF NOT EXISTS idx_requirements_is_optional ON requirements(rfp_id, is_optional);
+CREATE INDEX IF NOT EXISTS idx_requirements_display_order ON requirements(rfp_id, display_order);
+
+COMMENT ON COLUMN requirements.is_mandatory IS 'Flag indicating if this requirement is mandatory for suppliers';
+COMMENT ON COLUMN requirements.is_optional IS 'Flag indicating if this requirement is optional for suppliers';
+COMMENT ON COLUMN requirements.display_order IS 'Order in which requirements should be displayed in the UI';
