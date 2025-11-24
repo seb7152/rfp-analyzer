@@ -63,6 +63,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
   const [categoriesJson, setCategoriesJson] = useState<string>("");
   const [categoriesValid, setCategoriesValid] = useState(false);
   const [existingCategories, setExistingCategories] = useState<string[]>([]);
+  const [existingCategoryCodes, setExistingCategoryCodes] = useState<string[]>([]);
 
   // Step 2: Requirements
   const [requirementsJson, setRequirementsJson] = useState<string>("");
@@ -105,15 +106,19 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
       if (!response.ok) return;
 
       const treeData = await response.json();
-      // Extract all category titles from the tree (including nested ones)
+      // Extract all category titles and codes from the tree (including nested ones)
       const titles: string[] = [];
+      const codes: string[] = [];
 
-      const extractTitles = (nodes: any[]) => {
+      const extractCategories = (nodes: any[]) => {
         for (const node of nodes) {
           if (node.type === "category") {
             titles.push(node.title);
+            if (node.code) {
+              codes.push(node.code);
+            }
             if (node.children) {
-              extractTitles(
+              extractCategories(
                 node.children.filter((c: any) => c.type === "category")
               );
             }
@@ -121,8 +126,9 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
         }
       };
 
-      extractTitles(treeData);
+      extractCategories(treeData);
       setExistingCategories(titles);
+      setExistingCategoryCodes(codes);
     } catch (err) {
       console.error("Failed to load existing categories:", err);
     }
@@ -712,6 +718,9 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                             ) => {
                               const categoryExists =
                                 existingCategories.includes(
+                                  requirement.category_name
+                                ) ||
+                                existingCategoryCodes.includes(
                                   requirement.category_name
                                 );
                               return (

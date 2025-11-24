@@ -63,9 +63,16 @@ export async function POST(
     const categoryNames = (categories as unknown as Category[]).map(
       (c) => c.title
     );
+    const categoryCodes = (categories as unknown as Category[]).map(
+      (c) => c.code
+    );
 
-    // Validate JSON format
-    const validation = validateRequirementsJSON(body.json, categoryNames);
+    // Validate JSON format (pass both titles and codes)
+    const validation = validateRequirementsJSON(
+      body.json,
+      categoryNames,
+      categoryCodes
+    );
     if (!validation.valid) {
       console.error("Requirements validation failed:", validation.error);
       console.error("Available categories:", categoryNames);

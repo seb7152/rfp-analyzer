@@ -190,7 +190,8 @@ export function validateRequirementsRequest(
 
 export function validateRequirementsJSON(
   jsonString: string,
-  availableCategories: string[]
+  availableCategories: string[],
+  availableCategoryCodes?: string[]
 ): {
   valid: boolean;
   data?: ImportRequirementsRequest;
@@ -212,11 +213,16 @@ export function validateRequirementsJSON(
       };
     }
 
-    // Check that all referenced categories exist
+    // Check that all referenced categories exist (by title or code)
     const categorySet = new Set(availableCategories);
+    const categoryCodeSet = new Set(availableCategoryCodes || []);
 
     for (const requirement of normalizedData.requirements) {
-      if (!categorySet.has(requirement.category_name)) {
+      const categoryExists =
+        categorySet.has(requirement.category_name) ||
+        categoryCodeSet.has(requirement.category_name);
+
+      if (!categoryExists) {
         return {
           valid: false,
           error: `Requirement "${requirement.code}" references non-existent category "${requirement.category_name}"`,
