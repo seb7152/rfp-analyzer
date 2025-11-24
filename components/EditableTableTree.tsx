@@ -192,9 +192,8 @@ export function EditableTableTree({
       const hasChildren = item.children && item.children.length > 0;
       const isSelected = selectedRequirementId === item.id;
       const localWeight = weights[item.id] || 0;
-      const parentNode = getParentNode(item.id);
-      const parentRealWeight = parentNode ? weights[parentNode.id] || 0 : 100;
-      const realWeight = (localWeight * parentRealWeight) / 100;
+      const parentId = getParentId(item.id, data);
+      const realWeight = calculateRealWeight(item.id, parentId);
       const indentPixels = level * 24;
 
       const isCategory = item.type === "category";
