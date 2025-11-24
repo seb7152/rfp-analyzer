@@ -108,6 +108,8 @@ export async function POST(
       is_mandatory?: boolean;
       is_optional?: boolean;
       order?: number;
+      page_number?: number;
+      document_name?: string;
     }>;
     const requirementsResult = await importRequirements(
       params.rfpId,

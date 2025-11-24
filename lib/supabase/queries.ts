@@ -419,6 +419,8 @@ export async function importRequirements(
     is_mandatory?: boolean;
     is_optional?: boolean;
     order?: number;
+    page_number?: number;
+    document_name?: string;
   }>,
   userId: string
 ): Promise<{ success: boolean; count: number; error?: string }> {
@@ -463,6 +465,15 @@ export async function importRequirements(
       // Use explicit order if provided, otherwise auto-increment
       const displayOrder = req.order !== undefined ? req.order : currentOrder;
 
+      // Build position_in_pdf data if page information is provided
+      const positionInPdf =
+        req.page_number || req.document_name
+          ? {
+              page_number: req.page_number,
+              document_name: req.document_name,
+            }
+          : null;
+
       const { error } = await supabase.from("requirements").upsert(
         [
           {
@@ -476,6 +487,7 @@ export async function importRequirements(
             is_mandatory: req.is_mandatory ?? false,
             is_optional: req.is_optional ?? false,
             display_order: displayOrder,
+            position_in_pdf: positionInPdf,
             created_by: userId,
           },
         ],

@@ -8,11 +8,13 @@ import type { Requirement } from "@/lib/supabase/types";
 interface RequirementDetailsProps {
   requirement: Requirement | null;
   isLoading?: boolean;
+  onOpenPDF?: (pageNumber?: number) => void;
 }
 
 export function RequirementDetails({
   requirement,
   isLoading = false,
+  onOpenPDF,
 }: RequirementDetailsProps) {
   const [contextExpanded, setContextExpanded] = useState(false);
 
@@ -74,18 +76,27 @@ export function RequirementDetails({
                 </p>
               </div>
 
-              {requirement.pdf_url && (
+              {(requirement.position_in_pdf?.page_number || requirement.pdf_url) && (
                 <Button
                   variant="outline"
                   size="sm"
                   className="gap-2"
-                  onClick={() =>
-                    requirement.pdf_url &&
-                    window.open(requirement.pdf_url, "_blank")
-                  }
+                  onClick={() => {
+                    if (onOpenPDF) {
+                      const pageNumber = (requirement.position_in_pdf as any)?.page_number;
+                      onOpenPDF(pageNumber);
+                    } else if (requirement.pdf_url) {
+                      window.open(requirement.pdf_url, "_blank");
+                    }
+                  }}
                 >
                   <ExternalLink className="w-4 h-4" />
                   Open in PDF
+                  {(requirement.position_in_pdf as any)?.page_number && (
+                    <span className="text-xs ml-1 opacity-70">
+                      (p. {(requirement.position_in_pdf as any).page_number})
+                    </span>
+                  )}
                 </Button>
               )}
             </div>

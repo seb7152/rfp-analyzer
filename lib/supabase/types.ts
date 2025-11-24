@@ -292,6 +292,8 @@ export interface ImportRequirementPayload {
   category_name: string;
   is_mandatory?: boolean;
   is_optional?: boolean;
+  page_number?: number;
+  document_name?: string;
 }
 
 export interface ImportRequirementsRequest {
