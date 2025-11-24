@@ -63,7 +63,9 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
   const [categoriesJson, setCategoriesJson] = useState<string>("");
   const [categoriesValid, setCategoriesValid] = useState(false);
   const [existingCategories, setExistingCategories] = useState<string[]>([]);
-  const [existingCategoryCodes, setExistingCategoryCodes] = useState<string[]>([]);
+  const [existingCategoryCodes, setExistingCategoryCodes] = useState<string[]>(
+    []
+  );
 
   // Step 2: Requirements
   const [requirementsJson, setRequirementsJson] = useState<string>("");

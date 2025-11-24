@@ -76,13 +76,15 @@ export function RequirementDetails({
                 </p>
               </div>
 
-              {(requirement.rf_document_id || (requirement.position_in_pdf as any)?.page_number) && (
+              {(requirement.rf_document_id ||
+                (requirement.position_in_pdf as any)?.page_number) && (
                 <Button
                   variant="outline"
                   size="sm"
                   className="gap-2"
                   onClick={() => {
-                    const pageNumber = (requirement.position_in_pdf as any)?.page_number;
+                    const pageNumber = (requirement.position_in_pdf as any)
+                      ?.page_number;
                     if (onOpenPDF) {
                       onOpenPDF(pageNumber);
                     }

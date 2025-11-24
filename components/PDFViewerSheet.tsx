@@ -59,16 +59,30 @@ export function PDFViewerSheet({
 
   // Restore PDF page position by appending page fragment to URL
   const getPdfUrlWithPosition = (docId: string, baseUrl: string): string => {
+    console.log("[PDFViewerSheet] getPdfUrlWithPosition", {
+      docId,
+      initialPage,
+      initialDocumentId,
+      isMatch: docId === initialDocumentId,
+    });
+
     // If initialPage is provided and matches current doc, use it
     if (initialPage && docId === initialDocumentId) {
+      console.log(
+        `[PDFViewerSheet] Using initialPage: ${initialPage} for doc ${docId}`
+      );
       return `${baseUrl}#page=${initialPage}`;
     }
 
     const savedPage = localStorage.getItem(getPdfPositionKey(docId));
     if (savedPage) {
+      console.log(
+        `[PDFViewerSheet] Using savedPage: ${savedPage} for doc ${docId}`
+      );
       // Append page fragment to URL - PDF.js viewer will respect this
       return `${baseUrl}#page=${savedPage}`;
     }
+    console.log("[PDFViewerSheet] No page number, using baseUrl");
     return baseUrl;
   };
 

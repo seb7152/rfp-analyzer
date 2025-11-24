@@ -71,7 +71,12 @@ export function PDFViewerWithAnnotations({
 
   // Update current page when initialPage prop changes
   useEffect(() => {
+    console.log("[PDFViewerWithAnnotations] initialPage changed:", {
+      initialPage,
+      currentPage,
+    });
     if (initialPage) {
+      console.log(`[PDFViewerWithAnnotations] Setting currentPage to ${initialPage}`);
       setCurrentPage(initialPage);
     }
   }, [initialPage]);

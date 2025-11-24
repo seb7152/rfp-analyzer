@@ -94,7 +94,8 @@ export function DocumentSelector({
           <DialogTitle>Select Document</DialogTitle>
           <DialogDescription>
             Multiple specification documents found for this RFP. Choose which
-            document contains this requirement ({requirement.requirement_id_external}).
+            document contains this requirement (
+            {requirement.requirement_id_external}).
           </DialogDescription>
         </DialogHeader>
 

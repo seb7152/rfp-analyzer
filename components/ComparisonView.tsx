@@ -543,8 +543,18 @@ export function ComparisonView({
   const handleOpenContextPDF = useCallback(async () => {
     if (!rfpId || !requirement) return;
 
+    console.log("[ComparisonView] handleOpenContextPDF called", {
+      requirementId: requirement.id,
+      rf_document_id: requirement.rf_document_id,
+      position_in_pdf: requirement.position_in_pdf,
+      pageNumber: (requirement.position_in_pdf as any)?.page_number,
+    });
+
     // Check if requirement has document reference and/or page number
-    if (!requirement.rf_document_id && !requirement.position_in_pdf?.page_number) {
+    if (
+      !requirement.rf_document_id &&
+      !requirement.position_in_pdf?.page_number
+    ) {
       console.warn("Requirement has no document reference or page number");
       return;
     }
@@ -574,10 +584,16 @@ export function ComparisonView({
         return;
       }
 
+      const pageNumber = (requirement.position_in_pdf as any)?.page_number || null;
+      console.log("[ComparisonView] Opening PDF with state:", {
+        documentId: targetDocumentId,
+        page: pageNumber,
+      });
+
       // Set up PDF viewer state
       setInitialPdfState({
         documentId: targetDocumentId,
-        page: requirement.position_in_pdf?.page_number || null,
+        page: pageNumber,
       });
 
       setSupplierDocuments(documents);
@@ -871,7 +887,11 @@ export function ComparisonView({
               variant="outline"
               size="sm"
               onClick={handleOpenContextPDF}
-              disabled={loadingSupplierDocs || (!requirement.rf_document_id && !requirement.position_in_pdf?.page_number)}
+              disabled={
+                loadingSupplierDocs ||
+                (!requirement.rf_document_id &&
+                  !requirement.position_in_pdf?.page_number)
+              }
             >
               {loadingSupplierDocs ? (
                 <>

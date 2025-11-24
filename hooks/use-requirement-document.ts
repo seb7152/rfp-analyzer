@@ -74,13 +74,10 @@ export function useRequirementDocument(
   }, [fetchDocuments]);
 
   // Select and link document to requirement
-  const selectDocument = useCallback(
-    async (documentId: string) => {
-      setSelectedDocumentId(documentId);
-      setShowDocumentSelector(false);
-    },
-    []
-  );
+  const selectDocument = useCallback(async (documentId: string) => {
+    setSelectedDocumentId(documentId);
+    setShowDocumentSelector(false);
+  }, []);
 
   // Dismiss the selector modal
   const dismissDocumentSelector = useCallback(() => {

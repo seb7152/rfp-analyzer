@@ -144,7 +144,8 @@ export function validateRequirementPayload(
     (req.page_number === undefined ||
       (typeof req.page_number === "number" && req.page_number > 0)) &&
     (req.rf_document_id === undefined ||
-      (typeof req.rf_document_id === "string" && req.rf_document_id.trim().length > 0))
+      (typeof req.rf_document_id === "string" &&
+        req.rf_document_id.trim().length > 0))
   );
 }
 
