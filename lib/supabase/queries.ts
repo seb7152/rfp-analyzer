@@ -27,7 +27,7 @@ export async function getRequirements(rfpId: string): Promise<Requirement[]> {
       level,
       weight,
       position_in_pdf,
-      pdf_url,
+      rf_document_id,
       created_at,
       updated_at,
       created_by
@@ -67,7 +67,7 @@ export async function getRequirement(
       level,
       weight,
       position_in_pdf,
-      pdf_url,
+      rf_document_id,
       created_at,
       updated_at,
       created_by
@@ -136,7 +136,7 @@ export async function getRequirementChildren(
       level,
       weight,
       position_in_pdf,
-      pdf_url,
+      rf_document_id,
       created_at,
       updated_at,
       created_by
@@ -222,7 +222,7 @@ export async function getRequirementsByLevel(
       level,
       weight,
       position_in_pdf,
-      pdf_url,
+      rf_document_id,
       created_at,
       updated_at,
       created_by
@@ -270,7 +270,7 @@ export async function searchRequirements(
       level,
       weight,
       position_in_pdf,
-      pdf_url,
+      rf_document_id,
       created_at,
       updated_at,
       created_by
@@ -420,7 +420,7 @@ export async function importRequirements(
     is_optional?: boolean;
     order?: number;
     page_number?: number;
-    document_name?: string;
+    rf_document_id?: string;
   }>,
   userId: string
 ): Promise<{ success: boolean; count: number; error?: string }> {
@@ -466,13 +466,11 @@ export async function importRequirements(
       const displayOrder = req.order !== undefined ? req.order : currentOrder;
 
       // Build position_in_pdf data if page information is provided
-      const positionInPdf =
-        req.page_number || req.document_name
-          ? {
-              page_number: req.page_number,
-              document_name: req.document_name,
-            }
-          : null;
+      const positionInPdf = req.page_number
+        ? {
+            page_number: req.page_number,
+          }
+        : null;
 
       const { error } = await supabase.from("requirements").upsert(
         [
@@ -488,6 +486,7 @@ export async function importRequirements(
             is_optional: req.is_optional ?? false,
             display_order: displayOrder,
             position_in_pdf: positionInPdf,
+            rf_document_id: req.rf_document_id || null,
             created_by: userId,
           },
         ],

@@ -143,8 +143,8 @@ export function validateRequirementPayload(
     (req.is_optional === undefined || typeof req.is_optional === "boolean") &&
     (req.page_number === undefined ||
       (typeof req.page_number === "number" && req.page_number > 0)) &&
-    (req.document_name === undefined ||
-      (typeof req.document_name === "string" && req.document_name.trim().length > 0))
+    (req.rf_document_id === undefined ||
+      (typeof req.rf_document_id === "string" && req.rf_document_id.trim().length > 0))
   );
 }
 
@@ -213,7 +213,7 @@ export function validateRequirementsJSON(
       return {
         valid: false,
         error:
-          "Invalid requirements format. Check required fields: code, title, description, weight (0-1), category_name. Optional: id, is_mandatory, is_optional, page_number, document_name",
+          "Invalid requirements format. Check required fields: code, title, description, weight (0-1), category_name. Optional: id, is_mandatory, is_optional, page_number, rf_document_id",
       };
     }
 

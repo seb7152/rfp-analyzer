@@ -15,7 +15,7 @@ export interface Requirement {
   is_mandatory: boolean;
   is_optional: boolean;
   position_in_pdf: {
-    page?: number;
+    page_number?: number;
     coordinates?: {
       x: number;
       y: number;
@@ -23,7 +23,7 @@ export interface Requirement {
       height: number;
     };
   } | null;
-  pdf_url: string | null;
+  rf_document_id: string | null;
   created_at: string;
   updated_at: string;
   created_by: string | null;

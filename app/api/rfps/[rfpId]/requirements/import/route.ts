@@ -109,7 +109,7 @@ export async function POST(
       is_optional?: boolean;
       order?: number;
       page_number?: number;
-      document_name?: string;
+      rf_document_id?: string;
     }>;
     const requirementsResult = await importRequirements(
       params.rfpId,

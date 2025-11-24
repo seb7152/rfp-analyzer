@@ -88,7 +88,7 @@ export interface Requirement {
   level: 1 | 2 | 3 | 4;
   weight: number;
   position_in_pdf: Record<string, unknown> | null;
-  pdf_url: string | null;
+  rf_document_id: string | null;
   created_at: string;
   updated_at: string;
   created_by: string | null;
@@ -293,7 +293,7 @@ export interface ImportRequirementPayload {
   is_mandatory?: boolean;
   is_optional?: boolean;
   page_number?: number;
-  document_name?: string;
+  rf_document_id?: string;
 }
 
 export interface ImportRequirementsRequest {
