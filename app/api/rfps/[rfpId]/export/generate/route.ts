@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import * as XLSX from "xlsx";
 import { v4 as uuidv4 } from "uuid";
 
 export async function POST(
@@ -159,6 +158,7 @@ export async function POST(
     }
 
     const templateBuffer = await templateResponse.arrayBuffer();
+    const { default: XLSX } = await import("xlsx");
     const workbook = XLSX.read(templateBuffer);
 
     // Get the specified worksheet
