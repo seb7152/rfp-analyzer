@@ -15,7 +15,7 @@ export function useRFPs(organizationId: string | null) {
         `/api/organizations/${organizationId}/rfps`,
         {
           credentials: "include",
-        },
+        }
       );
 
       if (!response.ok) {

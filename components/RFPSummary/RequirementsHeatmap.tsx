@@ -245,7 +245,7 @@ export function RequirementsHeatmap({ rfpId }: RequirementsHeatmapProps) {
                   </td>
                   {suppliers.map((supplier) => {
                     const response = responseMap.get(
-                      `${req.id}-${supplier.id}`,
+                      `${req.id}-${supplier.id}`
                     );
                     const score =
                       response?.manual_score ?? response?.ai_score ?? null;
@@ -261,7 +261,7 @@ export function RequirementsHeatmap({ rfpId }: RequirementsHeatmapProps) {
                             "w-full h-8 rounded flex items-center justify-center text-xs font-bold transition-colors cursor-help shadow-sm",
                             mode === "status"
                               ? getStatusColor(status)
-                              : getScoreColor(score),
+                              : getScoreColor(score)
                           )}
                           title={`${supplier.name} - ${req.code}\nStatus: ${status}\nNote: ${formatScore(score)}${response?.manual_comment ? `\nCommentaire: ${response.manual_comment}` : ""}`}
                         >
@@ -291,7 +291,7 @@ export function RequirementsHeatmap({ rfpId }: RequirementsHeatmapProps) {
 
                   const totalRequirements = flatRequirements.length;
                   const passCount = supplierResponses.filter(
-                    (r) => r.status === "pass",
+                    (r) => r.status === "pass"
                   ).length;
                   const passPercentage =
                     totalRequirements > 0
@@ -299,16 +299,16 @@ export function RequirementsHeatmap({ rfpId }: RequirementsHeatmapProps) {
                       : 0;
 
                   const mandatoryRequirements = flatRequirements.filter(
-                    (req) => req.is_mandatory,
+                    (req) => req.is_mandatory
                   );
                   const mandatoryTotal = mandatoryRequirements.length;
                   const mandatoryPassCount = mandatoryRequirements.filter(
                     (req) => {
                       const response = responseMap.get(
-                        `${req.id}-${supplier.id}`,
+                        `${req.id}-${supplier.id}`
                       );
                       return response?.status === "pass";
-                    },
+                    }
                   ).length;
                   const mandatoryPassPercentage =
                     mandatoryTotal > 0
@@ -316,16 +316,16 @@ export function RequirementsHeatmap({ rfpId }: RequirementsHeatmapProps) {
                       : 0;
 
                   const optionalRequirements = flatRequirements.filter(
-                    (req) => req.is_optional,
+                    (req) => req.is_optional
                   );
                   const optionalTotal = optionalRequirements.length;
                   const optionalPassCount = optionalRequirements.filter(
                     (req) => {
                       const response = responseMap.get(
-                        `${req.id}-${supplier.id}`,
+                        `${req.id}-${supplier.id}`
                       );
                       return response?.status === "pass";
-                    },
+                    }
                   ).length;
                   const optionalPassPercentage =
                     optionalTotal > 0

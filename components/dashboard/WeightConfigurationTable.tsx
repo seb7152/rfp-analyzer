@@ -72,7 +72,7 @@ export function WeightConfigurationTable({
     const categoryNodes: WeightNode[] = categories.map((cat) => {
       // Trouver les exigences pour cette catégorie
       const categoryRequirements = requirements.filter(
-        (req) => req.categoryId === cat.id,
+        (req) => req.categoryId === cat.id
       );
 
       // Créer les nœuds d'exigences
@@ -86,7 +86,7 @@ export function WeightConfigurationTable({
           relativeWeight: 0, // Sera calculé plus tard
           categoryId: req.categoryId,
           parentId: req.categoryId,
-        }),
+        })
       );
 
       return {
@@ -107,7 +107,7 @@ export function WeightConfigurationTable({
           // Pour les catégories, le poids relatif est par rapport au total des catégories
           const totalCategoryWeight = nodes.reduce(
             (sum, cat) => sum + cat.absoluteWeight,
-            0,
+            0
           );
           const relativeWeight =
             totalCategoryWeight > 0
@@ -120,7 +120,7 @@ export function WeightConfigurationTable({
           if (updatedNode.children && updatedNode.children.length > 0) {
             const totalRequirementWeight = updatedNode.children.reduce(
               (sum, req) => sum + req.absoluteWeight,
-              0,
+              0
             );
             updatedNode.children = updatedNode.children.map((child) => ({
               ...child,
@@ -160,7 +160,7 @@ export function WeightConfigurationTable({
     (
       nodeId: string,
       nodeType: "category" | "requirement",
-      newValue: number,
+      newValue: number
     ) => {
       setWeights((prev) => {
         const updated = { ...prev };
@@ -178,7 +178,7 @@ export function WeightConfigurationTable({
         return updated;
       });
     },
-    [onWeightsChange],
+    [onWeightsChange]
   );
 
   // Définition des colonnes
@@ -248,7 +248,7 @@ export function WeightConfigurationTable({
         },
       },
     ],
-    [handleWeightChange],
+    [handleWeightChange]
   );
 
   // Configuration de la table

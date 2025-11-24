@@ -6,7 +6,7 @@ import type { AnnotationRect } from "../types/annotation.types";
 export function screenToPDFCoordinates(
   screenRects: DOMRect[],
   containerRect: DOMRect,
-  scale: number,
+  scale: number
 ): AnnotationRect[] {
   return screenRects.map((rect) => ({
     x: (rect.left - containerRect.left) / scale,
@@ -21,7 +21,7 @@ export function screenToPDFCoordinates(
  */
 export function pdfToScreenCoordinates(
   pdfRects: AnnotationRect[],
-  scale: number,
+  scale: number
 ): AnnotationRect[] {
   return pdfRects.map((rect) => ({
     x: rect.x * scale,
@@ -35,7 +35,7 @@ export function pdfToScreenCoordinates(
  * Fusionne les rectangles qui se chevauchent sur la même ligne
  */
 export function mergeOverlappingRects(
-  rects: AnnotationRect[],
+  rects: AnnotationRect[]
 ): AnnotationRect[] {
   if (rects.length === 0) return [];
 
@@ -73,7 +73,7 @@ export function mergeOverlappingRects(
 export function normalizeCoordinates(
   rect: AnnotationRect,
   pageHeight: number,
-  rotation: number = 0,
+  rotation: number = 0
 ): AnnotationRect {
   let normalized = { ...rect };
 

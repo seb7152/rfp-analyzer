@@ -56,7 +56,7 @@ export function usePDFAnnotationNavigation() {
   const context = useContext(PDFAnnotationContext);
   if (!context) {
     throw new Error(
-      "usePDFAnnotationNavigation must be used within PDFAnnotationProvider",
+      "usePDFAnnotationNavigation must be used within PDFAnnotationProvider"
     );
   }
   return context;

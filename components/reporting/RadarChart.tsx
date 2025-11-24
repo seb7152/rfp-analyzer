@@ -57,7 +57,7 @@ export function RadarChart({
 
         // Fetch configuration
         const configResponse = await fetch(
-          `/api/rfps/${rfpId}/dashboard-configs/${configId}`,
+          `/api/rfps/${rfpId}/dashboard-configs/${configId}`
         );
         if (!configResponse.ok) {
           throw new Error("Failed to fetch configuration");
@@ -67,7 +67,7 @@ export function RadarChart({
 
         // Fetch chart data
         const dataResponse = await fetch(
-          `/api/rfps/${rfpId}/dashboard-configs/${configId}/data`,
+          `/api/rfps/${rfpId}/dashboard-configs/${configId}/data`
         );
         if (!dataResponse.ok) {
           throw new Error("Failed to fetch chart data");
@@ -91,7 +91,7 @@ export function RadarChart({
     setShowModal(false);
     // Refresh the data
     const dataResponse = await fetch(
-      `/api/rfps/${rfpId}/dashboard-configs/${configId}/data`,
+      `/api/rfps/${rfpId}/dashboard-configs/${configId}/data`
     );
     if (dataResponse.ok) {
       const chartData = await dataResponse.json();

@@ -17,7 +17,7 @@ interface BulkAssignRequest {
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -31,7 +31,7 @@ export async function POST(
     if (!Array.isArray(assignments) || assignments.length === 0) {
       return NextResponse.json(
         { error: "Assignments array is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -98,7 +98,7 @@ export async function POST(
         .eq("requirement_id", requirementId);
 
       const existingTagIds = new Set(
-        existingRelations?.map((r: any) => r.tag_id) || [],
+        existingRelations?.map((r: any) => r.tag_id) || []
       );
 
       // Add only new tags (avoid duplicates)
@@ -123,7 +123,7 @@ export async function POST(
         console.error("Error bulk assigning tags:", insertError);
         return NextResponse.json(
           { error: "Failed to assign tags" },
-          { status: 500 },
+          { status: 500 }
         );
       }
     }
@@ -133,13 +133,13 @@ export async function POST(
         success: true,
         assignedCount: relationsToInsert.length,
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error) {
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

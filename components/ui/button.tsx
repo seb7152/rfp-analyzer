@@ -378,7 +378,7 @@ const buttonVariants = cva(
       radius: "md",
       appearance: "default",
     },
-  },
+  }
 );
 
 const Button = React.forwardRef<
@@ -405,7 +405,7 @@ const Button = React.forwardRef<
       placeholder = false,
       ...props
     },
-    ref,
+    ref
   ) => {
     const Comp = asChild ? SlotPrimitive.Slot : "button";
     return (
@@ -425,13 +425,13 @@ const Button = React.forwardRef<
             underline,
             className,
           }),
-          asChild && props.disabled && "pointer-events-none opacity-50",
+          asChild && props.disabled && "pointer-events-none opacity-50"
         )}
         {...(selected && { "data-state": "open" })}
         {...props}
       />
     );
-  },
+  }
 );
 Button.displayName = "Button";
 

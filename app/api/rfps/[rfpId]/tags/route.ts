@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -40,7 +40,7 @@ export async function GET(
       console.error("Error fetching RFP:", rfpError);
       return NextResponse.json(
         { error: "Failed to verify RFP" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -59,7 +59,7 @@ export async function GET(
     if (userOrgError || !userOrg) {
       return NextResponse.json(
         { error: "Access denied to this RFP" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -74,7 +74,7 @@ export async function GET(
       console.error("Error fetching tags:", tagsError);
       return NextResponse.json(
         { error: "Failed to fetch tags" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -83,7 +83,7 @@ export async function GET(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -95,7 +95,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -109,7 +109,7 @@ export async function POST(
     if (!name || name.trim().length === 0) {
       return NextResponse.json(
         { error: "Tag name is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -149,7 +149,7 @@ export async function POST(
     ) {
       return NextResponse.json(
         { error: "Permission denied to create tags" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -174,12 +174,12 @@ export async function POST(
       if (createError.message.includes("unique")) {
         return NextResponse.json(
           { error: "Tag with this name already exists for this RFP" },
-          { status: 409 },
+          { status: 409 }
         );
       }
       return NextResponse.json(
         { error: "Failed to create tag" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -188,7 +188,7 @@ export async function POST(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

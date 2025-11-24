@@ -174,14 +174,14 @@ function CategoryTagDialog({ node, tags, onApply }: CategoryTagDialogProps) {
 export function RequirementsTab({ rfpId }: RequirementsTabProps) {
   const [data, setData] = useState<TreeNode[]>([]);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
-    new Set(),
+    new Set()
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [requirementMetadata, setRequirementMetadata] =
     useState<RequirementMetadata>({});
   const [initialMetadata, setInitialMetadata] = useState<RequirementMetadata>(
-    {},
+    {}
   );
   const [tags, setTags] = useState<TagData[]>([]);
   const [newTagName, setNewTagName] = useState("");
@@ -195,7 +195,7 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(
-    null,
+    null
   );
 
   // Check for unsaved changes
@@ -238,7 +238,7 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
 
         if (!treeResponse.ok) {
           throw new Error(
-            `Error ${treeResponse.status}: ${treeResponse.statusText}`,
+            `Error ${treeResponse.status}: ${treeResponse.statusText}`
           );
         }
 
@@ -284,13 +284,13 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ requirementIds }),
                   cache: "no-store",
-                },
+                }
               );
               if (bulkTagsResponse.ok) {
                 const bulkTagsData = await bulkTagsResponse.json();
                 const tagsByRequirement = bulkTagsData.tagsByRequirement || {};
                 for (const [requirementId, tags] of Object.entries(
-                  tagsByRequirement,
+                  tagsByRequirement
                 )) {
                   metadata[requirementId].tags = (tags as any[]) || [];
                 }
@@ -302,7 +302,7 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
         } else {
           // Fall back to default tags if API fails
           setTags(
-            DEFAULT_TAGS.map((tag, idx) => ({ id: `tag-${idx}`, ...tag })),
+            DEFAULT_TAGS.map((tag, idx) => ({ id: `tag-${idx}`, ...tag }))
           );
         }
         setRequirementMetadata(metadata);
@@ -380,7 +380,7 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
 
   const toggleCheckbox = (
     requirementId: string,
-    field: "isOptional" | "isMandatory",
+    field: "isOptional" | "isMandatory"
   ) => {
     setRequirementMetadata((prev) => {
       const current = prev[requirementId] || {
@@ -477,7 +477,7 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
         const updated = { ...prev };
         for (const reqId in updated) {
           updated[reqId].tags = updated[reqId].tags.filter(
-            (t) => t.id !== tagId,
+            (t) => t.id !== tagId
           );
         }
         return updated;
@@ -501,7 +501,7 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
   // Get all requirements under a category (cascade)
   const getChildRequirements = (
     nodeId: string,
-    nodes: TreeNode[] = data,
+    nodes: TreeNode[] = data
   ): string[] => {
     const requirementIds: string[] = [];
 
@@ -570,7 +570,7 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
         [];
 
       for (const [requirementId, metadata] of Object.entries(
-        requirementMetadata,
+        requirementMetadata
       )) {
         if (metadata.tags && metadata.tags.length > 0) {
           // Filter out fallback tags (those with non-UUID IDs like "tag-0")
@@ -605,7 +605,7 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
       }> = [];
 
       for (const [requirementId, metadata] of Object.entries(
-        requirementMetadata,
+        requirementMetadata
       )) {
         // Check if flags have changed from initial state
         const initialMeta = initialMetadata[requirementId];
@@ -630,13 +630,13 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ updates: flagUpdates }),
-          },
+          }
         );
 
         if (!flagResponse.ok) {
           const error = await flagResponse.json();
           throw new Error(
-            error.error || "Failed to save mandatory/optional flags",
+            error.error || "Failed to save mandatory/optional flags"
           );
         }
       }
@@ -661,7 +661,7 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
 
   const renderRows = (
     items: TreeNode[],
-    level: number = 0,
+    level: number = 0
   ): React.ReactNode[] => {
     return items.map((node) => [
       <TableRow
@@ -763,7 +763,7 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
                     {tags.map((tag) => {
                       const isSelected =
                         requirementMetadata[node.id]?.tags.some(
-                          (t) => t.id === tag.id,
+                          (t) => t.id === tag.id
                         ) || false;
                       return (
                         <label
@@ -797,7 +797,7 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
                 tags={tags}
                 onApply={(selectedTagIds) => {
                   const selectedTags = tags.filter((t) =>
-                    selectedTagIds.has(t.id),
+                    selectedTagIds.has(t.id)
                   );
                   applyTagsToCategory(node.id, selectedTags);
                 }}

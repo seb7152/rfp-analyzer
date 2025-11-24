@@ -59,7 +59,7 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
         setLoading(true);
         // Use the optimized endpoint with includeStats=true
         const response = await fetch(
-          `/api/rfps/${rfpId}/suppliers?includeStats=true`,
+          `/api/rfps/${rfpId}/suppliers?includeStats=true`
         );
         if (!response.ok) throw new Error("Failed to fetch suppliers");
 
@@ -81,7 +81,7 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
 
         // Add ranking position and sort by score
         const sortedSuppliers = [...suppliersWithDocs].sort(
-          (a, b) => b.scorePercentage - a.scorePercentage,
+          (a, b) => b.scorePercentage - a.scorePercentage
         );
         const suppliersWithRanking = sortedSuppliers.map((supplier, index) => ({
           ...supplier,
@@ -91,7 +91,7 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
         setSuppliers(suppliersWithRanking);
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Une erreur est survenue",
+          err instanceof Error ? err.message : "Une erreur est survenue"
         );
       } finally {
         setLoading(false);
@@ -152,7 +152,7 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
     (supplier, index) => ({
       ...supplier,
       currentRanking: sortBy === "score" ? supplier.ranking : index + 1,
-    }),
+    })
   );
 
   const SortIcon = ({ column }: { column: SortBy }) => {
@@ -212,7 +212,7 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
                   className="cursor-pointer hover:bg-gray-50"
                   onClick={() =>
                     setExpandedSupplier(
-                      expandedSupplier === supplier.id ? null : supplier.id,
+                      expandedSupplier === supplier.id ? null : supplier.id
                     )
                   }
                 >

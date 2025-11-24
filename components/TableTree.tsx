@@ -39,7 +39,7 @@ export function TableTree({
 }: TableTreeProps) {
   const renderRows = (
     items: TreeNode[],
-    level: number = 0,
+    level: number = 0
   ): React.ReactNode[] => {
     return items.flatMap((item) => {
       const isExpanded = expandedNodeIds.has(item.id);

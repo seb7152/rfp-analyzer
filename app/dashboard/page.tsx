@@ -51,7 +51,7 @@ export default function DashboardPage() {
   const activeRFP =
     rfps?.find((rfp) => rfp.status === "in_progress") || rfps?.[0] || null;
   const { percentage: progressPercentage } = useRFPCompletion(
-    activeRFP?.id || null,
+    activeRFP?.id || null
   );
 
   if (authLoading || orgLoading) {
@@ -267,7 +267,7 @@ export default function DashboardPage() {
             onDelete={async (rfpId) => {
               if (
                 !confirm(
-                  "Are you sure you want to delete this RFP? This action cannot be undone.",
+                  "Are you sure you want to delete this RFP? This action cannot be undone."
                 )
               ) {
                 return;
@@ -405,7 +405,7 @@ export default function DashboardPage() {
                       >
                         {entry}
                       </div>
-                    ),
+                    )
                   )}
                 </CardContent>
               </Card>

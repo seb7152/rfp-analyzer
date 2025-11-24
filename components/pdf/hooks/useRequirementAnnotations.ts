@@ -5,7 +5,7 @@ import type { PDFAnnotation } from "../types/annotation.types";
 
 // Helper pour mapper les champs snake_case -> camelCase (dupliqué de usePDFAnnotations pour l'instant)
 const mapAnnotationFromDB = (
-  raw: any,
+  raw: any
 ): PDFAnnotation & { documentName?: string } => ({
   id: raw.id,
   organizationId: raw.organization_id,
@@ -41,7 +41,7 @@ export function useRequirementAnnotations(requirementId: string) {
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },
-          },
+          }
         );
 
         if (!response.ok) {
@@ -68,7 +68,7 @@ export function useRequirementAnnotations(requirementId: string) {
         {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
 
       if (!response.ok) {

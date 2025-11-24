@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function POST(
   request: NextRequest,
-  context: { params: Promise<{ rfpId: string }> },
+  context: { params: Promise<{ rfpId: string }> }
 ) {
   try {
     const { rfpId } = await context.params;
@@ -19,14 +19,14 @@ export async function POST(
     if (!rfpId) {
       return NextResponse.json(
         { error: "RFP ID is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     if (!Array.isArray(updates) || updates.length === 0) {
       return NextResponse.json(
         { error: "Updates array is required and must not be empty" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -35,7 +35,7 @@ export async function POST(
       if (!update.requirementId) {
         return NextResponse.json(
           { error: "Each update must have a requirementId" },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -48,7 +48,7 @@ export async function POST(
             error:
               "Each update must have at least one flag (is_mandatory or is_optional)",
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -58,7 +58,7 @@ export async function POST(
           {
             error: `Requirement ${update.requirementId} cannot be both mandatory and optional`,
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
     }
@@ -96,7 +96,7 @@ export async function POST(
     if (userOrgError || !userOrg) {
       return NextResponse.json(
         { error: "Access denied to this RFP" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -122,7 +122,7 @@ export async function POST(
       if (updateError) {
         console.error(
           `Error updating requirement ${update.requirementId}:`,
-          updateError,
+          updateError
         );
         results.push({
           requirementId: update.requirementId,
@@ -148,13 +148,13 @@ export async function POST(
         successCount,
         failureCount,
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -17,7 +17,7 @@ import type { GetRFPAssignmentsResponse } from "@/lib/supabase/types";
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -38,7 +38,7 @@ export async function GET(
     if (rfpError || !rfp) {
       return NextResponse.json(
         { error: "RFP not found or access denied" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -53,7 +53,7 @@ export async function GET(
         access_level,
         assigned_at,
         assigned_by
-      `,
+      `
       )
       .eq("rfp_id", rfpId)
       .order("assigned_at", { ascending: false });
@@ -81,7 +81,7 @@ export async function GET(
           acc[user.id] = user;
           return acc;
         },
-        {},
+        {}
       );
     }
 
@@ -95,7 +95,7 @@ export async function GET(
         assigned_at: assignment.assigned_at,
         assigned_by: assignment.assigned_by,
         user: users[assignment.user_id] || null,
-      }),
+      })
     );
 
     const response: GetRFPAssignmentsResponse = {
@@ -109,7 +109,7 @@ export async function GET(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -134,7 +134,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -162,14 +162,14 @@ export async function POST(
     if (!user_id || !access_level) {
       return NextResponse.json(
         { error: "user_id and access_level are required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     if (!["owner", "evaluator", "viewer"].includes(access_level)) {
       return NextResponse.json(
         { error: "Invalid access_level" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -183,7 +183,7 @@ export async function POST(
     if (rfpError || !rfp) {
       return NextResponse.json(
         { error: "RFP not found or access denied" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -204,7 +204,7 @@ export async function POST(
           error:
             "Access denied. Only RFP owner or organization admin can assign users.",
         },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -232,7 +232,7 @@ export async function POST(
         {
           error: "User does not belong to this organization",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -247,7 +247,7 @@ export async function POST(
     if (existingAssignment) {
       return NextResponse.json(
         { error: "User is already assigned to this RFP" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -272,7 +272,7 @@ export async function POST(
         ...assignment,
         user: userToAssign,
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error) {
     console.error("Error creating RFP assignment:", error);
@@ -280,7 +280,7 @@ export async function POST(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

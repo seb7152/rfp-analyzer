@@ -43,7 +43,7 @@ export async function GET(_request: Request, { params }: { params: Params }) {
           full_name,
           avatar_url
         )
-      `,
+      `
       )
       .eq("organization_id", organizationId)
       .order("joined_at", { ascending: false });
@@ -51,7 +51,7 @@ export async function GET(_request: Request, { params }: { params: Params }) {
     if (membersError) {
       return NextResponse.json(
         { error: "Failed to fetch members", message: membersError.message },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -70,7 +70,7 @@ export async function GET(_request: Request, { params }: { params: Params }) {
     console.error("Get members error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

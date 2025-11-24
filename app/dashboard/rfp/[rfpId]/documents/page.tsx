@@ -33,7 +33,7 @@ export default async function RFPDocumentsPage({
   if (rfpError || !rfp) {
     console.error(
       `[RFP Documents Page] Error fetching RFP ${rfpId}:`,
-      rfpError || "RFP not found",
+      rfpError || "RFP not found"
     );
     redirect("/dashboard");
   }

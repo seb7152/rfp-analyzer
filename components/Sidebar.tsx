@@ -24,7 +24,7 @@ export function Sidebar({
 }: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
-    new Set(),
+    new Set()
   );
   const [expandAll, setExpandAll] = useState(false);
 
@@ -39,7 +39,7 @@ export function Sidebar({
     const findPath = (
       nodes: TreeNode[],
       targetId: string,
-      path: string[] = [],
+      path: string[] = []
     ): string[] | null => {
       for (const node of nodes) {
         const currentPath = [...path, node.id];

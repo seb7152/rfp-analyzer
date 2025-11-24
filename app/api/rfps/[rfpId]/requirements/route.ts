@@ -46,7 +46,7 @@ import {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -80,7 +80,7 @@ export async function GET(
       console.error("Error fetching RFP:", rfpError);
       return NextResponse.json(
         { error: "Failed to fetch RFP" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -100,7 +100,7 @@ export async function GET(
       console.error("Error checking user organization:", userOrgError);
       return NextResponse.json(
         { error: "Failed to verify access" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -127,7 +127,7 @@ export async function GET(
     console.error("Error in GET /api/rfps/[rfpId]/requirements:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

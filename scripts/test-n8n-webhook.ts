@@ -94,7 +94,7 @@ async function sendTestPayload() {
   console.log("🚀 Sending test payload to N8N webhook...");
   console.log(`📍 URL: ${WEBHOOK_URL}`);
   console.log(
-    `📦 Payload: ${JSON.stringify(examplePayload, null, 2).substring(0, 100)}...`,
+    `📦 Payload: ${JSON.stringify(examplePayload, null, 2).substring(0, 100)}...`
   );
   console.log("");
 

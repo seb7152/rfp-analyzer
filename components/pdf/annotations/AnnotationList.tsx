@@ -111,7 +111,7 @@ export function AnnotationList({
                       {
                         day: "2-digit",
                         month: "short",
-                      },
+                      }
                     )}
                   </span>
                   {annotation.tags && annotation.tags.length > 0 && (

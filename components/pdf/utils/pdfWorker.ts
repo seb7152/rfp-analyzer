@@ -32,7 +32,7 @@ export const getPdfJs = async () => {
       console.log("[pdfWorker] pdfjsLib type:", typeof pdfjsLib);
       console.log(
         "[pdfWorker] pdfjsLib keys:",
-        Object.keys(pdfjsLib).slice(0, 10),
+        Object.keys(pdfjsLib).slice(0, 10)
       );
 
       // Configure worker

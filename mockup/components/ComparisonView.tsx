@@ -56,22 +56,22 @@ export function ComparisonView({
     Record<string, "pass" | "partial" | "fail" | "pending">
   >({});
   const [responseChecks, setResponseChecks] = useState<Record<string, boolean>>(
-    {},
+    {}
   );
 
   const requirement = getRequirementById(
     selectedRequirementId,
-    allRequirements,
+    allRequirements
   );
   const path = getRequirementPath(selectedRequirementId, allRequirements);
   const requirementResponses = responses.filter(
-    (r) => r.requirementId === selectedRequirementId,
+    (r) => r.requirementId === selectedRequirementId
   );
 
   // Pagination
   const flatReqs = allRequirements.filter((r) => r.level === 4);
   const currentIndex = flatReqs.findIndex(
-    (r) => r.id === selectedRequirementId,
+    (r) => r.id === selectedRequirementId
   );
   const totalPages = flatReqs.length;
 
@@ -262,7 +262,7 @@ export function ComparisonView({
         <div className="space-y-2">
           {suppliersData.map((supplier) => {
             const response = requirementResponses.find(
-              (r) => r.supplierId === supplier.id,
+              (r) => r.supplierId === supplier.id
             );
             if (!response) return null;
 
@@ -419,7 +419,7 @@ export function ComparisonView({
                             <button
                               onClick={() => {
                                 navigator.clipboard.writeText(
-                                  response.aiComment,
+                                  response.aiComment
                                 );
                               }}
                               className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition-colors"

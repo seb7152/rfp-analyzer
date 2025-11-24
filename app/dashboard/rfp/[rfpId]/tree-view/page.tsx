@@ -20,7 +20,7 @@ export default function TreeViewPage() {
 
   const [data, setData] = useState<TreeNode[]>([]);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
-    new Set(),
+    new Set()
   );
   const [selectedRequirementId, setSelectedRequirementId] = useState<
     string | null
@@ -110,12 +110,12 @@ export default function TreeViewPage() {
             // Créer une map de tous les poids réels (en %) pour accès rapide
             const allRealWeights = new Map<string, number>();
             for (const [id, weight] of Object.entries(
-              weightsData.categories || {},
+              weightsData.categories || {}
             )) {
               allRealWeights.set(id as string, (weight as number) * 100);
             }
             for (const [id, weight] of Object.entries(
-              weightsData.requirements || {},
+              weightsData.requirements || {}
             )) {
               allRealWeights.set(id as string, (weight as number) * 100);
             }
@@ -124,7 +124,7 @@ export default function TreeViewPage() {
             // Pour chaque nœud : poids local = (poids réel / poids réel du parent) * 100
             function assignLoadedWeights(
               nodes: TreeNode[],
-              parentRealWeight: number = 100,
+              parentRealWeight: number = 100
             ) {
               // D'abord, calculer le poids réel du parent s'il n'a pas été trouvé
               // En sommant les enfants qui ont des poids
@@ -182,7 +182,7 @@ export default function TreeViewPage() {
         setError(
           err instanceof Error
             ? err.message
-            : "Erreur inconnue lors du chargement",
+            : "Erreur inconnue lors du chargement"
         );
       } finally {
         setLoading(false);
@@ -239,7 +239,7 @@ export default function TreeViewPage() {
 
   const handleEquidistribute = (
     _parentId: string | null,
-    childrenIds: string[],
+    childrenIds: string[]
   ) => {
     if (childrenIds.length === 0) return;
 
@@ -257,7 +257,7 @@ export default function TreeViewPage() {
   const calculateRealWeight = (
     nodeId: string,
     nodes: TreeNode[] = data,
-    parentId: string | null = null,
+    parentId: string | null = null
   ): number => {
     const localWeight = weights[nodeId] || 0;
     if (!parentId) return localWeight;
@@ -270,7 +270,7 @@ export default function TreeViewPage() {
   const getParentId = (
     targetId: string,
     currentNodes: TreeNode[] = data,
-    parentId: string | null = null,
+    parentId: string | null = null
   ): string | null => {
     for (const node of currentNodes) {
       if (node.id === targetId) return parentId;
@@ -312,11 +312,11 @@ export default function TreeViewPage() {
     const average = sum / requirements.length;
 
     const max = requirements.reduce((prev, current) =>
-      current.weight > prev.weight ? current : prev,
+      current.weight > prev.weight ? current : prev
     );
 
     const min = requirements.reduce((prev, current) =>
-      current.weight < prev.weight ? current : prev,
+      current.weight < prev.weight ? current : prev
     );
 
     return {

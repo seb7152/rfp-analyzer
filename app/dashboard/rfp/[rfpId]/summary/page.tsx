@@ -12,6 +12,7 @@ import { AnalystsTab } from "@/components/RFPSummary/AnalystsTab";
 import { AnalysisTab } from "@/components/RFPSummary/AnalysisTab";
 import { WeightsTab } from "@/components/RFPSummary/WeightsTab";
 import { RequirementsTab } from "@/components/RFPSummary/RequirementsTab";
+import { ExportTab } from "@/components/RFPSummary/ExportTab";
 
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
 import { useAnalyzeRFP } from "@/hooks/use-analyze-rfp";
@@ -30,6 +31,7 @@ import {
   LayoutDashboard,
   Sliders,
   ListChecks,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -105,7 +107,7 @@ export default function RFPSummaryPage() {
         }
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Une erreur est survenue",
+          err instanceof Error ? err.message : "Une erreur est survenue"
         );
       } finally {
         setLoading(false);
@@ -245,6 +247,13 @@ export default function RFPSummaryPage() {
                 <Activity className="h-4 w-4" />
                 <span className="hidden sm:inline">Analyse</span>
               </TabsTrigger>
+              <TabsTrigger
+                value="export"
+                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Export</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="dashboard" className="space-y-6">
@@ -341,6 +350,14 @@ export default function RFPSummaryPage() {
                 <Skeleton className="h-64 rounded-2xl" />
               ) : (
                 <AnalysisTab rfpId={rfpId} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="export" className="space-y-6">
+              {loading ? (
+                <Skeleton className="h-64 rounded-2xl" />
+              ) : (
+                <ExportTab rfpId={rfpId} />
               )}
             </TabsContent>
           </Tabs>

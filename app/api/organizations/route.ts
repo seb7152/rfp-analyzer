@@ -30,14 +30,14 @@ export async function GET() {
           settings,
           created_at
         )
-      `,
+      `
       )
       .eq("user_id", user.id);
 
     if (orgError) {
       return NextResponse.json(
         { error: "Failed to fetch organizations", message: orgError.message },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -51,7 +51,7 @@ export async function GET() {
     console.error("Get organizations error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     if (!name) {
       return NextResponse.json(
         { error: "Organization name is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
     if (orgError) {
       return NextResponse.json(
         { error: "Failed to create organization", message: orgError.message },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -131,7 +131,7 @@ export async function POST(request: Request) {
           error: "Failed to link user to organization",
           message: linkError.message,
         },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -151,7 +151,7 @@ export async function POST(request: Request) {
     console.error("Create organization error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

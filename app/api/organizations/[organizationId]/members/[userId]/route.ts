@@ -34,7 +34,7 @@ export async function PATCH(request: Request, { params }: { params: Params }) {
     if (memberError || !membership || membership.role !== "admin") {
       return NextResponse.json(
         { error: "Only admins can update member roles" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -42,7 +42,7 @@ export async function PATCH(request: Request, { params }: { params: Params }) {
     if (userId === user.id && role !== "admin") {
       return NextResponse.json(
         { error: "You cannot remove your own admin role" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -58,7 +58,7 @@ export async function PATCH(request: Request, { params }: { params: Params }) {
     if (updateError) {
       return NextResponse.json(
         { error: "Failed to update member role", message: updateError.message },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -71,14 +71,14 @@ export async function PATCH(request: Request, { params }: { params: Params }) {
     console.error("Update member role error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: Params },
+  { params }: { params: Params }
 ) {
   try {
     const { organizationId, userId } = await params;
@@ -105,7 +105,7 @@ export async function DELETE(
     if (memberError || !membership || membership.role !== "admin") {
       return NextResponse.json(
         { error: "Only admins can remove members" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -113,7 +113,7 @@ export async function DELETE(
     if (userId === user.id) {
       return NextResponse.json(
         { error: "You cannot remove yourself from the organization" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -127,7 +127,7 @@ export async function DELETE(
     if (deleteError) {
       return NextResponse.json(
         { error: "Failed to remove member", message: deleteError.message },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -139,7 +139,7 @@ export async function DELETE(
     console.error("Remove member error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

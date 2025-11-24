@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     if (!email || !password) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     if (authError) {
       return NextResponse.json(
         { error: "Invalid credentials", message: authError.message },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
             subscription_tier
           )
         )
-      `,
+      `
       )
       .eq("id", authData.user.id)
       .single();
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     if (userError) {
       return NextResponse.json(
         { error: "Failed to fetch user profile", message: userError.message },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     console.error("Login error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

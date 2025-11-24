@@ -21,7 +21,7 @@ const fieldVariants = cva(
     defaultVariants: {
       orientation: "vertical",
     },
-  },
+  }
 );
 
 type FieldProps = React.ComponentProps<"div"> &
@@ -37,7 +37,7 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
       className={cn(fieldVariants({ orientation }), className)}
       {...props}
     />
-  ),
+  )
 );
 Field.displayName = "Field";
 
@@ -57,7 +57,7 @@ function FieldLegend({ className, ...props }: React.ComponentProps<"legend">) {
       data-slot="field-legend"
       className={cn(
         "text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground",
-        className,
+        className
       )}
       {...props}
     />
@@ -70,7 +70,7 @@ function FieldGroup({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="field-group"
       className={cn(
         "flex flex-col gap-6 md:flex-row md:items-end md:gap-10",
-        className,
+        className
       )}
       {...props}
     />
@@ -86,7 +86,7 @@ const FieldLabel = React.forwardRef<
     data-slot="field-label"
     className={cn(
       "flex items-center gap-2 text-sm font-medium leading-snug text-foreground/80",
-      className,
+      className
     )}
     {...props}
   />
@@ -99,7 +99,7 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="field-content"
       className={cn(
         "flex flex-1 flex-col gap-2 text-sm leading-snug",
-        className,
+        className
       )}
       {...props}
     />
@@ -115,7 +115,7 @@ const FieldDescription = React.forwardRef<
     data-slot="field-description"
     className={cn(
       "text-sm font-normal leading-normal text-muted-foreground",
-      className,
+      className
     )}
     {...props}
   />

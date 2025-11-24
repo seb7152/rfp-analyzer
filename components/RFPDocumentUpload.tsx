@@ -107,7 +107,7 @@ export function RFPDocumentUpload({
 
       if (!allowedMimeTypes.includes(file.type)) {
         alert(
-          `Le fichier "${file.name}" n'est pas d'un type autorisé. Seuls les fichiers PDF, Excel et Word sont acceptés.`,
+          `Le fichier "${file.name}" n'est pas d'un type autorisé. Seuls les fichiers PDF, Excel et Word sont acceptés.`
         );
         return;
       }
@@ -231,7 +231,7 @@ export function RFPDocumentUpload({
           "relative border-2 border-dashed rounded-lg p-8 transition-colors cursor-pointer",
           dragActive
             ? "border-blue-500 bg-blue-50"
-            : "border-gray-300 hover:border-gray-400",
+            : "border-gray-300 hover:border-gray-400"
         )}
       >
         <input

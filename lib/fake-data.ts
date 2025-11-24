@@ -404,7 +404,7 @@ export function flattenRequirements(reqs: Requirement[]): Requirement[] {
 
 export function getRequirementById(
   id: string,
-  reqs: Requirement[] = requirementsData,
+  reqs: Requirement[] = requirementsData
 ): Requirement | undefined {
   const flat = flattenRequirements(reqs);
   return flat.find((r) => r.id === id);
@@ -412,7 +412,7 @@ export function getRequirementById(
 
 export function getRequirementPath(
   id: string,
-  reqs: Requirement[] = requirementsData,
+  reqs: Requirement[] = requirementsData
 ): Requirement[] {
   const path: Requirement[] = [];
   const flat = flattenRequirements(reqs);

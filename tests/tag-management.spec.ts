@@ -138,7 +138,7 @@ test.describe("Tag Management System", () => {
 
       // Select "Test Tag" checkbox
       const testTagCheckbox = page.locator(
-        `label:has-text("${TEST_TAG.name}") input[type="checkbox"]`,
+        `label:has-text("${TEST_TAG.name}") input[type="checkbox"]`
       );
       await testTagCheckbox.check();
 
@@ -387,7 +387,7 @@ test.describe("API Tests", () => {
   test("TC-TAG-006: Assign tag via API", async ({ request }) => {
     // First get tags
     const tagsResponse = await request.get(
-      `${BASE_URL}/api/rfps/${RFP_ID}/tags`,
+      `${BASE_URL}/api/rfps/${RFP_ID}/tags`
     );
     const tagsBody = await tagsResponse.json();
 
@@ -403,7 +403,7 @@ test.describe("API Tests", () => {
         data: {
           tagIds: [tagId],
         },
-      },
+      }
     );
 
     expect([200, 201]).toContain(response.status());
@@ -412,7 +412,7 @@ test.describe("API Tests", () => {
 
     // Verify assignment
     const getResponse = await request.get(
-      `${BASE_URL}/api/rfps/${RFP_ID}/requirements/${REQUIREMENT_R1_ID}/tags`,
+      `${BASE_URL}/api/rfps/${RFP_ID}/requirements/${REQUIREMENT_R1_ID}/tags`
     );
 
     const getBody = await getResponse.json();
@@ -445,7 +445,7 @@ test.describe("API Tests", () => {
         data: {
           tagIds: ["00000000-0000-0000-0000-000000000000"],
         },
-      },
+      }
     );
 
     // Should handle gracefully - might be 200 with no relations created
@@ -453,7 +453,7 @@ test.describe("API Tests", () => {
     console.log(
       "Non-existent tag response:",
       response.status(),
-      await response.json(),
+      await response.json()
     );
   });
 });

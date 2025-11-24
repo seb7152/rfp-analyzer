@@ -26,7 +26,7 @@ export function Sidebar({
   onSelectRequirement,
 }: SidebarProps) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(
-    new Set(["DOM-1", "DOM-2", "DOM-3"]),
+    new Set(["DOM-1", "DOM-2", "DOM-3"])
   );
   const [searchQuery, setSearchQuery] = useState("");
   const allFlat = flattenRequirements(requirementsData);

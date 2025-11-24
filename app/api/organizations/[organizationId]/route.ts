@@ -39,7 +39,7 @@ export async function GET(_request: Request, { params }: { params: Params }) {
     if (orgError || !organization) {
       return NextResponse.json(
         { error: "Organization not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -53,7 +53,7 @@ export async function GET(_request: Request, { params }: { params: Params }) {
     console.error("Get organization error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -85,7 +85,7 @@ export async function PUT(request: Request, { params }: { params: Params }) {
     if (memberError || !membership || membership.role !== "admin") {
       return NextResponse.json(
         { error: "Only admins can update organization" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -107,7 +107,7 @@ export async function PUT(request: Request, { params }: { params: Params }) {
           error: "Failed to update organization",
           message: updateError.message,
         },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -119,7 +119,7 @@ export async function PUT(request: Request, { params }: { params: Params }) {
     console.error("Update organization error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

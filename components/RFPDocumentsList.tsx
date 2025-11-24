@@ -109,7 +109,7 @@ export function RFPDocumentsList({
       for (const docId of supplierDocsIds) {
         try {
           const response = await fetch(
-            `/api/rfps/${rfpId}/documents/${docId}/supplier`,
+            `/api/rfps/${rfpId}/documents/${docId}/supplier`
           );
           if (response.ok) {
             const data = await response.json();

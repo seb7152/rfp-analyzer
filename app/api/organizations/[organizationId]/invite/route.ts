@@ -11,7 +11,7 @@ export async function POST(request: Request, { params }: { params: Params }) {
     if (!email || !role) {
       return NextResponse.json(
         { error: "Email and role are required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -41,7 +41,7 @@ export async function POST(request: Request, { params }: { params: Params }) {
     if (memberError || !membership || membership.role !== "admin") {
       return NextResponse.json(
         { error: "Only admins can invite users" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -55,7 +55,7 @@ export async function POST(request: Request, { params }: { params: Params }) {
     if (userError) {
       return NextResponse.json(
         { error: "User not found. Please ask them to register first." },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -70,7 +70,7 @@ export async function POST(request: Request, { params }: { params: Params }) {
     if (existingMembership) {
       return NextResponse.json(
         { error: "User is already a member of this organization" },
-        { status: 409 },
+        { status: 409 }
       );
     }
 
@@ -89,7 +89,7 @@ export async function POST(request: Request, { params }: { params: Params }) {
     if (addError) {
       return NextResponse.json(
         { error: "Failed to invite user", message: addError.message },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -102,7 +102,7 @@ export async function POST(request: Request, { params }: { params: Params }) {
     console.error("Invite user error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -67,7 +67,7 @@ export function useAnalyzeStatus(rfpId: string | null) {
               console.log("AI analysis completed, refetching responses");
             }
           }
-        },
+        }
       )
       .subscribe((status: any) => {
         if (status === "SUBSCRIPTION_ERROR") {

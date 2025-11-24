@@ -20,7 +20,7 @@ interface TreeNode {
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -52,7 +52,7 @@ export async function GET(
       console.error("Error fetching RFP:", rfpError);
       return NextResponse.json(
         { error: "Failed to fetch RFP" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -72,7 +72,7 @@ export async function GET(
       console.error("Error checking user organization:", userOrgError);
       return NextResponse.json(
         { error: "Failed to verify access" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -91,7 +91,7 @@ export async function GET(
       console.error("Error fetching categories:", catError);
       return NextResponse.json(
         { error: "Failed to fetch categories" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -99,7 +99,7 @@ export async function GET(
     const { data: requirements, error: reqError } = await supabase
       .from("requirements")
       .select(
-        "id, requirement_id_external, title, category_id, level, display_order, is_mandatory, is_optional",
+        "id, requirement_id_external, title, category_id, level, display_order, is_mandatory, is_optional"
       )
       .eq("rfp_id", rfpId)
       .order("display_order", { ascending: true });
@@ -108,7 +108,7 @@ export async function GET(
       console.error("Error fetching requirements:", reqError);
       return NextResponse.json(
         { error: "Failed to fetch requirements" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -171,7 +171,7 @@ export async function GET(
           // Recursively process child categories
           if (node.children) {
             addRequirementsToCategories(
-              node.children.filter((c) => c.type === "category"),
+              node.children.filter((c) => c.type === "category")
             );
           }
         }
@@ -185,7 +185,7 @@ export async function GET(
     console.error("Error in GET /api/rfps/[rfpId]/tree:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -75,7 +75,7 @@ export function AnalystsTab({ rfpId }: AnalystsTabProps) {
 
         // Fetch current RFP assignments
         const assignmentsResponse = await fetch(
-          `/api/rfps/${rfpId}/assignments`,
+          `/api/rfps/${rfpId}/assignments`
         );
         if (!assignmentsResponse.ok)
           throw new Error("Failed to fetch analysts");
@@ -89,7 +89,7 @@ export function AnalystsTab({ rfpId }: AnalystsTabProps) {
             accessLevel: assignment.access_level,
             avatarUrl: assignment.user.avatar_url,
             assignedAt: assignment.assigned_at,
-          }),
+          })
         );
 
         setAnalysts(formattedAnalysts);
@@ -103,7 +103,7 @@ export function AnalystsTab({ rfpId }: AnalystsTabProps) {
 
           if (orgId) {
             const membersResponse = await fetch(
-              `/api/organizations/${orgId}/members`,
+              `/api/organizations/${orgId}/members`
             );
             if (membersResponse.ok) {
               const membersData = await membersResponse.json();
@@ -113,7 +113,7 @@ export function AnalystsTab({ rfpId }: AnalystsTabProps) {
         }
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Une erreur est survenue",
+          err instanceof Error ? err.message : "Une erreur est survenue"
         );
       } finally {
         setLoading(false);
@@ -137,7 +137,7 @@ export function AnalystsTab({ rfpId }: AnalystsTabProps) {
       setError(null);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Erreur lors de la suppression",
+        err instanceof Error ? err.message : "Erreur lors de la suppression"
       );
     }
   };
@@ -170,7 +170,7 @@ export function AnalystsTab({ rfpId }: AnalystsTabProps) {
 
       await response.json();
       const selectedMember = organizationMembers.find(
-        (m) => m.id === selectedUserId,
+        (m) => m.id === selectedUserId
       );
 
       if (selectedMember) {
@@ -200,7 +200,7 @@ export function AnalystsTab({ rfpId }: AnalystsTabProps) {
   // Filter out analysts already assigned
   const assignedUserIds = new Set(analysts.map((a) => a.id));
   const availableMembers = organizationMembers.filter(
-    (m) => !assignedUserIds.has(m.id),
+    (m) => !assignedUserIds.has(m.id)
   );
 
   if (loading) {
@@ -327,7 +327,7 @@ export function AnalystsTab({ rfpId }: AnalystsTabProps) {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {new Date(analyst.assignedAt).toLocaleDateString(
-                            "fr-FR",
+                            "fr-FR"
                           )}
                         </TableCell>
                         <TableCell>

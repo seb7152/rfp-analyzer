@@ -6,7 +6,7 @@ import type { ImportCategoriesRequest } from "@/lib/supabase/types";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     // Get authenticated user
@@ -27,7 +27,7 @@ export async function POST(
     if (typeof body.json !== "string") {
       return NextResponse.json(
         { error: "Missing 'json' field in request body" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -66,7 +66,7 @@ export async function POST(
     const result = await importCategories(
       params.rfpId,
       data.categories,
-      user.id,
+      user.id
     );
 
     if (!result.success) {
@@ -75,7 +75,7 @@ export async function POST(
           error: result.error,
           count: result.count,
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -85,7 +85,7 @@ export async function POST(
         message: `Successfully imported ${result.count} categories`,
         count: result.count,
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error) {
     console.error("Category import error:", error);
@@ -93,7 +93,7 @@ export async function POST(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

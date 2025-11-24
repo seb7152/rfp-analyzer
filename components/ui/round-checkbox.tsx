@@ -28,7 +28,7 @@ export function RoundCheckbox({
         disabled && "opacity-50 cursor-not-allowed",
         !disabled && !checked && "cursor-pointer",
         !disabled && checked && "cursor-pointer",
-        className,
+        className
       )}
     >
       {checked && <Check className="w-2 h-2 text-white" />}

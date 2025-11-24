@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -11,7 +11,7 @@ export async function GET(
     if (!rfpId) {
       return NextResponse.json(
         { error: "RFP ID is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -57,7 +57,7 @@ export async function GET(
       console.error("Error fetching category weights:", catError);
       return NextResponse.json(
         { error: "Failed to fetch category weights" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -71,7 +71,7 @@ export async function GET(
       console.error("Error fetching requirement weights:", reqError);
       return NextResponse.json(
         { error: "Failed to fetch requirement weights" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -92,20 +92,20 @@ export async function GET(
         categories: categoryWeights,
         requirements: requirementWeights,
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Error fetching weights:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -113,7 +113,7 @@ export async function PUT(
     if (!rfpId) {
       return NextResponse.json(
         { error: "RFP ID is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -153,7 +153,7 @@ export async function PUT(
     if (userOrg.role !== "admin") {
       return NextResponse.json(
         { error: "Insufficient permissions" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -163,7 +163,7 @@ export async function PUT(
     if (!categories || !requirements) {
       return NextResponse.json(
         { error: "Categories and weights are required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -178,7 +178,7 @@ export async function PUT(
         "update_category_weights",
         {
           category_updates: categoryUpdates,
-        },
+        }
       );
 
       if (categoryError) {
@@ -195,7 +195,7 @@ export async function PUT(
       ([id, weight]) => ({
         id,
         weight,
-      }),
+      })
     );
 
     if (requirementUpdates.length > 0) {
@@ -203,7 +203,7 @@ export async function PUT(
         "update_requirement_weights",
         {
           requirement_updates: requirementUpdates,
-        },
+        }
       );
 
       if (requirementError) {
@@ -217,13 +217,13 @@ export async function PUT(
 
     return NextResponse.json(
       { message: "Weights updated successfully" },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Error updating weights:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

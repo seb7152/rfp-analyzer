@@ -69,7 +69,7 @@ export function OrganizationSwitcher() {
                   <Check
                     className={cn(
                       "ml-auto flex-shrink-0",
-                      currentOrg.id === org.id ? "opacity-100" : "opacity-0",
+                      currentOrg.id === org.id ? "opacity-100" : "opacity-0"
                     )}
                   />
                 </CommandItem>

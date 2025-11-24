@@ -41,7 +41,7 @@ export function PDFViewerWithAnnotations({
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [scale, setScale] = useState(1); // Zoom par défaut: 100%
   const [annotationMode, setAnnotationMode] = useState<"select" | "bookmark">(
-    "select",
+    "select"
   );
   const [loadedPage, setLoadedPage] = useState<PDFPageProxy | null>(null);
 
@@ -76,7 +76,7 @@ export function PDFViewerWithAnnotations({
         onPageChange?.(page);
       }
     },
-    [numPages, onPageChange],
+    [numPages, onPageChange]
   );
 
   const handleZoomIn = useCallback(() => {
@@ -135,7 +135,7 @@ export function PDFViewerWithAnnotations({
         },
       });
     },
-    [loadedPage, scale, currentPage],
+    [loadedPage, scale, currentPage]
   );
 
   // Effacer la sélection lors du changement de page
@@ -184,7 +184,7 @@ export function PDFViewerWithAnnotations({
 
       console.log(
         "[PDFViewer] Click outside, clearing selection. Target:",
-        target,
+        target
       );
       setTextSelection(null);
     };
@@ -264,7 +264,7 @@ export function PDFViewerWithAnnotations({
       setTextSelection(null);
       window.getSelection()?.removeAllRanges();
     },
-    [textSelection, documentId, loadedPage, scale, createAnnotation],
+    [textSelection, documentId, loadedPage, scale, createAnnotation]
   );
 
   // Gérer le clic pour créer un bookmark
@@ -301,21 +301,21 @@ export function PDFViewerWithAnnotations({
       currentPage,
       scale,
       createAnnotation,
-    ],
+    ]
   );
 
   const handleDeleteAnnotation = useCallback(
     (id: string) => {
       deleteAnnotation(id);
     },
-    [deleteAnnotation],
+    [deleteAnnotation]
   );
 
   const handleUpdateAnnotation = useCallback(
     (dto: UpdateAnnotationDTO) => {
       updateAnnotation(dto);
     },
-    [updateAnnotation],
+    [updateAnnotation]
   );
 
   if (isLoading) {

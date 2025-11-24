@@ -39,7 +39,7 @@ serve(async (req) => {
         JSON.stringify({
           error: "Missing required fields: jobId, requirementId, status, rfpId",
         }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
+        { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
@@ -82,7 +82,7 @@ serve(async (req) => {
     // Update responses with AI results if provided
     if (status === "completed" && results && Array.isArray(results)) {
       console.log(
-        `[Callback] Processing ${results.length} supplier results for requirement ${requirementId}`,
+        `[Callback] Processing ${results.length} supplier results for requirement ${requirementId}`
       );
 
       // Get requirement and supplier mappings
@@ -97,10 +97,10 @@ serve(async (req) => {
         .eq("rfp_id", rfpId);
 
       const reqMap = new Map(
-        requirements?.map((r) => [r.requirement_id_external, r.id]) || [],
+        requirements?.map((r) => [r.requirement_id_external, r.id]) || []
       );
       const supplierMap = new Map(
-        suppliers?.map((s) => [s.supplier_id_external, s.id]) || [],
+        suppliers?.map((s) => [s.supplier_id_external, s.id]) || []
       );
 
       // Find requirement ID
@@ -110,7 +110,7 @@ serve(async (req) => {
         console.warn(`[Callback] Requirement not found: ${requirementId}`);
         return new Response(
           JSON.stringify({ error: `Requirement ${requirementId} not found` }),
-          { status: 404, headers: { "Content-Type": "application/json" } },
+          { status: 404, headers: { "Content-Type": "application/json" } }
         );
       }
 
@@ -122,7 +122,7 @@ serve(async (req) => {
 
         if (!supplierId) {
           console.warn(
-            `[Callback] Supplier not found: ${result.supplier_code}`,
+            `[Callback] Supplier not found: ${result.supplier_code}`
           );
           continue;
         }
@@ -140,7 +140,7 @@ serve(async (req) => {
         if (respError) {
           console.error(
             `[Callback] Error updating response for requirement ${requirementId}, supplier ${result.supplier_code}:`,
-            respError,
+            respError
           );
         } else {
           successCount++;
@@ -148,7 +148,7 @@ serve(async (req) => {
       }
 
       console.log(
-        `[Callback] Successfully updated ${successCount}/${results.length} responses for requirement ${requirementId}`,
+        `[Callback] Successfully updated ${successCount}/${results.length} responses for requirement ${requirementId}`
       );
 
       return new Response(
@@ -162,7 +162,7 @@ serve(async (req) => {
         {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        },
+        }
       );
     }
 
@@ -176,7 +176,7 @@ serve(async (req) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   } catch (error) {
     console.error("[Callback] Error:", error);
@@ -187,7 +187,7 @@ serve(async (req) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 });

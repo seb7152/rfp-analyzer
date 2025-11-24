@@ -56,7 +56,7 @@ export function EditableTableTree({
       const parentRealWeight = calculateRealWeight(parentId);
       return (localWeight * parentRealWeight) / 100;
     },
-    [weights],
+    [weights]
   );
 
   // Fonction pour obtenir le parent d'un nœud
@@ -64,7 +64,7 @@ export function EditableTableTree({
     (
       targetId: string,
       currentNodes: TreeNode[],
-      parentId: string | null = null,
+      parentId: string | null = null
     ): string | null => {
       for (const node of currentNodes) {
         if (node.id === targetId) return parentId;
@@ -75,7 +75,7 @@ export function EditableTableTree({
       }
       return null;
     },
-    [],
+    []
   );
 
   // Fonction pour obtenir les enfants directs d'un nœud
@@ -97,7 +97,7 @@ export function EditableTableTree({
       const parent = findNode(data, parentId);
       return parent?.children || [];
     },
-    [data],
+    [data]
   );
 
   // Fonction pour valider qu'un niveau total = 100%
@@ -106,7 +106,7 @@ export function EditableTableTree({
       const children = getDirectChildren(parentId);
       return children.reduce((sum, child) => sum + (weights[child.id] || 0), 0);
     },
-    [getDirectChildren, weights],
+    [getDirectChildren, weights]
   );
 
   // Fonction pour vérifier si un nœud a un parent
@@ -114,7 +114,7 @@ export function EditableTableTree({
     (
       targetId: string,
       nodes: TreeNode[] = data,
-      parent: TreeNode | null = null,
+      parent: TreeNode | null = null
     ): TreeNode | null => {
       for (const node of nodes) {
         if (node.id === targetId) return parent;
@@ -125,13 +125,13 @@ export function EditableTableTree({
       }
       return null;
     },
-    [data],
+    [data]
   );
 
   const renderRows = (
     items: TreeNode[],
     level: number = 0,
-    parentId: string | null = null,
+    parentId: string | null = null
   ): React.ReactNode[] => {
     // Calcul du total pour ce niveau
     const levelTotal = getChildrenTotal(parentId);
@@ -182,7 +182,7 @@ export function EditableTableTree({
               )}
             </div>
           </TableCell>
-        </TableRow>,
+        </TableRow>
       );
     }
 
@@ -268,7 +268,7 @@ export function EditableTableTree({
                 onChange={(e) => {
                   const value = Math.max(
                     0,
-                    Math.min(100, parseFloat(e.target.value) || 0),
+                    Math.min(100, parseFloat(e.target.value) || 0)
                   );
                   onWeightChange(item.id, value);
                 }}
@@ -284,7 +284,7 @@ export function EditableTableTree({
               {realWeight.toFixed(4)}%
             </span>
           </TableCell>
-        </TableRow>,
+        </TableRow>
       );
 
       // Enfants récursifs

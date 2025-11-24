@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { rfpId: string; tagId: string } },
+  { params }: { params: { rfpId: string; tagId: string } }
 ) {
   try {
     const { rfpId, tagId } = params;
@@ -58,7 +58,7 @@ export async function DELETE(
     ) {
       return NextResponse.json(
         { error: "Permission denied to delete tags" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -83,11 +83,11 @@ export async function DELETE(
     if (deleteAssociationsError) {
       console.error(
         "Error deleting requirement-tag associations:",
-        deleteAssociationsError,
+        deleteAssociationsError
       );
       return NextResponse.json(
         { error: "Failed to delete tag associations" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -101,7 +101,7 @@ export async function DELETE(
       console.error("Error deleting tag:", deleteTagError);
       return NextResponse.json(
         { error: "Failed to delete tag" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -110,7 +110,7 @@ export async function DELETE(
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

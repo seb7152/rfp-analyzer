@@ -8,7 +8,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { rfpId: string; supplierId: string } },
+  { params }: { params: { rfpId: string; supplierId: string } }
 ) {
   try {
     const { rfpId, supplierId } = params;
@@ -16,7 +16,7 @@ export async function GET(
     if (!rfpId || !supplierId) {
       return NextResponse.json(
         { error: "RFP ID and Supplier ID are required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -57,7 +57,7 @@ export async function GET(
         checkedResponses,
         completionPercentage,
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Error fetching supplier responses stats:", error);
@@ -65,7 +65,7 @@ export async function GET(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

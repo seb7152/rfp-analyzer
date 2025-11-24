@@ -26,7 +26,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -43,14 +43,14 @@ export async function PUT(
     if (!jobId || !requirementId || !results || !Array.isArray(results)) {
       return NextResponse.json(
         { error: "Missing required fields: jobId, requirementId, results" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     if (results.length === 0) {
       return NextResponse.json(
         { error: "results array cannot be empty" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -61,7 +61,7 @@ export async function PUT(
           error:
             "Invalid status. Must be 'processing', 'completed', or 'failed'",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -111,10 +111,10 @@ export async function PUT(
       .eq("rfp_id", rfpId);
 
     const reqMap = new Map(
-      requirements?.map((r) => [r.requirement_id_external, r.id]) || [],
+      requirements?.map((r) => [r.requirement_id_external, r.id]) || []
     );
     const supplierMap = new Map(
-      suppliers?.map((s) => [s.supplier_id_external, s.id]) || [],
+      suppliers?.map((s) => [s.supplier_id_external, s.id]) || []
     );
 
     // Find requirement ID from external ID
@@ -123,7 +123,7 @@ export async function PUT(
       console.warn(`[Analysis] Requirement not found: ${requirementId}`);
       return NextResponse.json(
         { error: `Requirement ${requirementId} not found` },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -147,7 +147,7 @@ export async function PUT(
 
     // Update each response with AI results for this requirement
     console.log(
-      `[Analysis] Processing ${results.length} supplier results for requirement ${requirementId}`,
+      `[Analysis] Processing ${results.length} supplier results for requirement ${requirementId}`
     );
 
     let successCount = 0;
@@ -157,7 +157,7 @@ export async function PUT(
 
       if (!supplierId) {
         console.warn(
-          `[Analysis] Supplier not found: ${result.supplier_code} for requirement ${requirementId}`,
+          `[Analysis] Supplier not found: ${result.supplier_code} for requirement ${requirementId}`
         );
         continue;
       }
@@ -176,7 +176,7 @@ export async function PUT(
       if (respError) {
         console.error(
           `[Analysis] Error updating response for requirement ${requirementId}, supplier ${result.supplier_code}:`,
-          respError,
+          respError
         );
       } else {
         successCount++;
@@ -184,7 +184,7 @@ export async function PUT(
     }
 
     console.log(
-      `[Analysis Callback] Successfully updated ${successCount}/${results.length} responses for requirement ${requirementId}`,
+      `[Analysis Callback] Successfully updated ${successCount}/${results.length} responses for requirement ${requirementId}`
     );
 
     return NextResponse.json(
@@ -195,7 +195,7 @@ export async function PUT(
         requirementId,
         updatedCount: successCount,
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Error processing analysis callback:", error);
@@ -204,7 +204,7 @@ export async function PUT(
         error: "Internal server error",
         message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

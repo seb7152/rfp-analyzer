@@ -21,7 +21,7 @@ import { importResponses } from "@/lib/supabase/queries";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
@@ -43,7 +43,7 @@ export async function POST(
     if (!Array.isArray(responses)) {
       return NextResponse.json(
         { error: "Invalid request: responses must be an array" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -53,7 +53,7 @@ export async function POST(
     if (!result.success) {
       return NextResponse.json(
         { error: result.error || "Failed to import responses" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -67,7 +67,7 @@ export async function POST(
     console.error("Error importing responses:", error);
     return NextResponse.json(
       { error: "Failed to import responses" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

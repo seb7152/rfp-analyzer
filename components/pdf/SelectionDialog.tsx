@@ -44,7 +44,7 @@ export function SelectionDialog({
 }: SelectionDialogProps) {
   const [noteContent, setNoteContent] = useState("");
   const [requirementId, setRequirementId] = useState<string>(
-    defaultRequirementId || "none",
+    defaultRequirementId || "none"
   );
 
   // Reset state when dialog opens

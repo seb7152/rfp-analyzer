@@ -56,7 +56,7 @@ export function AnnotationHighlight({
   const [isHovered, setIsHovered] = useState(false);
 
   const linkedRequirement = requirements.find(
-    (r) => r.id === annotation.requirementId,
+    (r) => r.id === annotation.requirementId
   );
 
   // Reset optimistic position when we get a new position from the server
@@ -131,7 +131,7 @@ export function AnnotationHighlight({
         y: dragStartRef.current.initialY + deltaY,
       });
     },
-    [scale],
+    [scale]
   );
 
   const handleMouseUp = useCallback(
@@ -167,7 +167,7 @@ export function AnnotationHighlight({
         hasMovedRef.current = false;
       }, 100);
     },
-    [annotation, onUpdate, scale, handleMouseMove],
+    [annotation, onUpdate, scale, handleMouseMove]
   );
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -436,7 +436,7 @@ export function AnnotationHighlight({
                         month: "short",
                         hour: "2-digit",
                         minute: "2-digit",
-                      },
+                      }
                     )}
                   </span>
                 </div>

@@ -81,7 +81,7 @@ serve(async (req) => {
           supplier_id_external,
           name
         )
-      `,
+      `
       )
       .eq("rfp_id", rfpId);
 
@@ -108,7 +108,7 @@ serve(async (req) => {
     // Build set of all parent IDs
     const parentIds = new Set(
       allReqsWithParent?.map((r) => r.parent_id).filter((id) => id !== null) ||
-        [],
+        []
     );
 
     // Leaf requirements are those not in the parentIds set
@@ -120,7 +120,7 @@ serve(async (req) => {
         {
           status: 404,
           headers: { "Content-Type": "application/json", ...corsHeaders },
-        },
+        }
       );
     }
 
@@ -173,7 +173,7 @@ serve(async (req) => {
     if (!n8nResponse.ok) {
       const errorText = await n8nResponse.text();
       console.error(
-        `[Edge Function] N8N error: ${n8nResponse.status} - ${errorText}`,
+        `[Edge Function] N8N error: ${n8nResponse.status} - ${errorText}`
       );
       throw new Error(`N8N webhook failed: ${n8nResponse.status}`);
     }
@@ -193,7 +193,7 @@ serve(async (req) => {
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
-      },
+      }
     );
   } catch (error) {
     console.error("[Edge Function] Error:", error);
@@ -204,7 +204,7 @@ serve(async (req) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
-      },
+      }
     );
   }
 });

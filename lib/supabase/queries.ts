@@ -31,7 +31,7 @@ export async function getRequirements(rfpId: string): Promise<Requirement[]> {
       created_at,
       updated_at,
       created_by
-    `,
+    `
     )
     .eq("rfp_id", rfpId)
     .order("level", { ascending: true })
@@ -49,7 +49,7 @@ export async function getRequirements(rfpId: string): Promise<Requirement[]> {
  * Fetch a single requirement with all its details
  */
 export async function getRequirement(
-  requirementId: string,
+  requirementId: string
 ): Promise<Requirement | null> {
   const supabase = await createServerClient();
 
@@ -71,7 +71,7 @@ export async function getRequirement(
       created_at,
       updated_at,
       created_by
-    `,
+    `
     )
     .eq("id", requirementId)
     .maybeSingle();
@@ -91,7 +91,7 @@ export async function getRequirement(
  * Example: [Domain-1, Category-1.1, Subcategory-1.1.1, Requirement-001]
  */
 export async function getRequirementBreadcrumb(
-  requirementId: string,
+  requirementId: string
 ): Promise<Requirement[]> {
   // First, get the target requirement to know the RFP ID
   const requirement = await getRequirement(requirementId);
@@ -118,7 +118,7 @@ export async function getRequirementBreadcrumb(
  * Fetch all children of a specific requirement
  */
 export async function getRequirementChildren(
-  parentId: string,
+  parentId: string
 ): Promise<Requirement[]> {
   const supabase = await createServerClient();
 
@@ -140,7 +140,7 @@ export async function getRequirementChildren(
       created_at,
       updated_at,
       created_by
-    `,
+    `
     )
     .eq("parent_id", parentId)
     .order("requirement_id_external", { ascending: true });
@@ -158,7 +158,7 @@ export async function getRequirementChildren(
  * Used for tree rendering in the UI
  */
 export function buildHierarchy(
-  requirements: Requirement[],
+  requirements: Requirement[]
 ): RequirementWithChildren[] {
   const map = new Map<string, RequirementWithChildren>();
   const roots: RequirementWithChildren[] = [];
@@ -187,7 +187,7 @@ export function buildHierarchy(
   function sortChildren(node: RequirementWithChildren): void {
     if (node.children) {
       node.children.sort((a, b) =>
-        a.requirement_id_external.localeCompare(b.requirement_id_external),
+        a.requirement_id_external.localeCompare(b.requirement_id_external)
       );
       node.children.forEach(sortChildren);
     }
@@ -204,7 +204,7 @@ export function buildHierarchy(
  */
 export async function getRequirementsByLevel(
   rfpId: string,
-  level: 1 | 2 | 3 | 4,
+  level: 1 | 2 | 3 | 4
 ): Promise<Requirement[]> {
   const supabase = await createServerClient();
 
@@ -226,7 +226,7 @@ export async function getRequirementsByLevel(
       created_at,
       updated_at,
       created_by
-    `,
+    `
     )
     .eq("rfp_id", rfpId)
     .eq("level", level)
@@ -246,7 +246,7 @@ export async function getRequirementsByLevel(
  */
 export async function searchRequirements(
   rfpId: string,
-  query: string,
+  query: string
 ): Promise<Requirement[]> {
   if (!query || query.trim().length === 0) {
     // Return all requirements if query is empty
@@ -274,11 +274,11 @@ export async function searchRequirements(
       created_at,
       updated_at,
       created_by
-    `,
+    `
     )
     .eq("rfp_id", rfpId)
     .or(
-      `requirement_id_external.ilike.${searchQuery},title.ilike.${searchQuery}`,
+      `requirement_id_external.ilike.${searchQuery},title.ilike.${searchQuery}`
     )
     .order("level", { ascending: true })
     .order("requirement_id_external", { ascending: true });
@@ -310,7 +310,7 @@ export async function importCategories(
     parent_id?: string;
     order?: number;
   }>,
-  userId: string,
+  userId: string
 ): Promise<{ success: boolean; count: number; error?: string }> {
   const supabase = await createServerClient();
 
@@ -352,14 +352,14 @@ export async function importCategories(
           ],
           {
             onConflict: "rfp_id,code",
-          },
+          }
         )
         .select("id")
         .single();
 
       if (error) {
         throw new Error(
-          `Failed to upsert category ${category.id}: ${error.message}`,
+          `Failed to upsert category ${category.id}: ${error.message}`
         );
       }
 
@@ -418,7 +418,7 @@ export async function importRequirements(
     category_name: string;
     order?: number;
   }>,
-  userId: string,
+  userId: string
 ): Promise<{ success: boolean; count: number; error?: string }> {
   const supabase = await createServerClient();
 
@@ -434,7 +434,7 @@ export async function importRequirements(
     }
 
     const categoryNameToId = new Map(
-      (categories || []).map((c) => [c.title, c.id]),
+      (categories || []).map((c) => [c.title, c.id])
     );
 
     // Auto-increment order for requirements without explicit order
@@ -446,7 +446,7 @@ export async function importRequirements(
 
       if (!categoryId) {
         console.warn(
-          `Skipping requirement ${req.code}: category "${req.category_name}" not found`,
+          `Skipping requirement ${req.code}: category "${req.category_name}" not found`
         );
         continue;
       }
@@ -470,12 +470,12 @@ export async function importRequirements(
         ],
         {
           onConflict: "rfp_id,requirement_id_external",
-        },
+        }
       );
 
       if (error) {
         console.warn(
-          `Failed to upsert requirement ${req.code}: ${error.message}`,
+          `Failed to upsert requirement ${req.code}: ${error.message}`
         );
         continue;
       }
@@ -509,7 +509,7 @@ export async function importSuppliers(
     contact_name?: string;
     contact_email?: string;
     contact_phone?: string;
-  }>,
+  }>
 ): Promise<{ success: boolean; count: number; error?: string }> {
   const supabase = await createServerClient();
 
@@ -530,7 +530,7 @@ export async function importSuppliers(
 
       if (error) {
         console.warn(
-          `Failed to insert supplier ${supplier.id}: ${error.message}`,
+          `Failed to insert supplier ${supplier.id}: ${error.message}`
         );
         continue;
       }
@@ -554,7 +554,7 @@ export async function importSuppliers(
  * Only counts responses for leaf requirements (requirements without children)
  */
 export async function getRFPCompletionPercentage(
-  rfpId: string,
+  rfpId: string
 ): Promise<number> {
   const supabase = await createServerClient();
 
@@ -567,7 +567,7 @@ export async function getRFPCompletionPercentage(
   if (error) {
     console.error("Error fetching responses for completion:", error);
     throw new Error(
-      `Failed to fetch responses for completion: ${error.message}`,
+      `Failed to fetch responses for completion: ${error.message}`
     );
   }
 
@@ -586,7 +586,7 @@ export async function getRFPCompletionPercentage(
   if (reqError) {
     console.error("Error fetching requirements:", reqError);
     throw new Error(
-      `Failed to fetch requirements for completion: ${reqError.message}`,
+      `Failed to fetch requirements for completion: ${reqError.message}`
     );
   }
 
@@ -597,11 +597,11 @@ export async function getRFPCompletionPercentage(
 
   // Identify leaf requirements (those that are not parents of other requirements)
   const parentIds = new Set(
-    allRequirements.filter((r) => r.parent_id !== null).map((r) => r.parent_id),
+    allRequirements.filter((r) => r.parent_id !== null).map((r) => r.parent_id)
   );
 
   const leafReqIds = new Set(
-    allRequirements.filter((r) => !parentIds.has(r.id)).map((r) => r.id),
+    allRequirements.filter((r) => !parentIds.has(r.id)).map((r) => r.id)
   );
 
   // Debug logging
@@ -613,12 +613,12 @@ export async function getRFPCompletionPercentage(
 
   // Filter responses to only those for leaf requirements
   const leafResponses = responses.filter((r) =>
-    leafReqIds.has(r.requirement_id),
+    leafReqIds.has(r.requirement_id)
   );
 
   console.log(`  Leaf responses: ${leafResponses.length}`);
   console.log(
-    `  Checked responses: ${leafResponses.filter((r) => r.is_checked).length}`,
+    `  Checked responses: ${leafResponses.filter((r) => r.is_checked).length}`
   );
 
   const total = leafResponses.length;
@@ -640,7 +640,7 @@ export async function getRFPCompletionPercentage(
  * Includes supplier details joined with response data
  */
 export async function getResponsesForRequirement(
-  requirementId: string,
+  requirementId: string
 ): Promise<
   Array<{
     id: string;
@@ -701,14 +701,14 @@ export async function getResponsesForRequirement(
         contact_phone,
         created_at
       )
-    `,
+    `
     )
     .eq("requirement_id", requirementId);
 
   if (error) {
     console.error("Error fetching responses for requirement:", error);
     throw new Error(
-      `Failed to fetch responses for requirement: ${error.message}`,
+      `Failed to fetch responses for requirement: ${error.message}`
     );
   }
 
@@ -729,7 +729,7 @@ export async function getResponsesForRequirement(
  */
 export async function getResponsesForRFP(
   rfpId: string,
-  requirementId?: string,
+  requirementId?: string
 ): Promise<
   Array<{
     id: string;
@@ -788,7 +788,7 @@ export async function getResponsesForRFP(
       contact_phone,
       created_at
     )
-  `,
+  `
   );
 
   query = query.eq("rfp_id", rfpId);
@@ -877,7 +877,7 @@ export async function getResponse(responseId: string): Promise<{
         contact_phone,
         created_at
       )
-    `,
+    `
     )
     .eq("id", responseId)
     .maybeSingle();
@@ -902,7 +902,7 @@ export async function importResponses(
     response_text: string;
     ai_score?: number;
     ai_comment?: string;
-  }>,
+  }>
 ): Promise<{ success: boolean; count: number; error?: string }> {
   const supabase = await createServerClient();
 
@@ -920,7 +920,7 @@ export async function importResponses(
 
       if (reqError || !requirement) {
         console.warn(
-          `Requirement ${response.requirement_id_external} not found for RFP ${rfpId}`,
+          `Requirement ${response.requirement_id_external} not found for RFP ${rfpId}`
         );
         continue;
       }
@@ -935,7 +935,7 @@ export async function importResponses(
 
       if (supError || !supplier) {
         console.warn(
-          `Supplier ${response.supplier_id_external} not found for RFP ${rfpId}`,
+          `Supplier ${response.supplier_id_external} not found for RFP ${rfpId}`
         );
         continue;
       }

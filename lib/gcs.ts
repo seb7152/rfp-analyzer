@@ -31,7 +31,7 @@ export function getGCSClient(): Storage {
       options.credentials = credentials;
     } catch (error) {
       throw new Error(
-        "Failed to parse GCP_KEY_JSON. Ensure it's a valid JSON string.",
+        "Failed to parse GCP_KEY_JSON. Ensure it's a valid JSON string."
       );
     }
   }
@@ -58,7 +58,7 @@ export function getRFPDocumentsBucket() {
  */
 export async function generateUploadSignedUrl(
   objectName: string,
-  expiresIn: number = 90 * 1000, // 90 seconds
+  expiresIn: number = 90 * 1000 // 90 seconds
 ): Promise<string> {
   const bucket = getRFPDocumentsBucket();
   const file = bucket.file(objectName);
@@ -81,7 +81,7 @@ export async function generateUploadSignedUrl(
  */
 export async function generateDownloadSignedUrl(
   objectName: string,
-  expiresIn: number = 90 * 1000, // 90 seconds
+  expiresIn: number = 90 * 1000 // 90 seconds
 ): Promise<string> {
   const bucket = getRFPDocumentsBucket();
   const file = bucket.file(objectName);

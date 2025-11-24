@@ -16,9 +16,9 @@ export function PDFViewer({
   const { document, numPages, isLoading, error } = usePDFDocument(url);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [scale, setScale] = useState(1); // Zoom par défaut: 100%
-  const [annotationMode, setAnnotationMode] = useState<
-    "select" | "bookmark"
-  >("select");
+  const [annotationMode, setAnnotationMode] = useState<"select" | "bookmark">(
+    "select"
+  );
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handlePageChange = useCallback(
@@ -28,7 +28,7 @@ export function PDFViewer({
         onPageChange?.(page);
       }
     },
-    [numPages, onPageChange],
+    [numPages, onPageChange]
   );
 
   const handleZoomIn = useCallback(() => {

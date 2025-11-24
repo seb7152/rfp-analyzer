@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     if (!name || typeof name !== "string") {
       return NextResponse.json(
         { error: "Organization name is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     // Generate random 10-digit code
     const code = String(Math.floor(Math.random() * 10000000000)).padStart(
       10,
-      "0",
+      "0"
     );
 
     // Create organization
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
       console.error("Organization creation error:", orgError);
       return NextResponse.json(
         { error: "Failed to create organization", message: orgError.message },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
           error: "Failed to link user to organization",
           message: linkError.message,
         },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
     console.error("Create organization error:", error);
     return NextResponse.json(
       { error: "Internal server error", message: error.message },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
