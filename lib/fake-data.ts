@@ -404,9 +404,19 @@ export function flattenRequirements(reqs: Requirement[]): Requirement[] {
 
 export function getRequirementById(
   id: string,
-  reqs: Requirement[] = requirementsData
-): Requirement | undefined {
-  const flat = flattenRequirements(reqs);
+  reqs: Requirement[] | any[] = requirementsData
+): Requirement | any | undefined {
+  // Handle both fake-data Requirement type and supabase Requirement type
+  const flat = Array.isArray(reqs)
+    ? flattenRequirements(reqs as Requirement[])
+    : [];
+
+  // For supabase requirements, they don't have parentId and children structure
+  // so we need to search differently
+  if (reqs && reqs.length > 0 && !reqs[0]?.parentId && !reqs[0]?.children) {
+    return reqs.find((r: any) => r.id === id);
+  }
+
   return flat.find((r) => r.id === id);
 }
 
