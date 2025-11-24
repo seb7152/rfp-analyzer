@@ -242,7 +242,11 @@ export function PDFViewerSheet({
           <PDFViewerWithAnnotations
             url={pdfUrl}
             documentId={selectedDocId}
-            initialPage={selectedDocId === initialDocumentId ? initialPage || undefined : undefined}
+            initialPage={
+              selectedDocId === initialDocumentId
+                ? initialPage || undefined
+                : undefined
+            }
             requirementId={requirementId}
             requirements={requirements}
             showAnnotationPanel={true}

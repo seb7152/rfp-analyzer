@@ -76,7 +76,9 @@ export function PDFViewerWithAnnotations({
       currentPage,
     });
     if (initialPage) {
-      console.log(`[PDFViewerWithAnnotations] Setting currentPage to ${initialPage}`);
+      console.log(
+        `[PDFViewerWithAnnotations] Setting currentPage to ${initialPage}`
+      );
       setCurrentPage(initialPage);
     }
   }, [initialPage]);

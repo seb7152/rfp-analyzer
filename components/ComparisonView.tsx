@@ -584,7 +584,8 @@ export function ComparisonView({
         return;
       }
 
-      const pageNumber = (requirement.position_in_pdf as any)?.page_number || null;
+      const pageNumber =
+        (requirement.position_in_pdf as any)?.page_number || null;
       console.log("[ComparisonView] Opening PDF with state:", {
         documentId: targetDocumentId,
         page: pageNumber,
