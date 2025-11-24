@@ -28,9 +28,21 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Refresh session
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const {
+      data: { user: authUser },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError) {
+      console.warn("Auth user error in middleware:", userError);
+    }
+    user = authUser;
+  } catch (error) {
+    console.error("Failed to refresh session in middleware:", error);
+    // Don't throw - let the request proceed
+  }
 
   // Redirect unauthenticated users trying to access protected routes
   if (

@@ -180,12 +180,16 @@ CREATE INDEX idx_response_audit_modified_by ON response_audit(modified_by);
 
 -- Auto-update updated_at columns
 CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
 BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE TRIGGER update_organizations_updated_at BEFORE UPDATE ON organizations
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
