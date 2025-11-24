@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { rfpId: string } },
+  { params }: { params: { rfpId: string } }
 ) {
   try {
     const supabase = await createServerClient();
@@ -25,7 +25,7 @@ export async function POST(
     if (!rfpId) {
       return NextResponse.json(
         { error: "RFP ID is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -42,7 +42,7 @@ export async function POST(
     if (!filename || !fileSize) {
       return NextResponse.json(
         { error: "filename and fileSize are required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -58,7 +58,7 @@ export async function POST(
     if (!allowedMimeTypes.includes(mimeType)) {
       return NextResponse.json(
         { error: "Only PDF, Excel, and Word files are allowed" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -68,7 +68,7 @@ export async function POST(
         {
           error: `File size exceeds maximum allowed (${maxFileSizeMB}MB)`,
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -79,11 +79,12 @@ export async function POST(
         "technical_brief",
         "appendix",
         "supplier_response",
+        "template",
       ].includes(documentType)
     ) {
       return NextResponse.json(
         { error: "Invalid document type" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -113,7 +114,10 @@ export async function POST(
     // Generate unique document ID and object name
     const documentId = uuidv4();
     const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const objectName = `rfps/${rfp.organization_id}/${rfpId}/${documentId}-${sanitizedFilename}`;
+
+    // Use different subfolder for templates
+    const subfolder = documentType === "template" ? "templates" : "documents";
+    const objectName = `rfps/${rfp.organization_id}/${rfpId}/${subfolder}/${documentId}-${sanitizedFilename}`;
 
     // Generate signed URL for upload (15 minutes TTL for actual upload)
     const uploadUrl = await generateUploadSignedUrl(objectName, 15 * 60 * 1000);
@@ -128,7 +132,7 @@ export async function POST(
         objectName,
         expiresAt: expiresAt.toISOString(),
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Upload intent error:", error);
@@ -136,7 +140,7 @@ export async function POST(
       {
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
