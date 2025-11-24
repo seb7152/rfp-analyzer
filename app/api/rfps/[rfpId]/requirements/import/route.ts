@@ -95,12 +95,12 @@ export async function POST(
       suppliersCount = supplierResult.count;
     }
 
-    // Import requirements (filter out any without id)
+    // Import requirements (filter out any without code - code is required)
     const validRequirements = data.requirements.filter(
-      (req: any) => req.id
+      (req: any) => req.code && req.code.trim()
     ) as Array<{
-      id: string;
-      code?: string;
+      id?: string;
+      code: string;
       title: string;
       description: string;
       weight: number;

@@ -410,8 +410,8 @@ export async function getCategories(rfpId: string): Promise<Requirement[]> {
 export async function importRequirements(
   rfpId: string,
   requirements: Array<{
-    id: string;
-    code?: string;
+    id?: string;
+    code: string;
     title: string;
     description: string;
     weight: number;
