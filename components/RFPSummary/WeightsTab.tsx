@@ -227,6 +227,22 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
     setWeights(newWeights);
   };
 
+  // Helper function to find parent of a node
+  const getParentId = (
+    targetId: string,
+    nodes: TreeNode[],
+    parentId: string | null = null
+  ): string | null => {
+    for (const node of nodes) {
+      if (node.id === targetId) return parentId;
+      if (node.children) {
+        const found = getParentId(targetId, node.children, node.id);
+        if (found !== null) return found;
+      }
+    }
+    return null;
+  };
+
   const calculateRealWeight = (
     nodeId: string,
     nodes: TreeNode[] = data,
@@ -235,7 +251,8 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
     const localWeight = weights[nodeId] || 0;
     if (!parentId) return localWeight;
 
-    const parentRealWeight = calculateRealWeight(parentId, nodes);
+    const parentParentId = getParentId(parentId, nodes);
+    const parentRealWeight = calculateRealWeight(parentId, nodes, parentParentId);
     return (localWeight * parentRealWeight) / 100;
   };
 
