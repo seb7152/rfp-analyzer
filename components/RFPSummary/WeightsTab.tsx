@@ -286,9 +286,9 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
     const categories: Record<string, number> = {};
     const requirements: Record<string, number> = {};
 
-    function traverse(nodes: TreeNode[]) {
+    function traverse(nodes: TreeNode[], parentId: string | null = null) {
       for (const node of nodes) {
-        const realWeight = calculateRealWeight(node.id);
+        const realWeight = calculateRealWeight(node.id, data, parentId);
         const decimalWeight = Math.round((realWeight / 100) * 10000) / 10000;
 
         if (node.type === "category") {
@@ -298,7 +298,7 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
         }
 
         if (node.children) {
-          traverse(node.children);
+          traverse(node.children, node.id);
         }
       }
     }
