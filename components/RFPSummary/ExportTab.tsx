@@ -27,6 +27,8 @@ interface ExportConfiguration {
   column_mappings: any[];
   use_requirement_mapping: boolean;
   requirement_mapping_column?: string;
+  start_row?: number;
+  include_headers?: boolean;
 }
 
 interface Supplier {
@@ -108,6 +110,14 @@ export function ExportTab({ rfpId }: { rfpId: string }) {
     fetch(`/api/rfps/${rfpId}/documents?documentType=template`)
       .then((res) => res.json())
       .then((data) => setTemplates(data.documents || []))
+      .catch(console.error);
+  };
+
+  const handleConfigurationChange = () => {
+    // Refresh configurations list
+    fetch(`/api/rfps/${rfpId}/export-configurations`)
+      .then((res) => res.json())
+      .then((data) => setExportConfigurations(data.configurations || []))
       .catch(console.error);
   };
 
@@ -224,6 +234,7 @@ export function ExportTab({ rfpId }: { rfpId: string }) {
             configurations={exportConfigurations}
             suppliers={suppliers}
             templates={templates}
+            onConfigurationChange={handleConfigurationChange}
           />
         </TabsContent>
 

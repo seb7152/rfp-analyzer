@@ -29,9 +29,10 @@ export async function GET(
       );
     }
 
-    // Get supplierId from query parameters
+    // Get supplierId and documentType from query parameters
     const { searchParams } = new URL(request.url);
     const supplierId = searchParams.get("supplierId");
+    const documentType = searchParams.get("documentType");
 
     // Get the RFP and verify user has access
     const { data: rfp, error: rfpFetchError } = await supabase
@@ -64,6 +65,11 @@ export async function GET(
       )
       .eq("rfp_id", rfpId)
       .is("deleted_at", null);
+
+    // If documentType is provided, filter by document type
+    if (documentType) {
+      query = query.eq("document_type", documentType);
+    }
 
     // If supplierId is provided, filter by supplier
     if (supplierId) {

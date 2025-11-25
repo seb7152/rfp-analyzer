@@ -22,6 +22,8 @@ interface ExportConfiguration {
   column_mappings: any[];
   use_requirement_mapping: boolean;
   requirement_mapping_column?: string;
+  start_row?: number;
+  include_headers?: boolean;
 }
 
 interface ExportPreviewProps {

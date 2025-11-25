@@ -6,6 +6,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { rfpId: string } }
 ) {
+  console.log("========== EXPORT GENERATE API CALLED ==========");
   try {
     const supabase = await createServerClient();
 
@@ -90,13 +91,21 @@ export async function POST(
       );
     }
 
+    // Debug: Log configuration details
+    console.log("Configuration details:", {
+      id: configDetails.id,
+      start_row: configDetails.start_row,
+      include_headers: configDetails.include_headers,
+      use_requirement_mapping: configDetails.use_requirement_mapping,
+    });
+
     // Get requirements for this RFP
     const { data: requirements, error: requirementsError } = await supabase
       .from("requirements")
       .select(
         `
         id,
-        code,
+        requirement_id_external,
         title,
         description,
         weight
@@ -104,7 +113,7 @@ export async function POST(
       )
       .eq("rfp_id", rfpId)
       .eq("level", 4) // Only leaf requirements
-      .order("sort_order", { ascending: true });
+      .order("display_order", { ascending: true });
 
     if (requirementsError) {
       console.error("Error fetching requirements:", requirementsError);
@@ -125,7 +134,6 @@ export async function POST(
         manual_score,
         ai_comment,
         manual_comment,
-        questions_doubts,
         status
       `
       )
@@ -163,113 +171,152 @@ export async function POST(
 
     // Get the specified worksheet
     const worksheetName = configDetails.worksheet_name;
-    let worksheet = workbook.Sheets[worksheetName];
+    const templateWorksheet = workbook.Sheets[worksheetName];
 
-    if (!worksheet) {
+    if (!templateWorksheet) {
       return NextResponse.json(
         { error: `Worksheet "${worksheetName}" not found in template` },
         { status: 400 }
       );
     }
 
-    // Prepare data for export
-    const exportData = requirements.map((requirement) => {
+    // Create a NEW empty worksheet (don't use template data)
+    const newWorksheet: any = {};
+
+    // Get start row (0-based)
+    const startRow = (configDetails.start_row || 2) - 1;
+    let currentRow = startRow;
+
+    console.log(
+      "Export starting at row (0-based):",
+      startRow,
+      "= Excel row",
+      startRow + 1
+    );
+
+    // Write headers if requested
+    if (configDetails.include_headers !== false) {
+      console.log(
+        "Writing headers at row",
+        currentRow,
+        "(Excel row",
+        currentRow + 1,
+        ")"
+      );
+
+      configDetails.column_mappings.forEach((mapping: any) => {
+        const columnIndex = mapping.column.charCodeAt(0) - 65;
+        const headerValue = mapping.header_name || mapping.column;
+
+        const cellAddress = XLSX.utils.encode_cell({
+          r: currentRow,
+          c: columnIndex,
+        });
+
+        console.log(`  ${cellAddress}: "${headerValue}"`);
+        newWorksheet[cellAddress] = { v: headerValue, t: "s" };
+      });
+
+      currentRow++;
+    } else {
+      console.log(
+        "Headers NOT included (include_headers =",
+        configDetails.include_headers,
+        ")"
+      );
+    }
+
+    // Write data rows
+    console.log(
+      "Writing data starting at row",
+      currentRow,
+      "(Excel row",
+      currentRow + 1,
+      ")"
+    );
+
+    requirements.forEach((requirement) => {
       const response = responses.find(
         (r) => r.requirement_id === requirement.id
       );
 
-      const rowData: any = {};
-
-      // Map columns based on configuration
       configDetails.column_mappings.forEach((mapping: any) => {
-        const { column, field } = mapping;
+        const columnIndex = mapping.column.charCodeAt(0) - 65;
+        let cellValue: any = "";
 
-        switch (field) {
+        switch (mapping.field) {
           case "requirement_code":
-            rowData[column] = requirement.code;
+            cellValue = requirement.requirement_id_external;
             break;
           case "requirement_title":
-            rowData[column] = requirement.title;
+            cellValue = requirement.title;
             break;
           case "requirement_description":
-            rowData[column] = requirement.description;
+            cellValue = requirement.description;
             break;
           case "requirement_weight":
-            rowData[column] = requirement.weight;
+            cellValue = requirement.weight;
             break;
           case "supplier_response":
-            rowData[column] = response?.response_text || "";
+            cellValue = response?.response_text || "";
             break;
           case "ai_score":
-            rowData[column] = response?.ai_score || 0;
+            cellValue = response?.ai_score || 0;
             break;
           case "manual_score":
-            rowData[column] = response?.manual_score || 0;
+            cellValue = response?.manual_score || 0;
             break;
           case "ai_comment":
-            rowData[column] = response?.ai_comment || "";
+            cellValue = response?.ai_comment || "";
             break;
           case "manual_comment":
-            rowData[column] = response?.manual_comment || "";
-            break;
-          case "questions_doubts":
-            rowData[column] = response?.questions_doubts || "";
+            cellValue = response?.manual_comment || "";
             break;
           case "status":
-            rowData[column] = response?.status || "pending";
+            cellValue = response?.status || "pending";
             break;
           case "annotations":
-            rowData[column] = ""; // TODO: Implement annotations fetching
+            cellValue = ""; // TODO: Implement annotations fetching
             break;
           default:
-            rowData[column] = "";
+            cellValue = "";
         }
+
+        const cellAddress = XLSX.utils.encode_cell({
+          r: currentRow,
+          c: columnIndex,
+        });
+
+        newWorksheet[cellAddress] = { v: cellValue, t: "s" };
       });
 
-      return rowData;
+      currentRow++;
     });
 
-    // Apply requirement mapping if enabled
-    let finalData = exportData;
-    if (
-      configDetails.use_requirement_mapping &&
-      configDetails.requirement_mapping_column
-    ) {
-      // Read existing worksheet data to find requirement codes
-      const existingData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-      const mappingColumn = configDetails.requirement_mapping_column;
-
-      finalData = exportData.map((row) => {
-        const existingRow = existingData.find(
-          (existing: any) => existing[mappingColumn] === row.requirement_code
-        );
-
-        if (existingRow) {
-          // Merge with existing row data
-          return { ...existingRow, ...row };
-        }
-
-        return row;
-      });
-    }
-
-    // Convert to worksheet format
-    const headers = configDetails.column_mappings.map(
-      (mapping: any) => mapping.column
-    );
-    const rows = finalData.map((row) =>
-      headers.map((header: string) => row[header] || "")
+    // Set worksheet range
+    const lastRow = currentRow - 1;
+    const lastCol = Math.max(
+      ...configDetails.column_mappings.map(
+        (m: any) => m.column.charCodeAt(0) - 65
+      )
     );
 
-    // Create new worksheet with data
-    const newWorksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    newWorksheet["!ref"] = XLSX.utils.encode_range({
+      s: { r: 0, c: 0 },
+      e: { r: lastRow, c: lastCol },
+    });
 
-    // Replace the worksheet in the workbook
+    console.log("Final worksheet range:", newWorksheet["!ref"]);
+    console.log("Total rows written:", currentRow - startRow);
+
+    // Replace worksheet in workbook
     workbook.Sheets[worksheetName] = newWorksheet;
 
-    // Generate filename
+    // Generate filename based on template name with supplier suffix
+    const templateName = configDetails.template_document.original_filename;
+    const nameWithoutExt = templateName.replace(/\.[^/.]+$/, ""); // Remove extension
     const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-    const filename = `export_${configDetails.supplier.name}_${timestamp}.xlsx`;
+    const filename = `${nameWithoutExt}_${configDetails.supplier.name}_${timestamp}.xlsx`;
 
     // Generate buffer
     const exportBuffer = XLSX.write(workbook, {

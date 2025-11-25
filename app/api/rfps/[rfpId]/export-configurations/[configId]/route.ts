@@ -33,6 +33,8 @@ export async function PUT(
       column_mappings,
       use_requirement_mapping,
       requirement_mapping_column,
+      start_row,
+      include_headers,
     } = body;
 
     // Get RFP and verify user has access
@@ -67,6 +69,8 @@ export async function PUT(
         requirement_mapping_column: use_requirement_mapping
           ? requirement_mapping_column
           : null,
+        start_row: start_row,
+        include_headers: include_headers,
         updated_at: new Date().toISOString(),
       })
       .eq("id", configId)
