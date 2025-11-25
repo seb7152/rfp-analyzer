@@ -97,6 +97,7 @@ export async function POST(
       start_row: configDetails.start_row,
       include_headers: configDetails.include_headers,
       use_requirement_mapping: configDetails.use_requirement_mapping,
+      preserve_template_formatting: configDetails.preserve_template_formatting,
     });
 
     // Get requirements for this RFP
@@ -180,12 +181,25 @@ export async function POST(
       );
     }
 
-    // Create a NEW empty worksheet (don't use template data)
-    const newWorksheet: any = {};
-
-    // Get start row (0-based)
+    // Choose export mode based on preserve_template_formatting
+    let newWorksheet: any;
     const startRow = (configDetails.start_row || 2) - 1;
     let currentRow = startRow;
+
+    console.log("Export mode:", {
+      preserve_template_formatting: configDetails.preserve_template_formatting,
+      mode: configDetails.preserve_template_formatting ? "PRESERVE TEMPLATE" : "CLEAN EXPORT"
+    });
+
+    if (configDetails.preserve_template_formatting) {
+      // MODE: PRESERVE TEMPLATE - Keep all formatting, formulas, and existing data
+      console.log("Using PRESERVE TEMPLATE mode - keeping formatting and formulas");
+      newWorksheet = JSON.parse(JSON.stringify(templateWorksheet)); // Deep clone to preserve all properties
+    } else {
+      // MODE: CLEAN EXPORT - Create new empty worksheet
+      console.log("Using CLEAN EXPORT mode - creating new worksheet");
+      newWorksheet = {};
+    }
 
     console.log(
       "Export starting at row (0-based):",
@@ -287,7 +301,18 @@ export async function POST(
           c: columnIndex,
         });
 
-        newWorksheet[cellAddress] = { v: cellValue, t: "s" };
+        // Preserve existing cell formatting if in preserve mode
+        if (configDetails.preserve_template_formatting && newWorksheet[cellAddress]) {
+          // Keep existing cell properties (formatting, formulas, etc.) but update value
+          newWorksheet[cellAddress].v = cellValue;
+          // Update formula result if cell contains a formula
+          if (newWorksheet[cellAddress].f) {
+            newWorksheet[cellAddress].w = cellValue; // Set formatted value
+          }
+        } else {
+          // Create new cell
+          newWorksheet[cellAddress] = { v: cellValue, t: "s" };
+        }
       });
 
       currentRow++;

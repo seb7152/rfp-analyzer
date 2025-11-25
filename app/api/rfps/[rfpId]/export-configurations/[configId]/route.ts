@@ -35,6 +35,7 @@ export async function PUT(
       requirement_mapping_column,
       start_row,
       include_headers,
+      preserve_template_formatting,
     } = body;
 
     // Get RFP and verify user has access
@@ -71,6 +72,7 @@ export async function PUT(
           : null,
         start_row: start_row,
         include_headers: include_headers,
+        preserve_template_formatting: preserve_template_formatting,
         updated_at: new Date().toISOString(),
       })
       .eq("id", configId)

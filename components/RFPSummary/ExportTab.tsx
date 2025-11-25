@@ -29,6 +29,7 @@ interface ExportConfiguration {
   requirement_mapping_column?: string;
   start_row?: number;
   include_headers?: boolean;
+  preserve_template_formatting?: boolean;
 }
 
 interface Supplier {

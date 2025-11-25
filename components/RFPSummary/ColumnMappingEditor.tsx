@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Toggle } from "@/components/ui/toggle";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -22,6 +23,9 @@ interface ExportConfiguration {
   column_mappings: any[];
   use_requirement_mapping: boolean;
   requirement_mapping_column?: string;
+  start_row?: number;
+  include_headers?: boolean;
+  preserve_template_formatting?: boolean;
 }
 
 interface ColumnMappingEditorProps {
@@ -78,11 +82,6 @@ const EXPORT_FIELDS = [
     description: "Commentaires de l'évaluateur",
   },
   {
-    value: "questions_doubts",
-    label: "Questions/Doutes",
-    description: "Points à clarifier",
-  },
-  {
     value: "status",
     label: "Status",
     description: "Pass/Partial/Fail/Pending",
@@ -115,6 +114,13 @@ export function ColumnMappingEditor({
   const [requirementMappingColumn, setRequirementMappingColumn] = useState(
     configuration.requirement_mapping_column || ""
   );
+  const [startRow, setStartRow] = useState(configuration.start_row || 2);
+  const [includeHeaders, setIncludeHeaders] = useState(
+    configuration.include_headers !== false // true by default
+  );
+  const [preserveTemplateFormatting, setPreserveTemplateFormatting] = useState(
+    configuration.preserve_template_formatting || false
+  );
   const [saving, setSaving] = useState(false);
 
   const addColumnMapping = () => {
@@ -124,6 +130,7 @@ export function ColumnMappingEditor({
         id: `mapping-${Date.now()}`,
         column: "",
         field: "",
+        header_name: "",
       },
     ]);
   };
@@ -148,9 +155,10 @@ export function ColumnMappingEditor({
         ...configuration,
         column_mappings: columnMappings,
         use_requirement_mapping: useRequirementMapping,
-        requirement_mapping_column: useRequirementMapping
-          ? requirementMappingColumn
-          : null,
+        requirement_mapping_column: requirementMappingColumn,
+        start_row: startRow,
+        include_headers: includeHeaders,
+        preserve_template_formatting: preserveTemplateFormatting,
       };
 
       const response = await fetch(
@@ -202,51 +210,124 @@ export function ColumnMappingEditor({
         </Button>
       </div>
 
-      {/* Requirement Mapping Option */}
+      {/* Export Options */}
       <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 p-6">
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Toggle
-              id="use-requirement-mapping"
-              pressed={useRequirementMapping}
-              onPressedChange={setUseRequirementMapping}
-            />
-            <Label
-              htmlFor="use-requirement-mapping"
-              className="text-sm font-medium"
-            >
-              Utiliser le code exigence pour mapper les données
-            </Label>
-          </div>
+        <div className="space-y-6">
+          <div>
+            <h4 className="text-md font-semibold text-slate-900 dark:text-white mb-4">
+              Options d&apos;Export
+            </h4>
 
-          <p className="text-xs text-slate-600 dark:text-slate-400">
-            Si coché, le système cherchera les codes d'exigences dans une
-            colonne spécifique et positionnera les données sur la ligne
-            correspondante.
-          </p>
-
-          {useRequirementMapping && (
-            <div className="mt-4">
-              <Label className="text-sm font-medium mb-2 block">
-                Colonne des codes d'exigences
-              </Label>
-              <Select
-                value={requirementMappingColumn}
-                onValueChange={setRequirementMappingColumn}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sélectionner la colonne" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXCEL_COLUMNS.map((column) => (
-                    <SelectItem key={column.value} value={column.value}>
-                      Colonne {column.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Preserve Template Formatting */}
+            <div className="space-y-2 mb-6">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="preserve-template-formatting"
+                  checked={preserveTemplateFormatting}
+                  onCheckedChange={(checked) =>
+                    setPreserveTemplateFormatting(checked as boolean)
+                  }
+                />
+                <Label
+                  htmlFor="preserve-template-formatting"
+                  className="text-sm font-medium"
+                >
+                  Préserver le formatage du template
+                </Label>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Si coché, conserve le formatage, les formules et la structure du fichier template. Sinon, crée un fichier Excel vierge avec uniquement les données.
+              </p>
             </div>
-          )}
+
+            {/* Include Headers */}
+            <div className="space-y-2 mb-6">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="include-headers"
+                  checked={includeHeaders}
+                  onCheckedChange={(checked) =>
+                    setIncludeHeaders(checked as boolean)
+                  }
+                />
+                <Label
+                  htmlFor="include-headers"
+                  className="text-sm font-medium"
+                >
+                  Inclure les en-têtes personnalisés
+                </Label>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Si coché, ajoute une ligne d&apos;en-tête avec les noms
+                personnalisés des colonnes
+              </p>
+            </div>
+
+            {/* Start Row */}
+            <div className="space-y-2 mb-6">
+              <Label className="text-sm font-medium">Ligne de départ</Label>
+              <Input
+                type="number"
+                min="1"
+                value={startRow}
+                onChange={(e) => setStartRow(parseInt(e.target.value) || 2)}
+                placeholder="2"
+                className="w-full"
+              />
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Numéro de la ligne où commencer l&apos;export des données (par
+                défaut : 2)
+              </p>
+            </div>
+
+            {/* Requirement Mapping Option */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="use-requirement-mapping"
+                  checked={useRequirementMapping}
+                  onCheckedChange={(checked) =>
+                    setUseRequirementMapping(checked as boolean)
+                  }
+                />
+                <Label
+                  htmlFor="use-requirement-mapping"
+                  className="text-sm font-medium"
+                >
+                  Utiliser le code exigence pour mapper les données
+                </Label>
+              </div>
+
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Si coché, le système cherchera les codes d&apos;exigences dans
+                une colonne spécifique et positionnera les données sur la ligne
+                correspondante.
+              </p>
+
+              {useRequirementMapping && (
+                <div className="mt-4">
+                  <Label className="text-sm font-medium mb-2 block">
+                    Colonne des codes d&apos;exigences
+                  </Label>
+                  <Select
+                    value={requirementMappingColumn}
+                    onValueChange={setRequirementMappingColumn}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Sélectionner la colonne" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EXCEL_COLUMNS.map((column) => (
+                        <SelectItem key={column.value} value={column.value}>
+                          Colonne {column.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </Card>
 
@@ -329,6 +410,19 @@ export function ColumnMappingEditor({
                     </Select>
                   </div>
 
+                  <div className="flex-1">
+                    <Input
+                      value={mapping.header_name || ""}
+                      onChange={(e) =>
+                        updateColumnMapping(mapping.id, {
+                          header_name: e.target.value,
+                        })
+                      }
+                      placeholder="Nom d'en-tête (optionnel)"
+                      className="w-full"
+                    />
+                  </div>
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -341,32 +435,6 @@ export function ColumnMappingEditor({
               ))}
             </div>
           )}
-        </div>
-      </Card>
-
-      {/* Instructions */}
-      <Card className="rounded-2xl border border-blue-200 bg-blue-50/90 shadow-sm dark:border-blue-800 dark:bg-blue-900/60 p-6">
-        <div className="space-y-3">
-          <h4 className="text-md font-semibold text-blue-900 dark:text-blue-100">
-            💡 Instructions
-          </h4>
-          <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-            <li>
-              • Associez chaque colonne Excel à une donnée spécifique à exporter
-            </li>
-            <li>
-              • L'ordre des colonnes déterminera l'ordre dans l'Excel final
-            </li>
-            <li>
-              • Si vous utilisez le mapping par code exigence, assurez-vous que
-              la colonne contient bien les codes (REQ-001, etc.)
-            </li>
-            <li>• Les champs non mappés ne seront pas inclus dans l'export</li>
-            <li>
-              • Vous pouvez mapper plusieurs fois la même donnée dans
-              différentes colonnes
-            </li>
-          </ul>
         </div>
       </Card>
     </div>
