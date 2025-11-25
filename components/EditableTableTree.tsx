@@ -20,6 +20,8 @@ interface TreeNode {
   title: string;
   level: number;
   children?: TreeNode[];
+  is_optional?: boolean;
+  is_mandatory?: boolean;
 }
 
 interface WeightData {
@@ -136,7 +138,7 @@ export function EditableTableTree({
   ): React.ReactNode[] => {
     // Calcul du total pour ce niveau
     const levelTotal = getChildrenTotal(parentId);
-    const isLevelValid = levelTotal === 100 || levelTotal === 0;
+    const isLevelValid = Math.abs(levelTotal - 100) <= 0.1 || levelTotal === 0;
     const levelError =
       levelTotal > 0 && !isLevelValid ? levelTotal.toFixed(2) : null;
 
@@ -250,10 +252,26 @@ export function EditableTableTree({
           <TableCell
             className={`text-sm ${isCategory ? "font-semibold" : isRequirement ? "italic" : ""}`}
           >
-            {isRequirement && (
-              <span className="inline-block mr-2 text-gray-400">→</span>
-            )}
-            {item.title}
+            <div className="flex items-center gap-2">
+              {isRequirement && (
+                <span className="text-gray-400">→</span>
+              )}
+              <span>{item.title}</span>
+              {isRequirement && (
+                <div className="flex gap-1">
+                  {item.is_mandatory && (
+                    <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2.5 py-0.5 text-xs font-semibold text-red-700 dark:text-red-300">
+                      Obligatoire
+                    </span>
+                  )}
+                  {item.is_optional && (
+                    <span className="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-semibold text-green-700 dark:text-green-300">
+                      Optionnel
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </TableCell>
 
           {/* Colonne: Pondération locale (éditable) */}
