@@ -53,10 +53,11 @@ export function EditableTableTree({
       const localWeight = weights[nodeId] || 0;
       if (!parentId) return localWeight;
 
-      const parentRealWeight = calculateRealWeight(parentId);
+      const parentParentId = getParentId(parentId, data);
+      const parentRealWeight = calculateRealWeight(parentId, parentParentId);
       return (localWeight * parentRealWeight) / 100;
     },
-    [weights]
+    [weights, data]
   );
 
   // Fonction pour obtenir le parent d'un nœud
