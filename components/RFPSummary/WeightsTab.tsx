@@ -252,7 +252,11 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
     if (!parentId) return localWeight;
 
     const parentParentId = getParentId(parentId, nodes);
-    const parentRealWeight = calculateRealWeight(parentId, nodes, parentParentId);
+    const parentRealWeight = calculateRealWeight(
+      parentId,
+      nodes,
+      parentParentId
+    );
     return (localWeight * parentRealWeight) / 100;
   };
 
