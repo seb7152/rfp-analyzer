@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "next-themes";
-import { OrganizationSwitcher } from "./OrganizationSwitcher";
+import { DashboardSwitcher } from "./DashboardSwitcher";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun, LogOut, User } from "lucide-react";
 import { useState } from "react";
@@ -25,7 +25,7 @@ export function Navbar() {
           {isLoading || !user ? (
             <div className="h-9 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
           ) : (
-            <OrganizationSwitcher />
+            <DashboardSwitcher />
           )}
         </div>
 
