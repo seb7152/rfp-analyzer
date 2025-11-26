@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Edit2, Trash2, FileSpreadsheet, Building2 } from "lucide-react";
+import { Plus, Edit2, Trash2, FileSpreadsheet, Building2, Loader } from "lucide-react";
 
 interface Template {
   id: string;
@@ -46,6 +45,7 @@ interface ExportConfigurationListProps {
   configurations: ExportConfiguration[];
   suppliers: Supplier[];
   templates: Template[];
+  onConfigurationChange?: () => void;
 }
 
 export function ExportConfigurationList({
@@ -53,14 +53,17 @@ export function ExportConfigurationList({
   configurations,
   suppliers,
   templates,
+  onConfigurationChange,
 }: ExportConfigurationListProps) {
-  const [, forceUpdate] = useState({});
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newConfig, setNewConfig] = useState({
     template_document_id: "",
     worksheet_name: "",
     supplier_id: "",
   });
+  const [availableWorksheets, setAvailableWorksheets] = useState<string[]>([]);
+  const [loadingWorksheets, setLoadingWorksheets] = useState(false);
+  const [worksheetError, setWorksheetError] = useState<string | null>(null);
 
   const handleCreateConfiguration = async () => {
     try {
@@ -83,7 +86,10 @@ export function ExportConfigurationList({
           worksheet_name: "",
           supplier_id: "",
         });
-        forceUpdate({});
+        // Refresh configurations list
+        if (onConfigurationChange) {
+          onConfigurationChange();
+        }
       } else {
         const error = await response.json();
         alert(`Erreur: ${error.message}`);
@@ -108,7 +114,10 @@ export function ExportConfigurationList({
       );
 
       if (response.ok) {
-        forceUpdate({});
+        // Refresh configurations list
+        if (onConfigurationChange) {
+          onConfigurationChange();
+        }
       } else {
         const error = await response.json();
         alert(`Erreur: ${error.message}`);
@@ -129,6 +138,45 @@ export function ExportConfigurationList({
     return supplier?.name || "Fournisseur inconnu";
   };
 
+  const handleTemplateChange = async (templateId: string) => {
+    setNewConfig({
+      ...newConfig,
+      template_document_id: templateId,
+      worksheet_name: "", // Reset worksheet selection
+    });
+    setAvailableWorksheets([]);
+    setWorksheetError(null);
+
+    if (!templateId) {
+      return;
+    }
+
+    setLoadingWorksheets(true);
+    try {
+      const response = await fetch(
+        `/api/rfps/${rfpId}/documents/${templateId}/worksheets`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableWorksheets(data.worksheets || []);
+        setWorksheetError(null);
+      } else {
+        const error = await response.json();
+        setWorksheetError(
+          error.error || "Impossible de charger les onglets du fichier"
+        );
+        setAvailableWorksheets([]);
+      }
+    } catch (error) {
+      console.error("Error fetching worksheets:", error);
+      setWorksheetError("Erreur lors de la récupération des onglets");
+      setAvailableWorksheets([]);
+    } finally {
+      setLoadingWorksheets(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -143,7 +191,22 @@ export function ExportConfigurationList({
           </p>
         </div>
 
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <Dialog
+          open={isCreateDialogOpen}
+          onOpenChange={(open) => {
+            setIsCreateDialogOpen(open);
+            if (!open) {
+              // Reset state when closing
+              setNewConfig({
+                template_document_id: "",
+                worksheet_name: "",
+                supplier_id: "",
+              });
+              setAvailableWorksheets([]);
+              setWorksheetError(null);
+            }
+          }}
+        >
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
@@ -161,9 +224,7 @@ export function ExportConfigurationList({
                 </label>
                 <Select
                   value={newConfig.template_document_id}
-                  onValueChange={(value) =>
-                    setNewConfig({ ...newConfig, template_document_id: value })
-                  }
+                  onValueChange={handleTemplateChange}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner un template" />
@@ -185,16 +246,48 @@ export function ExportConfigurationList({
                 <label className="text-sm font-medium text-slate-700 block mb-2">
                   Nom de l'onglet (Worksheet)
                 </label>
-                <Input
+                {worksheetError && (
+                  <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                    {worksheetError}
+                  </div>
+                )}
+                <Select
                   value={newConfig.worksheet_name}
-                  onChange={(e) =>
+                  onValueChange={(value) =>
                     setNewConfig({
                       ...newConfig,
-                      worksheet_name: e.target.value,
+                      worksheet_name: value,
                     })
                   }
-                  placeholder="Ex: Feuil1, Analyse, etc."
-                />
+                  disabled={
+                    loadingWorksheets ||
+                    !newConfig.template_document_id ||
+                    availableWorksheets.length === 0
+                  }
+                >
+                  <SelectTrigger>
+                    {loadingWorksheets ? (
+                      <div className="flex items-center gap-2">
+                        <Loader className="h-4 w-4 animate-spin" />
+                        <span>Chargement des onglets...</span>
+                      </div>
+                    ) : (
+                      <SelectValue placeholder="Sélectionner un onglet" />
+                    )}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableWorksheets.map((worksheet) => (
+                      <SelectItem key={worksheet} value={worksheet}>
+                        {worksheet}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!newConfig.template_document_id && (
+                  <p className="text-xs text-slate-500 mt-2">
+                    Sélectionnez d'abord un template
+                  </p>
+                )}
               </div>
 
               <div>
