@@ -167,87 +167,64 @@ export async function POST(
     }
 
     const templateBuffer = await templateResponse.arrayBuffer();
-    const XLSX = require("xlsx");
-    const workbook = XLSX.read(templateBuffer);
+
+    // Use ExcelJS for proper formatting support
+    const ExcelJS = require("exceljs");
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(templateBuffer);
 
     // Get the specified worksheet
     const worksheetName = configDetails.worksheet_name;
-    const templateWorksheet = workbook.Sheets[worksheetName];
+    const worksheet = workbook.getWorksheet(worksheetName);
 
-    if (!templateWorksheet) {
+    if (!worksheet) {
       return NextResponse.json(
         { error: `Worksheet "${worksheetName}" not found in template` },
         { status: 400 }
       );
     }
 
-    // Choose export mode based on preserve_template_formatting
-    let newWorksheet: any;
-    const startRow = (configDetails.start_row || 2) - 1;
+    const startRow = configDetails.start_row || 2;
     let currentRow = startRow;
 
     console.log("Export mode:", {
       preserve_template_formatting: configDetails.preserve_template_formatting,
-      mode: configDetails.preserve_template_formatting ? "PRESERVE TEMPLATE" : "CLEAN EXPORT"
+      mode: configDetails.preserve_template_formatting
+        ? "PRESERVE TEMPLATE"
+        : "CLEAN EXPORT",
     });
 
-    if (configDetails.preserve_template_formatting) {
-      // MODE: PRESERVE TEMPLATE - Keep all formatting, formulas, and existing data
-      console.log("Using PRESERVE TEMPLATE mode - keeping formatting and formulas");
-      newWorksheet = JSON.parse(JSON.stringify(templateWorksheet)); // Deep clone to preserve all properties
-    } else {
-      // MODE: CLEAN EXPORT - Create new empty worksheet
-      console.log("Using CLEAN EXPORT mode - creating new worksheet");
-      newWorksheet = {};
-    }
+    console.log("Export starting at row (Excel):", startRow);
 
-    console.log(
-      "Export starting at row (0-based):",
-      startRow,
-      "= Excel row",
-      startRow + 1
-    );
-
-    // Write headers if requested
-    if (configDetails.include_headers !== false) {
-      console.log(
-        "Writing headers at row",
-        currentRow,
-        "(Excel row",
-        currentRow + 1,
-        ")"
-      );
+    // Write headers if requested (only in clean export mode)
+    // In preserve mode, headers already exist in the template
+    if (
+      configDetails.include_headers !== false &&
+      !configDetails.preserve_template_formatting
+    ) {
+      console.log("Writing headers at row", currentRow);
 
       configDetails.column_mappings.forEach((mapping: any) => {
-        const columnIndex = mapping.column.charCodeAt(0) - 65;
+        const columnLetter = mapping.column;
         const headerValue = mapping.header_name || mapping.column;
-
-        const cellAddress = XLSX.utils.encode_cell({
-          r: currentRow,
-          c: columnIndex,
-        });
-
-        console.log(`  ${cellAddress}: "${headerValue}"`);
-        newWorksheet[cellAddress] = { v: headerValue, t: "s" };
+        const cell = worksheet.getCell(`${columnLetter}${currentRow}`);
+        cell.value = headerValue;
+        console.log(`  ${columnLetter}${currentRow}: "${headerValue}"`);
       });
 
       currentRow++;
     } else {
-      console.log(
-        "Headers NOT included (include_headers =",
-        configDetails.include_headers,
-        ")"
-      );
+      if (configDetails.preserve_template_formatting) {
+        console.log(
+          "Headers NOT written (preserve_template_formatting = true, keeping template headers)"
+        );
+      } else {
+        console.log("Headers NOT included (include_headers = false)");
+      }
     }
 
     // Write data rows
-    console.log(
-      "Writing data starting at row",
-      currentRow,
-      "(Excel row",
-      currentRow + 1,
-      ")"
-    );
+    console.log("Writing data starting at row", currentRow);
 
     requirements.forEach((requirement) => {
       const response = responses.find(
@@ -255,7 +232,7 @@ export async function POST(
       );
 
       configDetails.column_mappings.forEach((mapping: any) => {
-        const columnIndex = mapping.column.charCodeAt(0) - 65;
+        const columnLetter = mapping.column;
         let cellValue: any = "";
 
         switch (mapping.field) {
@@ -296,46 +273,15 @@ export async function POST(
             cellValue = "";
         }
 
-        const cellAddress = XLSX.utils.encode_cell({
-          r: currentRow,
-          c: columnIndex,
-        });
-
-        // Preserve existing cell formatting if in preserve mode
-        if (configDetails.preserve_template_formatting && newWorksheet[cellAddress]) {
-          // Keep existing cell properties (formatting, formulas, etc.) but update value
-          newWorksheet[cellAddress].v = cellValue;
-          // Update formula result if cell contains a formula
-          if (newWorksheet[cellAddress].f) {
-            newWorksheet[cellAddress].w = cellValue; // Set formatted value
-          }
-        } else {
-          // Create new cell
-          newWorksheet[cellAddress] = { v: cellValue, t: "s" };
-        }
+        // ExcelJS: get cell and update value (preserves formatting automatically)
+        const cell = worksheet.getCell(`${columnLetter}${currentRow}`);
+        cell.value = cellValue;
       });
 
       currentRow++;
     });
 
-    // Set worksheet range
-    const lastRow = currentRow - 1;
-    const lastCol = Math.max(
-      ...configDetails.column_mappings.map(
-        (m: any) => m.column.charCodeAt(0) - 65
-      )
-    );
-
-    newWorksheet["!ref"] = XLSX.utils.encode_range({
-      s: { r: 0, c: 0 },
-      e: { r: lastRow, c: lastCol },
-    });
-
-    console.log("Final worksheet range:", newWorksheet["!ref"]);
     console.log("Total rows written:", currentRow - startRow);
-
-    // Replace worksheet in workbook
-    workbook.Sheets[worksheetName] = newWorksheet;
 
     // Generate filename based on template name with supplier suffix
     const templateName = configDetails.template_document.original_filename;
@@ -343,11 +289,8 @@ export async function POST(
     const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const filename = `${nameWithoutExt}_${configDetails.supplier.name}_${timestamp}.xlsx`;
 
-    // Generate buffer
-    const exportBuffer = XLSX.write(workbook, {
-      type: "buffer",
-      bookType: "xlsx",
-    });
+    // Generate buffer with ExcelJS (preserves formatting automatically)
+    const exportBuffer = await workbook.xlsx.writeBuffer();
 
     // Upload to GCS
     const { generateUploadSignedUrl } = await import("@/lib/gcs");

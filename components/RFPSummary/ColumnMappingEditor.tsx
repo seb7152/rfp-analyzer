@@ -236,7 +236,9 @@ export function ColumnMappingEditor({
                 </Label>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-400">
-                Si coché, conserve le formatage, les formules et la structure du fichier template. Sinon, crée un fichier Excel vierge avec uniquement les données.
+                Si coché, conserve le formatage, les formules et la structure du
+                fichier template. Sinon, crée un fichier Excel vierge avec
+                uniquement les données.
               </p>
             </div>
 
