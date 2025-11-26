@@ -242,6 +242,7 @@ export function ExportTab({ rfpId }: { rfpId: string }) {
         <TabsContent value="mapping" className="space-y-6">
           {selectedConfiguration ? (
             <ColumnMappingEditor
+              key={selectedConfiguration.id}
               rfpId={rfpId}
               configuration={selectedConfiguration}
               onConfigurationUpdate={(updatedConfig: any) => {
@@ -273,6 +274,11 @@ export function ExportTab({ rfpId }: { rfpId: string }) {
             <ExportPreview
               rfpId={rfpId}
               configuration={selectedConfiguration}
+              allConfigurationsForTemplate={exportConfigurations.filter(
+                (c) =>
+                  c.template_document_id ===
+                  selectedConfiguration.template_document_id
+              )}
             />
           ) : (
             <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 p-6">

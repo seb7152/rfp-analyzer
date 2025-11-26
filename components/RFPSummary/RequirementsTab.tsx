@@ -14,6 +14,7 @@ import {
   Save,
   ChevronUp,
   CheckCircle2,
+  Info,
 } from "lucide-react";
 import {
   Table,
@@ -30,6 +31,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface TreeNode {
   id: string;
@@ -39,6 +45,7 @@ interface TreeNode {
   level: number;
   is_mandatory?: boolean;
   is_optional?: boolean;
+  description?: string;
   children?: TreeNode[];
 }
 
@@ -692,6 +699,29 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
               {node.code}
             </span>
             <span className="font-medium">{node.title}</span>
+            {node.type === "requirement" && node.description && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 rounded-full p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Info className="h-3.5 w-3.5" />
+                    <span className="sr-only">Description</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4" align="start">
+                  <div className="space-y-2">
+                    <h4 className="font-medium leading-none">Description</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {node.description}
+                    </p>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
         </TableCell>
 

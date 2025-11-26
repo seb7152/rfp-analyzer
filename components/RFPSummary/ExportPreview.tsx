@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Download, FileSpreadsheet, Eye, AlertCircle } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ExportConfiguration {
   id: string;
@@ -29,6 +30,8 @@ interface ExportConfiguration {
 interface ExportPreviewProps {
   rfpId: string;
   configuration: ExportConfiguration;
+  siblingConfigurations?: ExportConfiguration[];
+  allConfigurationsForTemplate?: ExportConfiguration[];
 }
 
 interface PreviewData {
@@ -39,10 +42,28 @@ interface PreviewData {
   templateName: string;
 }
 
-export function ExportPreview({ rfpId, configuration }: ExportPreviewProps) {
+export function ExportPreview({
+  rfpId,
+  configuration,
+  siblingConfigurations = [],
+  allConfigurationsForTemplate = [],
+}: ExportPreviewProps) {
+  const [activeConfig, setActiveConfig] =
+    useState<ExportConfiguration>(configuration);
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Get all configurations for this template (for generating complete export)
+  const configsForTemplate =
+    allConfigurationsForTemplate.length > 0
+      ? allConfigurationsForTemplate
+      : [configuration];
+
+  // Update active config when the main configuration prop changes
+  useEffect(() => {
+    setActiveConfig(configuration);
+  }, [configuration]);
 
   useEffect(() => {
     const fetchPreview = async () => {
@@ -56,7 +77,7 @@ export function ExportPreview({ rfpId, configuration }: ExportPreviewProps) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            configuration,
+            configuration: activeConfig,
             limit: 10, // Preview first 10 rows
           }),
         });
@@ -78,10 +99,10 @@ export function ExportPreview({ rfpId, configuration }: ExportPreviewProps) {
       }
     };
 
-    if (configuration) {
+    if (activeConfig) {
       fetchPreview();
     }
-  }, [rfpId, configuration]);
+  }, [rfpId, activeConfig]);
 
   const handleGenerateExport = async () => {
     try {
@@ -93,7 +114,7 @@ export function ExportPreview({ rfpId, configuration }: ExportPreviewProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          configuration,
+          configuration: activeConfig, // Can be any config from the group
         }),
       });
 
@@ -121,7 +142,7 @@ export function ExportPreview({ rfpId, configuration }: ExportPreviewProps) {
     }
   };
 
-  if (loading) {
+  if (loading && !previewData) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
@@ -194,21 +215,55 @@ export function ExportPreview({ rfpId, configuration }: ExportPreviewProps) {
               Aperçu de l'Export
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              {previewData.supplierName} • {previewData.templateName} •
-              {previewData.totalRequirements} exigences au total
+              Prévisualisation pour {previewData.supplierName} •{" "}
+              {previewData.templateName}
             </p>
           </div>
         </div>
 
-        <Button
-          onClick={handleGenerateExport}
-          disabled={loading}
-          className="gap-2"
-        >
-          <Download className="h-4 w-4" />
-          {loading ? "Génération..." : "Générer l'Export"}
-        </Button>
+        <div className="flex flex-col items-end gap-1">
+          <Button
+            onClick={handleGenerateExport}
+            disabled={loading}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            {loading ? "Génération..." : "Générer l'Export Complet"}
+          </Button>
+          <span className="text-xs text-slate-500">
+            Inclut tous les onglets configurés
+          </span>
+        </div>
       </div>
+
+      {/* Tab Navigation for All Configurations in Template */}
+      {configsForTemplate.length > 1 && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Aperçu des onglets ({configsForTemplate.length} au total)
+          </p>
+          <Tabs
+            value={activeConfig.id}
+            onValueChange={(value) => {
+              const config = configsForTemplate.find((c) => c.id === value);
+              if (config) setActiveConfig(config);
+            }}
+            className="w-full"
+          >
+            <TabsList className="w-full justify-start overflow-x-auto">
+              {configsForTemplate.map((config) => (
+                <TabsTrigger
+                  key={config.id}
+                  value={config.id}
+                  className="text-xs sm:text-sm"
+                >
+                  <span>{config.worksheet_name}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
 
       {/* Preview Table */}
       <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 p-6">
@@ -223,43 +278,51 @@ export function ExportPreview({ rfpId, configuration }: ExportPreviewProps) {
             </div>
           </div>
 
-          <div className="border border-slate-200 rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50 dark:bg-slate-800">
-                    {previewData.headers.map((header, index) => (
-                      <TableHead
-                        key={index}
-                        className="font-medium text-slate-900 dark:text-white"
-                      >
-                        {header}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {previewData.rows.map((row, rowIndex) => (
-                    <TableRow
-                      key={rowIndex}
-                      className="border-b border-slate-100 dark:border-slate-700"
-                    >
-                      {row.map((cell, cellIndex) => (
-                        <TableCell
-                          key={cellIndex}
-                          className="text-slate-700 dark:text-slate-300"
+          {loading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+            </div>
+          ) : (
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50 dark:bg-slate-800">
+                      {previewData.headers.map((header, index) => (
+                        <TableHead
+                          key={index}
+                          className="font-medium text-slate-900 dark:text-white"
                         >
-                          <div className="max-w-xs truncate" title={cell}>
-                            {cell || "-"}
-                          </div>
-                        </TableCell>
+                          {header}
+                        </TableHead>
                       ))}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {previewData.rows.map((row, rowIndex) => (
+                      <TableRow
+                        key={rowIndex}
+                        className="border-b border-slate-100 dark:border-slate-700"
+                      >
+                        {row.map((cell, cellIndex) => (
+                          <TableCell
+                            key={cellIndex}
+                            className="text-slate-700 dark:text-slate-300"
+                          >
+                            <div className="max-w-xs truncate" title={cell}>
+                              {cell || "-"}
+                            </div>
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
-          </div>
+          )}
 
           {previewData.totalRequirements > 10 && (
             <div className="text-center text-sm text-slate-600 dark:text-slate-400 pt-4">
@@ -288,7 +351,7 @@ export function ExportPreview({ rfpId, configuration }: ExportPreviewProps) {
             </div>
             <div>
               <span className="font-medium text-blue-800 dark:text-blue-200">
-                Fournisseur:
+                Fournisseur (aperçu):
               </span>
               <span className="ml-2 text-blue-700 dark:text-blue-300">
                 {previewData.supplierName}
@@ -296,10 +359,10 @@ export function ExportPreview({ rfpId, configuration }: ExportPreviewProps) {
             </div>
             <div>
               <span className="font-medium text-blue-800 dark:text-blue-200">
-                Onglet:
+                Onglet (aperçu):
               </span>
               <span className="ml-2 text-blue-700 dark:text-blue-300">
-                {configuration.worksheet_name}
+                {activeConfig.worksheet_name}
               </span>
             </div>
             <div>
@@ -312,13 +375,35 @@ export function ExportPreview({ rfpId, configuration }: ExportPreviewProps) {
             </div>
           </div>
 
-          {configuration.use_requirement_mapping && (
+          {configsForTemplate.length > 1 && (
+            <div className="mt-4 p-3 bg-blue-100 dark:bg-blue-800 rounded-lg">
+              <p className="text-sm text-blue-800 dark:text-blue-200 font-medium mb-2">
+                ✓ Export multi-onglets activé
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                Le fichier généré inclura {configsForTemplate.length} onglet
+                {configsForTemplate.length > 1 ? "s" : ""}:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {configsForTemplate.map((config) => (
+                  <span
+                    key={config.id}
+                    className="inline-block px-2 py-1 bg-blue-200 dark:bg-blue-700 text-blue-900 dark:text-blue-100 rounded text-xs font-medium"
+                  >
+                    {config.worksheet_name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeConfig.use_requirement_mapping && (
             <div className="mt-4 p-3 bg-blue-100 dark:bg-blue-800 rounded-lg">
               <p className="text-sm text-blue-800 dark:text-blue-200">
                 <strong>Mapping par code exigence activé</strong> - Les données
                 seront positionnées sur les lignes correspondantes aux codes
                 d'exigences dans la colonne "
-                {configuration.requirement_mapping_column}"
+                {activeConfig.requirement_mapping_column}"
               </p>
             </div>
           )}
