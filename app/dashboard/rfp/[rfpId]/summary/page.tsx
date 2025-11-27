@@ -269,7 +269,7 @@ export default function RFPSummaryPage() {
                         // For export, we prefer DB weights. If missing, we might need to recalculate or just export 0.
                         // Let's try to recalculate if missing, similar to WeightsTab logic, but simplified.
 
-                        const calculateRealWeight = (nodeId: string, nodes: any[], parentId: string | null = null): number => {
+                        const calculateRealWeight = (nodeId: string): number => {
                           // If we have it in DB, use it (converted back to %)
                           if (allRealWeights.has(nodeId)) return allRealWeights.get(nodeId)!;
                           return 0; // Fallback
@@ -286,7 +286,7 @@ export default function RFPSummaryPage() {
                               if (node.children)
                                 traverse(node.children, node.code);
                             } else if (node.type === "requirement") {
-                              const realWeight = calculateRealWeight(node.id, treeData);
+                              const realWeight = calculateRealWeight(node.id);
                               exportData.push({
                                 code: node.code,
                                 title: node.title,

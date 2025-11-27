@@ -45,7 +45,6 @@ interface PreviewData {
 export function ExportPreview({
   rfpId,
   configuration,
-  siblingConfigurations = [],
   allConfigurationsForTemplate = [],
 }: ExportPreviewProps) {
   const [activeConfig, setActiveConfig] =
