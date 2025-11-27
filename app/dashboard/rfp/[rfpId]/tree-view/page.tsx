@@ -3,6 +3,11 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { EditableTableTree } from "@/components/EditableTableTree";
 
 interface TreeNode {
@@ -12,6 +17,10 @@ interface TreeNode {
   title: string;
   level: number;
   children?: TreeNode[];
+  short_name?: string;
+  description?: string;
+  is_mandatory?: boolean;
+  is_optional?: boolean;
 }
 
 export default function TreeViewPage() {
@@ -431,11 +440,10 @@ export default function TreeViewPage() {
       {/* Message de succès/erreur */}
       {saveMessage && (
         <div
-          className={`p-4 rounded-lg ${
-            saveMessage.type === "success"
-              ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-200"
-              : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200"
-          }`}
+          className={`p-4 rounded-lg ${saveMessage.type === "success"
+            ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-200"
+            : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200"
+            }`}
         >
           {saveMessage.text}
         </div>
@@ -449,13 +457,120 @@ export default function TreeViewPage() {
             Arborescence hiérarchique avec taux de complétude
           </p>
         </div>
-        <Button
-          onClick={handleSaveWeights}
-          disabled={saving}
-          className="whitespace-nowrap"
-        >
-          {saving ? "Enregistrement..." : "Enregistrer"}
-        </Button>
+        <div className="flex gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <span className="h-4 w-4">⬇️</span>
+                Exporter
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56" align="end">
+              <div className="grid gap-2">
+                <Button
+                  variant="ghost"
+                  className="justify-start font-normal"
+                  onClick={() => {
+                    // Export Structure (Categories)
+                    const exportData: any[] = [];
+                    const traverse = (nodes: TreeNode[]) => {
+                      for (const node of nodes) {
+                        if (node.type === "category") {
+                          exportData.push({
+                            id: node.id,
+                            code: node.code,
+                            title: node.title,
+                            short_name: node.short_name || node.title,
+                            level: node.level,
+                            parent_id: getParentId(node.id),
+                          });
+                          if (node.children) traverse(node.children);
+                        }
+                      }
+                    };
+                    traverse(data);
+
+                    const jsonString = JSON.stringify(
+                      { categories: exportData },
+                      null,
+                      2
+                    );
+                    const blob = new Blob([jsonString], {
+                      type: "application/json",
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `rfp-${rfpId}-structure.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  Structure (Catégories)
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="justify-start font-normal"
+                  onClick={() => {
+                    // Export Requirements
+                    const exportData: any[] = [];
+                    const traverse = (
+                      nodes: TreeNode[],
+                      parentCategoryCode: string = ""
+                    ) => {
+                      for (const node of nodes) {
+                        if (node.type === "category") {
+                          if (node.children)
+                            traverse(node.children, node.code);
+                        } else if (node.type === "requirement") {
+                          const realWeight = calculateRealWeight(node.id);
+                          exportData.push({
+                            code: node.code,
+                            title: node.title,
+                            description: node.description || "",
+                            weight: Number((realWeight / 100).toFixed(4)),
+                            category_name: parentCategoryCode,
+                            is_mandatory: node.is_mandatory,
+                            is_optional: node.is_optional,
+                          });
+                        }
+                      }
+                    };
+                    traverse(data);
+
+                    const jsonString = JSON.stringify(
+                      { requirements: exportData },
+                      null,
+                      2
+                    );
+                    const blob = new Blob([jsonString], {
+                      type: "application/json",
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `rfp-${rfpId}-requirements.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  Données (Exigences)
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Button
+            onClick={handleSaveWeights}
+            disabled={saving}
+            className="whitespace-nowrap"
+          >
+            {saving ? "Enregistrement..." : "Enregistrer"}
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}

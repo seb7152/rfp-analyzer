@@ -79,15 +79,34 @@ export async function GET(
 
     const fileBuffer = await fileResponse.arrayBuffer();
 
+    // Validate that we have an Excel file
+    if (fileBuffer.byteLength === 0) {
+      return NextResponse.json({ error: "File is empty" }, { status: 400 });
+    }
+
     // Use ExcelJS to read worksheets
     const ExcelJS = require("exceljs");
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(fileBuffer);
+
+    try {
+      await workbook.xlsx.load(fileBuffer);
+    } catch (parseError) {
+      console.error("Failed to parse Excel file:", parseError);
+      return NextResponse.json(
+        { error: "Invalid Excel file format" },
+        { status: 400 }
+      );
+    }
 
     // Get all worksheet names
-    const worksheetNames = workbook.worksheets.map(
-      (ws: any) => ws.name
-    );
+    const worksheetNames = workbook.worksheets.map((ws: any) => ws.name);
+
+    if (!worksheetNames || worksheetNames.length === 0) {
+      return NextResponse.json(
+        { error: "No worksheets found in file" },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json({
       worksheets: worksheetNames,

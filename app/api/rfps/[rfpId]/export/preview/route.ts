@@ -95,7 +95,7 @@ export async function POST(
       .select(
         `
         id,
-        code,
+        requirement_id_external,
         title,
         description,
         weight
@@ -103,7 +103,7 @@ export async function POST(
       )
       .eq("rfp_id", rfpId)
       .eq("level", 4) // Only leaf requirements
-      .order("sort_order", { ascending: true });
+      .order("display_order", { ascending: true });
 
     if (requirementsError) {
       console.error("Error fetching requirements:", requirementsError);
@@ -124,7 +124,6 @@ export async function POST(
         manual_score,
         ai_comment,
         manual_comment,
-        questions_doubts,
         status
       `
       )
@@ -185,7 +184,7 @@ export async function POST(
 
         switch (field) {
           case "requirement_code":
-            rowData[column] = requirement.code;
+            rowData[column] = requirement.requirement_id_external;
             break;
           case "requirement_title":
             rowData[column] = requirement.title;
@@ -210,9 +209,6 @@ export async function POST(
             break;
           case "manual_comment":
             rowData[column] = response?.manual_comment || "";
-            break;
-          case "questions_doubts":
-            rowData[column] = response?.questions_doubts || "";
             break;
           case "status":
             rowData[column] = response?.status || "pending";
@@ -240,7 +236,8 @@ export async function POST(
 
       finalData = exportData.map((row) => {
         const existingRow = existingData.find(
-          (existing: any) => existing[mappingColumn] === row.requirement_code
+          (existing: any) =>
+            existing[mappingColumn] === row.requirement_id_external
         );
 
         if (existingRow) {
@@ -255,17 +252,89 @@ export async function POST(
     // Limit data for preview
     const limitedData = finalData.slice(0, limit);
 
-    // Convert to worksheet format
+    // For preview, we'll show what would be inserted
+    let previewRows;
+
+    if (
+      configDetails.use_requirement_mapping &&
+      configDetails.requirement_mapping_column
+    ) {
+      // Preview mapping mode - show where data would be inserted
+      const existingWorksheetData = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1,
+        defval: "",
+      });
+
+      const mappingColumn = configDetails.requirement_mapping_column;
+      const mappingColumnIndex = mappingColumn.charCodeAt(0) - 65;
+
+      previewRows = limitedData.map((row) => {
+        const existingRowIndex = existingWorksheetData.findIndex(
+          (existing: any) =>
+            existing[mappingColumnIndex] === row.requirement_id_external
+        );
+
+        if (existingRowIndex >= 0) {
+          // Show what would be updated in existing row
+          const existingRow = existingWorksheetData[existingRowIndex] || {};
+          configDetails.column_mappings.forEach((mapping: any) => {
+            const columnIndex = mapping.column.charCodeAt(0) - 65;
+            existingRow[columnIndex] = row[mapping.column] || "";
+          });
+          return existingRow;
+        }
+
+        // Show new row that would be added
+        const newRow = Array(26).fill(""); // A-Z columns
+        configDetails.column_mappings.forEach((mapping: any) => {
+          const columnIndex = mapping.column.charCodeAt(0) - 65;
+          newRow[columnIndex] = row[mapping.column] || "";
+        });
+        return newRow;
+      });
+    } else {
+      // Preview simple insertion mode
+      const startRow = (configDetails.start_row || 2) - 1;
+      let currentRow = startRow;
+
+      // Add headers if requested
+      if (configDetails.include_headers !== false) {
+        const headerRow = Array(26).fill("");
+        configDetails.column_mappings.forEach((mapping: any) => {
+          const columnIndex = mapping.column.charCodeAt(0) - 65;
+          headerRow[columnIndex] = mapping.header_name || mapping.column;
+        });
+        currentRow++;
+      }
+
+      // Add data rows
+      const dataRows = limitedData.map((dataRow) => {
+        const row = Array(26).fill("");
+        configDetails.column_mappings.forEach((mapping: any) => {
+          const columnIndex = mapping.column.charCodeAt(0) - 65;
+          row[columnIndex] = dataRow[mapping.column] || "";
+        });
+        return row;
+      });
+
+      previewRows = dataRows;
+    }
+
+    // Convert to display format
     const headers = configDetails.column_mappings.map(
-      (mapping: any) => mapping.column
+      (mapping: any) => mapping.header_name || mapping.column
     );
-    const rows = limitedData.map((row) =>
-      headers.map((header: string) => row[header] || "")
+
+    const rows = previewRows.map((row) =>
+      configDetails.column_mappings.map((mapping: any) => {
+        const columnIndex = mapping.column.charCodeAt(0) - 65;
+        return row[columnIndex] || "";
+      })
     );
 
     return NextResponse.json({
       preview: {
-        headers,
+        headers: configDetails.include_headers !== false ? headers : [],
         rows,
         totalRequirements: requirements.length,
         supplierName: configDetails.supplier.name,

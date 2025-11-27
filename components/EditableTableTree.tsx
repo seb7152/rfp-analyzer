@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useCallback } from "react";
-import { ChevronDown, ChevronRight, AlertCircle, Zap } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  AlertCircle,
+  Zap,
+  Info,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -10,6 +16,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -22,6 +33,7 @@ interface TreeNode {
   children?: TreeNode[];
   is_optional?: boolean;
   is_mandatory?: boolean;
+  description?: string;
 }
 
 interface WeightData {
@@ -253,12 +265,10 @@ export function EditableTableTree({
             className={`text-sm ${isCategory ? "font-semibold" : isRequirement ? "italic" : ""}`}
           >
             <div className="flex items-center gap-2">
-              {isRequirement && (
-                <span className="text-gray-400">→</span>
-              )}
+              {isRequirement && <span className="text-gray-400">→</span>}
               <span>{item.title}</span>
               {isRequirement && (
-                <div className="flex gap-1">
+                <div className="flex gap-1 items-center">
                   {item.is_mandatory && (
                     <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2.5 py-0.5 text-xs font-semibold text-red-700 dark:text-red-300">
                       Obligatoire
@@ -268,6 +278,31 @@ export function EditableTableTree({
                     <span className="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-semibold text-green-700 dark:text-green-300">
                       Optionnel
                     </span>
+                  )}
+                  {item.description && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 rounded-full p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Info className="h-3.5 w-3.5" />
+                          <span className="sr-only">Description</span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 p-4" align="start">
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">
+                            Description
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            {item.description}
+                          </p>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   )}
                 </div>
               )}

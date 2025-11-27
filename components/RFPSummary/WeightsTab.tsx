@@ -14,6 +14,10 @@ interface TreeNode {
   title: string;
   level: number;
   children?: TreeNode[];
+  description?: string;
+  short_name?: string;
+  is_mandatory?: boolean;
+  is_optional?: boolean;
 }
 
 interface WeightsTabProps {
@@ -388,11 +392,10 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
       {/* Success/Error Message */}
       {saveMessage && (
         <div
-          className={`p-4 rounded-lg ${
-            saveMessage.type === "success"
-              ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-200"
-              : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200"
-          }`}
+          className={`p-4 rounded-lg ${saveMessage.type === "success"
+            ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-200"
+            : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200"
+            }`}
         >
           {saveMessage.text}
         </div>

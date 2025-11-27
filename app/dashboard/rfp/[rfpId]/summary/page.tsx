@@ -4,6 +4,11 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KPICard } from "@/components/RFPSummary/KPICard";
@@ -149,6 +154,180 @@ export default function RFPSummaryPage() {
                 <span className="hidden sm:inline">Importer</span>
               </Button>
             </Link>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">Exporter JSON</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56" align="start">
+                <div className="grid gap-2">
+                  <Button
+                    variant="ghost"
+                    className="justify-start font-normal"
+                    onClick={async () => {
+                      try {
+                        // Fetch tree data on demand
+                        const response = await fetch(
+                          `/api/rfps/${rfpId}/tree`
+                        );
+                        if (!response.ok) throw new Error("Failed to fetch data");
+                        const treeData = await response.json();
+
+                        // Export Structure (Categories)
+                        const exportData: any[] = [];
+                        const traverse = (nodes: any[]) => {
+                          for (const node of nodes) {
+                            if (node.type === "category") {
+                              exportData.push({
+                                id: node.id,
+                                code: node.code,
+                                title: node.title,
+                                short_name: node.short_name || node.title,
+                                level: node.level,
+                                parent_id: getParentId(node.id, treeData),
+                              });
+                              if (node.children) traverse(node.children);
+                            }
+                          }
+                        };
+
+                        // Helper to find parent
+                        const getParentId = (targetId: string, nodes: any[], parentId: string | null = null): string | null => {
+                          for (const node of nodes) {
+                            if (node.id === targetId) return parentId;
+                            if (node.children) {
+                              const found = getParentId(targetId, node.children, node.id);
+                              if (found !== null) return found;
+                            }
+                          }
+                          return null;
+                        };
+
+                        traverse(treeData);
+
+                        const jsonString = JSON.stringify(
+                          { categories: exportData },
+                          null,
+                          2
+                        );
+                        const blob = new Blob([jsonString], {
+                          type: "application/json",
+                        });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `rfp-${rfpId}-structure.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                      } catch (error) {
+                        console.error("Export error:", error);
+                        alert("Erreur lors de l'export");
+                      }
+                    }}
+                  >
+                    Structure (Catégories)
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="justify-start font-normal"
+                    onClick={async () => {
+                      try {
+                        // Fetch tree data & weights on demand
+                        const [treeResponse, weightsResponse] = await Promise.all([
+                          fetch(`/api/rfps/${rfpId}/tree`),
+                          fetch(`/api/rfps/${rfpId}/weights`)
+                        ]);
+
+                        if (!treeResponse.ok) throw new Error("Failed to fetch tree");
+                        const treeData = await treeResponse.json();
+
+                        let weightsData = {};
+                        if (weightsResponse.ok) {
+                          weightsData = await weightsResponse.json();
+                        }
+
+                        // Reconstruct real weights map
+                        const allRealWeights = new Map<string, number>();
+                        if (weightsData) {
+                          // @ts-ignore
+                          for (const [id, weight] of Object.entries(weightsData.categories || {})) {
+                            // @ts-ignore
+                            allRealWeights.set(id, weight * 100);
+                          }
+                          // @ts-ignore
+                          for (const [id, weight] of Object.entries(weightsData.requirements || {})) {
+                            // @ts-ignore
+                            allRealWeights.set(id, weight * 100);
+                          }
+                        }
+
+                        // Helper to calculate weight if not in DB (fallback to equal distribution logic or just 0)
+                        // For export, we prefer DB weights. If missing, we might need to recalculate or just export 0.
+                        // Let's try to recalculate if missing, similar to WeightsTab logic, but simplified.
+
+                        const calculateRealWeight = (nodeId: string, nodes: any[], parentId: string | null = null): number => {
+                          // If we have it in DB, use it (converted back to %)
+                          if (allRealWeights.has(nodeId)) return allRealWeights.get(nodeId)!;
+                          return 0; // Fallback
+                        };
+
+                        // Export Requirements
+                        const exportData: any[] = [];
+                        const traverse = (
+                          nodes: any[],
+                          parentCategoryCode: string = ""
+                        ) => {
+                          for (const node of nodes) {
+                            if (node.type === "category") {
+                              if (node.children)
+                                traverse(node.children, node.code);
+                            } else if (node.type === "requirement") {
+                              const realWeight = calculateRealWeight(node.id, treeData);
+                              exportData.push({
+                                code: node.code,
+                                title: node.title,
+                                description: node.description || "",
+                                weight: Number((realWeight / 100).toFixed(4)),
+                                category_name: parentCategoryCode,
+                                is_mandatory: node.is_mandatory,
+                                is_optional: node.is_optional,
+                              });
+                            }
+                          }
+                        };
+                        traverse(treeData);
+
+                        const jsonString = JSON.stringify(
+                          { requirements: exportData },
+                          null,
+                          2
+                        );
+                        const blob = new Blob([jsonString], {
+                          type: "application/json",
+                        });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `rfp-${rfpId}-requirements.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                      } catch (error) {
+                        console.error("Export error:", error);
+                        alert("Erreur lors de l'export");
+                      }
+                    }}
+                  >
+                    Données (Exigences)
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="flex gap-2">
             <Button

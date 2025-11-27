@@ -151,38 +151,60 @@ export function ColumnMappingEditor({
     try {
       setSaving(true);
 
-      const updatedConfig = {
-        ...configuration,
-        column_mappings: columnMappings,
-        use_requirement_mapping: useRequirementMapping,
-        requirement_mapping_column: requirementMappingColumn,
-        start_row: startRow,
-        include_headers: includeHeaders,
-        preserve_template_formatting: preserveTemplateFormatting,
-      };
+      // 1. Fetch all configurations to find siblings
+      const configsResponse = await fetch(
+        `/api/rfps/${rfpId}/export-configurations`
+      );
+      if (!configsResponse.ok)
+        throw new Error("Failed to fetch configurations");
 
-      const response = await fetch(
-        `/api/rfps/${rfpId}/export-configurations/${configuration.id}`,
-        {
+      const configsData = await configsResponse.json();
+      const allConfigs: ExportConfiguration[] =
+        configsData.configurations || [];
+
+      // 2. Filter configs for the same template
+      const templateConfigs = allConfigs.filter(
+        (c) => c.template_document_id === configuration.template_document_id
+      );
+
+      // 3. Update all matching configurations
+      const updatePromises = templateConfigs.map((config) => {
+        const updatedConfig = {
+          ...config,
+          column_mappings: columnMappings,
+          use_requirement_mapping: useRequirementMapping,
+          requirement_mapping_column: requirementMappingColumn,
+          start_row: startRow,
+          include_headers: includeHeaders,
+          preserve_template_formatting: preserveTemplateFormatting,
+        };
+
+        return fetch(`/api/rfps/${rfpId}/export-configurations/${config.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(updatedConfig),
-        }
-      );
+        });
+      });
 
-      if (response.ok) {
-        const result = await response.json();
-        forceUpdate({});
-        if (onConfigurationUpdate) {
-          onConfigurationUpdate(result.configuration || updatedConfig);
-        }
-        alert("Configuration sauvegardée avec succès !");
-      } else {
-        const error = await response.json();
-        alert(`Erreur: ${error.message}`);
+      await Promise.all(updatePromises);
+
+      forceUpdate({});
+      if (onConfigurationUpdate) {
+        // Pass the updated current configuration back
+        const updatedCurrentConfig = {
+          ...configuration,
+          column_mappings: columnMappings,
+          use_requirement_mapping: useRequirementMapping,
+          requirement_mapping_column: requirementMappingColumn,
+          start_row: startRow,
+          include_headers: includeHeaders,
+          preserve_template_formatting: preserveTemplateFormatting,
+        };
+        onConfigurationUpdate(updatedCurrentConfig);
       }
+      alert("Configuration sauvegardée pour tous les onglets du modèle !");
     } catch (error) {
       console.error("Error saving configuration:", error);
       alert("Erreur lors de la sauvegarde de la configuration");

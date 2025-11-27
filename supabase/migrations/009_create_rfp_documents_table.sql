@@ -10,8 +10,8 @@ CREATE TABLE rfp_documents (
   filename VARCHAR(255) NOT NULL,
   original_filename VARCHAR(255),
   document_type VARCHAR(50) NOT NULL DEFAULT 'cahier_charges',
-  -- Valid values: cahier_charges, specifications, technical_brief, appendix
-  mime_type VARCHAR(50) NOT NULL DEFAULT 'application/pdf',
+  -- Valid values: cahier_charges, specifications, technical_brief, appendix, supplier_response, template
+  mime_type VARCHAR(100) NOT NULL DEFAULT 'application/pdf',
   file_size BIGINT NOT NULL,
 
   -- GCP Cloud Storage reference
@@ -29,8 +29,14 @@ CREATE TABLE rfp_documents (
   -- Soft delete support
   deleted_at TIMESTAMP WITH TIME ZONE,
 
-  CONSTRAINT valid_mime_type CHECK (mime_type = 'application/pdf'),
-  CONSTRAINT valid_document_type CHECK (document_type IN ('cahier_charges', 'specifications', 'technical_brief', 'appendix'))
+  CONSTRAINT valid_mime_type CHECK (mime_type IN (
+    'application/pdf', 
+    'application/vnd.ms-excel', 
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  )),
+  CONSTRAINT valid_document_type CHECK (document_type IN ('cahier_charges', 'specifications', 'technical_brief', 'appendix', 'supplier_response', 'template'))
 );
 
 -- Create indexes for efficient querying
@@ -126,9 +132,9 @@ CREATE POLICY "System can insert access logs"
   WITH CHECK (true);
 
 -- Comments for documentation
-COMMENT ON TABLE rfp_documents IS 'Stores metadata for PDF documents uploaded to RFPs, with references to GCP Cloud Storage objects';
+COMMENT ON TABLE rfp_documents IS 'Stores metadata for PDF documents and Excel templates uploaded to RFPs, with references to GCP Cloud Storage objects';
 COMMENT ON COLUMN rfp_documents.gcs_object_name IS 'Path to file in GCP Cloud Storage bucket (rfp-analyzer-storage)';
-COMMENT ON COLUMN rfp_documents.document_type IS 'Category of document: cahier_charges (specifications), specifications (technical specs), technical_brief (executive summary), appendix (supporting docs)';
+COMMENT ON COLUMN rfp_documents.document_type IS 'Category of document: cahier_charges (specifications), specifications (technical specs), technical_brief (executive summary), appendix (supporting docs), supplier_response, or template (Excel export templates)';
 COMMENT ON COLUMN rfp_documents.deleted_at IS 'Soft delete timestamp for audit trail; NULL means document is active';
 
 COMMENT ON TABLE document_access_logs IS 'Audit trail for document access: views, downloads, uploads, and deletions';
