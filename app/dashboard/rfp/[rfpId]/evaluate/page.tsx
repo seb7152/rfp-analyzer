@@ -9,6 +9,8 @@ import { useAnalyzeRFP } from "@/hooks/use-analyze-rfp";
 import { Sidebar } from "@/components/Sidebar";
 import { ComparisonView } from "@/components/ComparisonView";
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
+import { VersionSelector } from "@/components/VersionSelector";
+import { VersionProvider } from "@/contexts/VersionContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ChevronLeft, Loader2, CheckCircle2, Zap, FileUp } from "lucide-react";
@@ -74,26 +76,28 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
-      {/* Header */}
-      <div className="border-b border-slate-200 bg-white/80 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/60">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => router.back()}>
-              <ChevronLeft className="h-4 w-4" />
-              Back
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50">
-                RFP Evaluation
-              </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Navigate and evaluate requirements
-              </p>
+    <VersionProvider rfpId={params.rfpId}>
+      <div className="flex h-screen flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
+        {/* Header */}
+        <div className="border-b border-slate-200 bg-white/80 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={() => router.back()}>
+                <ChevronLeft className="h-4 w-4" />
+                Back
+              </Button>
+              <div>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50">
+                  RFP Evaluation
+                </h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Navigate and evaluate requirements
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4">
+              <VersionSelector rfpId={params.rfpId} />
             {/* Upload Documents Button */}
             <Button
               onClick={() => setIsUploadModalOpen(true)}
@@ -209,6 +213,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
         isOpen={isUploadModalOpen}
         onOpenChange={setIsUploadModalOpen}
       />
-    </div>
+      </div>
+    </VersionProvider>
   );
 }
