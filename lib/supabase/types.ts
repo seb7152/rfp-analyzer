@@ -349,6 +349,92 @@ export interface RadarChartData {
 }
 
 // ============================================================================
+// EVALUATION VERSIONING TYPES
+// ============================================================================
+
+export interface EvaluationVersion {
+  id: string;
+  rfp_id: string;
+  version_number: number;
+  version_name: string;
+  description: string | null;
+  is_active: boolean;
+  parent_version_id: string | null;
+  created_at: string;
+  created_by: string | null;
+  finalized_at: string | null;
+  finalized_by: string | null;
+}
+
+export interface VersionSupplierStatus {
+  id: string;
+  version_id: string;
+  supplier_id: string;
+  is_active: boolean;
+  shortlist_status: "active" | "shortlisted" | "removed";
+  removal_reason: string | null;
+  removed_at: string | null;
+  removed_by: string | null;
+  created_at: string;
+}
+
+export interface VersionChangesLog {
+  id: string;
+  version_id: string;
+  rfp_id: string;
+  action: "version_created" | "version_finalized" | "version_activated" | "supplier_removed" | "supplier_restored" | "responses_copied";
+  details: Record<string, unknown> | null;
+  created_at: string;
+  created_by: string;
+}
+
+export interface VersionWithSuppliers extends EvaluationVersion {
+  suppliers: (Supplier & { status: VersionSupplierStatus })[];
+}
+
+export interface VersionStats {
+  total_suppliers: number;
+  active_suppliers: number;
+  removed_suppliers: number;
+  total_requirements: number;
+  evaluated_requirements: number;
+  completion_percentage: number;
+}
+
+export interface VersionDetailResponse {
+  version: EvaluationVersion;
+  suppliers: (Supplier & {
+    status: "active" | "shortlisted" | "removed";
+    removal_reason: string | null;
+    removed_at: string | null;
+  })[];
+  statistics: VersionStats;
+}
+
+export interface CreateVersionRequest {
+  version_name: string;
+  description?: string;
+  copy_from_version_id?: string;
+  inherit_supplier_status?: boolean;
+}
+
+export interface UpdateVersionRequest {
+  version_name?: string;
+  description?: string;
+}
+
+export interface UpdateSupplierStatusRequest {
+  shortlist_status: "active" | "shortlisted" | "removed";
+  removal_reason?: string;
+}
+
+export interface ResponseWithVersion extends Response {
+  version_id: string;
+  is_snapshot: boolean;
+  original_response_id: string | null;
+}
+
+// ============================================================================
 // ERROR TYPES
 // ============================================================================
 
