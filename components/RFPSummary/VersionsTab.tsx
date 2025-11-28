@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Plus, Lock, CheckCircle2 } from "lucide-react";
+import { AlertCircle, Plus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface VersionsTabProps {
@@ -69,24 +69,6 @@ export function VersionsTab({ rfpId }: VersionsTabProps) {
     }
   };
 
-  const handleFinalizeVersion = async (versionId: string) => {
-    try {
-      const response = await fetch(
-        `/api/rfps/${rfpId}/versions/${versionId}/finalize`,
-        {
-          method: "POST",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to finalize version");
-      }
-
-      await refreshVersions();
-    } catch (err) {
-      console.error("Error finalizing version:", err);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -205,7 +187,10 @@ export function VersionsTab({ rfpId }: VersionsTabProps) {
               >
                 Cancel
               </Button>
-              <Button onClick={handleCreateVersion} disabled={!versionName || isCreating}>
+              <Button
+                onClick={handleCreateVersion}
+                disabled={!versionName || isCreating}
+              >
                 {isCreating ? "Creating..." : "Create"}
               </Button>
             </div>
@@ -235,12 +220,6 @@ export function VersionsTab({ rfpId }: VersionsTabProps) {
                       </CardTitle>
                       {version.is_active && (
                         <Badge variant="default">Active</Badge>
-                      )}
-                      {version.finalized_at && (
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          <Lock className="w-3 h-3" />
-                          Finalized
-                        </Badge>
                       )}
                     </div>
                     {version.description && (
@@ -276,33 +255,10 @@ export function VersionsTab({ rfpId }: VersionsTabProps) {
 
                 {/* Metadata */}
                 <div className="text-xs text-gray-500 space-y-1">
-                  <p>Created: {new Date(version.created_at).toLocaleDateString()}</p>
-                  {version.finalized_at && (
-                    <p>
-                      Finalized:{" "}
-                      {new Date(version.finalized_at).toLocaleDateString()}
-                    </p>
-                  )}
+                  <p>
+                    Created: {new Date(version.created_at).toLocaleDateString()}
+                  </p>
                 </div>
-
-                {/* Actions */}
-                {!version.finalized_at && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleFinalizeVersion(version.id)}
-                    className="w-full"
-                  >
-                    <Lock className="w-4 h-4 mr-2" />
-                    Finalize Version
-                  </Button>
-                )}
-                {version.finalized_at && (
-                  <div className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 rounded p-2">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Version is finalized (read-only)
-                  </div>
-                )}
               </CardContent>
             </Card>
           ))
