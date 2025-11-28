@@ -440,10 +440,11 @@ export default function TreeViewPage() {
       {/* Message de succès/erreur */}
       {saveMessage && (
         <div
-          className={`p-4 rounded-lg ${saveMessage.type === "success"
-            ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-200"
-            : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200"
-            }`}
+          className={`p-4 rounded-lg ${
+            saveMessage.type === "success"
+              ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-200"
+              : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200"
+          }`}
         >
           {saveMessage.text}
         </div>
@@ -522,8 +523,7 @@ export default function TreeViewPage() {
                     ) => {
                       for (const node of nodes) {
                         if (node.type === "category") {
-                          if (node.children)
-                            traverse(node.children, node.code);
+                          if (node.children) traverse(node.children, node.code);
                         } else if (node.type === "requirement") {
                           const realWeight = calculateRealWeight(node.id);
                           exportData.push({

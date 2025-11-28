@@ -72,7 +72,8 @@ export async function GET(
           .select("id, is_checked")
           .eq("version_id", version.id);
 
-        const evaluatedCount = responses?.filter((r) => r.is_checked).length || 0;
+        const evaluatedCount =
+          responses?.filter((r) => r.is_checked).length || 0;
         const totalResponses = responses?.length || 0;
         const completionPercentage =
           totalResponses > 0 ? (evaluatedCount / totalResponses) * 100 : 0;

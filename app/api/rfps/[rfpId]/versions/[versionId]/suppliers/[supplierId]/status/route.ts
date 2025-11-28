@@ -54,10 +54,7 @@ export async function PUT(
       .single();
 
     if (!version) {
-      return NextResponse.json(
-        { error: "Version not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Version not found" }, { status: 404 });
     }
 
     if (version.finalized_at) {

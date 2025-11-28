@@ -31,10 +31,7 @@ export async function POST(
       .single();
 
     if (!version) {
-      return NextResponse.json(
-        { error: "Version not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Version not found" }, { status: 404 });
     }
 
     // Get current active version

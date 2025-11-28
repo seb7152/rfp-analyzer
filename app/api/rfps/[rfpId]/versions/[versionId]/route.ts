@@ -32,10 +32,7 @@ export async function GET(
       .single();
 
     if (versionError || !version) {
-      return NextResponse.json(
-        { error: "Version not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Version not found" }, { status: 404 });
     }
 
     // Fetch supplier statuses for this version
@@ -79,12 +76,12 @@ export async function GET(
     const completionPercentage =
       totalResponses > 0 ? (evaluatedCount / totalResponses) * 100 : 0;
 
-    const activeSuppliers = supplierStatuses?.filter(
-      (s) => s.shortlist_status !== "removed"
-    ).length || 0;
-    const removedSuppliers = supplierStatuses?.filter(
-      (s) => s.shortlist_status === "removed"
-    ).length || 0;
+    const activeSuppliers =
+      supplierStatuses?.filter((s) => s.shortlist_status !== "removed")
+        .length || 0;
+    const removedSuppliers =
+      supplierStatuses?.filter((s) => s.shortlist_status === "removed")
+        .length || 0;
 
     return NextResponse.json({
       success: true,
@@ -100,7 +97,10 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Error in GET /api/rfps/[rfpId]/versions/[versionId]:", error);
+    console.error(
+      "Error in GET /api/rfps/[rfpId]/versions/[versionId]:",
+      error
+    );
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -140,10 +140,7 @@ export async function PUT(
       .single();
 
     if (!version) {
-      return NextResponse.json(
-        { error: "Version not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Version not found" }, { status: 404 });
     }
 
     if (version.finalized_at) {
@@ -154,8 +151,10 @@ export async function PUT(
     }
 
     const updateData: any = {};
-    if (body.version_name !== undefined) updateData.version_name = body.version_name;
-    if (body.description !== undefined) updateData.description = body.description;
+    if (body.version_name !== undefined)
+      updateData.version_name = body.version_name;
+    if (body.description !== undefined)
+      updateData.description = body.description;
 
     const { error } = await supabase
       .from("evaluation_versions")
@@ -175,7 +174,10 @@ export async function PUT(
       message: "Version updated successfully",
     });
   } catch (error) {
-    console.error("Error in PUT /api/rfps/[rfpId]/versions/[versionId]:", error);
+    console.error(
+      "Error in PUT /api/rfps/[rfpId]/versions/[versionId]:",
+      error
+    );
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
