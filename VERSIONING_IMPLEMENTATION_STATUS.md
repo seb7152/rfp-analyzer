@@ -1,11 +1,13 @@
 # Evaluation Versioning System - Implementation Status
 
 ## Overview
+
 This document tracks the implementation of the evaluation versioning system for progressive RFP evaluation with supplier shortlisting.
 
 ## Completed ✅
 
 ### Phase 1: Database & Migration
+
 - [x] Migration `023_add_evaluation_versions.sql` created and applied
 - [x] Tables created:
   - `evaluation_versions` - Main versioning table
@@ -19,6 +21,7 @@ This document tracks the implementation of the evaluation versioning system for 
 - [x] Data migrated: All existing RFPs now have "Version initiale"
 
 ### Phase 2: TypeScript Types
+
 - [x] Added comprehensive types to `lib/supabase/types.ts`:
   - `EvaluationVersion`
   - `VersionSupplierStatus`
@@ -29,6 +32,7 @@ This document tracks the implementation of the evaluation versioning system for 
   - Request/Response types
 
 ### Phase 3: API Endpoints
+
 - [x] Version Management:
   - `GET /api/rfps/[rfpId]/versions` - List versions with stats
   - `POST /api/rfps/[rfpId]/versions` - Create new version with automatic response copying
@@ -41,6 +45,7 @@ This document tracks the implementation of the evaluation versioning system for 
   - `PUT /api/rfps/[rfpId]/versions/[versionId]/suppliers/[supplierId]/status` - Update supplier status (remove/restore)
 
 ### Phase 4: React Components & Hooks
+
 - [x] `contexts/VersionContext.tsx` - Centralized version state management
 - [x] `hooks/use-versions.ts` - Hook for accessing version context
 - [x] `components/VersionSelector.tsx` - Global version selector dropdown
@@ -51,6 +56,7 @@ This document tracks the implementation of the evaluation versioning system for 
   - List all versions with timeline
 
 ### Phase 5: UI Integration
+
 - [x] Summary page:
   - Added "Versions" tab with GitBranch icon
   - Integrated VersionsTab component
@@ -65,7 +71,9 @@ This document tracks the implementation of the evaluation versioning system for 
 ## In Progress 🔄
 
 ### Modify Existing Endpoints to Support `versionId`
+
 The following endpoints need to be updated to accept `?versionId=` query parameter:
+
 - `/api/rfps/[rfpId]/dashboard` - Filter metrics by version
 - `/api/rfps/[rfpId]/suppliers` - Exclude removed suppliers
 - `/api/rfps/[rfpId]/responses` - Filter responses by version
@@ -77,9 +85,11 @@ The following endpoints need to be updated to accept `?versionId=` query paramet
 ## Remaining Tasks 📋
 
 ### 1. Modify SuppliersTab for Version Filtering
+
 **File**: `components/RFPSummary/SuppliersTab.tsx`
 
 **Changes needed**:
+
 - Accept `versionId` from VersionContext
 - Filter suppliers by version_supplier_status
 - Show two sections:
@@ -91,12 +101,15 @@ The following endpoints need to be updated to accept `?versionId=` query paramet
 **Component to create**: `components/SupplierStatusDialog.tsx`
 
 ### 2. Modify Evaluate Page to Filter Removed Suppliers
+
 **Files**:
+
 - `app/dashboard/rfp/[rfpId]/evaluate/page.tsx`
 - `components/Sidebar.tsx` - Update supplier list filtering
 - `components/ComparisonView.tsx` - Filter suppliers in comparison
 
 **Changes needed**:
+
 - Read versionId from VersionContext
 - Fetch version_supplier_status to get removed suppliers
 - Filter suppliers in sidebar to exclude removed ones
@@ -106,6 +119,7 @@ The following endpoints need to be updated to accept `?versionId=` query paramet
 ### 3. Update API Endpoints for Version Filtering
 
 #### Dashboard Endpoint
+
 ```typescript
 // GET /api/rfps/[rfpId]/dashboard?versionId=<uuid>
 // Should filter:
@@ -115,6 +129,7 @@ The following endpoints need to be updated to accept `?versionId=` query paramet
 ```
 
 #### Suppliers Endpoint
+
 ```typescript
 // GET /api/rfps/[rfpId]/suppliers?versionId=<uuid>&includeStats=true
 // Should:
@@ -124,12 +139,14 @@ The following endpoints need to be updated to accept `?versionId=` query paramet
 ```
 
 #### Responses Endpoint
+
 ```typescript
 // GET /api/rfps/[rfpId]/responses?versionId=<uuid>
 // Should filter responses to specific version
 ```
 
 #### Export Endpoints
+
 ```typescript
 // GET /api/rfps/[rfpId]/export/preview?versionId=<uuid>
 // GET /api/rfps/[rfpId]/export/generate?versionId=<uuid>
@@ -140,7 +157,9 @@ The following endpoints need to be updated to accept `?versionId=` query paramet
 ```
 
 ### 4. Integration Testing
+
 **Test scenarios**:
+
 - [ ] Create version → copy responses → verify response count
 - [ ] Remove supplier → verify hidden in evaluate page
 - [ ] Finalize version → verify read-only behavior
@@ -151,6 +170,7 @@ The following endpoints need to be updated to accept `?versionId=` query paramet
 - [ ] Export from specific version → verify correct data
 
 ### 5. Documentation & Deployment
+
 - [ ] Write user guide for versioning feature
 - [ ] Create migration guide for existing projects
 - [ ] Performance testing with large datasets
@@ -159,6 +179,7 @@ The following endpoints need to be updated to accept `?versionId=` query paramet
 ## Architecture Notes
 
 ### Version Workflow
+
 1. **Initial State**: "Version initiale" created automatically with all suppliers active
 2. **Version Creation**: New version with optional response copying:
    - If copying: All responses copied with `is_snapshot=true`
@@ -173,6 +194,7 @@ The following endpoints need to be updated to accept `?versionId=` query paramet
    - Cannot modify scores or supplier statuses
 
 ### Key Design Decisions
+
 - **Response Copying**: Responses are actual copies (not references) to allow independent modifications
 - **Soft Delete for Suppliers**: Suppliers marked as 'removed' rather than deleted to preserve audit trail
 - **Optional Justification**: Removal reason is optional to reduce friction

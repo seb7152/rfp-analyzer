@@ -388,10 +388,11 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
       {/* Success/Error Message */}
       {saveMessage && (
         <div
-          className={`p-4 rounded-lg ${saveMessage.type === "success"
+          className={`p-4 rounded-lg ${
+            saveMessage.type === "success"
               ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-200"
               : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200"
-            }`}
+          }`}
         >
           {saveMessage.text}
         </div>

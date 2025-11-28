@@ -45,23 +45,16 @@ export async function PUT(
       );
     }
 
-    // Verify version exists and is not finalized
+    // Verify version exists
     const { data: version } = await supabase
       .from("evaluation_versions")
-      .select("finalized_at")
+      .select("id")
       .eq("id", versionId)
       .eq("rfp_id", rfpId)
       .single();
 
     if (!version) {
       return NextResponse.json({ error: "Version not found" }, { status: 404 });
-    }
-
-    if (version.finalized_at) {
-      return NextResponse.json(
-        { error: "Cannot modify finalized version" },
-        { status: 400 }
-      );
     }
 
     // Verify supplier exists in this version

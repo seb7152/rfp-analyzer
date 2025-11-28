@@ -57,11 +57,6 @@ export function VersionSelector({ rfpId }: VersionSelectorProps) {
                   Active
                 </Badge>
               )}
-              {version.finalized_at && (
-                <Badge variant="secondary" className="text-xs">
-                  Finalized
-                </Badge>
-              )}
             </div>
           </SelectItem>
         ))}
