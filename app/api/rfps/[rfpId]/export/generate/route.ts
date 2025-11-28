@@ -31,7 +31,7 @@ export async function POST(
 
     // Parse request body
     const body = await request.json();
-    const { configuration } = body;
+    const { configuration, versionId } = body;
 
     if (!configuration) {
       return NextResponse.json(
@@ -169,7 +169,7 @@ export async function POST(
       }
 
       // Fetch responses for this specific supplier
-      const { data: responses, error: responsesError } = await supabase
+      let responsesQuery = supabase
         .from("responses")
         .select(
           `
@@ -187,6 +187,12 @@ export async function POST(
           "requirement_id",
           requirements.map((r) => r.id)
         );
+
+      if (versionId) {
+        responsesQuery = responsesQuery.eq("version_id", versionId);
+      }
+
+      const { data: responses, error: responsesError } = await responsesQuery;
 
       if (responsesError) {
         console.error(
