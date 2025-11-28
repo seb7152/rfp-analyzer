@@ -6,6 +6,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
  * Get all suppliers for an RFP
  * Query params:
  * - includeStats: "true" | "false" (default: "false") - Include completion stats and documents
+ * - versionId: UUID (optional) - Filter by version and exclude removed suppliers
  */
 export async function GET(
   request: NextRequest,
@@ -16,6 +17,7 @@ export async function GET(
     const { rfpId } = params;
     const { searchParams } = new URL(request.url);
     const includeStats = searchParams.get("includeStats") === "true";
+    const versionId = searchParams.get("versionId");
 
     // Verify user is authenticated
     const supabase = await createServerClient();
@@ -42,10 +44,28 @@ export async function GET(
       );
     }
 
+    // Filter suppliers by version if versionId is provided
+    let suppliersToUse = suppliers || [];
+    if (versionId) {
+      const { data: removedSuppliers } = await supabase
+        .from("version_supplier_status")
+        .select("supplier_id")
+        .eq("version_id", versionId)
+        .eq("shortlist_status", "removed");
+
+      const removedSupplierIds = new Set(
+        (removedSuppliers || []).map((rs) => rs.supplier_id)
+      );
+
+      suppliersToUse = suppliersToUse.filter(
+        (s) => !removedSupplierIds.has(s.id)
+      );
+    }
+
     if (!includeStats) {
       return NextResponse.json({
         success: true,
-        suppliers: suppliers || [],
+        suppliers: suppliersToUse,
       });
     }
 
@@ -62,6 +82,21 @@ export async function GET(
     // then fetch document_suppliers based on the document IDs.
     // But to keep it in one Promise.all block for the main data:
 
+    const responsesQuery = versionId
+      ? supabase
+          .from("responses")
+          .select(
+            "id, supplier_id, requirement_id, manual_score, ai_score, is_checked"
+          )
+          .eq("rfp_id", rfpId)
+          .eq("version_id", versionId)
+      : supabase
+          .from("responses")
+          .select(
+            "id, supplier_id, requirement_id, manual_score, ai_score, is_checked"
+          )
+          .eq("rfp_id", rfpId);
+
     const [
       { data: categories },
       { data: requirements },
@@ -70,12 +105,7 @@ export async function GET(
     ] = await Promise.all([
       supabase.from("categories").select("id, weight").eq("rfp_id", rfpId),
       supabase.from("requirements").select("id, weight").eq("rfp_id", rfpId),
-      supabase
-        .from("responses")
-        .select(
-          "id, supplier_id, requirement_id, manual_score, ai_score, is_checked"
-        )
-        .eq("rfp_id", rfpId),
+      responsesQuery,
       supabase
         .from("rfp_documents")
         .select("id, filename, original_filename, created_at")
@@ -111,7 +141,7 @@ export async function GET(
     });
 
     // 3. Group data by supplier
-    const suppliersWithStats = suppliers?.map((supplier) => {
+    const suppliersWithStats = suppliersToUse.map((supplier) => {
       const supplierResponses =
         responses?.filter((r) => r.supplier_id === supplier.id) || [];
 
