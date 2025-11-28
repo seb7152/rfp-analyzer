@@ -362,8 +362,6 @@ export interface EvaluationVersion {
   parent_version_id: string | null;
   created_at: string;
   created_by: string | null;
-  finalized_at: string | null;
-  finalized_by: string | null;
 }
 
 export interface VersionSupplierStatus {
@@ -384,7 +382,6 @@ export interface VersionChangesLog {
   rfp_id: string;
   action:
     | "version_created"
-    | "version_finalized"
     | "version_activated"
     | "supplier_removed"
     | "supplier_restored"
