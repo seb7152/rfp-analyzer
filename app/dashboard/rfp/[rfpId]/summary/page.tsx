@@ -18,6 +18,8 @@ import { AnalysisTab } from "@/components/RFPSummary/AnalysisTab";
 import { WeightsTab } from "@/components/RFPSummary/WeightsTab";
 import { RequirementsTab } from "@/components/RFPSummary/RequirementsTab";
 import { ExportTab } from "@/components/RFPSummary/ExportTab";
+import { VersionsTab } from "@/components/RFPSummary/VersionsTab";
+import { VersionProvider } from "@/contexts/VersionContext";
 
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
 import { useAnalyzeRFP } from "@/hooks/use-analyze-rfp";
@@ -37,6 +39,7 @@ import {
   Sliders,
   ListChecks,
   Download,
+  GitBranch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -169,10 +172,9 @@ export default function RFPSummaryPage() {
                     onClick={async () => {
                       try {
                         // Fetch tree data on demand
-                        const response = await fetch(
-                          `/api/rfps/${rfpId}/tree`
-                        );
-                        if (!response.ok) throw new Error("Failed to fetch data");
+                        const response = await fetch(`/api/rfps/${rfpId}/tree`);
+                        if (!response.ok)
+                          throw new Error("Failed to fetch data");
                         const treeData = await response.json();
 
                         // Export Structure (Categories)
@@ -194,11 +196,19 @@ export default function RFPSummaryPage() {
                         };
 
                         // Helper to find parent
-                        const getParentId = (targetId: string, nodes: any[], parentId: string | null = null): string | null => {
+                        const getParentId = (
+                          targetId: string,
+                          nodes: any[],
+                          parentId: string | null = null
+                        ): string | null => {
                           for (const node of nodes) {
                             if (node.id === targetId) return parentId;
                             if (node.children) {
-                              const found = getParentId(targetId, node.children, node.id);
+                              const found = getParentId(
+                                targetId,
+                                node.children,
+                                node.id
+                              );
                               if (found !== null) return found;
                             }
                           }
@@ -237,12 +247,14 @@ export default function RFPSummaryPage() {
                     onClick={async () => {
                       try {
                         // Fetch tree data & weights on demand
-                        const [treeResponse, weightsResponse] = await Promise.all([
-                          fetch(`/api/rfps/${rfpId}/tree`),
-                          fetch(`/api/rfps/${rfpId}/weights`)
-                        ]);
+                        const [treeResponse, weightsResponse] =
+                          await Promise.all([
+                            fetch(`/api/rfps/${rfpId}/tree`),
+                            fetch(`/api/rfps/${rfpId}/weights`),
+                          ]);
 
-                        if (!treeResponse.ok) throw new Error("Failed to fetch tree");
+                        if (!treeResponse.ok)
+                          throw new Error("Failed to fetch tree");
                         const treeData = await treeResponse.json();
 
                         let weightsData = {};
@@ -254,12 +266,16 @@ export default function RFPSummaryPage() {
                         const allRealWeights = new Map<string, number>();
                         if (weightsData) {
                           // @ts-ignore
-                          for (const [id, weight] of Object.entries(weightsData.categories || {})) {
+                          for (const [id, weight] of Object.entries(
+                            weightsData.categories || {}
+                          )) {
                             // @ts-ignore
                             allRealWeights.set(id, weight * 100);
                           }
                           // @ts-ignore
-                          for (const [id, weight] of Object.entries(weightsData.requirements || {})) {
+                          for (const [id, weight] of Object.entries(
+                            weightsData.requirements || {}
+                          )) {
                             // @ts-ignore
                             allRealWeights.set(id, weight * 100);
                           }
@@ -269,9 +285,12 @@ export default function RFPSummaryPage() {
                         // For export, we prefer DB weights. If missing, we might need to recalculate or just export 0.
                         // Let's try to recalculate if missing, similar to WeightsTab logic, but simplified.
 
-                        const calculateRealWeight = (nodeId: string): number => {
+                        const calculateRealWeight = (
+                          nodeId: string
+                        ): number => {
                           // If we have it in DB, use it (converted back to %)
-                          if (allRealWeights.has(nodeId)) return allRealWeights.get(nodeId)!;
+                          if (allRealWeights.has(nodeId))
+                            return allRealWeights.get(nodeId)!;
                           return 0; // Fallback
                         };
 
@@ -433,6 +452,13 @@ export default function RFPSummaryPage() {
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline">Export</span>
               </TabsTrigger>
+              <TabsTrigger
+                value="versions"
+                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+              >
+                <GitBranch className="h-4 w-4" />
+                <span className="hidden sm:inline">Versions</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="dashboard" className="space-y-6">
@@ -538,6 +564,11 @@ export default function RFPSummaryPage() {
               ) : (
                 <ExportTab rfpId={rfpId} />
               )}
+            </TabsContent>
+            <TabsContent value="versions" className="space-y-6">
+              <VersionProvider rfpId={rfpId}>
+                <VersionsTab rfpId={rfpId} />
+              </VersionProvider>
             </TabsContent>
           </Tabs>
         </section>
