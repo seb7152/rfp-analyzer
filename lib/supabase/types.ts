@@ -404,6 +404,12 @@ export interface VersionStats {
   completion_percentage: number;
 }
 
+export interface EvaluationVersionWithStats extends EvaluationVersion {
+  active_suppliers_count: number;
+  removed_suppliers_count: number;
+  completion_percentage: number;
+}
+
 export interface VersionDetailResponse {
   version: EvaluationVersion;
   suppliers: (Supplier & {

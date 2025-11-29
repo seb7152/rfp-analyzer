@@ -22,7 +22,7 @@ interface VersionsTabProps {
 }
 
 export function VersionsTab({ rfpId }: VersionsTabProps) {
-  const { versions, activeVersion, isLoading, refreshVersions } = useVersion();
+  const { versions, isLoading, refreshVersions } = useVersion();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [versionName, setVersionName] = useState("");
   const [description, setDescription] = useState("");

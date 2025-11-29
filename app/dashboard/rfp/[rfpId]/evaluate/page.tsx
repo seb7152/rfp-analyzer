@@ -97,7 +97,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
             </div>
 
             <div className="flex items-center gap-4">
-              <VersionSelector rfpId={params.rfpId} />
+              <VersionSelector />
               {/* Upload Documents Button */}
               <Button
                 onClick={() => setIsUploadModalOpen(true)}

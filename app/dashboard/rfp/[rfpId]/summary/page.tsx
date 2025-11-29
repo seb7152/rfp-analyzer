@@ -257,7 +257,7 @@ export default function RFPSummaryPage() {
                           throw new Error("Failed to fetch tree");
                         const treeData = await treeResponse.json();
 
-                        let weightsData = {};
+                        let weightsData: { categories?: Record<string, number>; requirements?: Record<string, number> } = {};
                         if (weightsResponse.ok) {
                           weightsData = await weightsResponse.json();
                         }
@@ -408,168 +408,168 @@ export default function RFPSummaryPage() {
 
         {/* Tabs */}
         <section className="space-y-6">
-          <VersionProvider>
+          <VersionProvider rfpId={rfpId}>
             <Tabs defaultValue="dashboard" className="w-full">
-            <TabsList className="flex w-full gap-8 border-b border-slate-200 bg-transparent p-0 dark:border-slate-800">
-              <TabsTrigger
-                value="dashboard"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                <span className="hidden sm:inline">Tableau de bord</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="weights"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-              >
-                <Sliders className="h-4 w-4" />
-                <span className="hidden sm:inline">Pondérations</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="analysts"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-              >
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Analystes</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="requirements"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-              >
-                <ListChecks className="h-4 w-4" />
-                <span className="hidden sm:inline">Exigences</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="analysis"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-              >
-                <Activity className="h-4 w-4" />
-                <span className="hidden sm:inline">Analyse</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="export"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-              >
-                <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Export</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="versions"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-              >
-                <GitBranch className="h-4 w-4" />
-                <span className="hidden sm:inline">Versions</span>
-              </TabsTrigger>
-            </TabsList>
+              <TabsList className="flex w-full gap-8 border-b border-slate-200 bg-transparent p-0 dark:border-slate-800">
+                <TabsTrigger
+                  value="dashboard"
+                  className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span className="hidden sm:inline">Tableau de bord</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="weights"
+                  className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+                >
+                  <Sliders className="h-4 w-4" />
+                  <span className="hidden sm:inline">Pondérations</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="analysts"
+                  className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+                >
+                  <Users className="h-4 w-4" />
+                  <span className="hidden sm:inline">Analystes</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="requirements"
+                  className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+                >
+                  <ListChecks className="h-4 w-4" />
+                  <span className="hidden sm:inline">Exigences</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="analysis"
+                  className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+                >
+                  <Activity className="h-4 w-4" />
+                  <span className="hidden sm:inline">Analyse</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="export"
+                  className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">Export</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="versions"
+                  className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+                >
+                  <GitBranch className="h-4 w-4" />
+                  <span className="hidden sm:inline">Versions</span>
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="dashboard" className="space-y-6">
-              {loading ? (
-                <>
-                  {[...Array(4)].map((_, i) => (
-                    <Skeleton key={i} className="h-32" />
-                  ))}
-                </>
-              ) : data ? (
-                <>
-                  {/* KPI Cards */}
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <KPICard
-                      label="Exigences"
-                      value={data.globalProgress.totalRequirements}
-                      icon={<FileText className="h-5 w-5" />}
-                      hint="Nombre total de requirements"
-                    />
-                    <KPICard
-                      label="Répondants"
-                      value={data.suppliersAnalysis.comparisonTable.length}
-                      icon={<Building2 className="h-5 w-5" />}
-                      hint="Fournisseurs participants"
-                    />
-                    <KPICard
-                      label="Avancement"
-                      value={`${Math.round(data.globalProgress.completionPercentage)}%`}
-                      icon={<CheckCircle2 className="h-5 w-5" />}
-                      subtitle={`${data.globalProgress.evaluatedRequirements}/${data.globalProgress.totalRequirements}`}
-                      hint="Progression d'évaluation"
-                    />
-                    <KPICard
-                      label="Documents"
-                      value={totalDocuments}
-                      icon={<File className="h-5 w-5" />}
-                      hint="Fichiers uploadés"
-                    />
-                  </div>
-
-                  {/* Suppliers Table with Expand/Collapse */}
-                  <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
-                    <div className="p-6 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                          Fournisseurs
-                        </h2>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setExpandDashboard(!expandDashboard)}
-                          className="gap-2"
-                        >
-                          {expandDashboard ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                      {expandDashboard && <SuppliersTab rfpId={rfpId} />}
+              <TabsContent value="dashboard" className="space-y-6">
+                {loading ? (
+                  <>
+                    {[...Array(4)].map((_, i) => (
+                      <Skeleton key={i} className="h-32" />
+                    ))}
+                  </>
+                ) : data ? (
+                  <>
+                    {/* KPI Cards */}
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                      <KPICard
+                        label="Exigences"
+                        value={data.globalProgress.totalRequirements}
+                        icon={<FileText className="h-5 w-5" />}
+                        hint="Nombre total de requirements"
+                      />
+                      <KPICard
+                        label="Répondants"
+                        value={data.suppliersAnalysis.comparisonTable.length}
+                        icon={<Building2 className="h-5 w-5" />}
+                        hint="Fournisseurs participants"
+                      />
+                      <KPICard
+                        label="Avancement"
+                        value={`${Math.round(data.globalProgress.completionPercentage)}%`}
+                        icon={<CheckCircle2 className="h-5 w-5" />}
+                        subtitle={`${data.globalProgress.evaluatedRequirements}/${data.globalProgress.totalRequirements}`}
+                        hint="Progression d'évaluation"
+                      />
+                      <KPICard
+                        label="Documents"
+                        value={totalDocuments}
+                        icon={<File className="h-5 w-5" />}
+                        hint="Fichiers uploadés"
+                      />
                     </div>
-                  </Card>
-                </>
-              ) : null}
-            </TabsContent>
 
-            <TabsContent value="weights" className="space-y-6">
-              {loading ? (
-                <Skeleton className="h-64 rounded-2xl" />
-              ) : (
-                <WeightsTab rfpId={rfpId} />
-              )}
-            </TabsContent>
+                    {/* Suppliers Table with Expand/Collapse */}
+                    <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                            Fournisseurs
+                          </h2>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setExpandDashboard(!expandDashboard)}
+                            className="gap-2"
+                          >
+                            {expandDashboard ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                        {expandDashboard && <SuppliersTab rfpId={rfpId} />}
+                      </div>
+                    </Card>
+                  </>
+                ) : null}
+              </TabsContent>
 
-            <TabsContent value="analysts" className="space-y-6">
-              {loading ? (
-                <Skeleton className="h-64 rounded-2xl" />
-              ) : (
-                <AnalystsTab rfpId={rfpId} />
-              )}
-            </TabsContent>
+              <TabsContent value="weights" className="space-y-6">
+                {loading ? (
+                  <Skeleton className="h-64 rounded-2xl" />
+                ) : (
+                  <WeightsTab rfpId={rfpId} />
+                )}
+              </TabsContent>
 
-            <TabsContent value="requirements" className="space-y-6">
-              {loading ? (
-                <Skeleton className="h-64 rounded-2xl" />
-              ) : (
-                <RequirementsTab rfpId={rfpId} />
-              )}
-            </TabsContent>
+              <TabsContent value="analysts" className="space-y-6">
+                {loading ? (
+                  <Skeleton className="h-64 rounded-2xl" />
+                ) : (
+                  <AnalystsTab rfpId={rfpId} />
+                )}
+              </TabsContent>
 
-            <TabsContent value="analysis" className="space-y-6">
-              {loading ? (
-                <Skeleton className="h-64 rounded-2xl" />
-              ) : (
-                <AnalysisTab rfpId={rfpId} />
-              )}
-            </TabsContent>
+              <TabsContent value="requirements" className="space-y-6">
+                {loading ? (
+                  <Skeleton className="h-64 rounded-2xl" />
+                ) : (
+                  <RequirementsTab rfpId={rfpId} />
+                )}
+              </TabsContent>
 
-            <TabsContent value="export" className="space-y-6">
-              {loading ? (
-                <Skeleton className="h-64 rounded-2xl" />
-              ) : (
-                <ExportTab rfpId={rfpId} />
-              )}
-            </TabsContent>
-            <TabsContent value="versions" className="space-y-6">
-              <VersionsTab rfpId={rfpId} />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="analysis" className="space-y-6">
+                {loading ? (
+                  <Skeleton className="h-64 rounded-2xl" />
+                ) : (
+                  <AnalysisTab rfpId={rfpId} />
+                )}
+              </TabsContent>
+
+              <TabsContent value="export" className="space-y-6">
+                {loading ? (
+                  <Skeleton className="h-64 rounded-2xl" />
+                ) : (
+                  <ExportTab rfpId={rfpId} />
+                )}
+              </TabsContent>
+              <TabsContent value="versions" className="space-y-6">
+                <VersionsTab rfpId={rfpId} />
+              </TabsContent>
+            </Tabs>
           </VersionProvider>
         </section>
 

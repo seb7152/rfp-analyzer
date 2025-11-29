@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import {
   EvaluationVersion,
-  VersionSupplierStatus,
   CreateVersionRequest,
 } from "@/lib/supabase/types";
 
@@ -11,7 +10,7 @@ import {
  * Get all versions for an RFP with statistics
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ rfpId: string }> }
 ) {
   try {
@@ -46,7 +45,7 @@ export async function GET(
     const versionsWithStats = await Promise.all(
       (versions || []).map(async (version: EvaluationVersion) => {
         const [
-          { count: totalSuppliers },
+          ,
           { count: activeSuppliers },
           { count: removedSuppliers },
         ] = await Promise.all([

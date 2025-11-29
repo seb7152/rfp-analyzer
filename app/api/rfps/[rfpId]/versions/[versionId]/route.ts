@@ -7,7 +7,7 @@ import { UpdateVersionRequest } from "@/lib/supabase/types";
  * Get version details with supplier status
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ rfpId: string; versionId: string }> }
 ) {
   try {

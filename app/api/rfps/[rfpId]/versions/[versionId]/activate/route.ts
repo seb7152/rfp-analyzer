@@ -6,7 +6,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
  * Set as active version (deactivates others)
  */
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ rfpId: string; versionId: string }> }
 ) {
   try {

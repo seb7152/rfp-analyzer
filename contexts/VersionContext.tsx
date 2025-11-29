@@ -1,11 +1,11 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { EvaluationVersion } from "@/lib/supabase/types";
+import { EvaluationVersionWithStats } from "@/lib/supabase/types";
 
 interface VersionContextType {
-  versions: EvaluationVersion[];
-  activeVersion: EvaluationVersion | null;
+  versions: EvaluationVersionWithStats[];
+  activeVersion: EvaluationVersionWithStats | null;
   isLoading: boolean;
   error: string | null;
   setActiveVersionId: (versionId: string) => Promise<void>;
@@ -20,8 +20,8 @@ interface VersionProviderProps {
 }
 
 export function VersionProvider({ children, rfpId }: VersionProviderProps) {
-  const [versions, setVersions] = useState<EvaluationVersion[]>([]);
-  const [activeVersion, setActiveVersion] = useState<EvaluationVersion | null>(
+  const [versions, setVersions] = useState<EvaluationVersionWithStats[]>([]);
+  const [activeVersion, setActiveVersion] = useState<EvaluationVersionWithStats | null>(
     null
   );
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +42,7 @@ export function VersionProvider({ children, rfpId }: VersionProviderProps) {
       setVersions(versionList);
 
       // Set active version (find is_active = true)
-      const active = versionList.find((v: EvaluationVersion) => v.is_active);
+      const active = versionList.find((v: EvaluationVersionWithStats) => v.is_active);
       setActiveVersion(active || null);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";

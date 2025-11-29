@@ -10,11 +10,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
-interface VersionSelectorProps {
-  rfpId: string;
-}
-
-export function VersionSelector({ rfpId }: VersionSelectorProps) {
+export function VersionSelector() {
   const { versions, activeVersion, isLoading, setActiveVersionId } =
     useVersion();
 
