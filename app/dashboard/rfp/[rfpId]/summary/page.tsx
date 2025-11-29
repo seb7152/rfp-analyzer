@@ -408,7 +408,8 @@ export default function RFPSummaryPage() {
 
         {/* Tabs */}
         <section className="space-y-6">
-          <Tabs defaultValue="dashboard" className="w-full">
+          <VersionProvider>
+            <Tabs defaultValue="dashboard" className="w-full">
             <TabsList className="flex w-full gap-8 border-b border-slate-200 bg-transparent p-0 dark:border-slate-800">
               <TabsTrigger
                 value="dashboard"
@@ -566,11 +567,10 @@ export default function RFPSummaryPage() {
               )}
             </TabsContent>
             <TabsContent value="versions" className="space-y-6">
-              <VersionProvider rfpId={rfpId}>
-                <VersionsTab rfpId={rfpId} />
-              </VersionProvider>
+              <VersionsTab rfpId={rfpId} />
             </TabsContent>
           </Tabs>
+          </VersionProvider>
         </section>
 
         {/* Document Upload Modal */}
