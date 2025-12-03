@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readFile } from "fs/promises";
-import { tmpdir } from "os";
-import { join } from "path";
-import DocxParser from "docx-parser";
+import mammoth from "mammoth";
 
 interface ExtractionConfig {
   type: "inline" | "table";
@@ -184,62 +181,30 @@ function extractRequirements(
 }
 
 /**
- * Détecte le niveau de heading à partir du style
+ * Parse HTML table and extract rows
  */
-function detectHeadingLevel(paragraph: any): number | null {
-  if (!paragraph.style) return null;
+function parseTableHtml(tableHtml: string): string[][] {
+  const rows: string[][] = [];
+  const rowRegex = /<tr[^>]*>[\s\S]*?<\/tr>/g;
+  const cellRegex = /<t[dh][^>]*>([^<]*)<\/t[dh]>/g;
 
-  const styleName = paragraph.style.toLowerCase();
+  let rowMatch: RegExpExecArray | null;
+  while ((rowMatch = rowRegex.exec(tableHtml)) !== null) {
+    const rowHtml = rowMatch[0];
+    const cells: string[] = [];
 
-  // Heading ou Titre
-  const headingMatch = styleName.match(/(?:heading|titre)[\s-]*(\d+)/);
-  if (headingMatch) {
-    return parseInt(headingMatch[1]);
+    let cellMatch: RegExpExecArray | null;
+    cellRegex.lastIndex = 0;
+    while ((cellMatch = cellRegex.exec(rowHtml)) !== null) {
+      cells.push(cellMatch[1].trim());
+    }
+
+    if (cells.length > 0) {
+      rows.push(cells);
+    }
   }
 
-  // Title
-  if (styleName === "title" || styleName === "titre") {
-    return 1;
-  }
-
-  return null;
-}
-
-/**
- * Extrait le texte d'un paragraphe
- */
-function getParagraphText(paragraph: any): string {
-  if (!paragraph.runs) return "";
-
-  return paragraph.runs
-    .map((run: any) => {
-      if (typeof run === "string") return run;
-      if (run.text) return run.text;
-      return "";
-    })
-    .join("")
-    .trim();
-}
-
-/**
- * Extrait les cellules d'une table
- */
-function getTableRows(table: any): string[][] {
-  if (!table.rows) return [];
-
-  return table.rows.map((row: any) => {
-    if (!row.cells) return [];
-
-    return row.cells.map((cell: any) => {
-      if (!cell.paragraphs) return "";
-
-      return cell.paragraphs
-        .map((para: any) => getParagraphText(para))
-        .join(" ")
-        .replace(/\s+/g, " ")
-        .trim();
-    });
-  });
+  return rows;
 }
 
 export async function POST(request: NextRequest) {
@@ -301,28 +266,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const docxData = await new Promise<any>((resolve, reject) => {
-      try {
-        DocxParser.parseBuffer(buffer, (err: any, data: any) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(data);
-          }
-        });
-      } catch (parseError) {
-        reject(parseError);
-      }
-    });
-
-    if (!docxData) {
+    // Parse DOCX using mammoth
+    let result: any;
+    try {
+      result = await mammoth.convertToHtml({ buffer: buffer as Buffer });
+    } catch (parseErr) {
+      console.error("Mammoth parse error:", parseErr);
       return NextResponse.json(
-        { error: "Failed to parse DOCX file" },
+        { error: "Failed to parse DOCX file", message: String(parseErr) },
         { status: 400 }
       );
     }
 
-    // Build sections from parsed content
+    if (!result || !result.value) {
+      return NextResponse.json(
+        { error: "Failed to extract content from DOCX file" },
+        { status: 400 }
+      );
+    }
+
+    const html = result.value;
+
+    // Parse HTML to extract text, headings, and tables
     const sections: Section[] = [];
     let currentSection: Section = {
       level: 0,
@@ -334,39 +299,64 @@ export async function POST(request: NextRequest) {
 
     sections.push(currentSection);
 
-    // Process all document elements
-    if (docxData.paragraphs && Array.isArray(docxData.paragraphs)) {
-      for (const paragraph of docxData.paragraphs) {
-        const text = getParagraphText(paragraph);
+    // Split by heading tags
+    const headingRegex = /<h([1-6])[^>]*>([^<]*)<\/h\1>/g;
+    const textRegex = /<p[^>]*>([^<]*)<\/p>/g;
+    const tableRegex = /<table[^>]*>[\s\S]*?<\/table>/g;
 
-        if (!text) continue;
+    let match: RegExpExecArray | null;
 
-        const headingLevel = detectHeadingLevel(paragraph);
+    // Process headings and content between them
+    while ((match = headingRegex.exec(html)) !== null) {
+      const level = parseInt(match[1]);
+      const title = match[2].trim();
 
-        if (headingLevel) {
-          currentSection = {
-            level: headingLevel,
-            title: text,
-            content: [],
-            tables: [],
-            requirements: [],
-          };
-          sections.push(currentSection);
+      if (level <= 6 && title) {
+        currentSection = {
+          level,
+          title,
+          content: [],
+          tables: [],
+          requirements: [],
+        };
+        sections.push(currentSection);
+      }
+    }
+
+    // Extract text content
+    const textBeforeFirstHeading = html.substring(0, headingRegex.lastIndex);
+    textRegex.lastIndex = 0;
+    while ((match = textRegex.exec(textBeforeFirstHeading)) !== null) {
+      const text = match[1].trim();
+      if (text) {
+        if (sections.length > 1) {
+          sections[sections.length - 1].content.push(text);
         } else {
           currentSection.content.push(text);
-
-          // Extract requirements from paragraph
-          const reqs = extractRequirements(text, requirementConfig);
-          currentSection.requirements.push(...reqs);
         }
       }
     }
 
-    // Process tables
-    if (docxData.tables && Array.isArray(docxData.tables)) {
-      for (const table of docxData.tables) {
-        const rows = getTableRows(table);
+    // Extract text content from the entire document
+    textRegex.lastIndex = 0;
+    while ((match = textRegex.exec(html)) !== null) {
+      const text = match[1].trim();
+      if (text && currentSection) {
+        currentSection.content.push(text);
 
+        // Extract requirements from paragraph text
+        const reqs = extractRequirements(text, requirementConfig);
+        currentSection.requirements.push(...reqs);
+      }
+    }
+
+    // Extract tables
+    tableRegex.lastIndex = 0;
+    while ((match = tableRegex.exec(html)) !== null) {
+      const tableHtml = match[0];
+      const rows = parseTableHtml(tableHtml);
+
+      if (currentSection) {
         currentSection.tables.push(...rows);
 
         // Extract requirements from table cells
