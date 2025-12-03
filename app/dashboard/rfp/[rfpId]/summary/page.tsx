@@ -257,7 +257,10 @@ export default function RFPSummaryPage() {
                           throw new Error("Failed to fetch tree");
                         const treeData = await treeResponse.json();
 
-                        let weightsData: { categories?: Record<string, number>; requirements?: Record<string, number> } = {};
+                        let weightsData: {
+                          categories?: Record<string, number>;
+                          requirements?: Record<string, number>;
+                        } = {};
                         if (weightsResponse.ok) {
                           weightsData = await weightsResponse.json();
                         }

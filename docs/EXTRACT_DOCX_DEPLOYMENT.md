@@ -15,6 +15,7 @@ Guide pour déployer l'API Extract DOCX sur Vercel.
 L'API n'a pas de dépendances externes (Supabase, etc.), donc pas de variables requises.
 
 Si vous ajoutez des intégrations plus tard:
+
 ```
 # Dans Settings > Environment Variables
 # Aucune pour le moment
@@ -131,18 +132,18 @@ NEXT_PUBLIC_API_URL=http://localhost:3000  # dev
 ```typescript
 // Après extraction
 const { structured } = await response.json();
-const requirements = structured.flatMap(s => s.requirements);
+const requirements = structured.flatMap((s) => s.requirements);
 
 // Sauvegarder en Supabase
-const { error } = await supabase
-  .from("requirements")
-  .insert(requirements.map(req => ({
+const { error } = await supabase.from("requirements").insert(
+  requirements.map((req) => ({
     rfp_id: rfpId,
     code: req.code,
     title: req.title,
     content: req.content,
     original_capture: req.originalCapture,
-  })));
+  }))
+);
 ```
 
 ## Monitoring
@@ -160,6 +161,7 @@ vercel logs --prod 2>&1 | grep extract-docx
 ### 2. Performance
 
 Vérifier dans Vercel Dashboard:
+
 - Durations moyennes
 - Cold starts
 - Error rates
@@ -233,12 +235,14 @@ git push origin main
 ## Exemple de flux complet
 
 1. **Développement local**
+
    ```bash
    npm run dev
    # Test sur http://localhost:3000/api/extract-docx
    ```
 
 2. **Commit et push**
+
    ```bash
    git add .
    git commit -m "feat: add DOCX extraction API"
@@ -246,12 +250,14 @@ git push origin main
    ```
 
 3. **Review et merge**
+
    ```bash
    # Vercel préview URL pour tester
    # Merge à main
    ```
 
 4. **Production**
+
    ```bash
    # Vercel déploie automatiquement
    # Accessible sur https://your-project.vercel.app/api/extract-docx

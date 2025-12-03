@@ -19,11 +19,13 @@ interface VersionProviderProps {
   rfpId: string;
 }
 
-export function VersionProvider({ children, rfpId }: VersionProviderProps) {
+export const VersionProvider: React.FC<VersionProviderProps> = ({
+  children,
+  rfpId,
+}) => {
   const [versions, setVersions] = useState<EvaluationVersionWithStats[]>([]);
-  const [activeVersion, setActiveVersion] = useState<EvaluationVersionWithStats | null>(
-    null
-  );
+  const [activeVersion, setActiveVersion] =
+    useState<EvaluationVersionWithStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,7 +44,9 @@ export function VersionProvider({ children, rfpId }: VersionProviderProps) {
       setVersions(versionList);
 
       // Set active version (find is_active = true)
-      const active = versionList.find((v: EvaluationVersionWithStats) => v.is_active);
+      const active = versionList.find(
+        (v: EvaluationVersionWithStats) => v.is_active
+      );
       setActiveVersion(active || null);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
@@ -94,7 +98,7 @@ export function VersionProvider({ children, rfpId }: VersionProviderProps) {
       {children}
     </VersionContext.Provider>
   );
-}
+};
 
 export function useVersion() {
   const context = useContext(VersionContext);

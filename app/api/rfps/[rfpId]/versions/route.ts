@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import {
-  EvaluationVersion,
-  CreateVersionRequest,
-} from "@/lib/supabase/types";
+import { EvaluationVersion, CreateVersionRequest } from "@/lib/supabase/types";
 
 /**
  * GET /api/rfps/[rfpId]/versions
@@ -27,6 +24,7 @@ export async function GET(
     }
 
     // Fetch all versions for this RFP
+    console.log(`🔍 Fetching versions for RFP: ${rfpId}`);
     const { data: versions, error } = await supabase
       .from("evaluation_versions")
       .select("*")
@@ -41,29 +39,71 @@ export async function GET(
       );
     }
 
+    console.log(`✓ Found ${versions?.length || 0} versions`);
+    versions?.forEach((v) => {
+      console.log(`  - v${v.version_number}: ${v.version_name} (${v.id})`);
+    });
+
     // Fetch statistics for each version
     const versionsWithStats = await Promise.all(
       (versions || []).map(async (version: EvaluationVersion) => {
-        const [
-          ,
-          { count: activeSuppliers },
-          { count: removedSuppliers },
-        ] = await Promise.all([
-          supabase
-            .from("suppliers")
-            .select("id", { count: "exact", head: true })
-            .eq("rfp_id", rfpId),
-          supabase
-            .from("version_supplier_status")
-            .select("id", { count: "exact", head: true })
-            .eq("version_id", version.id)
-            .in("shortlist_status", ["active", "shortlisted"]),
-          supabase
-            .from("version_supplier_status")
-            .select("id", { count: "exact", head: true })
-            .eq("version_id", version.id)
-            .eq("shortlist_status", "removed"),
-        ]);
+        console.log(
+          `\n  📊 Processing v${version.version_number}: ${version.version_name}`
+        );
+
+        // Check if version_supplier_status table has any records for this version
+        const { data: allStatusRecords, error: statusError } = await supabase
+          .from("version_supplier_status")
+          .select("supplier_id, is_active, shortlist_status")
+          .eq("version_id", version.id);
+
+        console.log(
+          `    Total status records in DB: ${allStatusRecords?.length || 0}`
+        );
+        if (statusError) {
+          console.log(`    ⚠️ Error fetching all status records:`, statusError);
+        }
+        if (allStatusRecords && allStatusRecords.length > 0) {
+          const active = allStatusRecords.filter(
+            (s) =>
+              s.shortlist_status === "active" ||
+              s.shortlist_status === "shortlisted"
+          );
+          const removed = allStatusRecords.filter(
+            (s) => s.shortlist_status === "removed"
+          );
+          console.log(`    - Active/Shortlisted: ${active.length}`);
+          console.log(`    - Removed: ${removed.length}`);
+        }
+
+        const [_suppliersResult, activeResult, removedResult] =
+          await Promise.all([
+            supabase
+              .from("suppliers")
+              .select("id", { count: "exact", head: true })
+              .eq("rfp_id", rfpId),
+            supabase
+              .from("version_supplier_status")
+              .select("id", { count: "exact", head: true })
+              .eq("version_id", version.id)
+              .in("shortlist_status", ["active", "shortlisted"]),
+            supabase
+              .from("version_supplier_status")
+              .select("id", { count: "exact", head: true })
+              .eq("version_id", version.id)
+              .eq("shortlist_status", "removed"),
+          ]);
+
+        console.log(`    Query results:`);
+        console.log(`    - activeResult.count: ${activeResult.count}`);
+        console.log(`    - removedResult.count: ${removedResult.count}`);
+
+        const activeSuppliers = activeResult.count ?? 0;
+        const removedSuppliers = removedResult.count ?? 0;
+
+        console.log(
+          `    ✓ Final counts - Active: ${activeSuppliers}, Removed: ${removedSuppliers}`
+        );
 
         // Calculate completion percentage
         const { data: responses } = await supabase
@@ -79,8 +119,8 @@ export async function GET(
 
         return {
           ...version,
-          active_suppliers_count: activeSuppliers || 0,
-          removed_suppliers_count: removedSuppliers || 0,
+          active_suppliers_count: activeSuppliers,
+          removed_suppliers_count: removedSuppliers,
           completion_percentage: Math.round(completionPercentage),
         };
       })
@@ -240,8 +280,8 @@ export async function POST(
     }
 
     // Copy or create supplier statuses
-    if (inherit_supplier_status && copy_from_version_id) {
-      // Copy from previous version
+    if (copy_from_version_id && inherit_supplier_status) {
+      // Copy from previous version with inherited status
       const { data: sourceStatuses } = await supabase
         .from("version_supplier_status")
         .select("*")
@@ -259,7 +299,7 @@ export async function POST(
           .insert(statusesToInsert as any);
       }
     } else {
-      // Create all suppliers as active for new version
+      // Create all suppliers as active for new version (either starting fresh or not inheriting status)
       const { data: suppliers } = await supabase
         .from("suppliers")
         .select("id")

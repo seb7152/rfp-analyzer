@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readFile } from "fs/promises";
+import { tmpdir } from "os";
+import { join } from "path";
 import DocxParser from "docx-parser";
 
 interface ExtractionConfig {
@@ -240,12 +243,12 @@ function getTableRows(table: any): string[][] {
 }
 
 export async function POST(request: NextRequest) {
+  let buffer: Buffer | null = null;
+  let requirementConfig: RequirementConfig | undefined;
+
   try {
     const contentType = request.headers.get("content-type") || "";
-    let buffer: Buffer;
-    let requirementConfig: RequirementConfig | undefined;
 
-    // Support form-data upload
     if (!contentType.includes("multipart/form-data")) {
       return NextResponse.json(
         { error: "Content-Type must be multipart/form-data" },
@@ -253,14 +256,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const formData = await request.formData();
-    const file = formData.get("file") as File;
+    // Parse form data with error handling
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch (parseErr) {
+      console.error("FormData parse error:", parseErr);
+      return NextResponse.json(
+        { error: "Failed to parse form data", message: String(parseErr) },
+        { status: 400 }
+      );
+    }
 
+    const file = formData.get("file") as File;
     if (!file) {
       return NextResponse.json({ error: "Missing file" }, { status: 400 });
     }
 
-    buffer = Buffer.from(await file.arrayBuffer());
+    try {
+      buffer = Buffer.from(await file.arrayBuffer());
+    } catch (bufErr) {
+      console.error("Buffer creation error:", bufErr);
+      return NextResponse.json(
+        { error: "Failed to read file", message: String(bufErr) },
+        { status: 400 }
+      );
+    }
 
     // Optional: get requirement config from form
     const configStr = formData.get("requirementConfig") as string;
@@ -273,14 +294,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse DOCX file
+    if (!buffer) {
+      return NextResponse.json(
+        { error: "No buffer available for parsing" },
+        { status: 400 }
+      );
+    }
+
     const docxData = await new Promise<any>((resolve, reject) => {
-      DocxParser.parseBuffer(buffer, (err: any, data: any) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(data);
-        }
-      });
+      try {
+        DocxParser.parseBuffer(buffer, (err: any, data: any) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(data);
+          }
+        });
+      } catch (parseError) {
+        reject(parseError);
+      }
     });
 
     if (!docxData) {

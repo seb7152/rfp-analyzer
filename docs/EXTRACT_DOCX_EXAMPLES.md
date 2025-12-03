@@ -5,12 +5,14 @@
 Extrait uniquement la structure (headings, paragraphes, tables).
 
 **Request:**
+
 ```bash
 curl -X POST http://localhost:3000/api/extract-docx \
   -F "file=@requirements.docx"
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -25,18 +27,14 @@ curl -X POST http://localhost:3000/api/extract-docx \
     {
       "level": 1,
       "title": "Introduction",
-      "content": [
-        "Ceci est le contenu de l'introduction."
-      ],
+      "content": ["Ceci est le contenu de l'introduction."],
       "tables": [],
       "requirements": []
     },
     {
       "level": 2,
       "title": "Sous-section",
-      "content": [
-        "Contenu avec REQ-001 mentionné."
-      ],
+      "content": ["Contenu avec REQ-001 mentionné."],
       "tables": [],
       "requirements": []
     }
@@ -51,6 +49,7 @@ curl -X POST http://localhost:3000/api/extract-docx \
 Capture uniquement les codes REQ.
 
 **Config:**
+
 ```json
 {
   "capturePattern": "REQ-([0-9]+)"
@@ -58,6 +57,7 @@ Capture uniquement les codes REQ.
 ```
 
 **Document DOCX contient:**
+
 ```
 REQ-001: Authentification utilisateur
 REQ-002: Gestion des permissions
@@ -65,6 +65,7 @@ REQ-003: Audit logging
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -104,6 +105,7 @@ REQ-003: Audit logging
 Reformate les codes avec padding.
 
 **Config:**
+
 ```json
 {
   "capturePattern": "Req\\s*([0-9]+)",
@@ -112,6 +114,7 @@ Reformate les codes avec padding.
 ```
 
 **Document DOCX contient:**
+
 ```
 Req 1: Feature A
 Req 25: Feature B
@@ -119,6 +122,7 @@ Req 103: Feature C
 ```
 
 **Response:**
+
 ```json
 {
   "requirements": [
@@ -143,6 +147,7 @@ Req 103: Feature C
 ## 4. Extraction avec titre et contenu (inline)
 
 **Config:**
+
 ```json
 {
   "capturePattern": "REQ-([0-9]+)",
@@ -161,6 +166,7 @@ Req 103: Feature C
 ```
 
 **Document DOCX contient:**
+
 ```
 REQ-1 - Authentification : Le système doit supporter OAuth2 et SSO
 
@@ -168,6 +174,7 @@ REQ-2 - Logging : Tous les accès doivent être loggés avec timestamp et user I
 ```
 
 **Response:**
+
 ```json
 {
   "requirements": [
@@ -192,6 +199,7 @@ REQ-2 - Logging : Tous les accès doivent être loggés avec timestamp et user I
 ## 5. Extraction depuis des tables
 
 **Config:**
+
 ```json
 {
   "capturePattern": "^[A-Z]+-[0-9]+$",
@@ -207,6 +215,7 @@ REQ-2 - Logging : Tous les accès doivent être loggés avec timestamp et user I
 ```
 
 **Document DOCX contient une table:**
+
 ```
 ┌──────────┬─────────────────────┬──────────────────────────────────┐
 │ Code     │ Catégorie           │ Description                      │
@@ -218,6 +227,7 @@ REQ-2 - Logging : Tous les accès doivent être loggés avec timestamp et user I
 ```
 
 **Response:**
+
 ```json
 {
   "tables": [
@@ -256,6 +266,7 @@ REQ-2 - Logging : Tous les accès doivent être loggés avec timestamp et user I
 Appliquer plusieurs transformations à la valeur capturée.
 
 **Config:**
+
 ```json
 {
   "capturePattern": "req\\s*([a-z]+)(\\d+)",
@@ -264,6 +275,7 @@ Appliquer plusieurs transformations à la valeur capturée.
 ```
 
 **Document DOCX contient:**
+
 ```
 req alpha1: Feature A
 req beta25: Feature B
@@ -271,6 +283,7 @@ req gamma3: Feature C
 ```
 
 **Response:**
+
 ```json
 {
   "requirements": [

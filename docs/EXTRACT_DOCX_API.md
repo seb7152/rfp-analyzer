@@ -31,18 +31,18 @@ curl -X POST http://localhost:3000/api/extract-docx \
 
 ```typescript
 interface RequirementConfig {
-  capturePattern?: string;        // Regex avec groupes de capture
-  codeTemplate?: string;          // Template pour générer le code
-  captureGroupIndex?: number;     // Index du groupe (défaut: 1)
-  titleExtraction?: ExtractionConfig;    // Extraction du titre
-  contentExtraction?: ExtractionConfig;  // Extraction du contenu
+  capturePattern?: string; // Regex avec groupes de capture
+  codeTemplate?: string; // Template pour générer le code
+  captureGroupIndex?: number; // Index du groupe (défaut: 1)
+  titleExtraction?: ExtractionConfig; // Extraction du titre
+  contentExtraction?: ExtractionConfig; // Extraction du contenu
 }
 
 interface ExtractionConfig {
   type: "inline" | "table";
-  pattern?: string;               // Pour inline: regex pattern
-  groupIndex?: number;            // Pour inline: groupe de capture
-  columnIndex?: number;           // Pour table: index de colonne
+  pattern?: string; // Pour inline: regex pattern
+  groupIndex?: number; // Pour inline: groupe de capture
+  columnIndex?: number; // Pour table: index de colonne
 }
 ```
 
@@ -66,6 +66,7 @@ interface ExtractionConfig {
 ```
 
 Transformations supportées:
+
 - `padStart(length, fillString)` - Remplir au début (ex: "1" → "01")
 - `toUpperCase()` - Convertir en majuscules
 - `toLowerCase()` - Convertir en minuscules
@@ -137,6 +138,7 @@ Transformations supportées:
 ## Structure du document DOCX
 
 L'API supporte:
+
 - **Headings**: Détection automatique des niveaux (Heading 1-6, Title, etc.)
 - **Paragraphs**: Texte normal
 - **Tables**: Toutes les cellules sont extraites

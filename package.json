@@ -45,6 +45,7 @@
     "docx-parser": "^0.2.1",
     "dotenv": "^17.2.3",
     "exceljs": "^4.4.0",
+    "formidable": "^3.5.4",
     "lucide-react": "^0.263.1",
     "material-react-table": "^3.2.1",
     "next": "^14.0.0",

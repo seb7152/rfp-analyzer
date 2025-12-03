@@ -9,12 +9,14 @@
 ## 📖 Documentation
 
 ### Pour les développeurs qui commencent
+
 1. **[QUICK_START_DOCX_API.md](QUICK_START_DOCX_API.md)** - 2 min de lecture
    - Cas d'usage simple
    - Code examples
    - Démarrage immédiat
 
 ### Pour comprendre complètement
+
 2. **[EXTRACT_DOCX_SUMMARY.md](EXTRACT_DOCX_SUMMARY.md)** - 5 min de lecture
    - Vue d'ensemble technique
    - Avantages vs la solution Deno
@@ -26,6 +28,7 @@
    - Tous les paramètres documentés
 
 ### Pour voir des exemples
+
 4. **[docs/EXTRACT_DOCX_EXAMPLES.md](docs/EXTRACT_DOCX_EXAMPLES.md)** - 7 exemples pratiques
    - Cas simple
    - Avec transformations
@@ -34,6 +37,7 @@
    - Intégration TypeScript/React
 
 ### Pour déployer
+
 5. **[docs/EXTRACT_DOCX_DEPLOYMENT.md](docs/EXTRACT_DOCX_DEPLOYMENT.md)** - Guide Vercel
    - Configuration Vercel
    - Déploiement automatique
@@ -41,6 +45,7 @@
    - Troubleshooting
 
 ### Vue d'ensemble finale
+
 6. **[API_EXTRACT_DOCX_FINAL.md](API_EXTRACT_DOCX_FINAL.md)** - Résumé complet
    - Ce qui a été livré
    - Avantages
@@ -51,27 +56,33 @@
 ## 💻 Code
 
 ### Endpoint API
+
 ```
 app/api/extract-docx/route.ts  (350 lignes)
 ```
+
 - POST endpoint Next.js
 - Parsing DOCX avec docx-parser
 - Configuration flexible des patterns
 - Extraction de titre/contenu
 
 ### Composant React
+
 ```
 app/components/docx-extractor.tsx  (140 lignes)
 ```
+
 - Upload de fichier
 - Configurateur de patterns
 - Gestion du loading
 - Callback pour les données
 
 ### Types TypeScript
+
 ```
 types/docx-parser.d.ts  (10 lignes)
 ```
+
 - Déclarations pour docx-parser
 
 ---
@@ -79,21 +90,27 @@ types/docx-parser.d.ts  (10 lignes)
 ## 🎯 Scenarios courants
 
 ### Je veux juste tester l'API
+
 → [QUICK_START_DOCX_API.md](QUICK_START_DOCX_API.md)
 
 ### Je veux l'intégrer dans ma page RFP
+
 → [QUICK_START_DOCX_API.md](QUICK_START_DOCX_API.md) + [docs/EXTRACT_DOCX_EXAMPLES.md](docs/EXTRACT_DOCX_EXAMPLES.md#7-intégration-typescriptreact)
 
 ### Je veux extraire avec une config spécifique
+
 → [docs/EXTRACT_DOCX_EXAMPLES.md](docs/EXTRACT_DOCX_EXAMPLES.md)
 
 ### Je veux comprendre la configuration
+
 → [docs/EXTRACT_DOCX_API.md](docs/EXTRACT_DOCX_API.md#configuration-des-requirements)
 
 ### Je dois déployer sur Vercel
+
 → [docs/EXTRACT_DOCX_DEPLOYMENT.md](docs/EXTRACT_DOCX_DEPLOYMENT.md)
 
 ### J'ai une erreur
+
 → [docs/EXTRACT_DOCX_DEPLOYMENT.md](docs/EXTRACT_DOCX_DEPLOYMENT.md#troubleshooting) ou [docs/EXTRACT_DOCX_API.md](docs/EXTRACT_DOCX_API.md#erreurs-possibles)
 
 ---
@@ -101,9 +118,11 @@ types/docx-parser.d.ts  (10 lignes)
 ## 📦 Dépendances
 
 **Ajoutée:**
+
 - `docx-parser@^0.2.1` - Parsing robuste des fichiers DOCX
 
 **Déjà existantes:**
+
 - `next@^14.0.0` - Framework
 - `react@^18.2.0` - Composants
 
@@ -152,25 +171,27 @@ RFP-Analyzer/
 
 ## 🔗 Liens rapides
 
-| Besoin | Document |
-|--------|----------|
-| Démarrer en 2 min | [QUICK_START_DOCX_API.md](QUICK_START_DOCX_API.md) |
-| Voir un exemple | [docs/EXTRACT_DOCX_EXAMPLES.md](docs/EXTRACT_DOCX_EXAMPLES.md) |
-| Référence API | [docs/EXTRACT_DOCX_API.md](docs/EXTRACT_DOCX_API.md) |
-| Déployer | [docs/EXTRACT_DOCX_DEPLOYMENT.md](docs/EXTRACT_DOCX_DEPLOYMENT.md) |
-| Résumé technique | [EXTRACT_DOCX_SUMMARY.md](EXTRACT_DOCX_SUMMARY.md) |
-| Vue complète | [API_EXTRACT_DOCX_FINAL.md](API_EXTRACT_DOCX_FINAL.md) |
+| Besoin            | Document                                                           |
+| ----------------- | ------------------------------------------------------------------ |
+| Démarrer en 2 min | [QUICK_START_DOCX_API.md](QUICK_START_DOCX_API.md)                 |
+| Voir un exemple   | [docs/EXTRACT_DOCX_EXAMPLES.md](docs/EXTRACT_DOCX_EXAMPLES.md)     |
+| Référence API     | [docs/EXTRACT_DOCX_API.md](docs/EXTRACT_DOCX_API.md)               |
+| Déployer          | [docs/EXTRACT_DOCX_DEPLOYMENT.md](docs/EXTRACT_DOCX_DEPLOYMENT.md) |
+| Résumé technique  | [EXTRACT_DOCX_SUMMARY.md](EXTRACT_DOCX_SUMMARY.md)                 |
+| Vue complète      | [API_EXTRACT_DOCX_FINAL.md](API_EXTRACT_DOCX_FINAL.md)             |
 
 ---
 
 ## 🌍 Endpoints
 
 ### Production (Vercel)
+
 ```
 POST https://your-project.vercel.app/api/extract-docx
 ```
 
 ### Local (développement)
+
 ```
 POST http://localhost:3000/api/extract-docx
 ```

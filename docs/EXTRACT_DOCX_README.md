@@ -73,9 +73,9 @@ export default function Page() {
 
 ```typescript
 interface RequirementConfig {
-  capturePattern?: string;        // Regex pour matcher
-  codeTemplate?: string;          // Format du code (ex: REQ-$1:padStart(2,0))
-  captureGroupIndex?: number;     // Index du groupe (défaut: 1)
+  capturePattern?: string; // Regex pour matcher
+  codeTemplate?: string; // Format du code (ex: REQ-$1:padStart(2,0))
+  captureGroupIndex?: number; // Index du groupe (défaut: 1)
   titleExtraction?: {
     type: "inline" | "table";
     pattern?: string;
@@ -120,6 +120,7 @@ const { structured } = await response.json();
 ```
 
 Transformations disponibles:
+
 - `padStart(length, char)` - Remplir au début
 - `toUpperCase()` - Majuscules
 - `toLowerCase()` - Minuscules
@@ -212,6 +213,7 @@ vercel --prod
 ### Variables d'environnement
 
 Aucune requise pour le moment. Ajouter si besoin:
+
 - Intégrations Supabase
 - Clés API externes
 - Configuration personnalisée
@@ -219,9 +221,9 @@ Aucune requise pour le moment. Ajouter si besoin:
 ### Limitations Vercel
 
 | Plan | Timeout | Max file | Cold start |
-|------|---------|----------|-----------|
-| Free | 10s | 4.5 MB | ~1s |
-| Pro | 60s | 4.5 MB | ~0.5s |
+| ---- | ------- | -------- | ---------- |
+| Free | 10s     | 4.5 MB   | ~1s        |
+| Pro  | 60s     | 4.5 MB   | ~0.5s      |
 
 ---
 
@@ -265,6 +267,7 @@ vercel logs --prod
 ### Regex pattern ne matcher pas
 
 **Test:** Utiliser un regex tester online
+
 - https://regex101.com/
 - https://regexpal.com/
 
@@ -278,6 +281,7 @@ console.log(match[1]); // "001"
 ### Fichier trop gros
 
 **Options:**
+
 1. Réduire la taille du fichier
 2. Upgrader le plan Vercel (Pro = 60s timeout)
 3. Splitter les requirements en plusieurs fichiers
@@ -285,6 +289,7 @@ console.log(match[1]); // "001"
 ### Table mal parsée
 
 **Vérifier:**
+
 - La table est valide dans Word
 - Les cellules ne sont pas fusionnées
 - Tester avec `"titleExtraction": {"type": "table"}`
@@ -294,6 +299,7 @@ console.log(match[1]); // "001"
 ## 📚 Documentation complète
 
 Voir les fichiers dans `docs/`:
+
 - `EXTRACT_DOCX_API.md` - Référence complète de l'API
 - `EXTRACT_DOCX_EXAMPLES.md` - 7 exemples détaillés
 - `EXTRACT_DOCX_DEPLOYMENT.md` - Guide de déploiement
@@ -303,12 +309,14 @@ Voir les fichiers dans `docs/`:
 ## 🔄 Workflow complet
 
 ### 1. Développement local
+
 ```bash
 npm run dev
 # Tester sur http://localhost:3000
 ```
 
 ### 2. Intégration dans l'app
+
 ```typescript
 // Dans vos composants
 import { DocxExtractor } from "@/app/components/docx-extractor";
@@ -317,15 +325,17 @@ import { DocxExtractor } from "@/app/components/docx-extractor";
 ```
 
 ### 3. Sauvegarder les requirements
+
 ```typescript
 const { structured } = await response.json();
-const requirements = structured.flatMap(s => s.requirements);
+const requirements = structured.flatMap((s) => s.requirements);
 
 // Sauvegarder en Supabase
 await supabase.from("requirements").insert(requirements);
 ```
 
 ### 4. Push et déploiement
+
 ```bash
 git add .
 git commit -m "feat: add DOCX extraction API"

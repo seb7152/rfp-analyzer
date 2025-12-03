@@ -20,21 +20,25 @@ Une nouvelle API pour extraire les requirements des fichiers DOCX, remplaçant l
 ## 🎯 Utilisation simple
 
 ### 1. Via React (recommandé)
+
 ```tsx
 import { DocxExtractor } from "@/app/components/docx-extractor";
 
 export default function MyPage() {
   return (
-    <DocxExtractor onExtract={(sections) => {
-      // sections contient les requirements extraits
-      const requirements = sections.flatMap(s => s.requirements);
-      console.log(requirements);
-    }} />
+    <DocxExtractor
+      onExtract={(sections) => {
+        // sections contient les requirements extraits
+        const requirements = sections.flatMap((s) => s.requirements);
+        console.log(requirements);
+      }}
+    />
   );
 }
 ```
 
 ### 2. Via curl (test)
+
 ```bash
 curl -X POST http://localhost:3000/api/extract-docx \
   -F "file=@document.docx" \
@@ -42,16 +46,20 @@ curl -X POST http://localhost:3000/api/extract-docx \
 ```
 
 ### 3. Via fetch
+
 ```javascript
 const formData = new FormData();
 formData.append("file", file);
-formData.append("requirementConfig", JSON.stringify({
-  capturePattern: "REQ-([0-9]+)"
-}));
+formData.append(
+  "requirementConfig",
+  JSON.stringify({
+    capturePattern: "REQ-([0-9]+)",
+  })
+);
 
 const response = await fetch("/api/extract-docx", {
   method: "POST",
-  body: formData
+  body: formData,
 });
 
 const { structured } = await response.json();
@@ -62,6 +70,7 @@ const { structured } = await response.json();
 ## 🔧 Configuration (optionnelle)
 
 ### Cas le plus simple - Juste matcher des codes
+
 ```json
 {
   "capturePattern": "REQ-([0-9]+)"
@@ -69,6 +78,7 @@ const { structured } = await response.json();
 ```
 
 ### Avec transformation
+
 ```json
 {
   "capturePattern": "Req\\s*([0-9]+)",
@@ -77,6 +87,7 @@ const { structured } = await response.json();
 ```
 
 ### Avec titre et contenu
+
 ```json
 {
   "capturePattern": "REQ-([0-9]+)",
@@ -108,7 +119,10 @@ const { structured } = await response.json();
       "level": 1,
       "title": "Chapter Title",
       "content": ["Paragraph 1", "Paragraph 2"],
-      "tables": [["Col1", "Col2"], ["Val1", "Val2"]],
+      "tables": [
+        ["Col1", "Col2"],
+        ["Val1", "Val2"]
+      ],
       "requirements": [
         {
           "code": "REQ-01",
@@ -166,17 +180,17 @@ git push origin main
 ```typescript
 // Après extraction
 const { structured } = await response.json();
-const requirements = structured.flatMap(s => s.requirements);
+const requirements = structured.flatMap((s) => s.requirements);
 
 // Sauvegarder en Supabase
-const { error } = await supabase
-  .from("requirements")
-  .insert(requirements.map(req => ({
+const { error } = await supabase.from("requirements").insert(
+  requirements.map((req) => ({
     rfp_id: rfpId,
     code: req.code,
     title: req.title,
-    content: req.content
-  })));
+    content: req.content,
+  }))
+);
 ```
 
 ---
@@ -195,12 +209,15 @@ const { error } = await supabase
 ## 🐛 Troubleshooting
 
 ### "File not found"
+
 Vérifier: format .docx valide, pas corrompu
 
 ### Pattern ne matcher pas
+
 Tester votre regex: https://regex101.com/
 
 ### Timeout Vercel
+
 Fichier trop gros? Réduire la taille ou upgrader plan
 
 **Pour plus d'aide:** Voir `docs/EXTRACT_DOCX_DEPLOYMENT.md`
@@ -212,6 +229,7 @@ Fichier trop gros? Réduire la taille ou upgrader plan
 L'API est créée, documentée, et prête à être utilisée.
 
 **Prochaines étapes:**
+
 1. Test local: `npm run dev`
 2. Intégrer dans vos pages
 3. Push sur main pour déployer sur Vercel
