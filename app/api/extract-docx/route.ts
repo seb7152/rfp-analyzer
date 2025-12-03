@@ -96,7 +96,11 @@ function extractFromConfig(
     } catch (e) {
       console.error("Error in inline extraction:", e);
     }
-  } else if (config.type === "table" && rowCells && config.columnIndex !== undefined) {
+  } else if (
+    config.type === "table" &&
+    rowCells &&
+    config.columnIndex !== undefined
+  ) {
     const cellText = rowCells[config.columnIndex];
     return cellText ? cellText.trim() : undefined;
   }
@@ -152,7 +156,11 @@ function extractRequirements(
       seenCodes.add(code);
 
       const title = extractFromConfig(text, config.titleExtraction, rowCells);
-      const content = extractFromConfig(text, config.contentExtraction, rowCells);
+      const content = extractFromConfig(
+        text,
+        config.contentExtraction,
+        rowCells
+      );
 
       const requirement: ParsedRequirement = {
         code: code,
@@ -238,40 +246,30 @@ export async function POST(request: NextRequest) {
     let requirementConfig: RequirementConfig | undefined;
 
     // Support form-data upload
-    if (contentType.includes("multipart/form-data")) {
-      try {
-        const formData = await request.formData();
-        const file = formData.get("file") as File;
-
-        if (!file) {
-          return NextResponse.json(
-            { error: "Missing file" },
-            { status: 400 }
-          );
-        }
-
-        buffer = Buffer.from(await file.arrayBuffer());
-
-        // Optional: get requirement config from form
-        const configStr = formData.get("requirementConfig") as string;
-        if (configStr) {
-          try {
-            requirementConfig = JSON.parse(configStr);
-          } catch (e) {
-            console.warn("Invalid requirementConfig JSON:", e);
-          }
-        }
-      } catch (formError: any) {
-        console.error("FormData parsing error:", formError);
-        // Fallback: try to read raw buffer
-        const arrayBuffer = await request.arrayBuffer();
-        buffer = Buffer.from(arrayBuffer);
-      }
-    } else {
+    if (!contentType.includes("multipart/form-data")) {
       return NextResponse.json(
         { error: "Content-Type must be multipart/form-data" },
         { status: 400 }
       );
+    }
+
+    const formData = await request.formData();
+    const file = formData.get("file") as File;
+
+    if (!file) {
+      return NextResponse.json({ error: "Missing file" }, { status: 400 });
+    }
+
+    buffer = Buffer.from(await file.arrayBuffer());
+
+    // Optional: get requirement config from form
+    const configStr = formData.get("requirementConfig") as string;
+    if (configStr) {
+      try {
+        requirementConfig = JSON.parse(configStr);
+      } catch (e) {
+        console.warn("Invalid requirementConfig JSON:", e);
+      }
     }
 
     // Parse DOCX file
