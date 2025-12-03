@@ -239,26 +239,33 @@ export async function POST(request: NextRequest) {
 
     // Support form-data upload
     if (contentType.includes("multipart/form-data")) {
-      const formData = await request.formData();
-      const file = formData.get("file") as File;
+      try {
+        const formData = await request.formData();
+        const file = formData.get("file") as File;
 
-      if (!file) {
-        return NextResponse.json(
-          { error: "Missing file" },
-          { status: 400 }
-        );
-      }
-
-      buffer = Buffer.from(await file.arrayBuffer());
-
-      // Optional: get requirement config from form
-      const configStr = formData.get("requirementConfig") as string;
-      if (configStr) {
-        try {
-          requirementConfig = JSON.parse(configStr);
-        } catch (e) {
-          console.warn("Invalid requirementConfig JSON:", e);
+        if (!file) {
+          return NextResponse.json(
+            { error: "Missing file" },
+            { status: 400 }
+          );
         }
+
+        buffer = Buffer.from(await file.arrayBuffer());
+
+        // Optional: get requirement config from form
+        const configStr = formData.get("requirementConfig") as string;
+        if (configStr) {
+          try {
+            requirementConfig = JSON.parse(configStr);
+          } catch (e) {
+            console.warn("Invalid requirementConfig JSON:", e);
+          }
+        }
+      } catch (formError: any) {
+        console.error("FormData parsing error:", formError);
+        // Fallback: try to read raw buffer
+        const arrayBuffer = await request.arrayBuffer();
+        buffer = Buffer.from(arrayBuffer);
       }
     } else {
       return NextResponse.json(
