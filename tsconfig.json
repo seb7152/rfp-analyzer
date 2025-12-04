@@ -36,6 +36,7 @@
     "node_modules",
     "mockup/**/*",
     "supabase/functions/**/*",
-    "mcp-server/**/*"
+    "mcp-server/**/*",
+    "docs/**/*"
   ]
 }

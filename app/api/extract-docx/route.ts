@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import mammoth from "mammoth";
+import JSZip from "jszip";
+import { XMLParser } from "fast-xml-parser";
+import busboy from "busboy";
+import { Readable } from "stream";
 
 interface ExtractionConfig {
   type: "inline" | "table";
@@ -181,38 +184,135 @@ function extractRequirements(
 }
 
 /**
- * Parse HTML table and extract rows
+ * Extrait le texte d'un élément XML (paragraphe, cellule, etc)
+ * Cherche uniquement les éléments w:r (runs) et w:t (text)
  */
-function parseTableHtml(tableHtml: string): string[][] {
-  const rows: string[][] = [];
-  const rowRegex = /<tr[^>]*>[\s\S]*?<\/tr>/g;
-  const cellRegex = /<t[dh][^>]*>([^<]*)<\/t[dh]>/g;
+function extractTextFromElement(element: any): string {
+  if (typeof element === "string") {
+    return element.trim();
+  }
 
-  let rowMatch: RegExpExecArray | null;
-  while ((rowMatch = rowRegex.exec(tableHtml)) !== null) {
-    const rowHtml = rowMatch[0];
-    const cells: string[] = [];
+  if (!element || typeof element !== "object") {
+    return "";
+  }
 
-    let cellMatch: RegExpExecArray | null;
-    cellRegex.lastIndex = 0;
-    while ((cellMatch = cellRegex.exec(rowHtml)) !== null) {
-      cells.push(cellMatch[1].trim());
+  const textArr: string[] = [];
+
+  // Récursivement chercher les éléments w:r (text runs) et w:t (texte)
+  function collectText(obj: any) {
+    if (obj === null || obj === undefined) return;
+
+    if (typeof obj === "string") {
+      // Ne pas ajouter les strings simples (attributs)
+      return;
     }
 
-    if (cells.length > 0) {
-      rows.push(cells);
+    if (Array.isArray(obj)) {
+      obj.forEach(collectText);
+      return;
+    }
+
+    if (typeof obj === "object") {
+      // Chercher les éléments w:t (texte) directement
+      if (obj["w:t"] && obj["w:t"]["#text"]) {
+        const txt = obj["w:t"]["#text"].trim();
+        if (txt) textArr.push(txt);
+      }
+
+      // Parcourir les éléments w:r (runs) qui contiennent w:t
+      if (obj["w:r"]) {
+        const runs = Array.isArray(obj["w:r"]) ? obj["w:r"] : [obj["w:r"]];
+        runs.forEach((run: any) => {
+          if (run["w:t"] && run["w:t"]["#text"]) {
+            const txt = run["w:t"]["#text"].trim();
+            if (txt) textArr.push(txt);
+          }
+        });
+      }
+
+      // Parcourir les propriétés pour trouver d'autres conteneurs
+      Object.keys(obj).forEach((key) => {
+        if (key.startsWith("w:") && key !== "w:t" && key !== "w:r") {
+          collectText(obj[key]);
+        }
+      });
     }
   }
 
-  return rows;
+  collectText(element);
+  return textArr.join(" ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Parse multipart form data avec busboy
+ */
+async function parseMultipartForm(
+  request: NextRequest
+): Promise<{ file?: Buffer; requirementConfig?: RequirementConfig }> {
+  return new Promise((resolve, reject) => {
+    const contentType = request.headers.get("content-type") || "";
+    const bb = busboy({ headers: { "content-type": contentType } });
+
+    let file: Buffer | undefined;
+    let requirementConfig: RequirementConfig | undefined;
+
+    bb.on("file", async (fieldname, fileStream) => {
+      console.log(`[extract-docx] File received: ${fieldname}`);
+
+      const chunks: Buffer[] = [];
+      fileStream.on("data", (data) => {
+        chunks.push(Buffer.from(data));
+      });
+
+      fileStream.on("end", () => {
+        if (fieldname === "file") {
+          file = Buffer.concat(chunks);
+          console.log(`[extract-docx] File buffer size: ${file.length} bytes`);
+        }
+      });
+
+      fileStream.on("error", (err) => {
+        console.error(`[extract-docx] File stream error:`, err);
+        reject(err);
+      });
+    });
+
+    bb.on("field", (fieldname, val) => {
+      if (fieldname === "requirementConfig") {
+        try {
+          requirementConfig = JSON.parse(val);
+          console.log(`[extract-docx] Config parsed successfully`);
+        } catch (e) {
+          console.warn(`[extract-docx] Invalid config JSON:`, e);
+        }
+      }
+    });
+
+    bb.on("close", () => {
+      console.log("[extract-docx] Busboy parsing complete");
+      resolve({ file, requirementConfig });
+    });
+
+    bb.on("error", (err) => {
+      console.error("[extract-docx] Busboy error:", err);
+      reject(err);
+    });
+
+    // Convert NextRequest to Node.js stream
+    const nodeRequest = request as any;
+    if (nodeRequest.body) {
+      Readable.from(nodeRequest.body).pipe(bb);
+    } else {
+      reject(new Error("No request body available"));
+    }
+  });
 }
 
 export async function POST(request: NextRequest) {
-  let buffer: Buffer | null = null;
-  let requirementConfig: RequirementConfig | undefined;
-
   try {
     const contentType = request.headers.get("content-type") || "";
+    console.log("[extract-docx] Request received");
+    console.log("[extract-docx] Content-Type:", contentType);
 
     if (!contentType.includes("multipart/form-data")) {
       return NextResponse.json(
@@ -221,73 +321,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse form data with error handling
-    let formData: FormData;
-    try {
-      formData = await request.formData();
-    } catch (parseErr) {
-      console.error("FormData parse error:", parseErr);
-      return NextResponse.json(
-        { error: "Failed to parse form data", message: String(parseErr) },
-        { status: 400 }
-      );
-    }
+    // Parse multipart form
+    const { file, requirementConfig } = await parseMultipartForm(request);
 
-    const file = formData.get("file") as File;
     if (!file) {
       return NextResponse.json({ error: "Missing file" }, { status: 400 });
     }
 
-    try {
-      buffer = Buffer.from(await file.arrayBuffer());
-    } catch (bufErr) {
-      console.error("Buffer creation error:", bufErr);
+    // Load DOCX as ZIP
+    const zip = new JSZip();
+    await zip.loadAsync(file);
+
+    // Read document.xml
+    const documentFile = zip.file("word/document.xml");
+    if (!documentFile) {
       return NextResponse.json(
-        { error: "Failed to read file", message: String(bufErr) },
+        { error: "document.xml not found" },
         { status: 400 }
       );
     }
 
-    // Optional: get requirement config from form
-    const configStr = formData.get("requirementConfig") as string;
-    if (configStr) {
-      try {
-        requirementConfig = JSON.parse(configStr);
-      } catch (e) {
-        console.warn("Invalid requirementConfig JSON:", e);
-      }
-    }
+    const xmlString = await documentFile.async("string");
 
-    // Parse DOCX file
-    if (!buffer) {
+    // Parse XML with fast-xml-parser
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: "@_",
+      parseTagValue: false,
+    });
+
+    const doc = parser.parse(xmlString) as any;
+    const body = doc?.["w:document"]?.["w:body"];
+
+    if (!body) {
       return NextResponse.json(
-        { error: "No buffer available for parsing" },
+        { error: "w:body not found in document" },
         { status: 400 }
       );
     }
 
-    // Parse DOCX using mammoth
-    let result: any;
-    try {
-      result = await mammoth.convertToHtml({ buffer: buffer as Buffer });
-    } catch (parseErr) {
-      console.error("Mammoth parse error:", parseErr);
-      return NextResponse.json(
-        { error: "Failed to parse DOCX file", message: String(parseErr) },
-        { status: 400 }
-      );
-    }
+    // Récupérer les éléments: paragraphes et tableaux en ordre
+    const elements = Array.isArray(body["w:p"])
+      ? body["w:p"]
+      : body["w:p"]
+        ? [body["w:p"]]
+        : [];
+    const tables = Array.isArray(body["w:tbl"])
+      ? body["w:tbl"]
+      : body["w:tbl"]
+        ? [body["w:tbl"]]
+        : [];
 
-    if (!result || !result.value) {
-      return NextResponse.json(
-        { error: "Failed to extract content from DOCX file" },
-        { status: 400 }
-      );
-    }
+    console.log(
+      `[extract-docx] Found ${elements.length} paragraphs, ${tables.length} tables`
+    );
 
-    const html = result.value;
-
-    // Parse HTML to extract text, headings, and tables
     const sections: Section[] = [];
     let currentSection: Section = {
       level: 0,
@@ -299,72 +387,79 @@ export async function POST(request: NextRequest) {
 
     sections.push(currentSection);
 
-    // Split by heading tags
-    const headingRegex = /<h([1-6])[^>]*>([^<]*)<\/h\1>/g;
-    const textRegex = /<p[^>]*>([^<]*)<\/p>/g;
-    const tableRegex = /<table[^>]*>[\s\S]*?<\/table>/g;
+    // Traiter les paragraphes
+    for (const paragraph of elements) {
+      const text = extractTextFromElement(paragraph);
+      if (!text) continue;
 
-    let match: RegExpExecArray | null;
+      // Déterminer si c'est un titre (heading)
+      const pStyle = paragraph["w:pPr"]?.["w:pStyle"];
+      const styleVal = typeof pStyle === "object" ? pStyle["@_w:val"] : pStyle;
 
-    // Process headings and content between them
-    while ((match = headingRegex.exec(html)) !== null) {
-      const level = parseInt(match[1]);
-      const title = match[2].trim();
+      const isHeading = styleVal && /Heading|Titre/i.test(String(styleVal));
 
-      if (level <= 6 && title) {
+      if (isHeading) {
+        // Créer une nouvelle section
+        const levelMatch = String(styleVal).match(/(\d+)/);
+        const level = levelMatch ? parseInt(levelMatch[1]) : 1;
+
         currentSection = {
           level,
-          title,
+          title: text,
           content: [],
           tables: [],
           requirements: [],
         };
         sections.push(currentSection);
-      }
-    }
-
-    // Extract text content
-    const textBeforeFirstHeading = html.substring(0, headingRegex.lastIndex);
-    textRegex.lastIndex = 0;
-    while ((match = textRegex.exec(textBeforeFirstHeading)) !== null) {
-      const text = match[1].trim();
-      if (text) {
-        if (sections.length > 1) {
-          sections[sections.length - 1].content.push(text);
-        } else {
-          currentSection.content.push(text);
-        }
-      }
-    }
-
-    // Extract text content from the entire document
-    textRegex.lastIndex = 0;
-    while ((match = textRegex.exec(html)) !== null) {
-      const text = match[1].trim();
-      if (text && currentSection) {
+      } else {
+        // C'est un paragraphe normal
         currentSection.content.push(text);
 
-        // Extract requirements from paragraph text
+        // Extraire les requirements
         const reqs = extractRequirements(text, requirementConfig);
         currentSection.requirements.push(...reqs);
       }
     }
 
-    // Extract tables
-    tableRegex.lastIndex = 0;
-    while ((match = tableRegex.exec(html)) !== null) {
-      const tableHtml = match[0];
-      const rows = parseTableHtml(tableHtml);
+    // Traiter les tableaux
+    for (const table of tables) {
+      const rows = Array.isArray(table["w:tr"])
+        ? table["w:tr"]
+        : table["w:tr"]
+          ? [table["w:tr"]]
+          : [];
 
-      if (currentSection) {
-        currentSection.tables.push(...rows);
+      for (const row of rows) {
+        const cells = Array.isArray(row["w:tc"])
+          ? row["w:tc"]
+          : row["w:tc"]
+            ? [row["w:tc"]]
+            : [];
+        const rowCells: string[] = [];
 
-        // Extract requirements from table cells
-        for (const row of rows) {
-          const rowText = row.join(" ");
-          const reqs = extractRequirements(rowText, requirementConfig, row);
-          currentSection.requirements.push(...reqs);
+        for (const cell of cells) {
+          // Une cellule peut avoir plusieurs paragraphes
+          const paragraphs = Array.isArray(cell["w:p"])
+            ? cell["w:p"]
+            : cell["w:p"]
+              ? [cell["w:p"]]
+              : [];
+          const cellTexts = paragraphs.map((p: any) =>
+            extractTextFromElement(p)
+          );
+          const cellText = cellTexts.join(" ").trim();
+          rowCells.push(cellText);
         }
+
+        // Ajouter la ligne aux tables
+        if (rowCells.length > 0) {
+          currentSection.tables.push(rowCells);
+        }
+
+        // Extraire les requirements de chaque cellule
+        const rowText = rowCells.join(" ");
+        const reqs = extractRequirements(rowText, requirementConfig, rowCells);
+        currentSection.requirements.push(...reqs);
       }
     }
 
@@ -373,7 +468,7 @@ export async function POST(request: NextRequest) {
       structured: sections,
     });
   } catch (error: any) {
-    console.error("DOCX extraction error:", error);
+    console.error("[extract-docx] Error:", error);
     return NextResponse.json(
       {
         error: "Failed to extract DOCX",
