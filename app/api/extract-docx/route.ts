@@ -185,7 +185,7 @@ function extractRequirements(
 
 /**
  * Extrait le texte d'un élément XML (paragraphe, cellule, etc)
- * Cherche uniquement les éléments w:r (runs) et w:t (text)
+ * Parcourt tout l'arbre pour trouver les éléments w:t (text nodes)
  */
 function extractTextFromElement(element: any): string {
   if (typeof element === "string") {
@@ -196,51 +196,52 @@ function extractTextFromElement(element: any): string {
     return "";
   }
 
-  const textArr: string[] = [];
+  const textFragments: string[] = [];
 
-  // Récursivement chercher les éléments w:r (text runs) et w:t (texte)
-  function collectText(obj: any) {
-    if (obj === null || obj === undefined) return;
+  /**
+   * Parcourt récursivement l'objet et collecte tous les textes des éléments w:t
+   */
+  function collectAllText(obj: any) {
+    if (obj === null || obj === undefined) {
+      return;
+    }
 
     if (typeof obj === "string") {
-      // Ne pas ajouter les strings simples (attributs)
+      // Les strings simples sont des attributs, on les ignore
       return;
     }
 
     if (Array.isArray(obj)) {
-      obj.forEach(collectText);
+      // Parcourir chaque élément du tableau
+      obj.forEach((item) => collectAllText(item));
       return;
     }
 
     if (typeof obj === "object") {
-      // Chercher les éléments w:t (texte) directement
-      if (obj["w:t"] && obj["w:t"]["#text"]) {
-        const txt = obj["w:t"]["#text"].trim();
-        if (txt) textArr.push(txt);
+      // Si c'est un élément w:t, extraire le texte
+      if (obj["w:t"]) {
+        // w:t peut être un objet avec #text ou directement une string
+        const textContent = obj["w:t"]["#text"] || obj["w:t"];
+        if (typeof textContent === "string" && textContent.trim()) {
+          textFragments.push(textContent.trim());
+        }
       }
 
-      // Parcourir les éléments w:r (runs) qui contiennent w:t
-      if (obj["w:r"]) {
-        const runs = Array.isArray(obj["w:r"]) ? obj["w:r"] : [obj["w:r"]];
-        runs.forEach((run: any) => {
-          if (run["w:t"] && run["w:t"]["#text"]) {
-            const txt = run["w:t"]["#text"].trim();
-            if (txt) textArr.push(txt);
-          }
-        });
-      }
-
-      // Parcourir les propriétés pour trouver d'autres conteneurs
+      // Parcourir toutes les clés de l'objet
+      // Cela couvre: w:r (runs), w:hyperlink, w:smartTag, etc.
       Object.keys(obj).forEach((key) => {
-        if (key.startsWith("w:") && key !== "w:t" && key !== "w:r") {
-          collectText(obj[key]);
+        if (key !== "@_" && !key.startsWith("@_")) {
+          // Ignorer les attributs (qui commencent par @_)
+          collectAllText(obj[key]);
         }
       });
     }
   }
 
-  collectText(element);
-  return textArr.join(" ").replace(/\s+/g, " ").trim();
+  collectAllText(element);
+
+  // Joindre les fragments avec un espace et nettoyer les espacements multiples
+  return textFragments.join(" ").replace(/\s+/g, " ").trim();
 }
 
 /**
