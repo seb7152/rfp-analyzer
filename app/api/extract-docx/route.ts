@@ -344,6 +344,25 @@ export async function POST(request: NextRequest) {
 
     const xmlString = await documentFile.async("string");
 
+    // Extract the order of w:p and w:tbl elements from XML string
+    // This preserves their original document order
+    const elementOrder: Array<{ type: "p" | "tbl"; index: number }> = [];
+    const bodyMatch = xmlString.match(/<w:body[^>]*>([\s\S]*?)<\/w:body>/);
+
+    if (bodyMatch) {
+      const bodyContent = bodyMatch[1];
+      const elementRegex = /<w:(p|tbl)[\s>]/g;
+      let match;
+      let elementIndex = 0;
+
+      while ((match = elementRegex.exec(bodyContent)) !== null) {
+        elementOrder.push({
+          type: match[1] === "p" ? "p" : "tbl",
+          index: elementIndex++,
+        });
+      }
+    }
+
     // Parse XML with fast-xml-parser
     const parser = new XMLParser({
       ignoreAttributes: false,
@@ -364,24 +383,28 @@ export async function POST(request: NextRequest) {
     // Récupérer les children du body dans l'ordre (paragraphes et tableaux mélangés)
     const bodyChildrenRaw: any[] = [];
 
-    // Parcourir toutes les clés du body pour obtenir p et tbl
-    Object.keys(body).forEach((key) => {
-      const value = body[key];
+    // Récupérer paragraphes et tableaux
+    const paragraphs = Array.isArray(body["w:p"])
+      ? body["w:p"]
+      : body["w:p"]
+        ? [body["w:p"]]
+        : [];
+    const tables = Array.isArray(body["w:tbl"])
+      ? body["w:tbl"]
+      : body["w:tbl"]
+        ? [body["w:tbl"]]
+        : [];
 
-      if (key === "w:p") {
-        if (Array.isArray(value)) {
-          value.forEach((p) => bodyChildrenRaw.push({ type: "p", data: p }));
-        } else {
-          bodyChildrenRaw.push({ type: "p", data: value });
-        }
-      } else if (key === "w:tbl") {
-        if (Array.isArray(value)) {
-          value.forEach((tbl) => bodyChildrenRaw.push({ type: "tbl", data: tbl }));
-        } else {
-          bodyChildrenRaw.push({ type: "tbl", data: value });
-        }
+    // Créer une liste avec indices pour tri
+    let pIndex = 0;
+    let tIndex = 0;
+    for (const elem of elementOrder) {
+      if (elem.type === "p" && pIndex < paragraphs.length) {
+        bodyChildrenRaw.push({ type: "p", data: paragraphs[pIndex++] });
+      } else if (elem.type === "tbl" && tIndex < tables.length) {
+        bodyChildrenRaw.push({ type: "tbl", data: tables[tIndex++] });
       }
-    });
+    }
 
     console.log(
       `[extract-docx] Found ${bodyChildrenRaw.filter((b) => b.type === "p").length} paragraphs, ${bodyChildrenRaw.filter((b) => b.type === "tbl").length} tables`
@@ -407,7 +430,8 @@ export async function POST(request: NextRequest) {
 
         // Déterminer si c'est un titre (heading)
         const pStyle = paragraph["w:pPr"]?.["w:pStyle"];
-        const styleVal = typeof pStyle === "object" ? pStyle["@_w:val"] : pStyle;
+        const styleVal =
+          typeof pStyle === "object" ? pStyle["@_w:val"] : pStyle;
 
         const isHeading = styleVal && /Heading|Titre/i.test(String(styleVal));
 
@@ -469,7 +493,11 @@ export async function POST(request: NextRequest) {
 
           // Extraire les requirements de chaque cellule
           const rowText = rowCells.join(" ");
-          const reqs = extractRequirements(rowText, requirementConfig, rowCells);
+          const reqs = extractRequirements(
+            rowText,
+            requirementConfig,
+            rowCells
+          );
           currentSection.requirements.push(...reqs);
         }
       }
