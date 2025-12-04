@@ -12,9 +12,11 @@ interface ExtractionConfig {
 }
 
 interface RequirementConfig {
-  capturePattern?: string;
+  type?: "inline" | "table";
+  pattern?: string;
+  groupIndex?: number;
+  columnIndex?: number;
   codeTemplate?: string;
-  captureGroupIndex?: number;
   titleExtraction?: ExtractionConfig;
   contentExtraction?: ExtractionConfig;
 }
@@ -73,11 +75,26 @@ function applyTransformations(value: string, template: string): string {
       result = result.replace(new RegExp(pattern, "g"), replacement);
       continue;
     }
+
+    // removeSpaces()
+    if (transform === "removeSpaces()") {
+      result = result.replace(/\s+/g, "");
+      continue;
+    }
+
+    // trim()
+    if (transform === "trim()") {
+      result = result.trim();
+      continue;
+    }
   }
 
   return result;
 }
 
+/**
+ * Extrait le titre ou contenu selon la configuration
+ */
 /**
  * Extrait le titre ou contenu selon la configuration
  */
@@ -88,24 +105,38 @@ function extractFromConfig(
 ): string | undefined {
   if (!config) return undefined;
 
-  if (config.type === "inline" && config.pattern) {
+  // 1. Déterminer la source du texte
+  let sourceText = text;
+
+  // Si une colonne spécifique est demandée et disponible, on l'utilise
+  // Cela permet de cibler une autre colonne que celle du requirement code
+  if (
+    config.columnIndex !== undefined &&
+    rowCells &&
+    rowCells[config.columnIndex] !== undefined
+  ) {
+    sourceText = rowCells[config.columnIndex];
+  }
+
+  // 2. Appliquer l'extraction
+  // Si un pattern est fourni, on applique la regex (que ce soit inline ou table)
+  if (config.pattern) {
     try {
       const regex = new RegExp(config.pattern);
-      const match = text.match(regex);
+      const match = sourceText.match(regex);
       if (match) {
         const groupIndex = config.groupIndex ?? 1;
         return match[groupIndex]?.trim();
       }
     } catch (e) {
-      console.error("Error in inline extraction:", e);
+      console.error("Error in extraction regex:", e);
     }
-  } else if (
-    config.type === "table" &&
-    rowCells &&
-    config.columnIndex !== undefined
-  ) {
-    const cellText = rowCells[config.columnIndex];
-    return cellText ? cellText.trim() : undefined;
+    return undefined;
+  }
+
+  // Si pas de pattern mais type table, on retourne le contenu de la cellule
+  if (config.type === "table") {
+    return sourceText.trim();
   }
 
   return undefined;
@@ -119,24 +150,37 @@ function extractRequirements(
   config?: RequirementConfig,
   rowCells?: string[]
 ): ParsedRequirement[] {
-  if (!config?.capturePattern) {
+  if (!config?.pattern) {
     return [];
+  }
+
+  // Determine text to search for the requirement code
+  let searchContext = text;
+  if (config.type === "table") {
+    if (!rowCells) return []; // Skip if not in table
+    if (config.columnIndex !== undefined) {
+      if (rowCells[config.columnIndex]) {
+        searchContext = rowCells[config.columnIndex];
+      } else {
+        return [];
+      }
+    }
   }
 
   const requirements: ParsedRequirement[] = [];
   const seenCodes = new Set<string>();
 
   try {
-    const regex = new RegExp(config.capturePattern, "g");
+    const regex = new RegExp(config.pattern, "g");
     let match;
 
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = regex.exec(searchContext)) !== null) {
       const originalCapture = match[0];
 
       let code: string;
 
       if (config.codeTemplate) {
-        const groupIndex = config.captureGroupIndex ?? 1;
+        const groupIndex = config.groupIndex ?? 1;
         const captured = match[groupIndex];
 
         if (!captured) continue;
@@ -158,9 +202,14 @@ function extractRequirements(
 
       seenCodes.add(code);
 
-      const title = extractFromConfig(text, config.titleExtraction, rowCells);
+      // Extract title and content using the same context (unless they specify table/column)
+      const title = extractFromConfig(
+        searchContext,
+        config.titleExtraction,
+        rowCells
+      );
       const content = extractFromConfig(
-        text,
+        searchContext,
         config.contentExtraction,
         rowCells
       );
@@ -279,12 +328,36 @@ async function parseMultipartForm(
     });
 
     bb.on("field", (fieldname, val) => {
-      if (fieldname === "requirementConfig") {
+      if (fieldname === "requirementConfig" || fieldname === "ReqCodeConfig") {
         try {
-          requirementConfig = JSON.parse(val);
-          console.log(`[extract-docx] Config parsed successfully`);
+          const parsed = JSON.parse(val);
+          requirementConfig = { ...requirementConfig, ...parsed };
         } catch (e) {
-          console.warn(`[extract-docx] Invalid config JSON:`, e);
+          console.warn(`[extract-docx] Invalid ReqCodeConfig JSON:`, e);
+        }
+      } else if (
+        fieldname === "titleConfig" ||
+        fieldname === "TitleConfig" ||
+        fieldname === "ReqTitleConfig"
+      ) {
+        try {
+          const parsed = JSON.parse(val);
+          requirementConfig = requirementConfig || {};
+          requirementConfig.titleExtraction = parsed;
+        } catch (e) {
+          console.warn(`[extract-docx] Invalid ReqTitleConfig JSON:`, e);
+        }
+      } else if (
+        fieldname === "contentConfig" ||
+        fieldname === "ContentConfig" ||
+        fieldname === "ReqContentConfig"
+      ) {
+        try {
+          const parsed = JSON.parse(val);
+          requirementConfig = requirementConfig || {};
+          requirementConfig.contentExtraction = parsed;
+        } catch (e) {
+          console.warn(`[extract-docx] Invalid ReqContentConfig JSON:`, e);
         }
       }
     });
@@ -347,9 +420,12 @@ export async function POST(request: NextRequest) {
     // Inject position markers into the XML to preserve document order
     // This allows us to correctly reconstruct the original interleaving of paragraphs and tables
     let positionCounter = 0;
-    xmlString = xmlString.replace(/<w:(p|tbl)([\s>])/g, (_match, elementType, remainder) => {
-      return `<w:${elementType} _position="${positionCounter++}"${remainder}`;
-    });
+    xmlString = xmlString.replace(
+      /<w:(p|tbl)([\s>])/g,
+      (_match, elementType, remainder) => {
+        return `<w:${elementType} _position="${positionCounter++}"${remainder}`;
+      }
+    );
 
     // Parse XML with fast-xml-parser
     const parser = new XMLParser({
