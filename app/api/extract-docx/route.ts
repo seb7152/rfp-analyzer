@@ -342,26 +342,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const xmlString = await documentFile.async("string");
+    let xmlString = await documentFile.async("string");
 
-    // Extract the order of w:p and w:tbl elements from XML string
-    // This preserves their original document order
-    const elementOrder: Array<{ type: "p" | "tbl"; index: number }> = [];
-    const bodyMatch = xmlString.match(/<w:body[^>]*>([\s\S]*?)<\/w:body>/);
-
-    if (bodyMatch) {
-      const bodyContent = bodyMatch[1];
-      const elementRegex = /<w:(p|tbl)[\s>]/g;
-      let match;
-      let elementIndex = 0;
-
-      while ((match = elementRegex.exec(bodyContent)) !== null) {
-        elementOrder.push({
-          type: match[1] === "p" ? "p" : "tbl",
-          index: elementIndex++,
-        });
-      }
-    }
+    // Inject position markers into the XML to preserve document order
+    // This allows us to correctly reconstruct the original interleaving of paragraphs and tables
+    let positionCounter = 0;
+    xmlString = xmlString.replace(/<w:(p|tbl)([\s>])/g, (_match, elementType, remainder) => {
+      return `<w:${elementType} _position="${positionCounter++}"${remainder}`;
+    });
 
     // Parse XML with fast-xml-parser
     const parser = new XMLParser({
@@ -380,10 +368,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Récupérer les children du body dans l'ordre (paragraphes et tableaux mélangés)
+    // Collect all paragraphs and tables with their position markers
     const bodyChildrenRaw: any[] = [];
 
-    // Récupérer paragraphes et tableaux
     const paragraphs = Array.isArray(body["w:p"])
       ? body["w:p"]
       : body["w:p"]
@@ -395,16 +382,32 @@ export async function POST(request: NextRequest) {
         ? [body["w:tbl"]]
         : [];
 
-    // Créer une liste avec indices pour tri
-    let pIndex = 0;
-    let tIndex = 0;
-    for (const elem of elementOrder) {
-      if (elem.type === "p" && pIndex < paragraphs.length) {
-        bodyChildrenRaw.push({ type: "p", data: paragraphs[pIndex++] });
-      } else if (elem.type === "tbl" && tIndex < tables.length) {
-        bodyChildrenRaw.push({ type: "tbl", data: tables[tIndex++] });
-      }
-    }
+    // Create array with position data
+    const positionedElements: Array<{
+      type: "p" | "tbl";
+      position: number;
+      data: any;
+    }> = [];
+
+    paragraphs.forEach((p: any) => {
+      const pos = parseInt(p["@__position"] || "999999");
+      positionedElements.push({ type: "p", position: pos, data: p });
+    });
+
+    tables.forEach((t: any) => {
+      const pos = parseInt(t["@__position"] || "999999");
+      positionedElements.push({ type: "tbl", position: pos, data: t });
+    });
+
+    // Sort by position to restore document order
+    positionedElements.sort((a, b) => a.position - b.position);
+
+    bodyChildrenRaw.push(
+      ...positionedElements.map((elem) => ({
+        type: elem.type,
+        data: elem.data,
+      }))
+    );
 
     console.log(
       `[extract-docx] Found ${bodyChildrenRaw.filter((b) => b.type === "p").length} paragraphs, ${bodyChildrenRaw.filter((b) => b.type === "tbl").length} tables`
