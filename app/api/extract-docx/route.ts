@@ -361,20 +361,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Récupérer les éléments: paragraphes et tableaux en ordre
-    const elements = Array.isArray(body["w:p"])
-      ? body["w:p"]
-      : body["w:p"]
-        ? [body["w:p"]]
-        : [];
-    const tables = Array.isArray(body["w:tbl"])
-      ? body["w:tbl"]
-      : body["w:tbl"]
-        ? [body["w:tbl"]]
-        : [];
+    // Récupérer les children du body dans l'ordre (paragraphes et tableaux mélangés)
+    const bodyChildrenRaw: any[] = [];
+
+    // Parcourir toutes les clés du body pour obtenir p et tbl
+    Object.keys(body).forEach((key) => {
+      const value = body[key];
+
+      if (key === "w:p") {
+        if (Array.isArray(value)) {
+          value.forEach((p) => bodyChildrenRaw.push({ type: "p", data: p }));
+        } else {
+          bodyChildrenRaw.push({ type: "p", data: value });
+        }
+      } else if (key === "w:tbl") {
+        if (Array.isArray(value)) {
+          value.forEach((tbl) => bodyChildrenRaw.push({ type: "tbl", data: tbl }));
+        } else {
+          bodyChildrenRaw.push({ type: "tbl", data: value });
+        }
+      }
+    });
 
     console.log(
-      `[extract-docx] Found ${elements.length} paragraphs, ${tables.length} tables`
+      `[extract-docx] Found ${bodyChildrenRaw.filter((b) => b.type === "p").length} paragraphs, ${bodyChildrenRaw.filter((b) => b.type === "tbl").length} tables`
     );
 
     const sections: Section[] = [];
@@ -388,79 +398,80 @@ export async function POST(request: NextRequest) {
 
     sections.push(currentSection);
 
-    // Traiter les paragraphes
-    for (const paragraph of elements) {
-      const text = extractTextFromElement(paragraph);
-      if (!text) continue;
+    // Traiter paragraphes et tableaux dans l'ordre du document
+    for (const item of bodyChildrenRaw) {
+      if (item.type === "p") {
+        const paragraph = item.data;
+        const text = extractTextFromElement(paragraph);
+        if (!text) continue;
 
-      // Déterminer si c'est un titre (heading)
-      const pStyle = paragraph["w:pPr"]?.["w:pStyle"];
-      const styleVal = typeof pStyle === "object" ? pStyle["@_w:val"] : pStyle;
+        // Déterminer si c'est un titre (heading)
+        const pStyle = paragraph["w:pPr"]?.["w:pStyle"];
+        const styleVal = typeof pStyle === "object" ? pStyle["@_w:val"] : pStyle;
 
-      const isHeading = styleVal && /Heading|Titre/i.test(String(styleVal));
+        const isHeading = styleVal && /Heading|Titre/i.test(String(styleVal));
 
-      if (isHeading) {
-        // Créer une nouvelle section
-        const levelMatch = String(styleVal).match(/(\d+)/);
-        const level = levelMatch ? parseInt(levelMatch[1]) : 1;
+        if (isHeading) {
+          // Créer une nouvelle section
+          const levelMatch = String(styleVal).match(/(\d+)/);
+          const level = levelMatch ? parseInt(levelMatch[1]) : 1;
 
-        currentSection = {
-          level,
-          title: text,
-          content: [],
-          tables: [],
-          requirements: [],
-        };
-        sections.push(currentSection);
-      } else {
-        // C'est un paragraphe normal
-        currentSection.content.push(text);
+          currentSection = {
+            level,
+            title: text,
+            content: [],
+            tables: [],
+            requirements: [],
+          };
+          sections.push(currentSection);
+        } else {
+          // C'est un paragraphe normal
+          currentSection.content.push(text);
 
-        // Extraire les requirements
-        const reqs = extractRequirements(text, requirementConfig);
-        currentSection.requirements.push(...reqs);
-      }
-    }
-
-    // Traiter les tableaux
-    for (const table of tables) {
-      const rows = Array.isArray(table["w:tr"])
-        ? table["w:tr"]
-        : table["w:tr"]
-          ? [table["w:tr"]]
-          : [];
-
-      for (const row of rows) {
-        const cells = Array.isArray(row["w:tc"])
-          ? row["w:tc"]
-          : row["w:tc"]
-            ? [row["w:tc"]]
+          // Extraire les requirements
+          const reqs = extractRequirements(text, requirementConfig);
+          currentSection.requirements.push(...reqs);
+        }
+      } else if (item.type === "tbl") {
+        const table = item.data;
+        const rows = Array.isArray(table["w:tr"])
+          ? table["w:tr"]
+          : table["w:tr"]
+            ? [table["w:tr"]]
             : [];
-        const rowCells: string[] = [];
 
-        for (const cell of cells) {
-          // Une cellule peut avoir plusieurs paragraphes
-          const paragraphs = Array.isArray(cell["w:p"])
-            ? cell["w:p"]
-            : cell["w:p"]
-              ? [cell["w:p"]]
+        for (const row of rows) {
+          const cells = Array.isArray(row["w:tc"])
+            ? row["w:tc"]
+            : row["w:tc"]
+              ? [row["w:tc"]]
               : [];
-          const cellTexts = paragraphs.map((p: any) =>
-            extractTextFromElement(p)
-          );
-          const cellText = cellTexts.join(" ").trim();
-          rowCells.push(cellText);
-        }
+          const rowCells: string[] = [];
 
-        // Ajouter la ligne aux tables
-        if (rowCells.length > 0) {
-          currentSection.tables.push(rowCells);
-        }
+          for (const cell of cells) {
+            // Une cellule peut avoir plusieurs paragraphes
+            const paragraphs = Array.isArray(cell["w:p"])
+              ? cell["w:p"]
+              : cell["w:p"]
+                ? [cell["w:p"]]
+                : [];
+            const cellTexts = paragraphs.map((p: any) =>
+              extractTextFromElement(p)
+            );
+            const cellText = cellTexts.join(" ").trim();
+            rowCells.push(cellText);
+          }
 
-        // Extraire les requirements de chaque cellule
-        const rowText = rowCells.join(" ");
-        const reqs = extractRequirements(rowText, requirementConfig, rowCells);
-        currentSection.requirements.push(...reqs);
+          // Ajouter la ligne aux tables
+          if (rowCells.length > 0) {
+            currentSection.tables.push(rowCells);
+          }
+
+          // Extraire les requirements de chaque cellule
+          const rowText = rowCells.join(" ");
+          const reqs = extractRequirements(rowText, requirementConfig, rowCells);
+          currentSection.requirements.push(...reqs);
+        }
       }
     }
 
