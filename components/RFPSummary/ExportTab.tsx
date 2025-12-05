@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useVersion } from "@/contexts/VersionContext";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TemplateUpload } from "./TemplateUpload";
@@ -38,6 +39,7 @@ interface Supplier {
 }
 
 export function ExportTab({ rfpId }: { rfpId: string }) {
+  const { activeVersion } = useVersion();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [exportConfigurations, setExportConfigurations] = useState<
@@ -63,7 +65,11 @@ export function ExportTab({ rfpId }: { rfpId: string }) {
         }
 
         // Fetch suppliers
-        const suppliersResponse = await fetch(`/api/rfps/${rfpId}/suppliers`);
+        let suppliersUrl = `/api/rfps/${rfpId}/suppliers`;
+        if (activeVersion?.id) {
+          suppliersUrl += `?versionId=${activeVersion.id}`;
+        }
+        const suppliersResponse = await fetch(suppliersUrl);
         if (suppliersResponse.ok) {
           const suppliersData = await suppliersResponse.json();
           setSuppliers(suppliersData.suppliers || []);
@@ -104,7 +110,7 @@ export function ExportTab({ rfpId }: { rfpId: string }) {
         handleConfigurationSelect as EventListener
       );
     };
-  }, [rfpId]);
+  }, [rfpId, activeVersion?.id]);
 
   const handleTemplateUploaded = () => {
     // Refresh templates list

@@ -8,6 +8,7 @@ import { getResponsesForRFP } from "@/lib/supabase/queries";
  *
  * Query Parameters:
  * - requirementId (optional): Filter responses to a specific requirement
+ * - versionId (optional): Filter responses to a specific version
  *
  * Returns: Array of responses with supplier information
  */
@@ -20,6 +21,7 @@ export async function GET(
     const { rfpId } = params;
     const { searchParams } = new URL(request.url);
     const requirementId = searchParams.get("requirementId") || undefined;
+    const versionId = searchParams.get("versionId") || undefined;
 
     // Verify RFP exists and user has access
     const supabase = await createServerClient();
@@ -43,7 +45,22 @@ export async function GET(
     }
 
     // Fetch responses with supplier information
-    const responses = await getResponsesForRFP(rfpId, requirementId);
+    let responses = await getResponsesForRFP(rfpId, requirementId);
+
+    // Filter by version if provided
+    if (versionId) {
+      const { data: versionResponses } = await supabase
+        .from("responses")
+        .select("id")
+        .eq("version_id", versionId)
+        .eq("rfp_id", rfpId);
+
+      const versionResponseIds = new Set(
+        (versionResponses || []).map((r) => r.id)
+      );
+
+      responses = responses.filter((r) => versionResponseIds.has(r.id));
+    }
 
     // Fetch document availability for these suppliers
     // 1. Get all document IDs for this RFP

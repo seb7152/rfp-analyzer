@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useVersion } from "@/contexts/VersionContext";
 import {
   Table,
   TableBody,
@@ -46,6 +47,7 @@ interface SuppliersTabProps {
 }
 
 export function SuppliersTab({ rfpId }: SuppliersTabProps) {
+  const { activeVersion } = useVersion();
   const [suppliers, setSuppliers] = useState<SupplierData[]>([]);
   const [expandedSupplier, setExpandedSupplier] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,9 +60,11 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
       try {
         setLoading(true);
         // Use the optimized endpoint with includeStats=true
-        const response = await fetch(
-          `/api/rfps/${rfpId}/suppliers?includeStats=true`
-        );
+        let url = `/api/rfps/${rfpId}/suppliers?includeStats=true`;
+        if (activeVersion?.id) {
+          url += `&versionId=${activeVersion.id}`;
+        }
+        const response = await fetch(url);
         if (!response.ok) throw new Error("Failed to fetch suppliers");
 
         const responseData = await response.json();
@@ -101,7 +105,7 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
     if (rfpId) {
       fetchSuppliers();
     }
-  }, [rfpId]);
+  }, [rfpId, activeVersion?.id]);
 
   if (loading) {
     return (

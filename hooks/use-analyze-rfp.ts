@@ -20,9 +20,9 @@ export function useAnalyzeRFP() {
   const supabase = createClient();
 
   return useMutation({
-    mutationFn: async (rfpId: string): Promise<AnalyzeRFPResponse> => {
+    mutationFn: async ({ rfpId, systemPrompt }: { rfpId: string; systemPrompt?: string }): Promise<AnalyzeRFPResponse> => {
       const { data, error } = await supabase.functions.invoke("analyze-rfp", {
-        body: { rfpId },
+        body: { rfpId, systemPrompt },
       });
 
       if (error) {

@@ -18,9 +18,12 @@ import { AnalysisTab } from "@/components/RFPSummary/AnalysisTab";
 import { WeightsTab } from "@/components/RFPSummary/WeightsTab";
 import { RequirementsTab } from "@/components/RFPSummary/RequirementsTab";
 import { ExportTab } from "@/components/RFPSummary/ExportTab";
+import { VersionsTab } from "@/components/RFPSummary/VersionsTab";
+import { VersionProvider } from "@/contexts/VersionContext";
 
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
-import { useAnalyzeRFP } from "@/hooks/use-analyze-rfp";
+import { DocxImportModal } from "@/components/DocxImportModal";
+
 import {
   Building2,
   Users,
@@ -30,15 +33,17 @@ import {
   Activity,
   Zap,
   FileUp,
-  Loader2,
   ChevronDown,
   ChevronUp,
   LayoutDashboard,
   Sliders,
   ListChecks,
   Download,
+  GitBranch,
+  FileJson,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AIAnalysisButton } from "@/components/AIAnalysisButton";
 
 interface RFPSummaryData {
   rfp: {
@@ -47,6 +52,7 @@ interface RFPSummaryData {
     description: string | null;
     created_at: string;
     updated_at: string;
+    analysis_settings?: Record<string, unknown> | null;
   };
   globalProgress: {
     completionPercentage: number;
@@ -77,13 +83,10 @@ export default function RFPSummaryPage() {
   const [totalDocuments, setTotalDocuments] = useState(0);
   const [expandDashboard, setExpandDashboard] = useState(true);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isDocxImportModalOpen, setIsDocxImportModalOpen] = useState(false);
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
 
-  const {
-    mutate: triggerAnalysis,
-    isPending: isAnalyzing,
-    isSuccess: analysisSuccess,
-  } = useAnalyzeRFP();
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -148,12 +151,35 @@ export default function RFPSummaryPage() {
               <FileUp className="h-4 w-4" />
               <span className="hidden sm:inline">Documents</span>
             </Button>
-            <Link href={`/dashboard/rfp/${rfpId}/import`}>
-              <Button variant="outline" size="sm" className="gap-2">
-                <FileUp className="h-4 w-4" />
-                <span className="hidden sm:inline">Importer</span>
-              </Button>
-            </Link>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <FileUp className="h-4 w-4" />
+                  <span className="hidden sm:inline">Importer</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56" align="start">
+                <div className="grid gap-2">
+                  <Button
+                    variant="ghost"
+                    className="justify-start gap-2 font-normal"
+                    onClick={() => setIsDocxImportModalOpen(true)}
+                  >
+                    <FileText className="h-4 w-4" />
+                    Importer depuis DOCX
+                  </Button>
+                  <Link href={`/dashboard/rfp/${rfpId}/import`}>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start gap-2 font-normal"
+                    >
+                      <FileJson className="h-4 w-4" />
+                      Importer depuis JSON
+                    </Button>
+                  </Link>
+                </div>
+              </PopoverContent>
+            </Popover>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
@@ -169,10 +195,9 @@ export default function RFPSummaryPage() {
                     onClick={async () => {
                       try {
                         // Fetch tree data on demand
-                        const response = await fetch(
-                          `/api/rfps/${rfpId}/tree`
-                        );
-                        if (!response.ok) throw new Error("Failed to fetch data");
+                        const response = await fetch(`/api/rfps/${rfpId}/tree`);
+                        if (!response.ok)
+                          throw new Error("Failed to fetch data");
                         const treeData = await response.json();
 
                         // Export Structure (Categories)
@@ -194,11 +219,19 @@ export default function RFPSummaryPage() {
                         };
 
                         // Helper to find parent
-                        const getParentId = (targetId: string, nodes: any[], parentId: string | null = null): string | null => {
+                        const getParentId = (
+                          targetId: string,
+                          nodes: any[],
+                          parentId: string | null = null
+                        ): string | null => {
                           for (const node of nodes) {
                             if (node.id === targetId) return parentId;
                             if (node.children) {
-                              const found = getParentId(targetId, node.children, node.id);
+                              const found = getParentId(
+                                targetId,
+                                node.children,
+                                node.id
+                              );
                               if (found !== null) return found;
                             }
                           }
@@ -237,15 +270,20 @@ export default function RFPSummaryPage() {
                     onClick={async () => {
                       try {
                         // Fetch tree data & weights on demand
-                        const [treeResponse, weightsResponse] = await Promise.all([
-                          fetch(`/api/rfps/${rfpId}/tree`),
-                          fetch(`/api/rfps/${rfpId}/weights`)
-                        ]);
+                        const [treeResponse, weightsResponse] =
+                          await Promise.all([
+                            fetch(`/api/rfps/${rfpId}/tree`),
+                            fetch(`/api/rfps/${rfpId}/weights`),
+                          ]);
 
-                        if (!treeResponse.ok) throw new Error("Failed to fetch tree");
+                        if (!treeResponse.ok)
+                          throw new Error("Failed to fetch tree");
                         const treeData = await treeResponse.json();
 
-                        let weightsData = {};
+                        let weightsData: {
+                          categories?: Record<string, number>;
+                          requirements?: Record<string, number>;
+                        } = {};
                         if (weightsResponse.ok) {
                           weightsData = await weightsResponse.json();
                         }
@@ -254,12 +292,16 @@ export default function RFPSummaryPage() {
                         const allRealWeights = new Map<string, number>();
                         if (weightsData) {
                           // @ts-ignore
-                          for (const [id, weight] of Object.entries(weightsData.categories || {})) {
+                          for (const [id, weight] of Object.entries(
+                            weightsData.categories || {}
+                          )) {
                             // @ts-ignore
                             allRealWeights.set(id, weight * 100);
                           }
                           // @ts-ignore
-                          for (const [id, weight] of Object.entries(weightsData.requirements || {})) {
+                          for (const [id, weight] of Object.entries(
+                            weightsData.requirements || {}
+                          )) {
                             // @ts-ignore
                             allRealWeights.set(id, weight * 100);
                           }
@@ -269,9 +311,12 @@ export default function RFPSummaryPage() {
                         // For export, we prefer DB weights. If missing, we might need to recalculate or just export 0.
                         // Let's try to recalculate if missing, similar to WeightsTab logic, but simplified.
 
-                        const calculateRealWeight = (nodeId: string): number => {
+                        const calculateRealWeight = (
+                          nodeId: string
+                        ): number => {
                           // If we have it in DB, use it (converted back to %)
-                          if (allRealWeights.has(nodeId)) return allRealWeights.get(nodeId)!;
+                          if (allRealWeights.has(nodeId))
+                            return allRealWeights.get(nodeId)!;
                           return 0; // Fallback
                         };
 
@@ -329,31 +374,25 @@ export default function RFPSummaryPage() {
               </PopoverContent>
             </Popover>
           </div>
+
           <div className="flex gap-2">
-            <Button
-              onClick={() => triggerAnalysis(rfpId)}
-              disabled={isAnalyzing}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="hidden sm:inline">Analyzing...</span>
-                </>
-              ) : analysisSuccess ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <span className="hidden sm:inline">Analysis Started</span>
-                </>
-              ) : (
-                <>
-                  <Zap className="h-4 w-4" />
-                  <span className="hidden sm:inline">AI Analysis</span>
-                </>
-              )}
-            </Button>
+            {data?.rfp && (
+              <AIAnalysisButton
+                rfp={data.rfp as any} // Type assertion needed because RFPSummaryData.rfp is a subset of RFP
+                responsesCount={
+                  (data.globalProgress.statusDistribution.pass || 0) +
+                  (data.globalProgress.statusDistribution.partial || 0) +
+                  (data.globalProgress.statusDistribution.fail || 0) +
+                  (data.globalProgress.statusDistribution.pending || 0)
+                }
+                hasUnanalyzedResponses={
+                  (data.globalProgress.statusDistribution.pending || 0) > 0
+                }
+                onAnalysisStarted={() => {
+                  // Optional: refresh data or show toast
+                }}
+              />
+            )}
             <Link href={`/dashboard/rfp/${rfpId}/evaluate`}>
               <Button variant="primary" size="sm" className="gap-2">
                 <Zap className="h-4 w-4" />
@@ -389,157 +428,169 @@ export default function RFPSummaryPage() {
 
         {/* Tabs */}
         <section className="space-y-6">
-          <Tabs defaultValue="dashboard" className="w-full">
-            <TabsList className="flex w-full gap-8 border-b border-slate-200 bg-transparent p-0 dark:border-slate-800">
-              <TabsTrigger
-                value="dashboard"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                <span className="hidden sm:inline">Tableau de bord</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="weights"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-              >
-                <Sliders className="h-4 w-4" />
-                <span className="hidden sm:inline">Pondérations</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="analysts"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-              >
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Analystes</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="requirements"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-              >
-                <ListChecks className="h-4 w-4" />
-                <span className="hidden sm:inline">Exigences</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="analysis"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-              >
-                <Activity className="h-4 w-4" />
-                <span className="hidden sm:inline">Analyse</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="export"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-              >
-                <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Export</span>
-              </TabsTrigger>
-            </TabsList>
+          <VersionProvider rfpId={rfpId}>
+            <Tabs defaultValue="dashboard" className="w-full">
+              <TabsList className="flex w-full gap-8 border-b border-slate-200 bg-transparent p-0 dark:border-slate-800">
+                <TabsTrigger
+                  value="dashboard"
+                  className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span className="hidden sm:inline">Tableau de bord</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="weights"
+                  className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+                >
+                  <Sliders className="h-4 w-4" />
+                  <span className="hidden sm:inline">Pondérations</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="analysts"
+                  className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+                >
+                  <Users className="h-4 w-4" />
+                  <span className="hidden sm:inline">Analystes</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="requirements"
+                  className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+                >
+                  <ListChecks className="h-4 w-4" />
+                  <span className="hidden sm:inline">Exigences</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="analysis"
+                  className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+                >
+                  <Activity className="h-4 w-4" />
+                  <span className="hidden sm:inline">Analyse</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="export"
+                  className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">Export</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="versions"
+                  className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+                >
+                  <GitBranch className="h-4 w-4" />
+                  <span className="hidden sm:inline">Versions</span>
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="dashboard" className="space-y-6">
-              {loading ? (
-                <>
-                  {[...Array(4)].map((_, i) => (
-                    <Skeleton key={i} className="h-32" />
-                  ))}
-                </>
-              ) : data ? (
-                <>
-                  {/* KPI Cards */}
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <KPICard
-                      label="Exigences"
-                      value={data.globalProgress.totalRequirements}
-                      icon={<FileText className="h-5 w-5" />}
-                      hint="Nombre total de requirements"
-                    />
-                    <KPICard
-                      label="Répondants"
-                      value={data.suppliersAnalysis.comparisonTable.length}
-                      icon={<Building2 className="h-5 w-5" />}
-                      hint="Fournisseurs participants"
-                    />
-                    <KPICard
-                      label="Avancement"
-                      value={`${Math.round(data.globalProgress.completionPercentage)}%`}
-                      icon={<CheckCircle2 className="h-5 w-5" />}
-                      subtitle={`${data.globalProgress.evaluatedRequirements}/${data.globalProgress.totalRequirements}`}
-                      hint="Progression d'évaluation"
-                    />
-                    <KPICard
-                      label="Documents"
-                      value={totalDocuments}
-                      icon={<File className="h-5 w-5" />}
-                      hint="Fichiers uploadés"
-                    />
-                  </div>
-
-                  {/* Suppliers Table with Expand/Collapse */}
-                  <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
-                    <div className="p-6 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                          Fournisseurs
-                        </h2>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setExpandDashboard(!expandDashboard)}
-                          className="gap-2"
-                        >
-                          {expandDashboard ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                      {expandDashboard && <SuppliersTab rfpId={rfpId} />}
+              <TabsContent value="dashboard" className="space-y-6">
+                {loading ? (
+                  <>
+                    {[...Array(4)].map((_, i) => (
+                      <Skeleton key={i} className="h-32" />
+                    ))}
+                  </>
+                ) : data ? (
+                  <>
+                    {/* KPI Cards */}
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                      <KPICard
+                        label="Exigences"
+                        value={data.globalProgress.totalRequirements}
+                        icon={<FileText className="h-5 w-5" />}
+                        hint="Nombre total de requirements"
+                      />
+                      <KPICard
+                        label="Répondants"
+                        value={data.suppliersAnalysis.comparisonTable.length}
+                        icon={<Building2 className="h-5 w-5" />}
+                        hint="Fournisseurs participants"
+                      />
+                      <KPICard
+                        label="Avancement"
+                        value={`${Math.round(data.globalProgress.completionPercentage)}%`}
+                        icon={<CheckCircle2 className="h-5 w-5" />}
+                        subtitle={`${data.globalProgress.evaluatedRequirements}/${data.globalProgress.totalRequirements}`}
+                        hint="Progression d'évaluation"
+                      />
+                      <KPICard
+                        label="Documents"
+                        value={totalDocuments}
+                        icon={<File className="h-5 w-5" />}
+                        hint="Fichiers uploadés"
+                      />
                     </div>
-                  </Card>
-                </>
-              ) : null}
-            </TabsContent>
 
-            <TabsContent value="weights" className="space-y-6">
-              {loading ? (
-                <Skeleton className="h-64 rounded-2xl" />
-              ) : (
-                <WeightsTab rfpId={rfpId} />
-              )}
-            </TabsContent>
+                    {/* Suppliers Table with Expand/Collapse */}
+                    <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                            Fournisseurs
+                          </h2>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setExpandDashboard(!expandDashboard)}
+                            className="gap-2"
+                          >
+                            {expandDashboard ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                        {expandDashboard && <SuppliersTab rfpId={rfpId} />}
+                      </div>
+                    </Card>
+                  </>
+                ) : null}
+              </TabsContent>
 
-            <TabsContent value="analysts" className="space-y-6">
-              {loading ? (
-                <Skeleton className="h-64 rounded-2xl" />
-              ) : (
-                <AnalystsTab rfpId={rfpId} />
-              )}
-            </TabsContent>
+              <TabsContent value="weights" className="space-y-6">
+                {loading ? (
+                  <Skeleton className="h-64 rounded-2xl" />
+                ) : (
+                  <WeightsTab rfpId={rfpId} />
+                )}
+              </TabsContent>
 
-            <TabsContent value="requirements" className="space-y-6">
-              {loading ? (
-                <Skeleton className="h-64 rounded-2xl" />
-              ) : (
-                <RequirementsTab rfpId={rfpId} />
-              )}
-            </TabsContent>
+              <TabsContent value="analysts" className="space-y-6">
+                {loading ? (
+                  <Skeleton className="h-64 rounded-2xl" />
+                ) : (
+                  <AnalystsTab rfpId={rfpId} />
+                )}
+              </TabsContent>
 
-            <TabsContent value="analysis" className="space-y-6">
-              {loading ? (
-                <Skeleton className="h-64 rounded-2xl" />
-              ) : (
-                <AnalysisTab rfpId={rfpId} />
-              )}
-            </TabsContent>
+              <TabsContent value="requirements" className="space-y-6">
+                {loading ? (
+                  <Skeleton className="h-64 rounded-2xl" />
+                ) : (
+                  <RequirementsTab rfpId={rfpId} />
+                )}
+              </TabsContent>
 
-            <TabsContent value="export" className="space-y-6">
-              {loading ? (
-                <Skeleton className="h-64 rounded-2xl" />
-              ) : (
-                <ExportTab rfpId={rfpId} />
-              )}
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="analysis" className="space-y-6">
+                {loading ? (
+                  <Skeleton className="h-64 rounded-2xl" />
+                ) : (
+                  <AnalysisTab rfpId={rfpId} />
+                )}
+              </TabsContent>
+
+              <TabsContent value="export" className="space-y-6">
+                {loading ? (
+                  <Skeleton className="h-64 rounded-2xl" />
+                ) : (
+                  <ExportTab rfpId={rfpId} />
+                )}
+              </TabsContent>
+              <TabsContent value="versions" className="space-y-6">
+                <VersionsTab rfpId={rfpId} />
+              </TabsContent>
+            </Tabs>
+          </VersionProvider>
         </section>
 
         {/* Document Upload Modal */}
@@ -548,6 +599,13 @@ export default function RFPSummaryPage() {
           rfpTitle={rfpTitle}
           isOpen={isUploadModalOpen}
           onOpenChange={setIsUploadModalOpen}
+        />
+
+        {/* DOCX Import Modal */}
+        <DocxImportModal
+          rfpId={rfpId}
+          isOpen={isDocxImportModalOpen}
+          onOpenChange={setIsDocxImportModalOpen}
         />
       </div>
     </div>

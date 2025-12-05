@@ -32,5 +32,11 @@
     ]
   },
   "include": ["**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "mockup/**/*", "supabase/functions/**/*"]
+  "exclude": [
+    "node_modules",
+    "mockup/**/*",
+    "supabase/functions/**/*",
+    "mcp-server/**/*",
+    "docs/**/*"
+  ]
 }

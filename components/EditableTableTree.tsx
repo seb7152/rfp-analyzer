@@ -124,25 +124,6 @@ export function EditableTableTree({
     [getDirectChildren, weights]
   );
 
-  // Fonction pour vérifier si un nœud a un parent
-  const getParentNode = useCallback(
-    (
-      targetId: string,
-      nodes: TreeNode[] = data,
-      parent: TreeNode | null = null
-    ): TreeNode | null => {
-      for (const node of nodes) {
-        if (node.id === targetId) return parent;
-        if (node.children) {
-          const found = getParentNode(targetId, node.children, node);
-          if (found) return found;
-        }
-      }
-      return null;
-    },
-    [data]
-  );
-
   const renderRows = (
     items: TreeNode[],
     level: number = 0,

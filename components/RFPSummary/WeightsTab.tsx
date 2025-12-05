@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { EditableTableTree } from "@/components/EditableTableTree";
 import { KPICard } from "@/components/RFPSummary/KPICard";
-import { ChevronDown, ChevronUp, Save } from "lucide-react";
-import { FileText } from "lucide-react";
+import { ChevronDown, ChevronUp, Save, FileText } from "lucide-react";
 
 interface TreeNode {
   id: string;
@@ -57,9 +56,6 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
 
         const result = await response.json();
         setData(result || []);
-
-        // Keep tree collapsed by default
-        // setExpandedNodeIds(new Set());
 
         // Initialize default weights
         const defaultWeights: Record<string, number> = {};
@@ -392,10 +388,11 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
       {/* Success/Error Message */}
       {saveMessage && (
         <div
-          className={`p-4 rounded-lg ${saveMessage.type === "success"
-            ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-200"
-            : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200"
-            }`}
+          className={`p-4 rounded-lg ${
+            saveMessage.type === "success"
+              ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-200"
+              : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200"
+          }`}
         >
           {saveMessage.text}
         </div>

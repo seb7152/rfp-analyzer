@@ -5,8 +5,6 @@ import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import {
   Select,
@@ -15,6 +13,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Info, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { Supplier } from "@/types/supplier";
@@ -25,6 +31,7 @@ interface RequirementTreeNode {
   id: string;
   code: string;
   title: string;
+  description?: string;
   type: "category" | "requirement";
   is_mandatory?: boolean;
   is_optional?: boolean;
@@ -73,6 +80,7 @@ export function RequirementsHeatmap({ rfpId }: RequirementsHeatmapProps) {
   const [responses, setResponses] = useState<Response[]>([]);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<"score" | "status">("status");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     async function fetchData() {
@@ -112,6 +120,7 @@ export function RequirementsHeatmap({ rfpId }: RequirementsHeatmapProps) {
       id: string;
       code: string;
       title: string;
+      description?: string;
       level: number;
       is_mandatory: boolean;
       is_optional: boolean;
@@ -124,6 +133,7 @@ export function RequirementsHeatmap({ rfpId }: RequirementsHeatmapProps) {
             id: node.id,
             code: node.code,
             title: node.title,
+            description: node.description,
             level,
             is_mandatory: node.is_mandatory || false,
             is_optional: node.is_optional || false,
@@ -138,6 +148,19 @@ export function RequirementsHeatmap({ rfpId }: RequirementsHeatmapProps) {
     traverse(requirements, 0);
     return flat;
   }, [requirements]);
+
+  // Filter requirements based on search query
+  const filteredRequirements = useMemo(() => {
+    if (!searchQuery.trim()) return flatRequirements;
+
+    const query = searchQuery.toLowerCase();
+    return flatRequirements.filter(
+      (req) =>
+        req.code.toLowerCase().includes(query) ||
+        req.title.toLowerCase().includes(query) ||
+        (req.description && req.description.toLowerCase().includes(query))
+    );
+  }, [flatRequirements, searchQuery]);
 
   // Index responses for quick lookup
   const responseMap = useMemo(() => {
@@ -161,14 +184,17 @@ export function RequirementsHeatmap({ rfpId }: RequirementsHeatmapProps) {
   return (
     <Card className="w-full overflow-hidden">
       <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <CardTitle>Heatmap des Exigences</CardTitle>
-            <CardDescription>
-              Comparaison visuelle des réponses par fournisseur
-            </CardDescription>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+            <Input
+              placeholder="Rechercher par code, titre ou description..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <span className="text-sm font-medium text-slate-700">
               Mode d'affichage :
             </span>
@@ -215,81 +241,117 @@ export function RequirementsHeatmap({ rfpId }: RequirementsHeatmapProps) {
               </tr>
             </thead>
             <tbody>
-              {flatRequirements.map((req) => (
-                <tr
-                  key={req.id}
-                  className="bg-white border-b hover:bg-slate-50 transition-colors"
-                >
-                  <td className="px-4 py-2 font-medium text-slate-900 sticky left-0 bg-white z-10 border-r min-w-[300px] group-hover:bg-slate-50">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded flex-shrink-0">
-                        {req.code}
-                      </span>
-                      <span
-                        className="truncate max-w-[200px]"
-                        title={req.title}
-                      >
-                        {req.title}
-                      </span>
-                      {req.is_mandatory && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200 flex-shrink-0">
-                          M
-                        </span>
-                      )}
-                      {req.is_optional && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200 flex-shrink-0">
-                          O
-                        </span>
-                      )}
-                    </div>
+              {filteredRequirements.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={suppliers.length + 1}
+                    className="px-4 py-8 text-center text-slate-500"
+                  >
+                    Aucune exigence trouvée pour "{searchQuery}"
                   </td>
-                  {suppliers.map((supplier) => {
-                    const response = responseMap.get(
-                      `${req.id}-${supplier.id}`
-                    );
-                    const score =
-                      response?.manual_score ?? response?.ai_score ?? null;
-                    const status = response?.status || "pending";
-
-                    return (
-                      <td
-                        key={`${req.id}-${supplier.id}`}
-                        className="p-1 border-r last:border-r-0 text-center align-middle w-24 min-w-[96px]"
-                      >
-                        <div
-                          className={cn(
-                            "w-full h-8 rounded flex items-center justify-center text-xs font-bold transition-colors cursor-help shadow-sm",
-                            mode === "status"
-                              ? getStatusColor(status)
-                              : getScoreColor(score)
-                          )}
-                          title={`${supplier.name} - ${req.code}\nStatus: ${status}\nNote: ${formatScore(score)}${response?.manual_comment ? `\nCommentaire: ${response.manual_comment}` : ""}`}
-                        >
-                          {mode === "score" && formatScore(score)}
-                          {mode === "status" && (
-                            <span className="capitalize">
-                              {status === "pending" ? "-" : status}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    );
-                  })}
                 </tr>
-              ))}
+              ) : (
+                filteredRequirements.map((req) => (
+                  <tr
+                    key={req.id}
+                    className="bg-white border-b hover:bg-slate-50 transition-colors"
+                  >
+                    <td className="px-4 py-2 font-medium text-slate-900 sticky left-0 bg-white z-10 border-r min-w-[300px] group-hover:bg-slate-50">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded flex-shrink-0">
+                          {req.code}
+                        </span>
+                        <span
+                          className="truncate max-w-[200px]"
+                          title={req.title}
+                        >
+                          {req.title}
+                        </span>
+                        {req.description && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 rounded-full p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Info className="h-3.5 w-3.5" />
+                                <span className="sr-only">Description</span>
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80 p-4" align="start">
+                              <div className="space-y-2">
+                                <h4 className="font-medium leading-none">
+                                  Description
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {req.description}
+                                </p>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                        {req.is_mandatory && (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200 flex-shrink-0">
+                            M
+                          </span>
+                        )}
+                        {req.is_optional && (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200 flex-shrink-0">
+                            O
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    {suppliers.map((supplier) => {
+                      const response = responseMap.get(
+                        `${req.id}-${supplier.id}`
+                      );
+                      const score =
+                        response?.manual_score ?? response?.ai_score ?? null;
+                      const status = response?.status || "pending";
+
+                      return (
+                        <td
+                          key={`${req.id}-${supplier.id}`}
+                          className="p-1 border-r last:border-r-0 text-center align-middle w-24 min-w-[96px]"
+                        >
+                          <div
+                            className={cn(
+                              "w-full h-8 rounded flex items-center justify-center text-xs font-bold transition-colors cursor-help shadow-sm",
+                              mode === "status"
+                                ? getStatusColor(status)
+                                : getScoreColor(score)
+                            )}
+                            title={`${supplier.name} - ${req.code}\nStatus: ${status}\nNote: ${formatScore(score)}${response?.manual_comment ? `\nCommentaire: ${response.manual_comment}` : ""}`}
+                          >
+                            {mode === "score" && formatScore(score)}
+                            {mode === "status" && (
+                              <span className="capitalize">
+                                {status === "pending" ? "-" : status}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))
+              )}
             </tbody>
             <tfoot className="bg-slate-50 border-t-2 border-slate-300 sticky bottom-0 z-10">
               <tr>
                 <td className="px-4 py-3 font-semibold text-sm text-slate-700 sticky left-0 bg-slate-50 z-20 border-r">
-                  Statistiques
+                  Statistiques {searchQuery && "(filtrées)"}
                 </td>
                 {suppliers.map((supplier) => {
-                  // Calculate statistics for this supplier
-                  const supplierResponses = flatRequirements
+                  // Calculate statistics for this supplier based on FILTERED requirements
+                  const supplierResponses = filteredRequirements
                     .map((req) => responseMap.get(`${req.id}-${supplier.id}`))
                     .filter(Boolean) as Response[];
 
-                  const totalRequirements = flatRequirements.length;
+                  const totalRequirements = filteredRequirements.length;
                   const passCount = supplierResponses.filter(
                     (r) => r.status === "pass"
                   ).length;
@@ -298,7 +360,7 @@ export function RequirementsHeatmap({ rfpId }: RequirementsHeatmapProps) {
                       ? Math.round((passCount / totalRequirements) * 100)
                       : 0;
 
-                  const mandatoryRequirements = flatRequirements.filter(
+                  const mandatoryRequirements = filteredRequirements.filter(
                     (req) => req.is_mandatory
                   );
                   const mandatoryTotal = mandatoryRequirements.length;
@@ -315,7 +377,7 @@ export function RequirementsHeatmap({ rfpId }: RequirementsHeatmapProps) {
                       ? Math.round((mandatoryPassCount / mandatoryTotal) * 100)
                       : 0;
 
-                  const optionalRequirements = flatRequirements.filter(
+                  const optionalRequirements = filteredRequirements.filter(
                     (req) => req.is_optional
                   );
                   const optionalTotal = optionalRequirements.length;

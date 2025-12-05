@@ -421,10 +421,25 @@ export async function importRequirements(
     order?: number;
     page_number?: number;
     rf_document_id?: string;
+    context?: string;
   }>,
-  userId: string
+  userId: string,
+  options?: {
+    importCode?: boolean;
+    importTitle?: boolean;
+    importContent?: boolean;
+    importContexts?: boolean;
+  }
 ): Promise<{ success: boolean; count: number; error?: string }> {
   const supabase = await createServerClient();
+
+  // Default options
+  const {
+    importCode = true,
+    importTitle = true,
+    importContent = true,
+    importContexts = true,
+  } = options || {};
 
   try {
     // First, fetch all categories to map names/codes to IDs
@@ -449,7 +464,37 @@ export async function importRequirements(
     let currentOrder = 1;
     let upsertedCount = 0;
 
+    // If we are NOT importing codes (Update Only mode), we need to know which codes exist
+    let existingCodes = new Set<string>();
+    let existingRequirementsMap = new Map<string, any>();
+
+    if (!importCode || !importTitle || !importContent || !importContexts) {
+      // Fetch existing requirements to check existence and/or merge data
+      const { data: existingReqs, error: existError } = await supabase
+        .from("requirements")
+        .select("requirement_id_external, title, description, context")
+        .eq("rfp_id", rfpId);
+
+      if (existError) {
+        throw new Error(
+          `Failed to fetch existing requirements: ${existError.message}`
+        );
+      }
+
+      if (existingReqs) {
+        existingReqs.forEach((r) => {
+          existingCodes.add(r.requirement_id_external);
+          existingRequirementsMap.set(r.requirement_id_external, r);
+        });
+      }
+    }
+
     for (const req of requirements) {
+      // If Update Only mode and code doesn't exist, skip
+      if (!importCode && !existingCodes.has(req.code)) {
+        continue;
+      }
+
       // Try to find category by title first, then by code
       const categoryId =
         categoryTitleToId.get(req.category_name) ||
@@ -465,31 +510,86 @@ export async function importRequirements(
       // Use explicit order if provided, otherwise auto-increment
       const displayOrder = req.order !== undefined ? req.order : currentOrder;
 
-      // Build position_in_pdf data if page information is provided
       const positionInPdf = req.page_number
         ? {
-            page_number: req.page_number,
-          }
+          page_number: req.page_number,
+        }
         : null;
 
+      // Prepare payload with selective fields
+      const payload: any = {
+        rfp_id: rfpId,
+        requirement_id_external: req.code,
+        weight: req.weight,
+        category_id: categoryId,
+        level: 4, // Requirements are always level 4
+        is_mandatory: req.is_mandatory ?? false,
+        is_optional: req.is_optional ?? false,
+        display_order: displayOrder,
+        position_in_pdf: positionInPdf,
+        rf_document_id: req.rf_document_id || null,
+        created_by: userId,
+      };
+
+      // Handle partial updates / merging
+      const existing = existingRequirementsMap.get(req.code);
+
+      // Title
+      if (importTitle) {
+        payload.title = req.title;
+      } else if (existing) {
+        payload.title = existing.title;
+      } else {
+        // New record but title not imported? Use code or empty
+        payload.title = req.code;
+      }
+
+      // Description (Content)
+      if (importContent) {
+        payload.description = req.description;
+      } else if (existing) {
+        payload.description = existing.description;
+      } else {
+        payload.description = "";
+      }
+
+      // Context
+      // Note: The input 'req' object currently has 'description' which might contain context if it was concatenated before.
+      // But if we want to support 'importContexts' separately, we should ideally receive it separately.
+      // For now, let's assume 'req.description' contains the content we want to import if importContent is true.
+      // If we have a separate context field in the input, we should use it.
+      // The current caller (import-docx) concatenates context into description.
+      // We should probably update the caller to pass context separately if possible, 
+      // but 'importRequirements' signature expects 'description'.
+      // 
+      // Let's assume for now that if importContent is true, we update description.
+      // If importContexts is true, we update context column (if we add it to input).
+      // 
+      // Since the input type doesn't have 'context', we'll stick to 'description' for now.
+      // If the user wants to toggle "Content" vs "Contexts", and both map to "description" in the current logic,
+      // we need to be careful.
+      // 
+      // However, the user asked for "Contexts" column in the preview.
+      // And the backend route concatenates them.
+      // 
+      // To properly support this, we should really update the input type to include 'context'.
+      // But to avoid breaking changes, we'll assume the caller handles the separation if needed.
+      // 
+      // WAIT: The caller (import-docx/route.ts) constructs the object.
+      // I will update the caller to pass 'context' separately.
+      // So I'll add 'context' to the input type of this function implicitly (by casting or extending).
+
+      if (importContexts) {
+        // @ts-ignore
+        payload.context = req.context || null;
+      } else if (existing) {
+        payload.context = existing.context;
+      } else {
+        payload.context = null;
+      }
+
       const { error } = await supabase.from("requirements").upsert(
-        [
-          {
-            rfp_id: rfpId,
-            requirement_id_external: req.code,
-            title: req.title,
-            description: req.description,
-            weight: req.weight,
-            category_id: categoryId,
-            level: 4, // Requirements are always level 4
-            is_mandatory: req.is_mandatory ?? false,
-            is_optional: req.is_optional ?? false,
-            display_order: displayOrder,
-            position_in_pdf: positionInPdf,
-            rf_document_id: req.rf_document_id || null,
-            created_by: userId,
-          },
-        ],
+        [payload],
         {
           onConflict: "rfp_id,requirement_id_external",
         }

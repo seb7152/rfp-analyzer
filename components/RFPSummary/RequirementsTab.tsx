@@ -4,6 +4,9 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { MoveToDialog } from "@/components/RFPSummary/MoveToDialog";
+import { v4 as uuidv4 } from "uuid";
 import {
   ChevronDown,
   ChevronRight,
@@ -15,6 +18,12 @@ import {
   ChevronUp,
   CheckCircle2,
   Info,
+  Pencil,
+  FolderInput,
+  Trash2,
+  MoreHorizontal,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import {
   Table,
@@ -36,6 +45,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface TreeNode {
   id: string;
@@ -204,6 +221,12 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(
     null
   );
+
+  // Structure Editing State
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
+  const [moveTargetNodeIds, setMoveTargetNodeIds] = useState<string[]>([]);
 
   // Check for unsaved changes
   const hasChanges = (): boolean => {
@@ -666,15 +689,199 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
     }
   };
 
+  // --- Structure Editing Handlers ---
+
+  const handleCheckboxChange = (nodeId: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) {
+      newSelected.add(nodeId);
+    } else {
+      newSelected.delete(nodeId);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = new Set<string>();
+      const traverse = (nodes: TreeNode[]) => {
+        nodes.forEach((node) => {
+          allIds.add(node.id);
+          if (node.children) traverse(node.children);
+        });
+      };
+      traverse(data);
+      setSelectedIds(allIds);
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleMoveNode = (nodeId: string, direction: "up" | "down") => {
+    const newData = [...data];
+
+    // Recursive function to find and reorder
+    const reorder = (nodes: TreeNode[]): boolean => {
+      const index = nodes.findIndex((n) => n.id === nodeId);
+      if (index !== -1) {
+        if (direction === "up" && index > 0) {
+          [nodes[index], nodes[index - 1]] = [nodes[index - 1], nodes[index]];
+          return true;
+        }
+        if (direction === "down" && index < nodes.length - 1) {
+          [nodes[index], nodes[index + 1]] = [nodes[index + 1], nodes[index]];
+          return true;
+        }
+        return false; // Can't move
+      }
+
+      for (const node of nodes) {
+        if (node.children && reorder(node.children)) return true;
+      }
+      return false;
+    };
+
+    if (reorder(newData)) {
+      setData(newData);
+    }
+  };
+
+  const handleMoveTo = (nodeId: string) => {
+    setMoveTargetNodeIds([nodeId]);
+    setIsMoveDialogOpen(true);
+  };
+
+  const handleMoveSelected = () => {
+    if (selectedIds.size === 0) return;
+    setMoveTargetNodeIds(Array.from(selectedIds));
+    setIsMoveDialogOpen(true);
+  };
+
+  const handleMoveConfirm = (targetCategoryId: string | null) => {
+    const newData = [...data];
+    const nodesToMove: TreeNode[] = [];
+
+    // 1. Remove nodes from their current locations
+    const removeNodes = (nodes: TreeNode[]) => {
+      for (let i = nodes.length - 1; i >= 0; i--) {
+        const node = nodes[i];
+        if (moveTargetNodeIds.includes(node.id)) {
+          nodesToMove.push(node);
+          nodes.splice(i, 1);
+        } else if (node.children) {
+          removeNodes(node.children);
+        }
+      }
+    };
+    removeNodes(newData);
+
+    // 2. Add nodes to the target location
+    if (targetCategoryId === null) {
+      // Move to root
+      newData.push(...nodesToMove);
+    } else {
+      const addToTarget = (nodes: TreeNode[]): boolean => {
+        for (const node of nodes) {
+          if (node.id === targetCategoryId) {
+            node.children = [...(node.children || []), ...nodesToMove];
+            // Ensure target is expanded to show moved items
+            setExpandedNodeIds((prev) => new Set(prev).add(targetCategoryId));
+            return true;
+          }
+          if (node.children && addToTarget(node.children)) return true;
+        }
+        return false;
+      };
+      addToTarget(newData);
+    }
+
+    setData(newData);
+    setSelectedIds(new Set()); // Clear selection after move
+  };
+
+  const handleAddCategory = (parentId: string | null) => {
+    const newCategory: TreeNode = {
+      id: uuidv4(),
+      type: "category",
+      code: "NEW",
+      title: "Nouvelle catégorie",
+      level: 0, // Will be recalculated or ignored by UI for now
+      children: [],
+    };
+
+    const newData = [...data];
+    if (parentId === null) {
+      newData.push(newCategory);
+    } else {
+      const addToParent = (nodes: TreeNode[]): boolean => {
+        for (const node of nodes) {
+          if (node.id === parentId) {
+            node.children = [...(node.children || []), newCategory];
+            setExpandedNodeIds((prev) => new Set(prev).add(parentId));
+            return true;
+          }
+          if (node.children && addToParent(node.children)) return true;
+        }
+        return false;
+      };
+      addToParent(newData);
+    }
+    setData(newData);
+  };
+
+  const handleDeleteNode = (nodeId: string) => {
+    if (
+      !confirm(
+        "Êtes-vous sûr de vouloir supprimer cet élément et ses enfants ?"
+      )
+    )
+      return;
+
+    const newData = [...data];
+    const deleteRecursive = (nodes: TreeNode[]): boolean => {
+      const index = nodes.findIndex((n) => n.id === nodeId);
+      if (index !== -1) {
+        nodes.splice(index, 1);
+        return true;
+      }
+      for (const node of nodes) {
+        if (node.children && deleteRecursive(node.children)) return true;
+      }
+      return false;
+    };
+
+    if (deleteRecursive(newData)) {
+      setData(newData);
+      // Remove from selection if deleted
+      if (selectedIds.has(nodeId)) {
+        const newSelected = new Set(selectedIds);
+        newSelected.delete(nodeId);
+        setSelectedIds(newSelected);
+      }
+    }
+  };
+
   const renderRows = (
     items: TreeNode[],
     level: number = 0
   ): React.ReactNode[] => {
-    return items.map((node) => [
+    return items.map((node, index) => [
       <TableRow
         key={node.id}
         className="hover:bg-slate-50 dark:hover:bg-slate-900/30"
       >
+        {/* Checkbox for selection (Edit Mode) */}
+        {isEditing && (
+          <TableCell className="w-[40px] px-2">
+            <Checkbox
+              checked={selectedIds.has(node.id)}
+              onCheckedChange={(checked) =>
+                handleCheckboxChange(node.id, checked as boolean)
+              }
+            />
+          </TableCell>
+        )}
+
         <TableCell className="py-3">
           <div
             style={{ paddingLeft: `${level * 24}px` }}
@@ -835,6 +1042,60 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
             )}
           </div>
         </TableCell>
+
+        {/* Actions Menu (Edit Mode) */}
+        {isEditing && (
+          <TableCell className="w-[50px]">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem
+                  onClick={() => handleMoveNode(node.id, "up")}
+                  disabled={index === 0}
+                >
+                  <ArrowUp className="mr-2 h-4 w-4" />
+                  Monter
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleMoveNode(node.id, "down")}
+                  disabled={index === items.length - 1}
+                >
+                  <ArrowDown className="mr-2 h-4 w-4" />
+                  Descendre
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleMoveTo(node.id)}>
+                  <FolderInput className="mr-2 h-4 w-4" />
+                  Déplacer vers...
+                </DropdownMenuItem>
+                {node.type === "category" && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => handleAddCategory(node.id)}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Ajouter sous-catégorie
+                    </DropdownMenuItem>
+                  </>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => handleDeleteNode(node.id)}
+                  className="text-red-600"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Supprimer
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </TableCell>
+        )}
       </TableRow>,
       ...(expandedNodeIds.has(node.id) && node.children
         ? renderRows(node.children, level + 1)
@@ -956,7 +1217,7 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
       </Card>
 
       {/* Control Buttons */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2 items-center">
         <Button
           variant="outline"
           size="sm"
@@ -975,6 +1236,49 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
           <ChevronUp className="h-4 w-4" />
           Étendre
         </Button>
+
+        <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2" />
+
+        <Button
+          variant={isEditing ? "secondary" : "outline"}
+          size="sm"
+          onClick={() => setIsEditing(!isEditing)}
+          className="gap-2"
+        >
+          {isEditing ? (
+            <X className="h-4 w-4" />
+          ) : (
+            <Pencil className="h-4 w-4" />
+          )}
+          {isEditing ? "Quitter mode édition" : "Modifier structure"}
+        </Button>
+
+        {isEditing && (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleAddCategory(null)}
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Ajouter catégorie
+            </Button>
+
+            {selectedIds.size > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleMoveSelected}
+                className="gap-2"
+              >
+                <FolderInput className="h-4 w-4" />
+                Déplacer sélection ({selectedIds.size})
+              </Button>
+            )}
+          </>
+        )}
+
         <Button
           onClick={handleSave}
           disabled={saving}
@@ -992,6 +1296,30 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
             <Table>
               <TableHeader>
                 <TableRow className="border-b border-slate-200 dark:border-slate-800">
+                  {isEditing && (
+                    <TableHead className="w-[40px] px-2">
+                      <Checkbox
+                        checked={
+                          data.length > 0 &&
+                          selectedIds.size ===
+                            (() => {
+                              let count = 0;
+                              const countNodes = (nodes: TreeNode[]) => {
+                                nodes.forEach((n) => {
+                                  count++;
+                                  if (n.children) countNodes(n.children);
+                                });
+                              };
+                              countNodes(data);
+                              return count;
+                            })()
+                        }
+                        onCheckedChange={(checked) =>
+                          handleSelectAll(checked as boolean)
+                        }
+                      />
+                    </TableHead>
+                  )}
                   <TableHead className="text-left">Requirement</TableHead>
                   <TableHead className="w-20 text-center text-xs">
                     Optional
@@ -1000,6 +1328,7 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
                     Mandatory
                   </TableHead>
                   <TableHead className="text-left">Tags</TableHead>
+                  {isEditing && <TableHead className="w-[50px]"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>{renderRows(data)}</TableBody>
@@ -1064,6 +1393,14 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <MoveToDialog
+        open={isMoveDialogOpen}
+        onOpenChange={setIsMoveDialogOpen}
+        data={data}
+        onMove={handleMoveConfirm}
+        sourceNodeIds={moveTargetNodeIds}
+      />
     </div>
   );
 }

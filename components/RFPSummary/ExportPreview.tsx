@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useVersion } from "@/contexts/VersionContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -47,6 +48,7 @@ export function ExportPreview({
   configuration,
   allConfigurationsForTemplate = [],
 }: ExportPreviewProps) {
+  const { activeVersion } = useVersion();
   const [activeConfig, setActiveConfig] =
     useState<ExportConfiguration>(configuration);
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
@@ -78,6 +80,7 @@ export function ExportPreview({
           body: JSON.stringify({
             configuration: activeConfig,
             limit: 10, // Preview first 10 rows
+            ...(activeVersion?.id && { versionId: activeVersion.id }),
           }),
         });
 
@@ -101,7 +104,7 @@ export function ExportPreview({
     if (activeConfig) {
       fetchPreview();
     }
-  }, [rfpId, activeConfig]);
+  }, [rfpId, activeConfig, activeVersion?.id]);
 
   const handleGenerateExport = async () => {
     try {
@@ -114,6 +117,7 @@ export function ExportPreview({
         },
         body: JSON.stringify({
           configuration: activeConfig, // Can be any config from the group
+          ...(activeVersion?.id && { versionId: activeVersion.id }),
         }),
       });
 
