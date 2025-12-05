@@ -61,6 +61,7 @@ export interface RFP {
   created_at: string;
   updated_at: string;
   created_by: string;
+  analysis_settings?: Record<string, unknown> | null;
 }
 
 export interface RFPUserAssignment {
@@ -381,11 +382,11 @@ export interface VersionChangesLog {
   version_id: string;
   rfp_id: string;
   action:
-    | "version_created"
-    | "version_activated"
-    | "supplier_removed"
-    | "supplier_restored"
-    | "responses_copied";
+  | "version_created"
+  | "version_activated"
+  | "supplier_removed"
+  | "supplier_restored"
+  | "responses_copied";
   details: Record<string, unknown> | null;
   created_at: string;
   created_by: string;

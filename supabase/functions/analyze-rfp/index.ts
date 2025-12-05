@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 interface AnalyzeRequest {
   rfpId: string;
+  systemPrompt?: string;
 }
 
 interface RequirementPayload {
@@ -20,6 +21,7 @@ interface RequirementPayload {
 interface N8NPayload {
   rfp_id: string;
   jobId: string;
+  system_prompt: string;
   requirements: RequirementPayload[];
   timestamp: string;
 }
@@ -38,7 +40,7 @@ serve(async (req) => {
   }
 
   try {
-    const { rfpId } = (await req.json()) as AnalyzeRequest;
+    const { rfpId, systemPrompt } = (await req.json()) as AnalyzeRequest;
 
     if (!rfpId) {
       return new Response(JSON.stringify({ error: "Missing rfpId" }), {
@@ -108,7 +110,7 @@ serve(async (req) => {
     // Build set of all parent IDs
     const parentIds = new Set(
       allReqsWithParent?.map((r) => r.parent_id).filter((id) => id !== null) ||
-        []
+      []
     );
 
     // Leaf requirements are those not in the parentIds set
@@ -127,10 +129,31 @@ serve(async (req) => {
     // Generate jobId
     const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    // Save system prompt to RFP settings if provided
+    if (systemPrompt) {
+      const { error: updateError } = await supabase
+        .from("rfps")
+        .update({
+          analysis_settings: {
+            system_prompt: systemPrompt,
+            last_updated: new Date().toISOString(),
+          },
+        })
+        .eq("id", rfpId);
+
+      if (updateError) {
+        console.error(
+          `[Edge Function] Failed to update RFP settings: ${updateError.message}`
+        );
+        // Continue anyway, not critical
+      }
+    }
+
     // Build N8N payload
     const payload: N8NPayload = {
       rfp_id: rfpId,
       jobId,
+      system_prompt: systemPrompt || "",
       requirements: leafRequirements.map((req) => {
         const reqResponses = responses
           .filter((r) => r.requirement_id === req.id)

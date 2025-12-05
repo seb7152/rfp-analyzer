@@ -112,7 +112,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
 
               {/* AI Analysis Button */}
               <Button
-                onClick={() => triggerAnalysis(params.rfpId)}
+                onClick={() => triggerAnalysis({ rfpId: params.rfpId })}
                 disabled={isAnalyzing}
                 variant="outline"
                 size="sm"

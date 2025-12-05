@@ -22,7 +22,8 @@ import { VersionsTab } from "@/components/RFPSummary/VersionsTab";
 import { VersionProvider } from "@/contexts/VersionContext";
 
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
-import { useAnalyzeRFP } from "@/hooks/use-analyze-rfp";
+import { DocxImportModal } from "@/components/DocxImportModal";
+
 import {
   Building2,
   Users,
@@ -32,7 +33,6 @@ import {
   Activity,
   Zap,
   FileUp,
-  Loader2,
   ChevronDown,
   ChevronUp,
   LayoutDashboard,
@@ -40,8 +40,10 @@ import {
   ListChecks,
   Download,
   GitBranch,
+  FileJson,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AIAnalysisButton } from "@/components/AIAnalysisButton";
 
 interface RFPSummaryData {
   rfp: {
@@ -50,6 +52,7 @@ interface RFPSummaryData {
     description: string | null;
     created_at: string;
     updated_at: string;
+    analysis_settings?: Record<string, unknown> | null;
   };
   globalProgress: {
     completionPercentage: number;
@@ -80,13 +83,10 @@ export default function RFPSummaryPage() {
   const [totalDocuments, setTotalDocuments] = useState(0);
   const [expandDashboard, setExpandDashboard] = useState(true);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isDocxImportModalOpen, setIsDocxImportModalOpen] = useState(false);
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
 
-  const {
-    mutate: triggerAnalysis,
-    isPending: isAnalyzing,
-    isSuccess: analysisSuccess,
-  } = useAnalyzeRFP();
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -151,12 +151,35 @@ export default function RFPSummaryPage() {
               <FileUp className="h-4 w-4" />
               <span className="hidden sm:inline">Documents</span>
             </Button>
-            <Link href={`/dashboard/rfp/${rfpId}/import`}>
-              <Button variant="outline" size="sm" className="gap-2">
-                <FileUp className="h-4 w-4" />
-                <span className="hidden sm:inline">Importer</span>
-              </Button>
-            </Link>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <FileUp className="h-4 w-4" />
+                  <span className="hidden sm:inline">Importer</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56" align="start">
+                <div className="grid gap-2">
+                  <Button
+                    variant="ghost"
+                    className="justify-start gap-2 font-normal"
+                    onClick={() => setIsDocxImportModalOpen(true)}
+                  >
+                    <FileText className="h-4 w-4" />
+                    Importer depuis DOCX
+                  </Button>
+                  <Link href={`/dashboard/rfp/${rfpId}/import`}>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start gap-2 font-normal"
+                    >
+                      <FileJson className="h-4 w-4" />
+                      Importer depuis JSON
+                    </Button>
+                  </Link>
+                </div>
+              </PopoverContent>
+            </Popover>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
@@ -351,31 +374,25 @@ export default function RFPSummaryPage() {
               </PopoverContent>
             </Popover>
           </div>
+
           <div className="flex gap-2">
-            <Button
-              onClick={() => triggerAnalysis(rfpId)}
-              disabled={isAnalyzing}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="hidden sm:inline">Analyzing...</span>
-                </>
-              ) : analysisSuccess ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <span className="hidden sm:inline">Analysis Started</span>
-                </>
-              ) : (
-                <>
-                  <Zap className="h-4 w-4" />
-                  <span className="hidden sm:inline">AI Analysis</span>
-                </>
-              )}
-            </Button>
+            {data?.rfp && (
+              <AIAnalysisButton
+                rfp={data.rfp as any} // Type assertion needed because RFPSummaryData.rfp is a subset of RFP
+                responsesCount={
+                  (data.globalProgress.statusDistribution.pass || 0) +
+                  (data.globalProgress.statusDistribution.partial || 0) +
+                  (data.globalProgress.statusDistribution.fail || 0) +
+                  (data.globalProgress.statusDistribution.pending || 0)
+                }
+                hasUnanalyzedResponses={
+                  (data.globalProgress.statusDistribution.pending || 0) > 0
+                }
+                onAnalysisStarted={() => {
+                  // Optional: refresh data or show toast
+                }}
+              />
+            )}
             <Link href={`/dashboard/rfp/${rfpId}/evaluate`}>
               <Button variant="primary" size="sm" className="gap-2">
                 <Zap className="h-4 w-4" />
@@ -582,6 +599,13 @@ export default function RFPSummaryPage() {
           rfpTitle={rfpTitle}
           isOpen={isUploadModalOpen}
           onOpenChange={setIsUploadModalOpen}
+        />
+
+        {/* DOCX Import Modal */}
+        <DocxImportModal
+          rfpId={rfpId}
+          isOpen={isDocxImportModalOpen}
+          onOpenChange={setIsDocxImportModalOpen}
         />
       </div>
     </div>

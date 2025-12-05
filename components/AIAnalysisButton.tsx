@@ -40,10 +40,18 @@ export function AIAnalysisButton({
   onAnalysisStarted,
 }: AIAnalysisButtonProps) {
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState("");
   const [showNotification, setShowNotification] = useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
+
+  // Initialize system prompt from RFP settings if available
+  useState(() => {
+    if (rfp.analysis_settings && typeof rfp.analysis_settings === 'object' && 'system_prompt' in rfp.analysis_settings) {
+      setSystemPrompt((rfp.analysis_settings as any).system_prompt || "");
+    }
+  });
 
   const { mutate: triggerAnalysis, isPending: isAnalyzing } = useAnalyzeRFP();
   const { status: analysisStatus } = useAnalyzeStatus(rfp.id);
@@ -58,25 +66,27 @@ export function AIAnalysisButton({
     analysisStatus?.status === "processing" || isAnalyzing;
 
   const handleAnalyze = () => {
-    triggerAnalysis(rfp.id, {
-      onSuccess: (data) => {
-        setShowConfirmation(false);
-        setShowNotification({
-          type: "success",
-          message: `Analysis started for ${data.total_responses} responses. This may take several minutes.`,
-        });
-        onAnalysisStarted?.();
-        setTimeout(() => setShowNotification(null), 5000);
-      },
-      onError: (error) => {
-        setShowConfirmation(false);
-        setShowNotification({
-          type: "error",
-          message: `Failed to start analysis: ${error instanceof Error ? error.message : "Unknown error"}`,
-        });
-        setTimeout(() => setShowNotification(null), 5000);
-      },
-    });
+    triggerAnalysis(
+      { rfpId: rfp.id, systemPrompt },
+      {
+        onSuccess: (data) => {
+          setShowConfirmation(false);
+          setShowNotification({
+            type: "success",
+            message: `Analysis started for ${data.total_responses} responses. This may take several minutes.`,
+          });
+          onAnalysisStarted?.();
+          setTimeout(() => setShowNotification(null), 5000);
+        },
+        onError: (error) => {
+          setShowConfirmation(false);
+          setShowNotification({
+            type: "error",
+            message: `Failed to start analysis: ${error instanceof Error ? error.message : "Unknown error"}`,
+          });
+          setTimeout(() => setShowNotification(null), 5000);
+        },
+      });
   };
 
   return (
@@ -137,7 +147,7 @@ export function AIAnalysisButton({
 
       {/* T141: Confirmation dialog */}
       <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Analyze Responses with AI</DialogTitle>
             <DialogDescription>
@@ -147,6 +157,25 @@ export function AIAnalysisButton({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label
+                htmlFor="system-prompt"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Specific Instructions (System Prompt)
+              </label>
+              <textarea
+                id="system-prompt"
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Describe the context, specific requests (e.g. output language), or format..."
+                value={systemPrompt}
+                onChange={(e) => setSystemPrompt(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                These instructions will be sent to the AI to guide the analysis.
+              </p>
+            </div>
+
             <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 p-4 border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-blue-900 dark:text-blue-200">
                 <strong>Note:</strong> The analysis will be performed in the
@@ -188,11 +217,10 @@ export function AIAnalysisButton({
       {/* T144: Toast notification */}
       {showNotification && (
         <div
-          className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg border ${
-            showNotification.type === "success"
-              ? "bg-green-50 border-green-200 text-green-800 dark:bg-green-950/40 dark:border-green-800 dark:text-green-200"
-              : "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/40 dark:border-red-800 dark:text-red-200"
-          }`}
+          className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg border ${showNotification.type === "success"
+            ? "bg-green-50 border-green-200 text-green-800 dark:bg-green-950/40 dark:border-green-800 dark:text-green-200"
+            : "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/40 dark:border-red-800 dark:text-red-200"
+            }`}
         >
           <div className="flex items-start gap-3">
             {showNotification.type === "success" ? (
