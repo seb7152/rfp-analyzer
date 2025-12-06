@@ -38,6 +38,41 @@ export async function POST(
       documentType = "cahier_charges",
     } = body;
 
+    // Get file extension from filename
+    const fileExtension = filename.toLowerCase().split(".").pop();
+
+    // For script files (.py, .sh), accept if extension is valid
+    const isScriptFile = [
+      "py",
+      "sh",
+      "txt",
+      "conf",
+      "yaml",
+      "yml",
+      "json",
+      "xml",
+    ].includes(fileExtension || "");
+    const isDocumentFile = ["pdf", "xls", "xlsx", "doc", "docx"].includes(
+      fileExtension || ""
+    );
+
+    // Log for debugging
+    console.log(
+      `Upload request: filename=${filename}, mimeType=${mimeType}, extension=${fileExtension}`
+    );
+    console.log(
+      `Is script file: ${isScriptFile}, Is document file: ${isDocumentFile}`
+    );
+    console.log(`Full MIME type details:`, {
+      mimeType,
+      fileExtension,
+      filename,
+      isScriptFile,
+      isDocumentFile,
+      mimeTypeLength: mimeType?.length,
+      mimeTypeType: typeof mimeType,
+    });
+
     // Validation
     if (!filename || !fileSize) {
       return NextResponse.json(
@@ -46,18 +81,34 @@ export async function POST(
       );
     }
 
-    // Allow PDF, Excel, and Word documents
-    const allowedMimeTypes = [
-      "application/pdf",
-      "application/vnd.ms-excel",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ];
+    // MIME types are now validated at database level with constraints
 
-    if (!allowedMimeTypes.includes(mimeType)) {
+    if (isScriptFile) {
+      // Script files with valid extension are accepted - be very permissive
+      console.log(
+        `Accepting script file: ${filename}, MIME type: ${mimeType}, extension: ${fileExtension}`
+      );
+      // No validation needed - if extension is valid, accept it
+      // The database constraint will handle MIME type validation
+    } else if (isDocumentFile) {
+      // For document files, check MIME type strictly
+      const allowedDocumentMimeTypes = [
+        "application/pdf",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
+
+      if (!allowedDocumentMimeTypes.includes(mimeType)) {
+        return NextResponse.json(
+          { error: "Invalid MIME type for document file" },
+          { status: 400 }
+        );
+      }
+    } else {
       return NextResponse.json(
-        { error: "Only PDF, Excel, and Word files are allowed" },
+        { error: "Only PDF, Excel, Word files and text files are allowed" },
         { status: 400 }
       );
     }
@@ -80,6 +131,7 @@ export async function POST(
         "appendix",
         "supplier_response",
         "template",
+        "script_import",
       ].includes(documentType)
     ) {
       return NextResponse.json(

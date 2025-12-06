@@ -1,11 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -40,6 +36,7 @@ interface RequirementTreeNode {
 
 interface RequirementsHeatmapProps {
   rfpId: string;
+  selectedCategoryId?: string | null;
 }
 
 // Helper functions for colors
@@ -74,7 +71,10 @@ const formatScore = (score: number | null) => {
   return score.toFixed(1);
 };
 
-export function RequirementsHeatmap({ rfpId }: RequirementsHeatmapProps) {
+export function RequirementsHeatmap({
+  rfpId,
+  selectedCategoryId,
+}: RequirementsHeatmapProps) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [requirements, setRequirements] = useState<RequirementTreeNode[]>([]);
   const [responses, setResponses] = useState<Response[]>([]);
@@ -149,18 +149,70 @@ export function RequirementsHeatmap({ rfpId }: RequirementsHeatmapProps) {
     return flat;
   }, [requirements]);
 
-  // Filter requirements based on search query
+  // Filter requirements based on search query and selected category
   const filteredRequirements = useMemo(() => {
-    if (!searchQuery.trim()) return flatRequirements;
+    let filtered = flatRequirements;
 
-    const query = searchQuery.toLowerCase();
-    return flatRequirements.filter(
-      (req) =>
-        req.code.toLowerCase().includes(query) ||
-        req.title.toLowerCase().includes(query) ||
-        (req.description && req.description.toLowerCase().includes(query))
-    );
-  }, [flatRequirements, searchQuery]);
+    // Filter by category if selected
+    if (selectedCategoryId) {
+      const findNode = (
+        nodes: RequirementTreeNode[],
+        id: string
+      ): RequirementTreeNode | null => {
+        for (const node of nodes) {
+          if (node.id === id) return node;
+          if (node.children) {
+            const found = findNode(node.children, id);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      const categoryNode = findNode(requirements, selectedCategoryId);
+      if (categoryNode) {
+        const subtreeFlat: typeof flatRequirements = [];
+        const traverseSubtree = (
+          nodes: RequirementTreeNode[],
+          level: number
+        ) => {
+          for (const node of nodes) {
+            if (node.type === "requirement") {
+              subtreeFlat.push({
+                id: node.id,
+                code: node.code,
+                title: node.title,
+                description: node.description,
+                level,
+                is_mandatory: node.is_mandatory || false,
+                is_optional: node.is_optional || false,
+              });
+            }
+            if (node.children) {
+              traverseSubtree(node.children, level + 1);
+            }
+          }
+        };
+        if (categoryNode.children) {
+          traverseSubtree(categoryNode.children, 0);
+        }
+        filtered = subtreeFlat;
+      } else {
+        filtered = [];
+      }
+    }
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (req) =>
+          req.code.toLowerCase().includes(query) ||
+          req.title.toLowerCase().includes(query) ||
+          (req.description && req.description.toLowerCase().includes(query))
+      );
+    }
+    return filtered;
+  }, [flatRequirements, requirements, selectedCategoryId, searchQuery]);
 
   // Index responses for quick lookup
   const responseMap = useMemo(() => {

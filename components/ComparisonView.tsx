@@ -46,6 +46,7 @@ import {
 } from "@/hooks/use-requirements";
 import { useResponses } from "@/hooks/use-responses";
 import { useResponseMutation } from "@/hooks/use-response-mutation";
+import { useRequirementDocument } from "@/hooks/use-requirement-document";
 import type { TreeNode } from "@/hooks/use-requirements";
 import type { Requirement } from "@/lib/supabase/types";
 import { getRequirementById } from "@/lib/fake-data";
@@ -100,6 +101,16 @@ export function ComparisonView({
 
   // Fetch the tree to determine if selected item is a category
   const { tree } = useRequirementsTree(rfpId || null);
+
+  // Fetch available cahier_charges documents for PDF opening
+  const { availableDocuments, openDocumentWithPage } = useRequirementDocument(
+    rfpId || null
+  );
+
+  // Get the selected requirement object
+  const selectedRequirement = useMemo(() => {
+    return allRequirements.find((r) => r.id === selectedRequirementId) || null;
+  }, [allRequirements, selectedRequirementId]);
 
   // Fetch responses for the selected requirement
   const { data: responsesData, refetch: refetchResponses } = useResponses(
@@ -541,42 +552,38 @@ export function ComparisonView({
   );
 
   const handleOpenContextPDF = useCallback(async () => {
-    if (!rfpId || !requirement) return;
+    if (!rfpId || !selectedRequirement) return;
 
     console.log("[ComparisonView] handleOpenContextPDF called", {
-      requirementId: requirement.id,
-      rf_document_id: requirement.rf_document_id,
-      position_in_pdf: requirement.position_in_pdf,
-      pageNumber: (requirement.position_in_pdf as any)?.page_number,
+      requirementId: selectedRequirement.id,
+      rf_document_id: selectedRequirement.rf_document_id,
+      position_in_pdf: selectedRequirement.position_in_pdf,
+      pageNumber: (selectedRequirement.position_in_pdf as any)?.page_number,
+      availableDocumentsCount: availableDocuments.length,
     });
 
-    // Check if requirement has document reference and/or page number
+    // Check if requirement has document reference and/or page number OR if there's a default cahier_charges document
     if (
-      !requirement.rf_document_id &&
-      !requirement.position_in_pdf?.page_number
+      !selectedRequirement.rf_document_id &&
+      !selectedRequirement.position_in_pdf?.page_number &&
+      availableDocuments.length === 0
     ) {
-      console.warn("Requirement has no document reference or page number");
+      console.warn(
+        "Requirement has no document reference, no page number, and no default cahier_charges document"
+      );
       return;
     }
 
     setLoadingSupplierDocs(true);
     try {
-      // Fetch all RFP documents to find the one linked to this requirement
-      const response = await fetch(`/api/rfps/${rfpId}/documents`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch documents");
-      }
-      const data = await response.json();
-      const documents = data.documents || [];
+      // Use available documents from hook (already filtered for cahier_charges PDFs)
+      const documents = availableDocuments;
 
       // Find the document linked to this requirement
-      let targetDocumentId = requirement.rf_document_id;
+      let targetDocumentId = selectedRequirement.rf_document_id;
       if (!targetDocumentId && documents.length > 0) {
-        // If no specific document is linked, use the first cahier_charges document
-        const cahierChargesDoc = documents.find(
-          (doc: any) => doc.document_type === "cahier_charges"
-        );
-        targetDocumentId = cahierChargesDoc?.id || documents[0].id;
+        // If no specific document is linked, use the first available cahier_charges document
+        targetDocumentId = documents[0].id;
       }
 
       if (!targetDocumentId) {
@@ -585,7 +592,7 @@ export function ComparisonView({
       }
 
       const pageNumber =
-        (requirement.position_in_pdf as any)?.page_number || null;
+        (selectedRequirement.position_in_pdf as any)?.page_number || null;
       console.log("[ComparisonView] Opening PDF with state:", {
         documentId: targetDocumentId,
         page: pageNumber,
@@ -604,7 +611,7 @@ export function ComparisonView({
     } finally {
       setLoadingSupplierDocs(false);
     }
-  }, [rfpId, requirement]);
+  }, [rfpId, selectedRequirement]);
 
   // const handleDeleteBookmark = useCallback(
   //   (bookmark: PDFAnnotation) => {
@@ -890,8 +897,9 @@ export function ComparisonView({
               onClick={handleOpenContextPDF}
               disabled={
                 loadingSupplierDocs ||
-                (!requirement.rf_document_id &&
-                  !requirement.position_in_pdf?.page_number)
+                (!selectedRequirement?.rf_document_id &&
+                  !selectedRequirement?.position_in_pdf?.page_number &&
+                  availableDocuments.length === 0)
               }
             >
               {loadingSupplierDocs ? (

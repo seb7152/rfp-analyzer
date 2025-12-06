@@ -11,6 +11,11 @@ import {
   FileUp,
   FileArchive,
   Eye,
+  Code,
+  Download,
+  CheckCircle,
+  Star,
+  RotateCcw,
 } from "lucide-react";
 import { RFPDocument } from "@/hooks/useRFPDocuments";
 import { PDFViewerSheet } from "@/components/PDFViewerSheet";
@@ -20,9 +25,10 @@ interface RFPDocumentsListProps {
   isLoading: boolean;
   onDelete: (documentId: string) => Promise<void>;
   rfpId?: string;
+  onSetDefaultDocument?: (documentId: string) => Promise<void>;
 }
 
-function getFileIcon(mimeType: string) {
+function getFileIcon(mimeType: string, filename?: string) {
   if (mimeType === "application/pdf") {
     return <FileText className="h-5 w-5 text-red-500" />;
   } else if (
@@ -37,6 +43,15 @@ function getFileIcon(mimeType: string) {
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
   ) {
     return <FileArchive className="h-5 w-5 text-blue-500" />;
+  } else if (
+    mimeType === "text/x-python" ||
+    mimeType === "text/x-shellscript" ||
+    mimeType === "application/x-sh" ||
+    (mimeType === "text/plain" &&
+      filename &&
+      [".py", ".sh"].some((ext) => filename.toLowerCase().endsWith(ext)))
+  ) {
+    return <Code className="h-5 w-5 text-purple-500" />;
   }
   return <FileUp className="h-5 w-5 text-slate-500" />;
 }
@@ -72,6 +87,10 @@ function getDocumentTypeLabel(documentType: string | null): {
     return { label: "Cahier des charges", color: "blue" };
   }
 
+  if (documentType === "script_import") {
+    return { label: "Script d'import", color: "purple" };
+  }
+
   if (documentType.startsWith("supplier_")) {
     // Extract supplier ID and return generic label
     // The actual supplier name would come from a lookup
@@ -86,8 +105,12 @@ export function RFPDocumentsList({
   isLoading,
   onDelete,
   rfpId,
+  onSetDefaultDocument,
 }: RFPDocumentsListProps) {
   const [deleting, setDeleting] = React.useState<string | null>(null);
+  const [settingDefault, setSettingDefault] = React.useState<string | null>(
+    null
+  );
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
   const [supplierNames, setSupplierNames] = React.useState<
     Record<string, string>
@@ -131,16 +154,74 @@ export function RFPDocumentsList({
   }, [documents, rfpId]);
 
   const handleDelete = async (documentId: string) => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer ce document?")) {
-      setDeleting(documentId);
-      try {
-        await onDelete(documentId);
-      } catch (error) {
-        console.error("Error deleting document:", error);
-        alert("Erreur lors de la suppression du document");
-      } finally {
-        setDeleting(null);
+    setDeleting(documentId);
+    try {
+      await onDelete(documentId);
+    } catch (error) {
+      alert("Erreur lors de la suppression du document");
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleSetDefault = async (documentId: string) => {
+    if (!onSetDefaultDocument) return;
+
+    setSettingDefault(documentId);
+    try {
+      await onSetDefaultDocument(documentId);
+      alert("Document défini comme cahier des charges par défaut");
+    } catch (error) {
+      alert("Erreur lors de la définition du document par défaut");
+    } finally {
+      setSettingDefault(null);
+    }
+  };
+
+  const handleChangeDefault = async (documentId: string) => {
+    if (!onSetDefaultDocument) return;
+
+    setSettingDefault(documentId);
+    try {
+      await onSetDefaultDocument(documentId);
+      alert("Document cahier des charges changé avec succès");
+    } catch (error) {
+      alert("Erreur lors du changement du document par défaut");
+    } finally {
+      setSettingDefault(null);
+    }
+  };
+
+  const handleDownload = async (doc: RFPDocument) => {
+    try {
+      // Create download URL - this would need an API endpoint to serve the file
+      const response = await fetch(
+        `/api/rfps/${rfpId}/documents/${doc.id}/download`
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to download file");
       }
+
+      // Get the blob
+      const blob = await response.blob();
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = window.document.createElement("a");
+      link.href = url;
+      link.download = doc.original_filename || doc.filename;
+
+      // Trigger download
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+
+      // Clean up
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Erreur lors du téléchargement du document");
     }
   };
 
@@ -161,7 +242,7 @@ export function RFPDocumentsList({
         <FileText className="h-10 w-10 text-slate-300 mb-2" />
         <p className="text-sm text-slate-600">Aucun document uploadé</p>
         <p className="text-xs text-slate-500 mt-1">
-          Commencez par ajouter des documents PDF, Excel ou Word
+          Commencez par ajouter des documents PDF, Excel, Word ou Fichiers texte
         </p>
       </div>
     );
@@ -174,7 +255,10 @@ export function RFPDocumentsList({
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 flex-1 min-w-0">
               <div className="flex-shrink-0 mt-0.5">
-                {getFileIcon(doc.mime_type)}
+                {getFileIcon(
+                  doc.mime_type,
+                  doc.original_filename || doc.filename
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-slate-900 truncate">
@@ -224,6 +308,61 @@ export function RFPDocumentsList({
                   <Eye className="h-4 w-4" />
                 </Button>
               )}
+              {doc.mime_type === "application/pdf" &&
+                doc.document_type === "cahier_charges" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled
+                    className="text-amber-600 bg-amber-50"
+                    title="Cahier des charges par défaut"
+                  >
+                    <Star className="h-4 w-4" />
+                  </Button>
+                )}
+              {doc.mime_type === "application/pdf" &&
+                doc.document_type === "cahier_charges" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleChangeDefault(doc.id)}
+                    disabled={settingDefault === doc.id}
+                    className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                    title="Changer de cahier des charges par défaut"
+                  >
+                    {settingDefault === doc.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+              {doc.mime_type === "application/pdf" &&
+                doc.document_type !== "cahier_charges" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSetDefault(doc.id)}
+                    disabled={settingDefault === doc.id}
+                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                    title="Définir comme cahier des charges par défaut"
+                  >
+                    {settingDefault === doc.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDownload(doc)}
+                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                title="Download file"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"

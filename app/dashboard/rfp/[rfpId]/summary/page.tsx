@@ -86,8 +86,6 @@ export default function RFPSummaryPage() {
   const [isDocxImportModalOpen, setIsDocxImportModalOpen] = useState(false);
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
 
-
-
   useEffect(() => {
     const fetchData = async () => {
       try {

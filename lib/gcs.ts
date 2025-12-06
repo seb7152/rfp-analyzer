@@ -152,3 +152,21 @@ export async function getFileMetadata(objectName: string) {
     throw error;
   }
 }
+
+/**
+ * Get file content from GCS
+ * @param objectName - Full object path in bucket
+ * @returns File content as Buffer
+ */
+export async function getFile(objectName: string): Promise<Buffer> {
+  const bucket = getRFPDocumentsBucket();
+  const file = bucket.file(objectName);
+
+  try {
+    const [content] = await file.download();
+    return content as Buffer;
+  } catch (error) {
+    console.error(`Error downloading file ${objectName}:`, error);
+    throw error;
+  }
+}

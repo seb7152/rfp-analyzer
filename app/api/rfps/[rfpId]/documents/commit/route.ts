@@ -41,6 +41,10 @@ export async function POST(
       supplierId,
     } = body;
 
+    console.log(
+      `Commit request: documentId=${documentId}, documentType=${documentType}, filename=${filename}`
+    );
+
     // Validation
     if (!documentId || !objectName || !filename || !fileSize) {
       return NextResponse.json(
@@ -96,6 +100,16 @@ export async function POST(
     }
 
     // Save document metadata to database
+    console.log(`Inserting document metadata...`);
+    console.log(`Document data being inserted:`, {
+      documentId,
+      rfpId,
+      documentType,
+      mimeType,
+      filename,
+      originalFilename,
+      fileSize,
+    });
     const { data: document, error: insertError } = await supabase
       .from("rfp_documents")
       .insert({
@@ -113,7 +127,10 @@ export async function POST(
       .select()
       .single();
 
+    console.log(`Insert result:`, { document, insertError });
+
     if (insertError) {
+      console.error("Database insertion failed:", insertError);
       // Clean up GCS file if database insertion fails
       try {
         await deleteFile(objectName);
@@ -128,6 +145,8 @@ export async function POST(
         { status: 400 }
       );
     }
+
+    console.log("Document metadata inserted successfully");
 
     // If this is a supplier response document, create the association
     if (documentType === "supplier_response" && supplierId) {
