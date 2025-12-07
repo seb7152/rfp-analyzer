@@ -38,11 +38,26 @@ import {
   Trash2,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { DocxTreePreview } from "@/components/DocxTreePreview";
+import {
+  buildSectionTree,
+  flattenTreeToRequirements,
+  getCategoryNameForRequirement,
+  type ParsedRequirement,
+  type Section,
+  type SectionTreeNode,
+} from "@/lib/docx-tree-builder";
 
 interface DocxImportModalProps {
   rfpId: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface Category {
+  id: string;
+  code: string;
+  title: string;
 }
 
 interface ExtractionConfig {
@@ -60,21 +75,6 @@ interface RequirementConfig {
   codeTemplate?: string;
   titleExtraction?: ExtractionConfig;
   contentExtraction?: ExtractionConfig;
-}
-
-interface ParsedRequirement {
-  code: string;
-  title?: string;
-  content?: string;
-  contexts?: string[];
-}
-
-interface Section {
-  level: number;
-  title: string;
-  content: string[];
-  tables: string[][];
-  requirements: ParsedRequirement[];
 }
 
 interface SavedConfig {
@@ -139,6 +139,8 @@ export function DocxImportModal({
   const [previewRequirements, setPreviewRequirements] = useState<
     ParsedRequirement[]
   >([]);
+  const [sectionTree, setSectionTree] = useState<SectionTreeNode[]>([]);
+  const [existingCategories, setExistingCategories] = useState<Category[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingValue, setEditingValue] = useState({
     code: "",
@@ -153,12 +155,25 @@ export function DocxImportModal({
     contexts: true,
   });
 
-  // Load saved configurations on mount
+  // Load saved configurations and existing categories on mount
   useEffect(() => {
     if (isOpen && rfpId) {
       loadSavedConfigs();
+      loadExistingCategories();
     }
   }, [isOpen, rfpId]);
+
+  const loadExistingCategories = async () => {
+    try {
+      const response = await fetch(`/api/rfps/${rfpId}/categories`);
+      if (response.ok) {
+        const data = await response.json();
+        setExistingCategories(data.categories || []);
+      }
+    } catch (error) {
+      console.error("Error loading categories:", error);
+    }
+  };
 
   const loadSavedConfigs = async () => {
     try {
@@ -389,7 +404,11 @@ export function DocxImportModal({
 
       const result = await response.json();
 
-      // Collect all requirements from all sections with context
+      // Build section tree from flat sections
+      const tree = buildSectionTree(result.structured as Section[]);
+      setSectionTree(tree);
+
+      // Also keep the flat list for backward compatibility (table view)
       const allRequirements: ParsedRequirement[] = [];
       result.structured.forEach((section: Section) => {
         section.requirements.forEach((req) => {
@@ -444,6 +463,91 @@ export function DocxImportModal({
     setStep("importing");
 
     try {
+      // Step 1: Create new categories if needed
+      const categoriesToCreate: Array<{
+        code: string;
+        title: string;
+        level: number;
+      }> = [];
+
+      const collectNewCategories = (nodes: SectionTreeNode[], level = 1) => {
+        nodes.forEach((node) => {
+          if (
+            node.isCategory &&
+            node.categoryMapping?.type === "new" &&
+            node.categoryMapping.newCode
+          ) {
+            categoriesToCreate.push({
+              code: node.categoryMapping.newCode,
+              title: node.title,
+              level,
+            });
+          }
+          if (node.children.length > 0) {
+            collectNewCategories(node.children, level + 1);
+          }
+        });
+      };
+
+      collectNewCategories(sectionTree);
+
+      // Create new categories in the database
+      for (const cat of categoriesToCreate) {
+        const createResponse = await fetch(`/api/rfps/${rfpId}/categories`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code: cat.code,
+            title: cat.title,
+            short_name: cat.code,
+            level: cat.level,
+            parent_id: null,
+          }),
+        });
+
+        if (!createResponse.ok) {
+          throw new Error(`Failed to create category: ${cat.code}`);
+        }
+
+        // Reload categories to get the new IDs
+        await loadExistingCategories();
+      }
+
+      // Step 2: Flatten tree to requirements with category mapping
+      const flattenedRequirements = flattenTreeToRequirements(sectionTree);
+
+      // Step 3: Build requirements array with category names
+      const requirementsToImport = flattenedRequirements
+        .map(({ requirement, categoryNode }) => {
+          const categoryName = getCategoryNameForRequirement(
+            categoryNode,
+            existingCategories
+          );
+
+          if (!categoryName) {
+            console.warn(
+              `Requirement ${requirement.code} has no category mapping, skipping`
+            );
+            return null;
+          }
+
+          return {
+            code: requirement.code,
+            title: requirement.title,
+            content: requirement.content,
+            contexts: requirement.contexts,
+            category_name: categoryName,
+          };
+        })
+        .filter((req) => req !== null);
+
+      if (requirementsToImport.length === 0) {
+        throw new Error(
+          "Aucune exigence à importer. Veuillez mapper au moins une section à une catégorie."
+        );
+      }
+
+      // Step 4: Import requirements
       const response = await fetch(
         `/api/rfps/${rfpId}/requirements/import-docx`,
         {
@@ -452,7 +556,7 @@ export function DocxImportModal({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            requirements: previewRequirements,
+            requirements: requirementsToImport,
             options: {
               importCode: selectedColumns.code,
               importTitle: selectedColumns.title,
@@ -939,8 +1043,15 @@ export function DocxImportModal({
               </Card>
             </div>
 
-            {/* Preview Table */}
-            <div className="border rounded-lg">
+            {/* Tree Preview */}
+            <DocxTreePreview
+              tree={sectionTree}
+              existingCategories={existingCategories}
+              onTreeChange={setSectionTree}
+            />
+
+            {/* Preview Table (old flat view - kept for reference) */}
+            <div className="border rounded-lg" style={{ display: "none" }}>
               <Table>
                 <TableHeader>
                   <TableRow>
