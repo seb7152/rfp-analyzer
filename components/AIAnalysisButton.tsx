@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAnalyzeRFP } from "@/hooks/use-analyze-rfp";
 import { useAnalyzeStatus } from "@/hooks/use-analyze-status";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,7 @@ export function AIAnalysisButton({
   } | null>(null);
 
   // Initialize system prompt from RFP settings if available
-  useState(() => {
+  useEffect(() => {
     if (
       rfp.analysis_settings &&
       typeof rfp.analysis_settings === "object" &&
@@ -55,7 +55,7 @@ export function AIAnalysisButton({
     ) {
       setSystemPrompt((rfp.analysis_settings as any).system_prompt || "");
     }
-  });
+  }, [rfp.analysis_settings]);
 
   const { mutate: triggerAnalysis, isPending: isAnalyzing } = useAnalyzeRFP();
   const { status: analysisStatus } = useAnalyzeStatus(rfp.id);
