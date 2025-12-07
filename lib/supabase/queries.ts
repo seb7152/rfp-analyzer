@@ -414,7 +414,7 @@ export async function importRequirements(
     code: string;
     title: string;
     description: string;
-    weight: number;
+    weight?: number; // Optional, defaults to 0
     category_name: string;
     is_mandatory?: boolean;
     is_optional?: boolean;
@@ -531,7 +531,7 @@ export async function importRequirements(
       const payload: any = {
         rfp_id: rfpId,
         requirement_id_external: req.code,
-        weight: req.weight,
+        weight: req.weight ?? 0, // Default to 0 if not provided
         category_id: categoryId,
         level: 4, // Requirements are always level 4
         is_mandatory: req.is_mandatory ?? false,
