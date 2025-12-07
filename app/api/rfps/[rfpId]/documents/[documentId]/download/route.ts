@@ -62,6 +62,7 @@ export async function GET(
       const fileBuffer = await getFile(document.gcs_object_name);
 
       // Return file with appropriate headers
+      // @ts-ignore - fileBuffer is a Buffer which is compatible with BodyInit
       return new NextResponse(fileBuffer, {
         headers: {
           "Content-Type": document.mime_type,

@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { Supplier } from "@/types/supplier";
 import { Response } from "@/types/response";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 // Types
 interface TreeNode {

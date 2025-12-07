@@ -103,7 +103,7 @@ export function ComparisonView({
   const { tree } = useRequirementsTree(rfpId || null);
 
   // Fetch available cahier_charges documents for PDF opening
-  const { availableDocuments, openDocumentWithPage } = useRequirementDocument(
+  const { availableDocuments } = useRequirementDocument(
     rfpId || null
   );
 
