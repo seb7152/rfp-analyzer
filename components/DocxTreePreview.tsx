@@ -62,11 +62,54 @@ export function DocxTreePreview({
     });
   };
 
+  // Generate a category code from the section title
+  const generateCategoryCode = (title: string): string => {
+    // Remove common words and special characters
+    const words = title
+      .toUpperCase()
+      .replace(/[^\w\s]/g, "")
+      .split(/\s+/)
+      .filter(
+        (word) =>
+          word &&
+          !["DE", "DU", "LA", "LE", "LES", "ET", "OU", "POUR", "DANS"].includes(
+            word
+          )
+      );
+
+    if (words.length === 0) return "CAT";
+
+    // Take first 4 letters of first word, or first letter of each word
+    if (words.length === 1) {
+      return words[0].substring(0, 4);
+    } else {
+      // Take first letter of each word, max 6 letters
+      return words
+        .slice(0, 6)
+        .map((w) => w[0])
+        .join("");
+    }
+  };
+
+  const findNodeById = (nodes: SectionTreeNode[], id: string): SectionTreeNode | null => {
+    for (const node of nodes) {
+      if (node.id === id) return node;
+      if (node.children.length > 0) {
+        const found = findNodeById(node.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
   const handleCategoryToggle = (nodeId: string, isCategory: boolean) => {
+    const node = findNodeById(tree, nodeId);
+    const generatedCode = node ? generateCategoryCode(node.title) : "";
+
     const updatedTree = updateNode(tree, nodeId, {
       isCategory,
       categoryMapping: isCategory
-        ? { type: "new", newCode: "" }
+        ? { type: "new", newCode: generatedCode }
         : undefined,
     });
     onTreeChange(updatedTree);
@@ -76,8 +119,11 @@ export function DocxTreePreview({
     nodeId: string,
     type: "existing" | "new"
   ) => {
+    const node = findNodeById(tree, nodeId);
+    const generatedCode = node && type === "new" ? generateCategoryCode(node.title) : "";
+
     const updatedTree = updateNode(tree, nodeId, {
-      categoryMapping: { type },
+      categoryMapping: type === "new" ? { type, newCode: generatedCode } : { type },
     });
     onTreeChange(updatedTree);
   };
