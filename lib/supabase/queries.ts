@@ -1026,6 +1026,23 @@ export async function importResponses(
   const supabase = await createServerClient();
 
   try {
+    // Get the active version for this RFP
+    const { data: activeVersion, error: versionError } = await supabase
+      .from("evaluation_versions")
+      .select("id")
+      .eq("rfp_id", rfpId)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (versionError || !activeVersion) {
+      return {
+        success: false,
+        count: 0,
+        error:
+          "No active version found for this RFP. Please create a version first.",
+      };
+    }
+
     let insertedCount = 0;
 
     for (const response of responses) {
@@ -1070,6 +1087,7 @@ export async function importResponses(
           ai_comment: response.ai_comment || null,
           status: "pending",
           is_checked: false,
+          version_id: activeVersion.id,
         },
       ]);
 

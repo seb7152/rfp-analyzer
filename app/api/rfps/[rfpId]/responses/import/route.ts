@@ -53,7 +53,7 @@ export async function POST(
     if (!result.success) {
       return NextResponse.json(
         { error: result.error || "Failed to import responses" },
-        { status: 500 }
+        { status: result.error?.includes("version") ? 400 : 500 }
       );
     }
 
