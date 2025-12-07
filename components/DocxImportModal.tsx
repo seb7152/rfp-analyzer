@@ -98,7 +98,7 @@ interface SavedConfig {
   is_default: boolean;
 }
 
-type Step = "config" | "preview" | "importing";
+type Step = "config" | "category-mapping" | "preview" | "importing";
 
 export function DocxImportModal({
   rfpId,
@@ -421,7 +421,7 @@ export function DocxImportModal({
       });
 
       setPreviewRequirements(allRequirements);
-      setStep("preview");
+      setStep("category-mapping");
     } catch (error) {
       console.error("Extraction error:", error);
       alert("Erreur lors de l'extraction du fichier");
@@ -457,6 +457,36 @@ export function DocxImportModal({
 
   const handleCancelEdit = () => {
     setEditingIndex(null);
+  };
+
+  const handleCategoryMappingNext = () => {
+    // Flatten tree to requirements with category mapping
+    const flattenedRequirements = flattenTreeToRequirements(sectionTree);
+
+    // Build requirements array with category names for preview
+    const requirementsWithCategories = flattenedRequirements
+      .map(({ requirement, categoryNode }) => {
+        const categoryName = getCategoryNameForRequirement(
+          categoryNode,
+          existingCategories
+        );
+
+        if (!categoryName) {
+          // Skip requirements without category mapping
+          return null;
+        }
+
+        return {
+          ...requirement,
+          category_name: categoryName,
+        };
+      })
+      .filter((req) => req !== null) as Array<
+      ParsedRequirement & { category_name: string }
+    >;
+
+    setPreviewRequirements(requirementsWithCategories);
+    setStep("preview");
   };
 
   const handleImport = async () => {
@@ -513,41 +543,7 @@ export function DocxImportModal({
         await loadExistingCategories();
       }
 
-      // Step 2: Flatten tree to requirements with category mapping
-      const flattenedRequirements = flattenTreeToRequirements(sectionTree);
-
-      // Step 3: Build requirements array with category names
-      const requirementsToImport = flattenedRequirements
-        .map(({ requirement, categoryNode }) => {
-          const categoryName = getCategoryNameForRequirement(
-            categoryNode,
-            existingCategories
-          );
-
-          if (!categoryName) {
-            console.warn(
-              `Requirement ${requirement.code} has no category mapping, skipping`
-            );
-            return null;
-          }
-
-          return {
-            code: requirement.code,
-            title: requirement.title,
-            content: requirement.content,
-            contexts: requirement.contexts,
-            category_name: categoryName,
-          };
-        })
-        .filter((req) => req !== null);
-
-      if (requirementsToImport.length === 0) {
-        throw new Error(
-          "Aucune exigence à importer. Veuillez mapper au moins une section à une catégorie."
-        );
-      }
-
-      // Step 4: Import requirements
+      // Step 2: Import requirements (previewRequirements already has category_name)
       const response = await fetch(
         `/api/rfps/${rfpId}/requirements/import-docx`,
         {
@@ -556,7 +552,7 @@ export function DocxImportModal({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            requirements: requirementsToImport,
+            requirements: previewRequirements,
             options: {
               importCode: selectedColumns.code,
               importTitle: selectedColumns.title,
@@ -589,6 +585,7 @@ export function DocxImportModal({
     setStep("config");
     setFile(null);
     setPreviewRequirements([]);
+    setSectionTree([]);
     setEditingIndex(null);
     onOpenChange(false);
   };
@@ -610,6 +607,8 @@ export function DocxImportModal({
           <DialogDescription>
             {step === "config" &&
               "Configurez les paramètres d'extraction des exigences"}
+            {step === "category-mapping" &&
+              "Mappez les sections du document vers les catégories d'exigences"}
             {step === "preview" &&
               "Prévisualisez et éditez les exigences avant import"}
             {step === "importing" && "Import en cours..."}
@@ -1011,6 +1010,93 @@ export function DocxImportModal({
           </div>
         )}
 
+        {step === "category-mapping" && (
+          <div className="space-y-6">
+            {/* Stats */}
+            <div className="grid grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold">{stats.total}</div>
+                  <p className="text-xs text-muted-foreground">Exigences</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold">
+                    {sectionTree.length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Sections</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold">
+                    {(() => {
+                      let count = 0;
+                      const countSelected = (nodes: SectionTreeNode[]) => {
+                        nodes.forEach((node) => {
+                          if (node.isCategory) count++;
+                          if (node.children.length > 0)
+                            countSelected(node.children);
+                        });
+                      };
+                      countSelected(sectionTree);
+                      return count;
+                    })()}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Sections → Catégories
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold">{stats.withContexts}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Avec contextes
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Tree Preview */}
+            <DocxTreePreview
+              tree={sectionTree}
+              existingCategories={existingCategories}
+              onTreeChange={setSectionTree}
+            />
+
+            {/* Navigation buttons */}
+            <div className="flex gap-2 justify-between">
+              <Button variant="outline" onClick={() => setStep("config")}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour
+              </Button>
+              <Button
+                onClick={handleCategoryMappingNext}
+                className="gap-2"
+                disabled={
+                  (() => {
+                    let count = 0;
+                    const countSelected = (nodes: SectionTreeNode[]) => {
+                      nodes.forEach((node) => {
+                        if (node.isCategory) count++;
+                        if (node.children.length > 0)
+                          countSelected(node.children);
+                      });
+                    };
+                    countSelected(sectionTree);
+                    return count === 0;
+                  })()
+                }
+              >
+                Continuer
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
         {step === "preview" && (
           <div className="space-y-6">
             {/* Stats */}
@@ -1043,15 +1129,8 @@ export function DocxImportModal({
               </Card>
             </div>
 
-            {/* Tree Preview */}
-            <DocxTreePreview
-              tree={sectionTree}
-              existingCategories={existingCategories}
-              onTreeChange={setSectionTree}
-            />
-
-            {/* Preview Table (old flat view - kept for reference) */}
-            <div className="border rounded-lg" style={{ display: "none" }}>
+            {/* Preview Table */}
+            <div className="border rounded-lg">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -1119,6 +1198,7 @@ export function DocxImportModal({
                         Contextes
                       </div>
                     </TableHead>
+                    <TableHead className="w-[120px]">Catégorie</TableHead>
                     <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1168,6 +1248,11 @@ export function DocxImportModal({
                           </TableCell>
                           <TableCell className="text-center">
                             {req.contexts?.length || 0}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded text-blue-700 dark:text-blue-300">
+                              {(req as any).category_name || "—"}
+                            </span>
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1">
@@ -1234,6 +1319,11 @@ export function DocxImportModal({
                           >
                             {req.contexts?.length || 0}
                           </TableCell>
+                          <TableCell className="text-xs">
+                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded text-blue-700 dark:text-blue-300">
+                              {(req as any).category_name || "—"}
+                            </span>
+                          </TableCell>
                           <TableCell>
                             <Button
                               size="sm"
@@ -1255,11 +1345,11 @@ export function DocxImportModal({
             <div className="flex justify-between">
               <Button
                 variant="outline"
-                onClick={() => setStep("config")}
+                onClick={() => setStep("category-mapping")}
                 className="gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Retour
+                Retour au mapping
               </Button>
               <Button onClick={handleImport} className="gap-2">
                 <Upload className="h-4 w-4" />
