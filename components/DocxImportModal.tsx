@@ -460,8 +460,51 @@ export function DocxImportModal({
   };
 
   const handleCategoryMappingNext = () => {
+    // Validate that all selected sections have complete mappings
+    const validateMappings = (nodes: SectionTreeNode[]): string[] => {
+      const errors: string[] = [];
+      const traverse = (items: SectionTreeNode[]) => {
+        items.forEach((node) => {
+          if (node.isCategory) {
+            if (!node.categoryMapping) {
+              errors.push(`Section "${node.title}" : mapping non défini`);
+            } else if (
+              node.categoryMapping.type === "existing" &&
+              !node.categoryMapping.existingId
+            ) {
+              errors.push(
+                `Section "${node.title}" : aucune catégorie existante sélectionnée`
+              );
+            } else if (
+              node.categoryMapping.type === "new" &&
+              !node.categoryMapping.newCode?.trim()
+            ) {
+              errors.push(
+                `Section "${node.title}" : code de la nouvelle catégorie manquant`
+              );
+            }
+          }
+          if (node.children.length > 0) traverse(node.children);
+        });
+      };
+      traverse(nodes);
+      return errors;
+    };
+
+    const mappingErrors = validateMappings(sectionTree);
+    if (mappingErrors.length > 0) {
+      alert(
+        "Mappings incomplets :\n\n" +
+          mappingErrors.join("\n") +
+          "\n\nVeuillez compléter tous les mappings de catégories."
+      );
+      return;
+    }
+
     // Flatten tree to requirements with category mapping
     const flattenedRequirements = flattenTreeToRequirements(sectionTree);
+
+    console.log("Flattened requirements:", flattenedRequirements.length);
 
     // Build requirements array with category names for preview
     const requirementsWithCategories = flattenedRequirements
@@ -472,7 +515,10 @@ export function DocxImportModal({
         );
 
         if (!categoryName) {
-          // Skip requirements without category mapping
+          console.warn(
+            `Requirement ${requirement.code} has no category mapping, categoryNode:`,
+            categoryNode
+          );
           return null;
         }
 
@@ -484,6 +530,18 @@ export function DocxImportModal({
       .filter((req) => req !== null) as Array<
       ParsedRequirement & { category_name: string }
     >;
+
+    console.log(
+      "Requirements with categories:",
+      requirementsWithCategories.length
+    );
+
+    if (requirementsWithCategories.length === 0) {
+      alert(
+        "Aucune exigence trouvée avec un mapping de catégorie.\n\nVérifiez que vos sections contiennent bien des exigences et que les mappings sont corrects."
+      );
+      return;
+    }
 
     setPreviewRequirements(requirementsWithCategories);
     setStep("preview");
