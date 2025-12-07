@@ -27,6 +27,7 @@ export interface SectionTreeNode {
   id: string; // Temporary ID for UI
   level: number;
   title: string;
+  content: string[]; // Section content (used for contexts)
   requirements: ParsedRequirement[];
   children: SectionTreeNode[];
 
@@ -49,6 +50,7 @@ export function buildSectionTree(sections: Section[]): SectionTreeNode[] {
       id: `section-${index}`,
       level: section.level,
       title: section.title,
+      content: section.content, // Preserve content for contexts
       requirements: section.requirements,
       children: [],
       isCategory: false, // Default: not selected as category
@@ -102,10 +104,13 @@ export function flattenTreeToRequirements(
     // Determine the category for this node's requirements
     const categoryForThisNode = node.isCategory ? node : parentCategoryNode;
 
-    // Add this node's requirements
+    // Add this node's requirements with contexts from the section content
     node.requirements.forEach((req) => {
       results.push({
-        requirement: req,
+        requirement: {
+          ...req,
+          contexts: node.content.length > 0 ? node.content : undefined,
+        },
         categoryNode: categoryForThisNode,
       });
     });
