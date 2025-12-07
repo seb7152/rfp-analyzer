@@ -5,15 +5,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useRequirements } from "@/hooks/use-requirements";
 import { useRFPCompletion } from "@/hooks/use-completion";
-import { useAnalyzeRFP } from "@/hooks/use-analyze-rfp";
 import { Sidebar } from "@/components/Sidebar";
 import { ComparisonView } from "@/components/ComparisonView";
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
 import { VersionSelector } from "@/components/VersionSelector";
+import { AIAnalysisButton } from "@/components/AIAnalysisButton";
 import { VersionProvider } from "@/contexts/VersionContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft, Loader2, CheckCircle2, Zap, FileUp } from "lucide-react";
+import { ChevronLeft, Loader2, CheckCircle2, FileUp } from "lucide-react";
+import type { RFP } from "@/lib/supabase/types";
 
 interface EvaluatePageProps {
   params: {
@@ -40,6 +41,8 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   >(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
+  const [rfpData, setRfpData] = useState<RFP | null>(null);
+  const [responsesCount, setResponsesCount] = useState(0);
 
   const { requirements: allRequirements, isLoading: requirementsLoading } =
     useRequirements(params.rfpId);
@@ -47,17 +50,31 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   const { percentage: completionPercentage, isLoading: completionLoading } =
     useRFPCompletion(params.rfpId);
 
-  const {
-    mutate: triggerAnalysis,
-    isPending: isAnalyzing,
-    isSuccess: analysisSuccess,
-  } = useAnalyzeRFP();
-
-  // Set RFP title from ID
+  // Fetch RFP data and responses count
   useEffect(() => {
+    const fetchRFPData = async () => {
+      try {
+        const response = await fetch(`/api/rfps/${params.rfpId}/dashboard`);
+        if (response.ok) {
+          const data = await response.json();
+          setRfpData(data.rfp);
+          setRfpTitle(data.rfp?.title || `RFP ${params.rfpId.slice(0, 8)}`);
+          // Count total responses
+          const total =
+            (data.globalProgress?.statusDistribution?.pass || 0) +
+            (data.globalProgress?.statusDistribution?.partial || 0) +
+            (data.globalProgress?.statusDistribution?.fail || 0) +
+            (data.globalProgress?.statusDistribution?.pending || 0);
+          setResponsesCount(total);
+        }
+      } catch (error) {
+        console.error("Failed to fetch RFP data:", error);
+        setRfpTitle(`RFP ${params.rfpId.slice(0, 8)}`);
+      }
+    };
+
     if (params.rfpId) {
-      // Use the RFP ID as title for now (or could extract from first requirement later)
-      setRfpTitle(`RFP ${params.rfpId.slice(0, 8)}`);
+      fetchRFPData();
     }
   }, [params.rfpId]);
 
@@ -111,30 +128,16 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
               </Button>
 
               {/* AI Analysis Button */}
-              <Button
-                onClick={() => triggerAnalysis({ rfpId: params.rfpId })}
-                disabled={isAnalyzing}
-                variant="outline"
-                size="sm"
-                className="gap-2"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : analysisSuccess ? (
-                  <>
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    Analysis Started
-                  </>
-                ) : (
-                  <>
-                    <Zap className="h-4 w-4" />
-                    AI Analysis
-                  </>
-                )}
-              </Button>
+              {rfpData && (
+                <AIAnalysisButton
+                  rfp={rfpData}
+                  responsesCount={responsesCount}
+                  hasUnanalyzedResponses={completionPercentage < 100}
+                  onAnalysisStarted={() => {
+                    // Optional: refresh data or show toast
+                  }}
+                />
+              )}
 
               {/* Completion Percentage */}
               <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800">

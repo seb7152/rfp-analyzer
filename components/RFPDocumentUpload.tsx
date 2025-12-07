@@ -38,7 +38,7 @@ export function RFPDocumentUpload({
   const [dragActive, setDragActive] = useState(false);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [documentType, setDocumentType] = useState<
-    "cahier_charges" | "supplier"
+    "cahier_charges" | "supplier" | "script_import"
   >("cahier_charges");
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>("");
   const [loadingSuppliers, setLoadingSuppliers] = useState(true);
@@ -96,18 +96,72 @@ export function RFPDocumentUpload({
   const handleMultipleFileUpload = async (files: File[]) => {
     // Validate all files before starting any upload
     for (const file of files) {
-      // Validate file type - allow PDF, Excel, and Word documents
+      // Get file extension
+      const fileExtension = file.name.toLowerCase().split(".").pop();
+
+      // Validate file type - allow PDF, Excel, Word documents, and scripts
       const allowedMimeTypes = [
         "application/pdf",
         "application/vnd.ms-excel",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "application/msword",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/x-python",
+        "text/x-shellscript",
+        "application/x-sh",
+        "text/plain", // Accept all text/plain files (scripts, config files, etc.)
       ];
 
-      if (!allowedMimeTypes.includes(file.type)) {
+      // Check by MIME type or extension - accept if EITHER is valid for scripts
+      const isValidMimeType = allowedMimeTypes.includes(file.type);
+      const isValidExtension = [
+        "pdf",
+        "xls",
+        "xlsx",
+        "doc",
+        "docx",
+        "py",
+        "sh",
+        "txt",
+        "conf",
+        "yaml",
+        "yml",
+        "json",
+        "xml",
+      ].includes(fileExtension || "");
+
+      // For script files (.py, .sh), accept if extension is valid (even if MIME type is text/plain)
+      const isScriptFile = [
+        "py",
+        "sh",
+        "txt",
+        "conf",
+        "yaml",
+        "yml",
+        "json",
+        "xml",
+      ].includes(fileExtension || "");
+      const isDocumentFile = ["pdf", "xls", "xlsx", "doc", "docx"].includes(
+        fileExtension || ""
+      );
+
+      if (isScriptFile && isValidExtension) {
+        // Script files with valid extension are accepted
+        continue;
+      }
+
+      // For document files, both MIME type and extension must be valid
+      if (isDocumentFile && (!isValidMimeType || !isValidExtension)) {
         alert(
-          `Le fichier "${file.name}" n'est pas d'un type autorisé. Seuls les fichiers PDF, Excel et Word sont acceptés.`
+          `Le fichier "${file.name}" n'est pas d'un type autorisé. Seuls les fichiers PDF, Excel, Word et fichiers texte sont acceptés.`
+        );
+        return;
+      }
+
+      // If it's neither a script nor a document, reject it
+      if (!isScriptFile && !isDocumentFile) {
+        alert(
+          `Le fichier "${file.name}" n'est pas d'un type autorisé. Seuls les fichiers PDF, Excel, Word et fichiers texte sont acceptés.`
         );
         return;
       }
@@ -128,7 +182,11 @@ export function RFPDocumentUpload({
 
     // Determine the document type string to send to the API
     const finalDocumentType =
-      documentType === "supplier" ? "supplier_response" : "cahier_charges";
+      documentType === "supplier"
+        ? "supplier_response"
+        : documentType === "script_import"
+          ? "script_import"
+          : "cahier_charges";
 
     // Upload all files
     try {
@@ -164,8 +222,10 @@ export function RFPDocumentUpload({
           <Select
             value={documentType}
             onValueChange={(value) => {
-              setDocumentType(value as "cahier_charges" | "supplier");
-              if (value === "cahier_charges") {
+              setDocumentType(
+                value as "cahier_charges" | "supplier" | "script_import"
+              );
+              if (value === "cahier_charges" || value === "script_import") {
                 setSelectedSupplierId("");
               }
             }}
@@ -177,6 +237,7 @@ export function RFPDocumentUpload({
               <SelectItem value="cahier_charges">
                 Document de consultation (cahier des charges)
               </SelectItem>
+              <SelectItem value="script_import">Script d'import</SelectItem>
               <SelectItem value="supplier" disabled={suppliers.length === 0}>
                 Document de fournisseur
               </SelectItem>
@@ -237,7 +298,7 @@ export function RFPDocumentUpload({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.xls,.xlsx,.doc,.docx"
+          accept=".pdf,.xls,.xlsx,.doc,.docx,.py,.sh"
           multiple
           onChange={handleFileChange}
           className="hidden"
@@ -256,7 +317,8 @@ export function RFPDocumentUpload({
               ou cliquez pour sélectionner un ou plusieurs fichiers
             </p>
             <p className="text-xs text-gray-400 mt-2">
-              Max 50MB par fichier • PDF, Excel, Word
+              Max 50MB par fichier • PDF, Excel, Word, Fichiers texte (.py, .sh,
+              .txt, etc.)
             </p>
           </div>
         </div>

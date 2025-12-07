@@ -110,7 +110,7 @@ serve(async (req) => {
     // Build set of all parent IDs
     const parentIds = new Set(
       allReqsWithParent?.map((r) => r.parent_id).filter((id) => id !== null) ||
-      []
+        []
     );
 
     // Leaf requirements are those not in the parentIds set

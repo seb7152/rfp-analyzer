@@ -43,7 +43,14 @@ export function useRequirementDocument(
 
   // Fetch cahier_charges documents for this RFP
   const fetchDocuments = useCallback(async () => {
-    if (!rfpId) return;
+    console.log(
+      "[useRequirementDocument] fetchDocuments called with rfpId:",
+      rfpId
+    );
+    if (!rfpId) {
+      console.log("[useRequirementDocument] No rfpId, returning");
+      return;
+    }
 
     setIsLoadingDocuments(true);
     try {
@@ -62,6 +69,10 @@ export function useRequirementDocument(
         return;
       }
 
+      console.log(
+        "[useRequirementDocument] Found documents:",
+        data?.length || 0
+      );
       setAvailableDocuments((data || []) as RequirementDocument[]);
     } finally {
       setIsLoadingDocuments(false);

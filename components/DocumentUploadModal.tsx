@@ -10,6 +10,7 @@ import {
 import { RFPDocumentUpload } from "@/components/RFPDocumentUpload";
 import { RFPDocumentsList } from "@/components/RFPDocumentsList";
 import { useRFPDocuments } from "@/hooks/useRFPDocuments";
+import { FileText } from "lucide-react";
 
 interface DocumentUploadModalProps {
   rfpId: string;
@@ -36,6 +37,27 @@ export function DocumentUploadModal({
     onUploadSuccess?.();
   };
 
+  const handleSetDefaultDocument = async (documentId: string) => {
+    try {
+      const response = await fetch(
+        `/api/rfps/${rfpId}/documents/${documentId}/set-default`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to set default document");
+      }
+
+      refreshDocuments();
+    } catch (error) {
+      console.error("Error setting default document:", error);
+      throw error;
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
@@ -57,12 +79,13 @@ export function DocumentUploadModal({
             </button>
             <button
               onClick={() => setActiveTab("documents")}
-              className={`px-3 py-2 text-sm font-medium transition-colors ${
+              className={`px-3 py-2 text-sm font-medium transition-colors flex items-center gap-2 ${
                 activeTab === "documents"
                   ? "text-blue-600 border-b-2 border-blue-600 -mb-0.5"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
+              <FileText className="h-4 w-4" />
               Documents ({documents.length})
             </button>
           </div>
@@ -71,8 +94,9 @@ export function DocumentUploadModal({
           {activeTab === "upload" && (
             <div className="space-y-4">
               <p className="text-sm text-slate-600">
-                Ajouter un ou plusieurs documents (PDF, Excel, Word) pour le
-                RFP: <span className="font-semibold">{rfpTitle}</span>
+                Ajouter un ou plusieurs documents (PDF, Excel, Word, Fichiers
+                texte) pour le RFP:{" "}
+                <span className="font-semibold">{rfpTitle}</span>
               </p>
               <RFPDocumentUpload
                 rfpId={rfpId}
@@ -93,6 +117,7 @@ export function DocumentUploadModal({
                 isLoading={isLoading}
                 onDelete={deleteDocument}
                 rfpId={rfpId}
+                onSetDefaultDocument={handleSetDefaultDocument}
               />
             </div>
           )}

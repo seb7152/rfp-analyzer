@@ -512,8 +512,8 @@ export async function importRequirements(
 
       const positionInPdf = req.page_number
         ? {
-          page_number: req.page_number,
-        }
+            page_number: req.page_number,
+          }
         : null;
 
       // Prepare payload with selective fields
@@ -559,22 +559,22 @@ export async function importRequirements(
       // For now, let's assume 'req.description' contains the content we want to import if importContent is true.
       // If we have a separate context field in the input, we should use it.
       // The current caller (import-docx) concatenates context into description.
-      // We should probably update the caller to pass context separately if possible, 
+      // We should probably update the caller to pass context separately if possible,
       // but 'importRequirements' signature expects 'description'.
-      // 
+      //
       // Let's assume for now that if importContent is true, we update description.
       // If importContexts is true, we update context column (if we add it to input).
-      // 
+      //
       // Since the input type doesn't have 'context', we'll stick to 'description' for now.
       // If the user wants to toggle "Content" vs "Contexts", and both map to "description" in the current logic,
       // we need to be careful.
-      // 
+      //
       // However, the user asked for "Contexts" column in the preview.
       // And the backend route concatenates them.
-      // 
+      //
       // To properly support this, we should really update the input type to include 'context'.
       // But to avoid breaking changes, we'll assume the caller handles the separation if needed.
-      // 
+      //
       // WAIT: The caller (import-docx/route.ts) constructs the object.
       // I will update the caller to pass 'context' separately.
       // So I'll add 'context' to the input type of this function implicitly (by casting or extending).
@@ -588,12 +588,9 @@ export async function importRequirements(
         payload.context = null;
       }
 
-      const { error } = await supabase.from("requirements").upsert(
-        [payload],
-        {
-          onConflict: "rfp_id,requirement_id_external",
-        }
-      );
+      const { error } = await supabase.from("requirements").upsert([payload], {
+        onConflict: "rfp_id,requirement_id_external",
+      });
 
       if (error) {
         console.warn(

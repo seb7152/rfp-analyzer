@@ -13,7 +13,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Zap, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, Bot, CheckCircle2, AlertCircle } from "lucide-react";
 import type { RFP } from "@/lib/supabase/types";
 
 interface AIAnalysisButtonProps {
@@ -48,7 +48,11 @@ export function AIAnalysisButton({
 
   // Initialize system prompt from RFP settings if available
   useState(() => {
-    if (rfp.analysis_settings && typeof rfp.analysis_settings === 'object' && 'system_prompt' in rfp.analysis_settings) {
+    if (
+      rfp.analysis_settings &&
+      typeof rfp.analysis_settings === "object" &&
+      "system_prompt" in rfp.analysis_settings
+    ) {
       setSystemPrompt((rfp.analysis_settings as any).system_prompt || "");
     }
   });
@@ -86,7 +90,8 @@ export function AIAnalysisButton({
           });
           setTimeout(() => setShowNotification(null), 5000);
         },
-      });
+      }
+    );
   };
 
   return (
@@ -94,21 +99,22 @@ export function AIAnalysisButton({
       {/* T139: Main button */}
       <Button
         size="sm"
-        variant="ghost"
         onClick={() => setShowConfirmation(true)}
         disabled={isAnalysisInProgress}
-        className="text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         title={
           isAnalysisInProgress ? "Analysis in progress..." : "Analyze with AI"
         }
       >
         {isAnalyzing || isAnalysisInProgress ? (
           <>
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            Analyzing...
           </>
         ) : (
           <>
-            <Zap className="h-4 w-4" />
+            <Bot className="h-4 w-4 mr-2" />
+            AI Analysis
           </>
         )}
       </Button>
@@ -205,7 +211,7 @@ export function AIAnalysisButton({
                 </>
               ) : (
                 <>
-                  <Zap className="h-4 w-4 mr-2" />
+                  <Bot className="h-4 w-4 mr-2" />
                   Start Analysis
                 </>
               )}
@@ -217,10 +223,11 @@ export function AIAnalysisButton({
       {/* T144: Toast notification */}
       {showNotification && (
         <div
-          className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg border ${showNotification.type === "success"
-            ? "bg-green-50 border-green-200 text-green-800 dark:bg-green-950/40 dark:border-green-800 dark:text-green-200"
-            : "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/40 dark:border-red-800 dark:text-red-200"
-            }`}
+          className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg border ${
+            showNotification.type === "success"
+              ? "bg-green-50 border-green-200 text-green-800 dark:bg-green-950/40 dark:border-green-800 dark:text-green-200"
+              : "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/40 dark:border-red-800 dark:text-red-200"
+          }`}
         >
           <div className="flex items-start gap-3">
             {showNotification.type === "success" ? (
