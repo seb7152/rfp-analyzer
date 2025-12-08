@@ -135,6 +135,8 @@ export function DocxImportModal({
   const [contentGroupIndex, setContentGroupIndex] = useState(1);
   const [contentColumnIndex, setContentColumnIndex] = useState(2);
 
+  const [skipCategoryMapping, setSkipCategoryMapping] = useState(false);
+
   // Preview state
   const [previewRequirements, setPreviewRequirements] = useState<
     ParsedRequirement[]
@@ -421,7 +423,53 @@ export function DocxImportModal({
       });
 
       setPreviewRequirements(allRequirements);
-      setStep("category-mapping");
+
+      // If skipCategoryMapping is enabled, go directly to preview with existing categories
+      if (skipCategoryMapping) {
+        // Fetch existing requirements to recover their categories
+        try {
+          const reqResponse = await fetch(`/api/rfps/${rfpId}/requirements`);
+          if (reqResponse.ok) {
+            const reqData = await reqResponse.json();
+            const existingRequirementsMap = new Map(
+              reqData.requirements.map((r: any) => [
+                r.requirement_id_external,
+                r.category,
+              ])
+            );
+
+            // Assign categories: use existing if found, otherwise "DOCX"
+            const requirementsWithCategory = allRequirements.map((req) => {
+              const existingCategory = existingRequirementsMap.get(req.code);
+              return {
+                ...req,
+                category_name: existingCategory
+                  ? existingCategory.code
+                  : "DOCX",
+              };
+            });
+            setPreviewRequirements(requirementsWithCategory);
+          } else {
+            // Fallback: assign DOCX to all
+            const requirementsWithCategory = allRequirements.map((req) => ({
+              ...req,
+              category_name: "DOCX",
+            }));
+            setPreviewRequirements(requirementsWithCategory);
+          }
+        } catch (error) {
+          console.error("Error fetching existing requirements:", error);
+          // Fallback: assign DOCX to all
+          const requirementsWithCategory = allRequirements.map((req) => ({
+            ...req,
+            category_name: "DOCX",
+          }));
+          setPreviewRequirements(requirementsWithCategory);
+        }
+        setStep("preview");
+      } else {
+        setStep("category-mapping");
+      }
     } catch (error) {
       console.error("Extraction error:", error);
       alert("Erreur lors de l'extraction du fichier");
@@ -964,6 +1012,27 @@ export function DocxImportModal({
                     )}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Import Options */}
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="pt-6">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="skipCategoryMapping"
+                    checked={skipCategoryMapping}
+                    onCheckedChange={setSkipCategoryMapping}
+                  />
+                  <Label htmlFor="skipCategoryMapping" className="text-sm">
+                    Sauter le mapping de catégories (utiliser la structure existante)
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 ml-7">
+                  Les exigences existantes conserveront leur catégorie actuelle.
+                  Les nouvelles exigences seront assignées à la catégorie DOCX Import.
+                  Utilisez cette option pour mettre à jour les exigences sans modifier la structure des catégories.
+                </p>
               </CardContent>
             </Card>
 
