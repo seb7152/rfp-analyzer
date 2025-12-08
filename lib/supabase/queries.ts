@@ -23,6 +23,7 @@ export async function getRequirements(rfpId: string): Promise<Requirement[]> {
       title,
       description,
       context,
+      category_id,
       parent_id,
       level,
       weight,
@@ -63,6 +64,7 @@ export async function getRequirement(
       title,
       description,
       context,
+      category_id,
       parent_id,
       level,
       weight,
@@ -414,7 +416,7 @@ export async function importRequirements(
     code: string;
     title: string;
     description: string;
-    weight: number;
+    weight?: number; // Optional, defaults to 0
     category_name: string;
     is_mandatory?: boolean;
     is_optional?: boolean;
@@ -472,7 +474,7 @@ export async function importRequirements(
       // Fetch existing requirements to check existence and/or merge data
       const { data: existingReqs, error: existError } = await supabase
         .from("requirements")
-        .select("requirement_id_external, title, description, context")
+        .select("requirement_id_external, title, description, context, category_id")
         .eq("rfp_id", rfpId);
 
       if (existError) {
@@ -495,18 +497,6 @@ export async function importRequirements(
         continue;
       }
 
-      // Try to find category by title first, then by code
-      const categoryId =
-        categoryTitleToId.get(req.category_name) ||
-        categoryCodeToId.get(req.category_name);
-
-      if (!categoryId) {
-        console.warn(
-          `Skipping requirement ${req.code}: category "${req.category_name}" not found (searched by title and code)`
-        );
-        continue;
-      }
-
       // Use explicit order if provided, otherwise auto-increment
       const displayOrder = req.order !== undefined ? req.order : currentOrder;
 
@@ -516,11 +506,34 @@ export async function importRequirements(
           }
         : null;
 
+      // Handle partial updates / merging
+      const existing = existingRequirementsMap.get(req.code);
+
+      // Determine category_id: preserve existing if in Update Only mode
+      let categoryId: string;
+      if (!importCode && existing && existing.category_id) {
+        // Update Only mode: preserve existing category
+        categoryId = existing.category_id;
+      } else {
+        // New requirement or normal import mode: use provided category
+        const newCategoryId =
+          categoryTitleToId.get(req.category_name) ||
+          categoryCodeToId.get(req.category_name);
+
+        if (!newCategoryId) {
+          console.warn(
+            `Skipping requirement ${req.code}: category "${req.category_name}" not found (searched by title and code)`
+          );
+          continue;
+        }
+        categoryId = newCategoryId;
+      }
+
       // Prepare payload with selective fields
       const payload: any = {
         rfp_id: rfpId,
         requirement_id_external: req.code,
-        weight: req.weight,
+        weight: req.weight ?? 0, // Default to 0 if not provided
         category_id: categoryId,
         level: 4, // Requirements are always level 4
         is_mandatory: req.is_mandatory ?? false,
@@ -530,9 +543,6 @@ export async function importRequirements(
         rf_document_id: req.rf_document_id || null,
         created_by: userId,
       };
-
-      // Handle partial updates / merging
-      const existing = existingRequirementsMap.get(req.code);
 
       // Title
       if (importTitle) {

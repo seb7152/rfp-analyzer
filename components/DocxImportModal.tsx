@@ -38,11 +38,26 @@ import {
   Trash2,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { DocxTreePreview } from "@/components/DocxTreePreview";
+import {
+  buildSectionTree,
+  flattenTreeToRequirements,
+  getCategoryNameForRequirement,
+  type ParsedRequirement,
+  type Section,
+  type SectionTreeNode,
+} from "@/lib/docx-tree-builder";
 
 interface DocxImportModalProps {
   rfpId: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface Category {
+  id: string;
+  code: string;
+  title: string;
 }
 
 interface ExtractionConfig {
@@ -60,21 +75,6 @@ interface RequirementConfig {
   codeTemplate?: string;
   titleExtraction?: ExtractionConfig;
   contentExtraction?: ExtractionConfig;
-}
-
-interface ParsedRequirement {
-  code: string;
-  title?: string;
-  content?: string;
-  contexts?: string[];
-}
-
-interface Section {
-  level: number;
-  title: string;
-  content: string[];
-  tables: string[][];
-  requirements: ParsedRequirement[];
 }
 
 interface SavedConfig {
@@ -98,7 +98,7 @@ interface SavedConfig {
   is_default: boolean;
 }
 
-type Step = "config" | "preview" | "importing";
+type Step = "config" | "category-mapping" | "preview" | "importing";
 
 export function DocxImportModal({
   rfpId,
@@ -135,10 +135,14 @@ export function DocxImportModal({
   const [contentGroupIndex, setContentGroupIndex] = useState(1);
   const [contentColumnIndex, setContentColumnIndex] = useState(2);
 
+  const [skipCategoryMapping, setSkipCategoryMapping] = useState(false);
+
   // Preview state
   const [previewRequirements, setPreviewRequirements] = useState<
     ParsedRequirement[]
   >([]);
+  const [sectionTree, setSectionTree] = useState<SectionTreeNode[]>([]);
+  const [existingCategories, setExistingCategories] = useState<Category[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingValue, setEditingValue] = useState({
     code: "",
@@ -153,12 +157,25 @@ export function DocxImportModal({
     contexts: true,
   });
 
-  // Load saved configurations on mount
+  // Load saved configurations and existing categories on mount
   useEffect(() => {
     if (isOpen && rfpId) {
       loadSavedConfigs();
+      loadExistingCategories();
     }
   }, [isOpen, rfpId]);
+
+  const loadExistingCategories = async () => {
+    try {
+      const response = await fetch(`/api/rfps/${rfpId}/categories`);
+      if (response.ok) {
+        const data = await response.json();
+        setExistingCategories(data.categories || []);
+      }
+    } catch (error) {
+      console.error("Error loading categories:", error);
+    }
+  };
 
   const loadSavedConfigs = async () => {
     try {
@@ -389,7 +406,11 @@ export function DocxImportModal({
 
       const result = await response.json();
 
-      // Collect all requirements from all sections with context
+      // Build section tree from flat sections
+      const tree = buildSectionTree(result.structured as Section[]);
+      setSectionTree(tree);
+
+      // Also keep the flat list for backward compatibility (table view)
       const allRequirements: ParsedRequirement[] = [];
       result.structured.forEach((section: Section) => {
         section.requirements.forEach((req) => {
@@ -402,7 +423,64 @@ export function DocxImportModal({
       });
 
       setPreviewRequirements(allRequirements);
-      setStep("preview");
+
+      // If skipCategoryMapping is enabled, go directly to preview with existing categories
+      if (skipCategoryMapping) {
+        // Fetch existing requirements to recover their categories
+        try {
+          const reqResponse = await fetch(
+            `/api/rfps/${rfpId}/requirements?flatten=true`
+          );
+          if (reqResponse.ok) {
+            const existingReqs = await reqResponse.json();
+
+            // Build a map of requirement codes to category IDs
+            const reqCodeToCategoryId = new Map<string, string>();
+            existingReqs.forEach((r: any) => {
+              if (r.requirement_id_external && r.category_id) {
+                reqCodeToCategoryId.set(r.requirement_id_external, r.category_id);
+              }
+            });
+
+            // Build a map of category IDs to category codes
+            const categoryIdToCode = new Map<string, string>(
+              existingCategories.map((c) => [c.id, c.code])
+            );
+
+            // Assign categories: use existing if found, otherwise "DOCX"
+            const requirementsWithCategory = allRequirements.map((req) => {
+              const categoryId = reqCodeToCategoryId.get(req.code);
+              const categoryCode = categoryId
+                ? categoryIdToCode.get(categoryId)
+                : undefined;
+
+              return {
+                ...req,
+                category_name: categoryCode || "DOCX",
+              };
+            });
+            setPreviewRequirements(requirementsWithCategory);
+          } else {
+            // Fallback: assign DOCX to all
+            const requirementsWithCategory = allRequirements.map((req) => ({
+              ...req,
+              category_name: "DOCX",
+            }));
+            setPreviewRequirements(requirementsWithCategory);
+          }
+        } catch (error) {
+          console.error("Error fetching existing requirements:", error);
+          // Fallback: assign DOCX to all
+          const requirementsWithCategory = allRequirements.map((req) => ({
+            ...req,
+            category_name: "DOCX",
+          }));
+          setPreviewRequirements(requirementsWithCategory);
+        }
+        setStep("preview");
+      } else {
+        setStep("category-mapping");
+      }
     } catch (error) {
       console.error("Extraction error:", error);
       alert("Erreur lors de l'extraction du fichier");
@@ -440,10 +518,149 @@ export function DocxImportModal({
     setEditingIndex(null);
   };
 
+  const handleCategoryMappingNext = () => {
+    // Validate that all selected sections have complete mappings
+    const validateMappings = (nodes: SectionTreeNode[]): string[] => {
+      const errors: string[] = [];
+      const traverse = (items: SectionTreeNode[]) => {
+        items.forEach((node) => {
+          if (node.isCategory) {
+            if (!node.categoryMapping) {
+              errors.push(`Section "${node.title}" : mapping non défini`);
+            } else if (
+              node.categoryMapping.type === "existing" &&
+              !node.categoryMapping.existingId
+            ) {
+              errors.push(
+                `Section "${node.title}" : aucune catégorie existante sélectionnée`
+              );
+            } else if (
+              node.categoryMapping.type === "new" &&
+              !node.categoryMapping.newCode?.trim()
+            ) {
+              errors.push(
+                `Section "${node.title}" : code de la nouvelle catégorie manquant`
+              );
+            }
+          }
+          if (node.children.length > 0) traverse(node.children);
+        });
+      };
+      traverse(nodes);
+      return errors;
+    };
+
+    const mappingErrors = validateMappings(sectionTree);
+    if (mappingErrors.length > 0) {
+      alert(
+        "Mappings incomplets :\n\n" +
+          mappingErrors.join("\n") +
+          "\n\nVeuillez compléter tous les mappings de catégories."
+      );
+      return;
+    }
+
+    // Flatten tree to requirements with category mapping
+    const flattenedRequirements = flattenTreeToRequirements(sectionTree);
+
+    console.log("Flattened requirements:", flattenedRequirements.length);
+
+    // Build requirements array with category names for preview
+    const requirementsWithCategories = flattenedRequirements
+      .map(({ requirement, categoryNode }) => {
+        const categoryName = getCategoryNameForRequirement(
+          categoryNode,
+          existingCategories
+        );
+
+        if (!categoryName) {
+          console.warn(
+            `Requirement ${requirement.code} has no category mapping, categoryNode:`,
+            categoryNode
+          );
+          return null;
+        }
+
+        return {
+          ...requirement,
+          category_name: categoryName,
+        };
+      })
+      .filter((req) => req !== null) as Array<
+      ParsedRequirement & { category_name: string }
+    >;
+
+    console.log(
+      "Requirements with categories:",
+      requirementsWithCategories.length
+    );
+
+    if (requirementsWithCategories.length === 0) {
+      alert(
+        "Aucune exigence trouvée avec un mapping de catégorie.\n\nVérifiez que vos sections contiennent bien des exigences et que les mappings sont corrects."
+      );
+      return;
+    }
+
+    setPreviewRequirements(requirementsWithCategories);
+    setStep("preview");
+  };
+
   const handleImport = async () => {
     setStep("importing");
 
     try {
+      // Step 1: Create new categories if needed
+      const categoriesToCreate: Array<{
+        code: string;
+        title: string;
+        level: number;
+      }> = [];
+
+      const collectNewCategories = (nodes: SectionTreeNode[], level = 1) => {
+        nodes.forEach((node) => {
+          if (
+            node.isCategory &&
+            node.categoryMapping?.type === "new" &&
+            node.categoryMapping.newCode
+          ) {
+            categoriesToCreate.push({
+              code: node.categoryMapping.newCode,
+              title: node.title,
+              level,
+            });
+          }
+          if (node.children.length > 0) {
+            collectNewCategories(node.children, level + 1);
+          }
+        });
+      };
+
+      collectNewCategories(sectionTree);
+
+      // Create new categories in the database
+      for (const cat of categoriesToCreate) {
+        const createResponse = await fetch(`/api/rfps/${rfpId}/categories`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code: cat.code,
+            title: cat.title,
+            short_name: cat.code,
+            level: cat.level,
+            parent_id: null,
+          }),
+        });
+
+        if (!createResponse.ok) {
+          throw new Error(`Failed to create category: ${cat.code}`);
+        }
+
+        // Reload categories to get the new IDs
+        await loadExistingCategories();
+      }
+
+      // Step 2: Import requirements (previewRequirements already has category_name)
       const response = await fetch(
         `/api/rfps/${rfpId}/requirements/import-docx`,
         {
@@ -485,6 +702,7 @@ export function DocxImportModal({
     setStep("config");
     setFile(null);
     setPreviewRequirements([]);
+    setSectionTree([]);
     setEditingIndex(null);
     onOpenChange(false);
   };
@@ -506,6 +724,8 @@ export function DocxImportModal({
           <DialogDescription>
             {step === "config" &&
               "Configurez les paramètres d'extraction des exigences"}
+            {step === "category-mapping" &&
+              "Mappez les sections du document vers les catégories d'exigences"}
             {step === "preview" &&
               "Prévisualisez et éditez les exigences avant import"}
             {step === "importing" && "Import en cours..."}
@@ -806,6 +1026,27 @@ export function DocxImportModal({
               </CardContent>
             </Card>
 
+            {/* Import Options */}
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="pt-6">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="skipCategoryMapping"
+                    checked={skipCategoryMapping}
+                    onCheckedChange={setSkipCategoryMapping}
+                  />
+                  <Label htmlFor="skipCategoryMapping" className="text-sm">
+                    Sauter le mapping de catégories (utiliser la structure existante)
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 ml-7">
+                  Les exigences existantes conserveront leur catégorie actuelle.
+                  Les nouvelles exigences seront assignées à la catégorie DOCX Import.
+                  Utilisez cette option pour mettre à jour les exigences sans modifier la structure des catégories.
+                </p>
+              </CardContent>
+            </Card>
+
             {/* TODO Note */}
             <Card className="border-orange-200 bg-orange-50">
               <CardContent className="pt-6">
@@ -903,6 +1144,93 @@ export function DocxImportModal({
                   )}
                 </Button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {step === "category-mapping" && (
+          <div className="space-y-6">
+            {/* Stats */}
+            <div className="grid grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold">{stats.total}</div>
+                  <p className="text-xs text-muted-foreground">Exigences</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold">
+                    {sectionTree.length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Sections</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold">
+                    {(() => {
+                      let count = 0;
+                      const countSelected = (nodes: SectionTreeNode[]) => {
+                        nodes.forEach((node) => {
+                          if (node.isCategory) count++;
+                          if (node.children.length > 0)
+                            countSelected(node.children);
+                        });
+                      };
+                      countSelected(sectionTree);
+                      return count;
+                    })()}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Sections → Catégories
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold">{stats.withContexts}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Avec contextes
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Tree Preview */}
+            <DocxTreePreview
+              tree={sectionTree}
+              existingCategories={existingCategories}
+              onTreeChange={setSectionTree}
+            />
+
+            {/* Navigation buttons */}
+            <div className="flex gap-2 justify-between">
+              <Button variant="outline" onClick={() => setStep("config")}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour
+              </Button>
+              <Button
+                onClick={handleCategoryMappingNext}
+                className="gap-2"
+                disabled={
+                  (() => {
+                    let count = 0;
+                    const countSelected = (nodes: SectionTreeNode[]) => {
+                      nodes.forEach((node) => {
+                        if (node.isCategory) count++;
+                        if (node.children.length > 0)
+                          countSelected(node.children);
+                      });
+                    };
+                    countSelected(sectionTree);
+                    return count === 0;
+                  })()
+                }
+              >
+                Continuer
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         )}
@@ -1008,6 +1336,7 @@ export function DocxImportModal({
                         Contextes
                       </div>
                     </TableHead>
+                    <TableHead className="w-[120px]">Catégorie</TableHead>
                     <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1057,6 +1386,11 @@ export function DocxImportModal({
                           </TableCell>
                           <TableCell className="text-center">
                             {req.contexts?.length || 0}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded text-blue-700 dark:text-blue-300">
+                              {(req as any).category_name || "—"}
+                            </span>
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1">
@@ -1123,6 +1457,11 @@ export function DocxImportModal({
                           >
                             {req.contexts?.length || 0}
                           </TableCell>
+                          <TableCell className="text-xs">
+                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded text-blue-700 dark:text-blue-300">
+                              {(req as any).category_name || "—"}
+                            </span>
+                          </TableCell>
                           <TableCell>
                             <Button
                               size="sm"
@@ -1144,11 +1483,11 @@ export function DocxImportModal({
             <div className="flex justify-between">
               <Button
                 variant="outline"
-                onClick={() => setStep("config")}
+                onClick={() => setStep("category-mapping")}
                 className="gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Retour
+                Retour au mapping
               </Button>
               <Button onClick={handleImport} className="gap-2">
                 <Upload className="h-4 w-4" />

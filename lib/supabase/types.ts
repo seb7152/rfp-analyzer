@@ -289,7 +289,7 @@ export interface ImportRequirementPayload {
   code: string;
   title: string;
   description: string;
-  weight: number;
+  weight?: number; // Optional, defaults to 0
   category_name: string;
   is_mandatory?: boolean;
   is_optional?: boolean;

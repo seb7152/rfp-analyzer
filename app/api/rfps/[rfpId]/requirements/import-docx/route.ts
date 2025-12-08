@@ -7,6 +7,7 @@ interface ParsedRequirement {
   title?: string;
   content?: string;
   contexts?: string[];
+  category_name?: string;
 }
 
 export async function POST(
@@ -67,37 +68,6 @@ export async function POST(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    // Create a "DOCX Import" category if it doesn't exist
-    // This will hold all imported requirements from DOCX
-    const { data: existingCategory } = await supabase
-      .from("categories")
-      .select("id")
-      .eq("rfp_id", params.rfpId)
-      .eq("code", "DOCX")
-      .single();
-
-    if (!existingCategory) {
-      const { data: newCategory, error: categoryError } = await supabase
-        .from("categories")
-        .insert({
-          rfp_id: params.rfpId,
-          code: "DOCX",
-          title: "DOCX Import",
-          short_name: "DOCX",
-          level: 1,
-          parent_id: null,
-        })
-        .select()
-        .single();
-
-      if (categoryError || !newCategory) {
-        return NextResponse.json(
-          { error: "Failed to create category" },
-          { status: 500 }
-        );
-      }
-    }
-
     // Transform ParsedRequirement[] into format expected by importRequirements
     const validRequirements = requirements
       .filter((req) => req.code && req.code.trim())
@@ -108,7 +78,7 @@ export async function POST(
           description: (req.content || "").trim(),
           context: req.contexts ? req.contexts.join("\n") : undefined,
           weight: 0, // Will be calculated later
-          category_name: "DOCX", // Use the DOCX category we created
+          category_name: req.category_name || "DOCX", // Use provided category or fallback to DOCX
           is_mandatory: false,
           is_optional: false,
           order: index,
@@ -120,6 +90,43 @@ export async function POST(
         { error: "No valid requirements to import" },
         { status: 400 }
       );
+    }
+
+    // Check if any requirement needs the "DOCX Import" category
+    const needsDOCXCategory = validRequirements.some(
+      (req) => req.category_name === "DOCX"
+    );
+
+    // Create a "DOCX Import" category only if needed and if it doesn't exist
+    if (needsDOCXCategory) {
+      const { data: existingCategory } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("rfp_id", params.rfpId)
+        .eq("code", "DOCX")
+        .single();
+
+      if (!existingCategory) {
+        const { data: newCategory, error: categoryError } = await supabase
+          .from("categories")
+          .insert({
+            rfp_id: params.rfpId,
+            code: "DOCX",
+            title: "DOCX Import",
+            short_name: "DOCX",
+            level: 1,
+            parent_id: null,
+          })
+          .select()
+          .single();
+
+        if (categoryError || !newCategory) {
+          return NextResponse.json(
+            { error: "Failed to create DOCX category" },
+            { status: 500 }
+          );
+        }
+      }
     }
 
     // Import requirements
