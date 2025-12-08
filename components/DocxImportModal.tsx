@@ -428,27 +428,35 @@ export function DocxImportModal({
       if (skipCategoryMapping) {
         // Fetch existing requirements to recover their categories
         try {
-          const reqResponse = await fetch(`/api/rfps/${rfpId}/requirements`);
+          const reqResponse = await fetch(
+            `/api/rfps/${rfpId}/requirements?flatten=true`
+          );
           if (reqResponse.ok) {
-            const reqData = await reqResponse.json();
-            const existingRequirementsMap = new Map<
-              string,
-              { code: string; title: string }
-            >(
-              reqData.requirements.map((r: any) => [
-                r.requirement_id_external,
-                r.category,
-              ])
+            const existingReqs = await reqResponse.json();
+
+            // Build a map of requirement codes to category IDs
+            const reqCodeToCategoryId = new Map<string, string>();
+            existingReqs.forEach((r: any) => {
+              if (r.requirement_id_external && r.category_id) {
+                reqCodeToCategoryId.set(r.requirement_id_external, r.category_id);
+              }
+            });
+
+            // Build a map of category IDs to category codes
+            const categoryIdToCode = new Map<string, string>(
+              existingCategories.map((c) => [c.id, c.code])
             );
 
             // Assign categories: use existing if found, otherwise "DOCX"
             const requirementsWithCategory = allRequirements.map((req) => {
-              const existingCategory = existingRequirementsMap.get(req.code);
+              const categoryId = reqCodeToCategoryId.get(req.code);
+              const categoryCode = categoryId
+                ? categoryIdToCode.get(categoryId)
+                : undefined;
+
               return {
                 ...req,
-                category_name: existingCategory
-                  ? existingCategory.code
-                  : "DOCX",
+                category_name: categoryCode || "DOCX",
               };
             });
             setPreviewRequirements(requirementsWithCategory);
