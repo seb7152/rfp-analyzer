@@ -431,7 +431,10 @@ export function DocxImportModal({
           const reqResponse = await fetch(`/api/rfps/${rfpId}/requirements`);
           if (reqResponse.ok) {
             const reqData = await reqResponse.json();
-            const existingRequirementsMap = new Map(
+            const existingRequirementsMap = new Map<
+              string,
+              { code: string; title: string }
+            >(
               reqData.requirements.map((r: any) => [
                 r.requirement_id_external,
                 r.category,
