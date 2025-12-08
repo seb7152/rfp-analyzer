@@ -7,6 +7,7 @@ interface ParsedRequirement {
   title?: string;
   content?: string;
   contexts?: string[];
+  category_name?: string;
 }
 
 export async function POST(
@@ -108,7 +109,7 @@ export async function POST(
           description: (req.content || "").trim(),
           context: req.contexts ? req.contexts.join("\n") : undefined,
           weight: 0, // Will be calculated later
-          category_name: "DOCX", // Use the DOCX category we created
+          category_name: req.category_name || "DOCX", // Use provided category or fallback to DOCX
           is_mandatory: false,
           is_optional: false,
           order: index,
