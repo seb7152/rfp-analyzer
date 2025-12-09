@@ -38,6 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SupplierResponseCard } from "@/components/SupplierResponseCard";
+import { MobileSupplierCard } from "@/components/MobileSupplierCard";
 import { PDFViewerSheet } from "@/components/PDFViewerSheet";
 import type { PDFDocument } from "@/components/PDFViewerSheet";
 import {
@@ -58,6 +59,7 @@ interface ComparisonViewProps {
   onRequirementChange: (id: string) => void;
   rfpId?: string;
   supplierId?: string;
+  isMobile?: boolean;
 }
 
 interface ResponseState {
@@ -79,6 +81,7 @@ export function ComparisonView({
   onRequirementChange,
   rfpId,
   supplierId,
+  isMobile = false,
 }: ComparisonViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -493,7 +496,7 @@ export function ComparisonView({
   // Handle opening supplier documents in PDF viewer
   const handleOpenSupplierDocuments = useCallback(
     async (supplierId: string) => {
-      if (!rfpId) return;
+      if (!rfpId || isMobile) return;
 
       setLoadingSupplierDocs(true);
       try {
@@ -518,7 +521,7 @@ export function ComparisonView({
 
   const handleOpenBookmark = useCallback(
     async (bookmark: PDFAnnotation) => {
-      if (!bookmark.supplierId || !rfpId) return;
+      if (!bookmark.supplierId || !rfpId || isMobile) return;
 
       // Set initial state for PDF viewer
       setInitialPdfState({
@@ -767,36 +770,38 @@ export function ComparisonView({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Breadcrumb */}
-      <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
-        <Breadcrumb>
-          <BreadcrumbList>
-            {breadcrumbPath.map((item, idx) => (
-              <React.Fragment key={item.id}>
-                {idx > 0 && <BreadcrumbSeparator />}
-                {idx === breadcrumbPath.length - 1 ? (
-                  <BreadcrumbPage className="text-slate-900 dark:text-white font-medium">
-                    {item.code}
-                  </BreadcrumbPage>
-                ) : (
-                  <BreadcrumbItem>
-                    <BreadcrumbLink className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+      {/* Breadcrumb - Hidden on mobile */}
+      {!isMobile && (
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+          <Breadcrumb>
+            <BreadcrumbList>
+              {breadcrumbPath.map((item, idx) => (
+                <React.Fragment key={item.id}>
+                  {idx > 0 && <BreadcrumbSeparator />}
+                  {idx === breadcrumbPath.length - 1 ? (
+                    <BreadcrumbPage className="text-slate-900 dark:text-white font-medium">
                       {item.code}
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                )}
-              </React.Fragment>
-            ))}
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
+                    </BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbItem>
+                      <BreadcrumbLink className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                        {item.code}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                  )}
+                </React.Fragment>
+              ))}
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+      )}
 
       {/* Header with pagination */}
-      <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
-        <div className="flex items-start justify-between">
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-800">
+        <div className={`flex ${isMobile ? 'flex-col gap-3' : 'items-start justify-between'}`}>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+              <h2 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-slate-900 dark:text-white`}>
                 {requirement.title}
               </h2>
               {allResponsesChecked ? (
@@ -812,37 +817,37 @@ export function ComparisonView({
                 </Badge>
               )}
             </div>
-            <div className="relative">
-              <p
-                className={`text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap ${
-                  !descriptionExpanded ? "line-clamp-5" : ""
-                }`}
-              >
-                {requirement.description}
-              </p>
-              {requirement.description &&
-                requirement.description.split("\n").length > 5 && (
-                  <div className="flex justify-end">
-                    <button
-                      onClick={() =>
-                        setDescriptionExpanded(!descriptionExpanded)
-                      }
-                      className="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-                    >
-                      {descriptionExpanded ? "Voir moins" : "Voir plus"}
-                      <ChevronDown
-                        className={`w-3 h-3 transition-transform ${
-                          descriptionExpanded ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-                  </div>
-                )}
-            </div>
+            {!isMobile && (
+              <div className="relative">
+                <p
+                  className={`text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap ${!descriptionExpanded ? "line-clamp-5" : ""
+                    }`}
+                >
+                  {requirement.description}
+                </p>
+                {requirement.description &&
+                  requirement.description.split("\n").length > 5 && (
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() =>
+                          setDescriptionExpanded(!descriptionExpanded)
+                        }
+                        className="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                      >
+                        {descriptionExpanded ? "Voir moins" : "Voir plus"}
+                        <ChevronDown
+                          className={`w-3 h-3 transition-transform ${descriptionExpanded ? "rotate-180" : ""
+                            }`}
+                        />
+                      </button>
+                    </div>
+                  )}
+              </div>
+            )}
           </div>
 
           {/* Pagination controls */}
-          <div className="flex items-center gap-2 ml-6 flex-shrink-0">
+          <div className={`flex items-center gap-2 ${isMobile ? 'justify-center' : 'ml-6'} flex-shrink-0`}>
             <Button
               variant="ghost"
               size="icon"
@@ -868,58 +873,61 @@ export function ComparisonView({
         </div>
       </div>
 
-      {/* Context section - Collapsible */}
-      <div className="border-b border-slate-200 dark:border-slate-800">
-        <button
-          onClick={() => setContextExpanded(!contextExpanded)}
-          className="w-full px-6 py-3 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
-        >
-          <span className="text-sm font-semibold text-slate-900 dark:text-white">
-            Contexte du cahier des charges
-          </span>
-          {contextExpanded ? (
-            <ChevronDown className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-slate-600 dark:text-slate-400 rotate-0" />
-          )}
-        </button>
+      {/* Context section - Collapsible - Hidden on mobile */}
+      {!isMobile && (
+        <div className="border-b border-slate-200 dark:border-slate-800">
+          <button
+            onClick={() => setContextExpanded(!contextExpanded)}
+            className="w-full px-6 py-3 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+          >
+            <span className="text-sm font-semibold text-slate-900 dark:text-white">
+              Contexte du cahier des charges
+            </span>
+            {contextExpanded ? (
+              <ChevronDown className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-slate-600 dark:text-slate-400 rotate-0" />
+            )}
+          </button>
 
-        {contextExpanded && (
-          <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 space-y-3">
-            <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-              {requirement.context}
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleOpenContextPDF}
-              disabled={
-                loadingSupplierDocs ||
-                (!selectedRequirement?.rf_document_id &&
-                  !selectedRequirement?.position_in_pdf?.page_number &&
-                  availableDocuments.length === 0)
-              }
-            >
-              {loadingSupplierDocs ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Ouverture...
-                </>
-              ) : (
-                <>
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Ouvrir dans le PDF
-                  {requirement.position_in_pdf?.page_number && (
-                    <span className="text-xs ml-2 opacity-70">
-                      (p. {requirement.position_in_pdf.page_number})
-                    </span>
-                  )}
-                </>
-              )}
-            </Button>
-          </div>
-        )}
-      </div>
+          {contextExpanded && (
+            <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 space-y-3">
+              <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                {requirement.context}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOpenContextPDF}
+                disabled={
+                  isMobile ||
+                  loadingSupplierDocs ||
+                  (!selectedRequirement?.rf_document_id &&
+                    !selectedRequirement?.position_in_pdf?.page_number &&
+                    availableDocuments.length === 0)
+                }
+              >
+                {loadingSupplierDocs ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Ouverture...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Ouvrir dans le PDF
+                    {requirement.position_in_pdf?.page_number && (
+                      <span className="text-xs ml-2 opacity-70">
+                        (p. {requirement.position_in_pdf.page_number})
+                      </span>
+                    )}
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Main content area */}
       <div className="flex-1 overflow-auto">
@@ -937,7 +945,49 @@ export function ComparisonView({
         )}
 
         {!isLoading && !error && (
-          <div className="p-6">
+          <div className={isMobile ? "p-3" : "p-6"}>
+            {/* Mobile: Requirement info section */}
+            {isMobile && (
+              <div className="mb-4 space-y-3">
+                {/* Requirement title */}
+                <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-4">
+                  <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
+                    {requirement.title}
+                  </h3>
+                  {requirement.description && (
+                    <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
+                      {requirement.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Context accordion */}
+                {requirement.context && (
+                  <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <button
+                      onClick={() => setContextExpanded(!contextExpanded)}
+                      className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                        Contexte du cahier des charges
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-slate-600 dark:text-slate-400 transition-transform ${contextExpanded ? "rotate-180" : ""
+                          }`}
+                      />
+                    </button>
+                    {contextExpanded && (
+                      <div className="px-4 pb-4 border-t border-slate-200 dark:border-slate-800 pt-3">
+                        <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                          {requirement.context}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {requirementResponses.length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 p-12 text-center max-w-md">
@@ -967,8 +1017,8 @@ export function ComparisonView({
               </div>
             ) : (
               <>
-                {/* Expand/Collapse all button - discreet placement */}
-                {!isSingleSupplierView && (
+                {/* Expand/Collapse all button - discreet placement - Hidden on mobile */}
+                {!isSingleSupplierView && !isMobile && (
                   <div className="flex justify-end mb-3">
                     <Button
                       variant="ghost"
@@ -1013,6 +1063,55 @@ export function ComparisonView({
                       isSaving: false,
                       showSaved: false,
                     };
+
+                    // Use mobile-optimized card on mobile devices
+                    if (isMobile) {
+                      return (
+                        <MobileSupplierCard
+                          key={response.id}
+                          supplierName={supplier.name}
+                          responseText={response.response_text || ""}
+                          aiScore={response.ai_score ?? 0}
+                          aiComment={response.ai_comment ?? ""}
+                          status={state.status}
+                          isChecked={state.isChecked}
+                          manualScore={state.manualScore}
+                          manualComment={state.manualComment}
+                          questionText={state.question}
+                          isSaving={state.isSaving}
+                          showSaved={state.showSaved}
+                          onStatusChange={(status) =>
+                            updateResponseState(response.id, { status })
+                          }
+                          onCheckChange={(isChecked) =>
+                            updateResponseState(response.id, { isChecked })
+                          }
+                          onScoreChange={(manualScore) =>
+                            updateResponseState(response.id, { manualScore })
+                          }
+                          onCommentChange={(manualComment) =>
+                            updateResponseState(response.id, { manualComment })
+                          }
+                          onQuestionChange={(question) =>
+                            updateResponseState(response.id, { question })
+                          }
+                          onCommentBlur={() =>
+                            updateResponseState(
+                              response.id,
+                              { manualComment: state.manualComment },
+                              true
+                            )
+                          }
+                          onQuestionBlur={() =>
+                            updateResponseState(
+                              response.id,
+                              { question: state.question },
+                              true
+                            )
+                          }
+                        />
+                      );
+                    }
 
                     return (
                       <SupplierResponseCard
@@ -1080,22 +1179,24 @@ export function ComparisonView({
         )}
       </div>
 
-      {/* PDF Viewer Sheet for Supplier Documents */}
-      <PDFViewerSheet
-        isOpen={isPdfViewerOpen}
-        onOpenChange={setIsPdfViewerOpen}
-        documents={supplierDocuments}
-        rfpId={rfpId}
-        requirementId={selectedRequirementId}
-        requirements={allRequirements.map((r) => ({
-          id: r.id,
-          title: r.title,
-          requirement_id_external: (r as any).requirement_id_external || r.id,
-          description: r.description ?? undefined,
-        }))}
-        initialDocumentId={initialPdfState.documentId}
-        initialPage={initialPdfState.page}
-      />
+      {/* PDF Viewer Sheet for Supplier Documents - Only render on desktop */}
+      {!isMobile && (
+        <PDFViewerSheet
+          isOpen={isPdfViewerOpen}
+          onOpenChange={setIsPdfViewerOpen}
+          documents={supplierDocuments}
+          rfpId={rfpId}
+          requirementId={selectedRequirementId}
+          requirements={allRequirements.map((r) => ({
+            id: r.id,
+            title: r.title,
+            requirement_id_external: (r as any).requirement_id_external || r.id,
+            description: r.description ?? undefined,
+          }))}
+          initialDocumentId={initialPdfState.documentId}
+          initialPage={initialPdfState.page}
+        />
+      )}
     </div>
   );
 }
