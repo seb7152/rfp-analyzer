@@ -367,6 +367,12 @@ export function RFPDocumentUpload({
                       </p>
                     )}
 
+                    {item.status === "uploading" && item.totalChunks && item.totalChunks > 1 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Chunk {item.currentChunk || 0}/{item.totalChunks}
+                      </p>
+                    )}
+
                     {item.error && (
                       <div className="flex items-center space-x-1 mt-1">
                         <AlertCircle className="h-4 w-4 text-red-500" />
