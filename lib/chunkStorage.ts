@@ -5,12 +5,20 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import * as os from "os";
 
 /**
  * Get the temporary directory for storing chunks
+ * Uses /tmp on Unix-like systems (writable on Vercel)
+ * Falls back to system temp directory
  */
 function getTempDir(): string {
-  return path.join(process.cwd(), ".chunks");
+  // Try /tmp first (works on Linux and Vercel)
+  if (fs.existsSync("/tmp")) {
+    return path.join("/tmp", "rfp-chunks");
+  }
+  // Fallback to system temp directory
+  return path.join(os.tmpdir(), "rfp-chunks");
 }
 
 /**
