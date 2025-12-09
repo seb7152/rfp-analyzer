@@ -438,7 +438,10 @@ export function DocxImportModal({
             const reqCodeToCategoryId = new Map<string, string>();
             existingReqs.forEach((r: any) => {
               if (r.requirement_id_external && r.category_id) {
-                reqCodeToCategoryId.set(r.requirement_id_external, r.category_id);
+                reqCodeToCategoryId.set(
+                  r.requirement_id_external,
+                  r.category_id
+                );
               }
             });
 
@@ -1036,13 +1039,15 @@ export function DocxImportModal({
                     onCheckedChange={setSkipCategoryMapping}
                   />
                   <Label htmlFor="skipCategoryMapping" className="text-sm">
-                    Sauter le mapping de catégories (utiliser la structure existante)
+                    Sauter le mapping de catégories (utiliser la structure
+                    existante)
                   </Label>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2 ml-7">
                   Les exigences existantes conserveront leur catégorie actuelle.
-                  Les nouvelles exigences seront assignées à la catégorie DOCX Import.
-                  Utilisez cette option pour mettre à jour les exigences sans modifier la structure des catégories.
+                  Les nouvelles exigences seront assignées à la catégorie DOCX
+                  Import. Utilisez cette option pour mettre à jour les exigences
+                  sans modifier la structure des catégories.
                 </p>
               </CardContent>
             </Card>
@@ -1160,9 +1165,7 @@ export function DocxImportModal({
               </Card>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="text-2xl font-bold">
-                    {sectionTree.length}
-                  </div>
+                  <div className="text-2xl font-bold">{sectionTree.length}</div>
                   <p className="text-xs text-muted-foreground">Sections</p>
                 </CardContent>
               </Card>
@@ -1213,20 +1216,18 @@ export function DocxImportModal({
               <Button
                 onClick={handleCategoryMappingNext}
                 className="gap-2"
-                disabled={
-                  (() => {
-                    let count = 0;
-                    const countSelected = (nodes: SectionTreeNode[]) => {
-                      nodes.forEach((node) => {
-                        if (node.isCategory) count++;
-                        if (node.children.length > 0)
-                          countSelected(node.children);
-                      });
-                    };
-                    countSelected(sectionTree);
-                    return count === 0;
-                  })()
-                }
+                disabled={(() => {
+                  let count = 0;
+                  const countSelected = (nodes: SectionTreeNode[]) => {
+                    nodes.forEach((node) => {
+                      if (node.isCategory) count++;
+                      if (node.children.length > 0)
+                        countSelected(node.children);
+                    });
+                  };
+                  countSelected(sectionTree);
+                  return count === 0;
+                })()}
               >
                 Continuer
                 <ArrowRight className="h-4 w-4" />

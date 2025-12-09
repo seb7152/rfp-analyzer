@@ -474,7 +474,9 @@ export async function importRequirements(
       // Fetch existing requirements to check existence and/or merge data
       const { data: existingReqs, error: existError } = await supabase
         .from("requirements")
-        .select("requirement_id_external, title, description, context, category_id")
+        .select(
+          "requirement_id_external, title, description, context, category_id"
+        )
         .eq("rfp_id", rfpId);
 
       if (existError) {
