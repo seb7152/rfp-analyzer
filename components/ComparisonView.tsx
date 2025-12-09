@@ -72,6 +72,8 @@ interface ResponseState {
     question: string;
     isSaving: boolean;
     showSaved: boolean;
+    // Track which fields are currently being edited (dirty)
+    dirtyFields: Set<"manualComment" | "question">;
   };
 }
 
@@ -321,6 +323,7 @@ export function ComparisonView({
             question: response.question || "",
             isSaving: false,
             showSaved: false,
+            dirtyFields: new Set(),
           };
           hasChanges = true;
         } else {
@@ -337,14 +340,20 @@ export function ComparisonView({
 
           if (dbChanged) {
             // DB was updated (likely by refetch after save)
-            // Sync local state with fresh data
+            // Sync local state with fresh data, BUT only for fields not currently being edited
             newState.manualScore = response.manual_score ?? undefined;
             newState.status =
               (response.status as "pass" | "partial" | "fail" | "pending") ||
               "pending";
-            newState.manualComment = response.manual_comment || "";
-            newState.question = response.question || "";
             newState.isChecked = response.is_checked || false;
+
+            // Only sync comment fields if they're not currently being edited
+            if (!state.dirtyFields?.has("manualComment")) {
+              newState.manualComment = response.manual_comment || "";
+            }
+            if (!state.dirtyFields?.has("question")) {
+              newState.question = response.question || "";
+            }
 
             updated[response.id] = newState;
             hasChanges = true;
@@ -361,12 +370,24 @@ export function ComparisonView({
     updates: Partial<ResponseState[string]>,
     immediate: boolean = false
   ) => {
+    // Track which fields are being edited (mark as dirty)
+    const newDirtyFields = new Set(
+      responseStates[responseId]?.dirtyFields || []
+    );
+    if (updates.manualComment !== undefined && !immediate) {
+      newDirtyFields.add("manualComment");
+    }
+    if (updates.question !== undefined && !immediate) {
+      newDirtyFields.add("question");
+    }
+
     // Update local state immediately for UI responsiveness
     setResponseStates((prev) => ({
       ...prev,
       [responseId]: {
         ...prev[responseId],
         ...updates,
+        dirtyFields: newDirtyFields,
       },
     }));
 
@@ -413,15 +434,30 @@ export function ComparisonView({
           },
           {
             onSuccess: () => {
-              // Show "Saved" indicator
-              setResponseStates((prev) => ({
-                ...prev,
-                [responseId]: {
-                  ...prev[responseId],
-                  isSaving: false,
-                  showSaved: true,
-                },
-              }));
+              // Show "Saved" indicator and clear dirty flags for saved fields
+              setResponseStates((prev) => {
+                const currentDirtyFields = new Set(
+                  prev[responseId]?.dirtyFields || []
+                );
+
+                // Clear dirty flags for the fields we just saved
+                if (updates.manualComment !== undefined) {
+                  currentDirtyFields.delete("manualComment");
+                }
+                if (updates.question !== undefined) {
+                  currentDirtyFields.delete("question");
+                }
+
+                return {
+                  ...prev,
+                  [responseId]: {
+                    ...prev[responseId],
+                    isSaving: false,
+                    showSaved: true,
+                    dirtyFields: currentDirtyFields,
+                  },
+                };
+              });
 
               // Refetch responses to ensure UI is in sync with database
               refetchResponses();
@@ -798,10 +834,14 @@ export function ComparisonView({
 
       {/* Header with pagination */}
       <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-800">
-        <div className={`flex ${isMobile ? 'flex-col gap-3' : 'items-start justify-between'}`}>
+        <div
+          className={`flex ${isMobile ? "flex-col gap-3" : "items-start justify-between"}`}
+        >
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h2 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-slate-900 dark:text-white`}>
+              <h2
+                className={`${isMobile ? "text-lg" : "text-2xl"} font-bold text-slate-900 dark:text-white`}
+              >
                 {requirement.title}
               </h2>
               {allResponsesChecked ? (
@@ -820,8 +860,9 @@ export function ComparisonView({
             {!isMobile && (
               <div className="relative">
                 <p
-                  className={`text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap ${!descriptionExpanded ? "line-clamp-5" : ""
-                    }`}
+                  className={`text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap ${
+                    !descriptionExpanded ? "line-clamp-5" : ""
+                  }`}
                 >
                   {requirement.description}
                 </p>
@@ -836,8 +877,9 @@ export function ComparisonView({
                       >
                         {descriptionExpanded ? "Voir moins" : "Voir plus"}
                         <ChevronDown
-                          className={`w-3 h-3 transition-transform ${descriptionExpanded ? "rotate-180" : ""
-                            }`}
+                          className={`w-3 h-3 transition-transform ${
+                            descriptionExpanded ? "rotate-180" : ""
+                          }`}
                         />
                       </button>
                     </div>
@@ -847,7 +889,9 @@ export function ComparisonView({
           </div>
 
           {/* Pagination controls */}
-          <div className={`flex items-center gap-2 ${isMobile ? 'justify-center' : 'ml-6'} flex-shrink-0`}>
+          <div
+            className={`flex items-center gap-2 ${isMobile ? "justify-center" : "ml-6"} flex-shrink-0`}
+          >
             <Button
               variant="ghost"
               size="icon"
@@ -972,8 +1016,9 @@ export function ComparisonView({
                         Contexte du cahier des charges
                       </span>
                       <ChevronDown
-                        className={`w-4 h-4 text-slate-600 dark:text-slate-400 transition-transform ${contextExpanded ? "rotate-180" : ""
-                          }`}
+                        className={`w-4 h-4 text-slate-600 dark:text-slate-400 transition-transform ${
+                          contextExpanded ? "rotate-180" : ""
+                        }`}
                       />
                     </button>
                     {contextExpanded && (
@@ -1062,6 +1107,7 @@ export function ComparisonView({
                       question: response.question || "",
                       isSaving: false,
                       showSaved: false,
+                      dirtyFields: new Set(),
                     };
 
                     // Use mobile-optimized card on mobile devices
