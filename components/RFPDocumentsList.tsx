@@ -439,10 +439,10 @@ export function RFPDocumentsList({
 
   return (
     <>
-      <Accordion type="multiple" defaultValue={documentGroups.map((_, i) => `group-${i}`)}>
+      <Accordion type="multiple">
         {documentGroups.map((group, groupIndex) => (
           <AccordionItem key={`group-${groupIndex}`} value={`group-${groupIndex}`}>
-            <AccordionTrigger className="hover:no-underline">
+            <AccordionTrigger className="hover:no-underline justify-start">
               <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
                 {group.documents.length}
               </span>
