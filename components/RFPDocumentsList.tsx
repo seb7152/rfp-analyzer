@@ -5,6 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
+import {
   FileText,
   Trash2,
   Loader2,
@@ -16,6 +22,7 @@ import {
   CheckCircle,
   Star,
   RotateCcw,
+  ChevronDown,
 } from "lucide-react";
 import { RFPDocument } from "@/hooks/useRFPDocuments";
 import { PDFViewerSheet } from "@/components/PDFViewerSheet";
@@ -72,6 +79,56 @@ function formatDate(dateString: string): string {
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+  });
+}
+
+interface DocumentGroup {
+  title: string;
+  documents: RFPDocument[];
+  supplierId?: string;
+}
+
+function groupDocumentsByCategory(
+  documents: RFPDocument[],
+  supplierNames: Record<string, string>
+): DocumentGroup[] {
+  const groups: Record<string, DocumentGroup> = {};
+
+  // Group supplier responses by supplier
+  documents.forEach((doc) => {
+    if (doc.document_type === "supplier_response") {
+      const supplierName = supplierNames[doc.id] || "Unknown Supplier";
+      if (!groups[supplierName]) {
+        groups[supplierName] = {
+          title: supplierName,
+          documents: [],
+          supplierId: doc.id,
+        };
+      }
+      groups[supplierName].documents.push(doc);
+    }
+  });
+
+  // Group other documents (cahier_charges, script_import) in one category
+  const otherDocs = documents.filter(
+    (doc) =>
+      doc.document_type === "cahier_charges" ||
+      doc.document_type === "script_import" ||
+      !doc.document_type
+  );
+
+  if (otherDocs.length > 0) {
+    groups["Autres spécifications"] = {
+      title: "Autres spécifications",
+      documents: otherDocs,
+    };
+  }
+
+  // Return as array sorted by name (Autres spécifications at the end)
+  return Object.values(groups).sort((a, b) => {
+    if (a.title === "Autres spécifications") return 1;
+    if (b.title === "Autres spécifications") return -1;
+    return a.title.localeCompare(b.title);
   });
 }
 
@@ -248,138 +305,160 @@ export function RFPDocumentsList({
     );
   }
 
-  return (
-    <div className="space-y-2">
-      {documents.map((doc) => (
-        <Card key={doc.id} className="p-3 hover:bg-slate-50 transition-colors">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-              <div className="flex-shrink-0 mt-0.5">
-                {getFileIcon(
-                  doc.mime_type,
-                  doc.original_filename || doc.filename
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-slate-900 truncate">
-                  {doc.original_filename || doc.filename}
-                </p>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className="text-xs text-slate-500">
-                    {formatFileSize(doc.file_size)}
-                  </span>
-                  <span className="text-slate-300">•</span>
-                  <span className="text-xs text-slate-500">
-                    {formatDate(doc.created_at)}
-                  </span>
-                  {doc.document_type && (
-                    <>
-                      <span className="text-slate-300">•</span>
-                      <Badge variant="outline" className="text-xs">
-                        {getDocumentTypeLabel(doc.document_type).label}
-                      </Badge>
-                    </>
-                  )}
-                  {doc.document_type === "supplier_response" &&
-                    supplierNames[doc.id] && (
-                      <>
-                        <span className="text-slate-300">•</span>
-                        <Badge
-                          className="text-xs bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100"
-                          variant="outline"
-                        >
-                          {supplierNames[doc.id]}
-                        </Badge>
-                      </>
-                    )}
-                </div>
-              </div>
-            </div>
+  const documentGroups = groupDocumentsByCategory(documents, supplierNames);
 
-            <div className="flex gap-1 flex-shrink-0">
-              {doc.mime_type === "application/pdf" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPdfViewerOpen(true)}
-                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                  title="View PDF"
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
+  const renderDocumentCard = (doc: RFPDocument) => (
+    <Card key={doc.id} className="p-3 hover:bg-slate-50 transition-colors">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div className="flex-shrink-0 mt-0.5">
+            {getFileIcon(
+              doc.mime_type,
+              doc.original_filename || doc.filename
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-slate-900 truncate">
+              {doc.original_filename || doc.filename}
+            </p>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span className="text-xs text-slate-500">
+                {formatFileSize(doc.file_size)}
+              </span>
+              <span className="text-slate-300">•</span>
+              <span className="text-xs text-slate-500">
+                {formatDate(doc.created_at)}
+              </span>
+              {doc.document_type && (
+                <>
+                  <span className="text-slate-300">•</span>
+                  <Badge variant="outline" className="text-xs">
+                    {getDocumentTypeLabel(doc.document_type).label}
+                  </Badge>
+                </>
               )}
-              {doc.mime_type === "application/pdf" &&
-                doc.document_type === "cahier_charges" && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled
-                    className="text-amber-600 bg-amber-50"
-                    title="Cahier des charges par défaut"
-                  >
-                    <Star className="h-4 w-4" />
-                  </Button>
+              {doc.document_type === "supplier_response" &&
+                supplierNames[doc.id] && (
+                  <>
+                    <span className="text-slate-300">•</span>
+                    <Badge
+                      className="text-xs bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100"
+                      variant="outline"
+                    >
+                      {supplierNames[doc.id]}
+                    </Badge>
+                  </>
                 )}
-              {doc.mime_type === "application/pdf" &&
-                doc.document_type === "cahier_charges" && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleChangeDefault(doc.id)}
-                    disabled={settingDefault === doc.id}
-                    className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                    title="Changer de cahier des charges par défaut"
-                  >
-                    {settingDefault === doc.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RotateCcw className="h-4 w-4" />
-                    )}
-                  </Button>
-                )}
-              {doc.mime_type === "application/pdf" &&
-                doc.document_type !== "cahier_charges" && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSetDefault(doc.id)}
-                    disabled={settingDefault === doc.id}
-                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                    title="Définir comme cahier des charges par défaut"
-                  >
-                    {settingDefault === doc.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <CheckCircle className="h-4 w-4" />
-                    )}
-                  </Button>
-                )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleDownload(doc)}
-                className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                title="Download file"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleDelete(doc.id)}
-                disabled={deleting === doc.id}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-              >
-                {deleting === doc.id ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-              </Button>
             </div>
           </div>
-        </Card>
-      ))}
+        </div>
+
+        <div className="flex gap-1 flex-shrink-0">
+          {doc.mime_type === "application/pdf" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPdfViewerOpen(true)}
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              title="View PDF"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+          )}
+          {doc.mime_type === "application/pdf" &&
+            doc.document_type === "cahier_charges" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled
+                className="text-amber-600 bg-amber-50"
+                title="Cahier des charges par défaut"
+              >
+                <Star className="h-4 w-4" />
+              </Button>
+            )}
+          {doc.mime_type === "application/pdf" &&
+            doc.document_type === "cahier_charges" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleChangeDefault(doc.id)}
+                disabled={settingDefault === doc.id}
+                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                title="Changer de cahier des charges par défaut"
+              >
+                {settingDefault === doc.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+          {doc.mime_type === "application/pdf" &&
+            doc.document_type !== "cahier_charges" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleSetDefault(doc.id)}
+                disabled={settingDefault === doc.id}
+                className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                title="Définir comme cahier des charges par défaut"
+              >
+                {settingDefault === doc.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleDownload(doc)}
+            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+            title="Download file"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleDelete(doc.id)}
+            disabled={deleting === doc.id}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            {deleting === doc.id ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+
+  return (
+    <>
+      <Accordion type="multiple" defaultValue={documentGroups.map((_, i) => `group-${i}`)}>
+        {documentGroups.map((group, groupIndex) => (
+          <AccordionItem key={`group-${groupIndex}`} value={`group-${groupIndex}`}>
+            <AccordionTrigger className="hover:no-underline">
+              <span className="text-sm font-semibold text-slate-900">
+                {group.title}
+              </span>
+              <span className="ml-2 text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                {group.documents.length}
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-2 pt-2">
+                {group.documents.map((doc) => renderDocumentCard(doc))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
 
       {/* PDF Viewer Sheet */}
       <PDFViewerSheet
@@ -388,6 +467,6 @@ export function RFPDocumentsList({
         documents={documents}
         rfpId={rfpId}
       />
-    </div>
+    </>
   );
 }
