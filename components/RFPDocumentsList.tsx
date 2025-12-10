@@ -443,11 +443,11 @@ export function RFPDocumentsList({
         {documentGroups.map((group, groupIndex) => (
           <AccordionItem key={`group-${groupIndex}`} value={`group-${groupIndex}`}>
             <AccordionTrigger className="hover:no-underline">
-              <span className="text-sm font-semibold text-slate-900">
-                {group.title}
-              </span>
-              <span className="ml-2 text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
+              <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
                 {group.documents.length}
+              </span>
+              <span className="ml-2 text-sm font-semibold text-slate-900">
+                {group.title}
               </span>
             </AccordionTrigger>
             <AccordionContent>
