@@ -22,7 +22,6 @@ import {
   CheckCircle,
   Star,
   RotateCcw,
-  ChevronDown,
 } from "lucide-react";
 import { RFPDocument } from "@/hooks/useRFPDocuments";
 import { PDFViewerSheet } from "@/components/PDFViewerSheet";
