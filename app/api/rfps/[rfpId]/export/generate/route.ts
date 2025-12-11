@@ -204,96 +204,148 @@ export async function POST(
       }
 
       const startRow = config.start_row || 2;
-      let currentRow = startRow;
 
-      // Write headers if requested (only if NOT preserving formatting, or if explicitly requested)
-      if (
-        config.include_headers !== false &&
-        !config.preserve_template_formatting
-      ) {
-        config.column_mappings.forEach((mapping: any) => {
-          const columnLetter = mapping.column;
-          const headerValue = mapping.header_name || mapping.column;
-          const cell = worksheet.getCell(`${columnLetter}${currentRow}`);
-          cell.value = headerValue;
-        });
-        currentRow++;
-      }
+      // Helper function to get cell value for a field
+      const getCellValue = (field: string, requirement: any, response: any) => {
+        switch (field) {
+          case "requirement_code":
+            return requirement.requirement_id_external;
+          case "requirement_title":
+            return requirement.title;
+          case "requirement_description":
+            return requirement.description;
+          case "requirement_weight":
+            return requirement.weight;
+          case "supplier_response":
+            return response?.response_text || "";
+          case "ai_score":
+            return response?.ai_score || 0;
+          case "manual_score":
+            return response?.manual_score || 0;
+          case "smart_score":
+            return response?.manual_score !== null &&
+              response?.manual_score !== undefined
+              ? response.manual_score
+              : response?.ai_score || 0;
+          case "ai_comment":
+            return response?.ai_comment || "";
+          case "manual_comment":
+            return response?.manual_comment || "";
+          case "smart_comment":
+            return response?.manual_comment !== null &&
+              response?.manual_comment !== "" &&
+              response?.manual_comment !== undefined
+              ? response.manual_comment
+              : response?.ai_comment || "";
+          case "question":
+            return response?.question || "";
+          case "status":
+            return response?.status || "pending";
+          case "annotations":
+            return "";
+          default:
+            return "";
+        }
+      };
 
-      // Write data rows
-      requirements.forEach((requirement) => {
-        const response = responses?.find(
-          (r) => r.requirement_id === requirement.id
+      // Check if using requirement mapping mode
+      if (config.use_requirement_mapping && config.requirement_mapping_column) {
+        // Requirement mapping mode: find rows by requirement code and update them
+        const mappingColumn = config.requirement_mapping_column;
+        console.log(
+          `Using requirement mapping mode with column ${mappingColumn} for ${config.supplier.name}`
         );
 
-        config.column_mappings.forEach((mapping: any) => {
-          const columnLetter = mapping.column;
-          let cellValue: any = "";
+        let matchedCount = 0;
+        let unmatchedCodes: string[] = [];
 
-          switch (mapping.field) {
-            case "requirement_code":
-              cellValue = requirement.requirement_id_external;
-              break;
-            case "requirement_title":
-              cellValue = requirement.title;
-              break;
-            case "requirement_description":
-              cellValue = requirement.description;
-              break;
-            case "requirement_weight":
-              cellValue = requirement.weight;
-              break;
-            case "supplier_response":
-              cellValue = response?.response_text || "";
-              break;
-            case "ai_score":
-              cellValue = response?.ai_score || 0;
-              break;
-            case "manual_score":
-              cellValue = response?.manual_score || 0;
-              break;
-            case "smart_score":
-              // Smart score: manual score if available, otherwise AI score
-              cellValue =
-                response?.manual_score !== null &&
-                response?.manual_score !== undefined
-                  ? response.manual_score
-                  : response?.ai_score || 0;
-              break;
-            case "ai_comment":
-              cellValue = response?.ai_comment || "";
-              break;
-            case "manual_comment":
-              cellValue = response?.manual_comment || "";
-              break;
-            case "smart_comment":
-              // Smart comment: manual comment if available, otherwise AI comment
-              cellValue =
-                response?.manual_comment !== null &&
-                response?.manual_comment !== "" &&
-                response?.manual_comment !== undefined
-                  ? response.manual_comment
-                  : response?.ai_comment || "";
-              break;
-            case "question":
-              cellValue = response?.question || "";
-              break;
-            case "status":
-              cellValue = response?.status || "pending";
-              break;
-            case "annotations":
-              cellValue = "";
-              break;
-            default:
-              cellValue = "";
+        requirements.forEach((requirement) => {
+          const response = responses?.find(
+            (r) => r.requirement_id === requirement.id
+          );
+          const requirementCode = requirement.requirement_id_external;
+
+          if (!requirementCode) {
+            unmatchedCodes.push("(no code)");
+            return;
           }
 
-          const cell = worksheet.getCell(`${columnLetter}${currentRow}`);
-          cell.value = cellValue;
+          // Search for the row with this requirement code
+          // Use a reasonable max row limit (1000) instead of worksheet.rowCount which might be 0
+          const maxSearchRow = Math.max(worksheet.rowCount || 0, 1000);
+          let targetRow = null;
+          for (let rowNum = startRow; rowNum <= maxSearchRow; rowNum++) {
+            const cell = worksheet.getCell(`${mappingColumn}${rowNum}`);
+            if (cell.value === requirementCode) {
+              targetRow = rowNum;
+              break;
+            }
+          }
+
+          if (targetRow) {
+            // Found matching row - update all mapped columns
+            matchedCount++;
+            config.column_mappings.forEach((mapping: any) => {
+              const columnLetter = mapping.column;
+              const cellValue = getCellValue(
+                mapping.field,
+                requirement,
+                response
+              );
+              const cell = worksheet.getCell(`${columnLetter}${targetRow}`);
+              cell.value = cellValue;
+            });
+          } else {
+            unmatchedCodes.push(requirementCode);
+          }
         });
 
-        currentRow++;
-      });
+        console.log(
+          `Requirement mapping results for ${config.supplier.name}: ${matchedCount}/${requirements.length} matched`
+        );
+        if (unmatchedCodes.length > 0) {
+          console.log(
+            `Unmatched requirement codes (first 10): ${unmatchedCodes.slice(0, 10).join(", ")}`
+          );
+        }
+      } else {
+        // Sequential mode: write rows in order
+        let currentRow = startRow;
+
+        // Write headers if requested (only if NOT preserving formatting, or if explicitly requested)
+        if (
+          config.include_headers !== false &&
+          !config.preserve_template_formatting
+        ) {
+          config.column_mappings.forEach((mapping: any) => {
+            const columnLetter = mapping.column;
+            const headerValue = mapping.header_name || mapping.column;
+            const cell = worksheet.getCell(`${columnLetter}${currentRow}`);
+            cell.value = headerValue;
+          });
+          currentRow++;
+        }
+
+        // Write data rows
+        requirements.forEach((requirement) => {
+          const response = responses?.find(
+            (r) => r.requirement_id === requirement.id
+          );
+
+          config.column_mappings.forEach((mapping: any) => {
+            const columnLetter = mapping.column;
+            const cellValue = getCellValue(
+              mapping.field,
+              requirement,
+              response
+            );
+            const cell = worksheet.getCell(`${columnLetter}${currentRow}`);
+            cell.value = cellValue;
+          });
+
+          currentRow++;
+        });
+      }
     }
 
     // 6. Generate final filename and upload

@@ -183,7 +183,9 @@ export async function POST(
         (r) => r.requirement_id === requirement.id
       );
 
-      const rowData: any = {};
+      const rowData: any = {
+        _requirement_code: requirement.requirement_id_external, // Keep for mapping
+      };
 
       // Map columns based on configuration
       configDetails.column_mappings.forEach((mapping: any) => {
@@ -260,11 +262,12 @@ export async function POST(
       // Read existing worksheet data to find requirement codes
       const existingData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
       const mappingColumn = configDetails.requirement_mapping_column;
+      const mappingColumnIndex = mappingColumn.charCodeAt(0) - 65;
 
       finalData = exportData.map((row) => {
+        const requirementCode = row._requirement_code;
         const existingRow = existingData.find(
-          (existing: any) =>
-            existing[mappingColumn] === row.requirement_id_external
+          (existing: any) => existing[mappingColumnIndex] === requirementCode
         );
 
         if (existingRow) {
@@ -296,9 +299,9 @@ export async function POST(
       const mappingColumnIndex = mappingColumn.charCodeAt(0) - 65;
 
       previewRows = limitedData.map((row) => {
+        const requirementCode = row._requirement_code;
         const existingRowIndex = existingWorksheetData.findIndex(
-          (existing: any) =>
-            existing[mappingColumnIndex] === row.requirement_id_external
+          (existing: any) => existing[mappingColumnIndex] === requirementCode
         );
 
         if (existingRowIndex >= 0) {
@@ -348,16 +351,40 @@ export async function POST(
     }
 
     // Convert to display format
-    const headers = configDetails.column_mappings.map(
+    let headers = configDetails.column_mappings.map(
       (mapping: any) => mapping.header_name || mapping.column
     );
 
-    const rows = previewRows.map((row) =>
-      configDetails.column_mappings.map((mapping: any) => {
-        const columnIndex = mapping.column.charCodeAt(0) - 65;
-        return row[columnIndex] || "";
-      })
-    );
+    // If using requirement mapping, add the mapping column as first column in preview
+    if (
+      configDetails.use_requirement_mapping &&
+      configDetails.requirement_mapping_column
+    ) {
+      const mappingColumn = configDetails.requirement_mapping_column;
+      headers = [`${mappingColumn} (Code)`, ...headers];
+    }
+
+    const rows = previewRows.map((row) => {
+      const mappedColumns = configDetails.column_mappings.map(
+        (mapping: any) => {
+          const columnIndex = mapping.column.charCodeAt(0) - 65;
+          return row[columnIndex] || "";
+        }
+      );
+
+      // If using requirement mapping, prepend the mapping column value
+      if (
+        configDetails.use_requirement_mapping &&
+        configDetails.requirement_mapping_column
+      ) {
+        const mappingColumnIndex =
+          configDetails.requirement_mapping_column.charCodeAt(0) - 65;
+        const mappingValue = row[mappingColumnIndex] || "";
+        return [mappingValue, ...mappedColumns];
+      }
+
+      return mappedColumns;
+    });
 
     return NextResponse.json({
       preview: {
@@ -366,6 +393,11 @@ export async function POST(
         totalRequirements: requirements.length,
         supplierName: configDetails.supplier.name,
         templateName: configDetails.template_document.original_filename,
+        usesRequirementMapping: !!(
+          configDetails.use_requirement_mapping &&
+          configDetails.requirement_mapping_column
+        ),
+        mappingColumn: configDetails.requirement_mapping_column || null,
       },
     });
   } catch (error) {
