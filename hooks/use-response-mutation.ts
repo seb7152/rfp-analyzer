@@ -194,19 +194,6 @@ export function useResponseMutation(): UseMutationResult<
       });
     },
 
-    // On success, show success toast
-    onSuccess: () => {
-      if (!isOnline) {
-        toast.success("Enregistré localement", {
-          description: "Sera synchronisé lorsque la connexion sera rétablie",
-        });
-      } else {
-        toast.success("Modifications enregistrées", {
-          description: "Vos changements ont été sauvegardés avec succès",
-        });
-      }
-    },
-
     // Always refetch after error or success to ensure consistency
     onSettled: (_data, _error, variables) => {
       // Invalidate and refetch the single response
