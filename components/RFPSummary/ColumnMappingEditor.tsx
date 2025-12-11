@@ -63,13 +63,18 @@ const EXPORT_FIELDS = [
   },
   {
     value: "ai_score",
-    label: "Score IA",
+    label: "Note IA",
     description: "Score généré par l'IA (0-5)",
   },
   {
     value: "manual_score",
-    label: "Score Manuel",
-    description: "Score ajusté manuellement",
+    label: "Note Manuel",
+    description: "Score ajusté manuellement (0-5)",
+  },
+  {
+    value: "smart_score",
+    label: "Note Intelligent",
+    description: "Note manuel si disponible, sinon note IA (0-5)",
   },
   {
     value: "ai_comment",
@@ -80,6 +85,16 @@ const EXPORT_FIELDS = [
     value: "manual_comment",
     label: "Commentaire Manuel",
     description: "Commentaires de l'évaluateur",
+  },
+  {
+    value: "smart_comment",
+    label: "Commentaire Intelligent",
+    description: "Commentaire manuel si disponible, sinon commentaire IA",
+  },
+  {
+    value: "question",
+    label: "Questions / Doutes",
+    description: "Questions et doutes de l'évaluateur",
   },
   {
     value: "status",
