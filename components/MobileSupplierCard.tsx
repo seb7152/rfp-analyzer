@@ -193,7 +193,7 @@ export function MobileSupplierCard({
                 onChange={(e) => onCommentChange?.(e.target.value)}
                 onBlur={() => onCommentBlur?.()}
                 placeholder="Ajoutez vos observations..."
-                className="text-sm min-h-32"
+                className="min-h-32"
               />
             </div>
 
@@ -206,7 +206,7 @@ export function MobileSupplierCard({
                 onChange={(e) => onQuestionChange?.(e.target.value)}
                 onBlur={() => onQuestionBlur?.()}
                 placeholder="Posez vos questions..."
-                className="text-sm min-h-24"
+                className="min-h-24"
               />
             </div>
           </TabsContent>
