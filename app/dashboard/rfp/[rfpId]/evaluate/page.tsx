@@ -10,6 +10,7 @@ import { ComparisonView } from "@/components/ComparisonView";
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
 import { VersionSelector } from "@/components/VersionSelector";
 import { AIAnalysisButton } from "@/components/AIAnalysisButton";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { VersionProvider } from "@/contexts/VersionContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -108,6 +109,9 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
               </Button>
 
               <div className="flex items-center gap-2">
+                {/* Offline Indicator - compact for mobile */}
+                <OfflineIndicator compact />
+
                 {/* Upload Documents Button - icon only */}
                 <Button
                   onClick={() => setIsUploadModalOpen(true)}
@@ -167,6 +171,9 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
+                {/* Offline Indicator - desktop version */}
+                <OfflineIndicator />
+
                 <VersionSelector />
                 {/* Upload Documents Button */}
                 <Button
@@ -223,8 +230,9 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar with Tree */}
           <div
-            className={`${isMobile ? "w-full" : "w-80"
-              } border-r border-slate-200 bg-white/50 dark:border-slate-800 dark:bg-slate-900/40`}
+            className={`${
+              isMobile ? "w-full" : "w-80"
+            } border-r border-slate-200 bg-white/50 dark:border-slate-800 dark:bg-slate-900/40`}
           >
             <Sidebar
               rfpId={params.rfpId}

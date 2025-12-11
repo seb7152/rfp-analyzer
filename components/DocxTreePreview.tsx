@@ -91,7 +91,10 @@ export function DocxTreePreview({
     }
   };
 
-  const findNodeById = (nodes: SectionTreeNode[], id: string): SectionTreeNode | null => {
+  const findNodeById = (
+    nodes: SectionTreeNode[],
+    id: string
+  ): SectionTreeNode | null => {
     for (const node of nodes) {
       if (node.id === id) return node;
       if (node.children.length > 0) {
@@ -120,18 +123,17 @@ export function DocxTreePreview({
     type: "existing" | "new"
   ) => {
     const node = findNodeById(tree, nodeId);
-    const generatedCode = node && type === "new" ? generateCategoryCode(node.title) : "";
+    const generatedCode =
+      node && type === "new" ? generateCategoryCode(node.title) : "";
 
     const updatedTree = updateNode(tree, nodeId, {
-      categoryMapping: type === "new" ? { type, newCode: generatedCode } : { type },
+      categoryMapping:
+        type === "new" ? { type, newCode: generatedCode } : { type },
     });
     onTreeChange(updatedTree);
   };
 
-  const handleExistingCategoryChange = (
-    nodeId: string,
-    existingId: string
-  ) => {
+  const handleExistingCategoryChange = (nodeId: string, existingId: string) => {
     const updatedTree = updateNode(tree, nodeId, {
       categoryMapping: { type: "existing", existingId },
     });
@@ -368,15 +370,11 @@ export function DocxTreePreview({
       <div className="text-xs text-slate-600 dark:text-slate-400 bg-blue-50 dark:bg-blue-950/30 p-3 rounded-md">
         <p className="font-semibold mb-1">💡 Comment ça marche :</p>
         <ul className="list-disc list-inside space-y-1">
-          <li>
-            Cochez les sections qui doivent devenir des catégories
-          </li>
+          <li>Cochez les sections qui doivent devenir des catégories</li>
           <li>
             Les exigences seront assignées à la première section parente cochée
           </li>
-          <li>
-            Mappez vers une catégorie existante ou créez-en une nouvelle
-          </li>
+          <li>Mappez vers une catégorie existante ou créez-en une nouvelle</li>
           <li>
             Les sections non cochées verront leurs exigences remonter au parent
           </li>

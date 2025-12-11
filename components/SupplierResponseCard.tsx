@@ -148,9 +148,20 @@ export function SupplierResponseCard({
           onChange={(checked) => onCheckChange?.(checked)}
         />
 
-        {/* Supplier name */}
-        <div className="font-medium text-slate-900 dark:text-white text-sm flex-shrink-0 w-44">
-          {supplierName}
+        {/* Supplier name with save indicator */}
+        <div className="font-medium text-slate-900 dark:text-white text-sm flex-shrink-0 w-44 flex items-center gap-2">
+          <span>{supplierName}</span>
+          {/* Save status indicator */}
+          {isSaving && (
+            <span className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            </span>
+          )}
+          {showSaved && !isSaving && (
+            <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 animate-in fade-in zoom-in-95 duration-200">
+              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+            </span>
+          )}
         </div>
 
         {/* Response text excerpt (2-line preview) */}
@@ -300,27 +311,12 @@ export function SupplierResponseCard({
                 <span className="text-sm font-semibold text-slate-900 dark:text-white">
                   Votre commentaire
                 </span>
-                <div className="flex items-center gap-2">
-                  {/* Character count indicator (only shown if > 500) */}
-                  {manualComment.length > 500 && (
-                    <span className="text-xs text-slate-500 dark:text-slate-400">
-                      {manualComment.length} caractères
-                    </span>
-                  )}
-                  {/* Save status indicator */}
-                  {isSaving && (
-                    <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      Enregistrement...
-                    </span>
-                  )}
-                  {showSaved && !isSaving && (
-                    <span className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 animate-in fade-in duration-200">
-                      <Check className="w-3 h-3" />
-                      Enregistré
-                    </span>
-                  )}
-                </div>
+                {/* Character count indicator (only shown if > 500) */}
+                {manualComment.length > 500 && (
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    {manualComment.length} caractères
+                  </span>
+                )}
               </div>
               <Textarea
                 value={manualComment}

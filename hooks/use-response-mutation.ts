@@ -5,6 +5,8 @@ import {
 } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ResponseWithSupplier, GetResponsesResponse } from "./use-responses";
+import { useOnlineStatus } from "./use-online-status";
+import { offlineQueue } from "@/lib/offline-queue";
 
 export interface UpdateResponseInput {
   responseId: string;
@@ -23,6 +25,7 @@ export interface UpdateResponseResponse {
 /**
  * Hook to update a supplier response with optimistic updates
  * Supports manual scoring, status changes, and comments
+ * Automatically queues mutations when offline
  */
 export function useResponseMutation(): UseMutationResult<
   UpdateResponseResponse,
@@ -30,11 +33,32 @@ export function useResponseMutation(): UseMutationResult<
   UpdateResponseInput
 > {
   const queryClient = useQueryClient();
+  const isOnline = useOnlineStatus();
 
   return useMutation({
     mutationFn: async (input: UpdateResponseInput) => {
       const { responseId, ...updateData } = input;
 
+      // If offline, add to queue and simulate success
+      if (!isOnline) {
+        offlineQueue.add({
+          endpoint: `/api/responses/${responseId}`,
+          method: "PUT",
+          body: updateData,
+          responseId: responseId,
+        });
+
+        // Return mock response for optimistic update
+        return {
+          success: true,
+          response: {
+            id: responseId,
+            ...updateData,
+          } as ResponseWithSupplier,
+        };
+      }
+
+      // Online: normal behavior
       const response = await fetch(`/api/responses/${responseId}`, {
         method: "PUT",
         headers: {
@@ -167,13 +191,6 @@ export function useResponseMutation(): UseMutationResult<
       // Show error toast
       toast.error("Erreur lors de l'enregistrement", {
         description: err.message || "Une erreur s'est produite",
-      });
-    },
-
-    // On success, show success toast
-    onSuccess: () => {
-      toast.success("Modifications enregistrées", {
-        description: "Vos changements ont été sauvegardés avec succès",
       });
     },
 

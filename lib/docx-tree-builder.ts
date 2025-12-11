@@ -146,7 +146,9 @@ export function getCategoryNameForRequirement(
 
   if (mapping.type === "existing" && mapping.existingId) {
     // Find the category by ID
-    const category = existingCategories.find((c) => c.id === mapping.existingId);
+    const category = existingCategories.find(
+      (c) => c.id === mapping.existingId
+    );
     return category ? category.code : null;
   }
 
