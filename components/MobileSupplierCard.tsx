@@ -8,6 +8,7 @@ import {
   Clock,
   Check,
   Loader2,
+  Copy,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -193,7 +194,7 @@ export function MobileSupplierCard({
                 onChange={(e) => onCommentChange?.(e.target.value)}
                 onBlur={() => onCommentBlur?.()}
                 placeholder="Ajoutez vos observations..."
-                className="text-sm min-h-32"
+                className="min-h-32"
               />
             </div>
 
@@ -206,14 +207,25 @@ export function MobileSupplierCard({
                 onChange={(e) => onQuestionChange?.(e.target.value)}
                 onBlur={() => onQuestionBlur?.()}
                 placeholder="Posez vos questions..."
-                className="text-sm min-h-24"
+                className="min-h-24"
               />
             </div>
           </TabsContent>
 
           <TabsContent value="ai" className="mt-0">
-            <div className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
-              Analyse IA
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                Analyse IA
+              </span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(aiComment);
+                }}
+                className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition-colors"
+                title="Copier le commentaire IA"
+              >
+                <Copy className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+              </button>
             </div>
             <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 max-h-64 overflow-y-auto">
               <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
