@@ -179,6 +179,7 @@ export async function POST(
           manual_score,
           ai_comment,
           manual_comment,
+          question,
           status
         `
         )
@@ -251,11 +252,31 @@ export async function POST(
             case "manual_score":
               cellValue = response?.manual_score || 0;
               break;
+            case "smart_score":
+              // Smart score: manual score if available, otherwise AI score
+              cellValue =
+                response?.manual_score !== null &&
+                response?.manual_score !== undefined
+                  ? response.manual_score
+                  : response?.ai_score || 0;
+              break;
             case "ai_comment":
               cellValue = response?.ai_comment || "";
               break;
             case "manual_comment":
               cellValue = response?.manual_comment || "";
+              break;
+            case "smart_comment":
+              // Smart comment: manual comment if available, otherwise AI comment
+              cellValue =
+                response?.manual_comment !== null &&
+                response?.manual_comment !== "" &&
+                response?.manual_comment !== undefined
+                  ? response.manual_comment
+                  : response?.ai_comment || "";
+              break;
+            case "question":
+              cellValue = response?.question || "";
               break;
             case "status":
               cellValue = response?.status || "pending";
