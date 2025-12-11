@@ -402,14 +402,14 @@ export function ColumnMappingEditor({
                     {index + 1}.
                   </span>
 
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-[140px]">
                     <Select
                       value={mapping.column}
                       onValueChange={(value) =>
                         updateColumnMapping(mapping.id, { column: value })
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full h-10">
                         <SelectValue placeholder="Colonne Excel" />
                       </SelectTrigger>
                       <SelectContent>
@@ -424,22 +424,32 @@ export function ColumnMappingEditor({
 
                   <div className="text-slate-400">→</div>
 
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-[280px]">
                     <Select
                       value={mapping.field}
                       onValueChange={(value) =>
                         updateColumnMapping(mapping.id, { field: value })
                       }
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Donnée à exporter" />
+                      <SelectTrigger className="w-full h-10">
+                        <SelectValue placeholder="Donnée à exporter">
+                          {mapping.field &&
+                            EXPORT_FIELDS.find((f) => f.value === mapping.field)
+                              ?.label}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {EXPORT_FIELDS.map((field) => (
-                          <SelectItem key={field.value} value={field.value}>
-                            <div>
-                              <div className="font-medium">{field.label}</div>
-                              <div className="text-xs text-slate-500">
+                          <SelectItem
+                            key={field.value}
+                            value={field.value}
+                            className="py-2.5"
+                          >
+                            <div className="flex flex-col gap-1">
+                              <div className="font-medium text-sm leading-none">
+                                {field.label}
+                              </div>
+                              <div className="text-xs text-slate-500 leading-tight">
                                 {field.description}
                               </div>
                             </div>
@@ -449,7 +459,7 @@ export function ColumnMappingEditor({
                     </Select>
                   </div>
 
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-[200px]">
                     <Input
                       value={mapping.header_name || ""}
                       onChange={(e) =>
@@ -458,7 +468,7 @@ export function ColumnMappingEditor({
                         })
                       }
                       placeholder="Nom d'en-tête (optionnel)"
-                      className="w-full"
+                      className="w-full h-10"
                     />
                   </div>
 
