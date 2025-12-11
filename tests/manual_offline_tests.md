@@ -163,12 +163,14 @@ Guide pour tester la fonctionnalité de mode offline avec synchronisation diffé
    - DevTools → Application tab → Local Storage
    - Chercher clé : `rfp-analyzer-offline-queue`
 2. **Modifier manuellement** la date d'une mutation pour être > 7 jours
+
 ```javascript
 // Dans Console DevTools
-let queue = JSON.parse(localStorage.getItem('rfp-analyzer-offline-queue'));
-queue[0].timestamp = Date.now() - (8 * 24 * 60 * 60 * 1000); // 8 jours
-localStorage.setItem('rfp-analyzer-offline-queue', JSON.stringify(queue));
+let queue = JSON.parse(localStorage.getItem("rfp-analyzer-offline-queue"));
+queue[0].timestamp = Date.now() - 8 * 24 * 60 * 60 * 1000; // 8 jours
+localStorage.setItem("rfp-analyzer-offline-queue", JSON.stringify(queue));
 ```
+
 3. **Rafraîchir la page**
 4. **Vérifier** :
    - ✅ Mutation vieille est supprimée automatiquement
@@ -201,16 +203,19 @@ localStorage.setItem('rfp-analyzer-offline-queue', JSON.stringify(queue));
 ## Cas Limites à Tester
 
 ### Cas 1 : Connexion Intermittente
+
 - Activer/désactiver offline rapidement plusieurs fois
 - Vérifier que la synchronisation ne se lance qu'une fois
 
 ### Cas 2 : Multi-Onglets
+
 - Ouvrir 2 onglets sur le même RFP
 - Faire modification offline dans onglet 1
 - Désactiver offline dans onglet 1
 - Vérifier que onglet 2 voit aussi la modification après refresh
 
 ### Cas 3 : localStorage Plein
+
 - Remplir localStorage artificiellement
 - Vérifier comportement gracieux (erreur loggée, pas de crash)
 
@@ -220,18 +225,18 @@ localStorage.setItem('rfp-analyzer-offline-queue', JSON.stringify(queue));
 
 ```javascript
 // Vider la queue offline
-localStorage.removeItem('rfp-analyzer-offline-queue');
+localStorage.removeItem("rfp-analyzer-offline-queue");
 
 // Voir le contenu de la queue
-JSON.parse(localStorage.getItem('rfp-analyzer-offline-queue'));
+JSON.parse(localStorage.getItem("rfp-analyzer-offline-queue"));
 
 // Compter les mutations en attente
-JSON.parse(localStorage.getItem('rfp-analyzer-offline-queue')).length;
+JSON.parse(localStorage.getItem("rfp-analyzer-offline-queue")).length;
 
 // Simuler mutation ancienne (> 7 jours)
-let q = JSON.parse(localStorage.getItem('rfp-analyzer-offline-queue'));
-q[0].timestamp = Date.now() - (8*24*60*60*1000);
-localStorage.setItem('rfp-analyzer-offline-queue', JSON.stringify(q));
+let q = JSON.parse(localStorage.getItem("rfp-analyzer-offline-queue"));
+q[0].timestamp = Date.now() - 8 * 24 * 60 * 60 * 1000;
+localStorage.setItem("rfp-analyzer-offline-queue", JSON.stringify(q));
 ```
 
 ---

@@ -80,9 +80,7 @@ export const offlineQueue = {
   /**
    * Add a new mutation to the queue
    */
-  add(
-    mutation: Omit<QueuedMutation, "id" | "timestamp" | "retryCount">
-  ): void {
+  add(mutation: Omit<QueuedMutation, "id" | "timestamp" | "retryCount">): void {
     const queue = getQueue();
 
     const newMutation: QueuedMutation = {

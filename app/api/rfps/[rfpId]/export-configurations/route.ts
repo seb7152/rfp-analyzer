@@ -3,10 +3,9 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export async function GET(
   _request: NextRequest,
-  context: { params: Promise<{ rfpId: string }> }
+  { params }: { params: { rfpId: string } }
 ) {
   try {
-    const params = await context.params;
     const { rfpId } = params;
 
     const supabase = await createServerClient();
@@ -50,10 +49,9 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  context: { params: Promise<{ rfpId: string }> }
+  { params }: { params: { rfpId: string } }
 ) {
   try {
-    const params = await context.params;
     const { rfpId } = params;
 
     const supabase = await createServerClient();

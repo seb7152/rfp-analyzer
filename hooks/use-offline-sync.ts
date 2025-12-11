@@ -133,7 +133,9 @@ export function useOfflineSync(): SyncStatus {
         `${successCount} synchronisée${successCount > 1 ? "s" : ""}, ${failCount} échouée${failCount > 1 ? "s" : ""}`
       );
     } else if (failCount > 0) {
-      toast.error(`${failCount} modification${failCount > 1 ? "s" : ""} échouée${failCount > 1 ? "s" : ""}`);
+      toast.error(
+        `${failCount} modification${failCount > 1 ? "s" : ""} échouée${failCount > 1 ? "s" : ""}`
+      );
     }
 
     // Invalidate all response queries to refresh the UI

@@ -109,7 +109,9 @@ export async function cleanupChunks(documentId: string): Promise<void> {
 /**
  * Clean up old chunks (older than specified minutes)
  */
-export async function cleanupOldChunks(olderThanMinutes: number = 300): Promise<void> {
+export async function cleanupOldChunks(
+  olderThanMinutes: number = 300
+): Promise<void> {
   const tempDir = getTempDir();
 
   if (!fs.existsSync(tempDir)) {

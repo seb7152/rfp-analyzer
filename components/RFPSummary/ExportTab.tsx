@@ -9,8 +9,9 @@ import { ExportConfigurationList } from "./ExportConfigurationList";
 import { ColumnMappingEditor } from "./ColumnMappingEditor";
 import { ExportPreview } from "./ExportPreview";
 import { Button } from "@/components/ui/button";
-import { Download, FileSpreadsheet, Settings, Eye } from "lucide-react";
+import { Download, FileSpreadsheet, Settings, Eye, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 interface Template {
   id: string;
@@ -49,6 +50,9 @@ export function ExportTab({ rfpId }: { rfpId: string }) {
     useState<ExportConfiguration | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("templates");
+  const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -126,6 +130,55 @@ export function ExportTab({ rfpId }: { rfpId: string }) {
       .then((res) => res.json())
       .then((data) => setExportConfigurations(data.configurations || []))
       .catch(console.error);
+  };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    if (
+      !confirm(
+        "Êtes-vous sûr de vouloir supprimer ce template ? Cette action est irréversible."
+      )
+    ) {
+      return;
+    }
+
+    setDeletingTemplateId(templateId);
+
+    try {
+      const response = await fetch(
+        `/api/rfps/${rfpId}/documents?documentId=${templateId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to delete template");
+      }
+
+      toast.success("Template supprimé avec succès");
+
+      // Refresh templates list
+      const templatesResponse = await fetch(
+        `/api/rfps/${rfpId}/documents?documentType=template`
+      );
+      if (templatesResponse.ok) {
+        const templatesData = await templatesResponse.json();
+        setTemplates(templatesData.documents || []);
+      }
+
+      // Refresh configurations list (in case some were linked to this template)
+      handleConfigurationChange();
+    } catch (error) {
+      console.error("Error deleting template:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de la suppression du template"
+      );
+    } finally {
+      setDeletingTemplateId(null);
+    }
   };
 
   if (loading) {
@@ -223,10 +276,24 @@ export function ExportTab({ rfpId }: { rfpId: string }) {
                           </p>
                         </div>
                       </div>
-                      <Button variant="outline" size="sm">
-                        <Download className="h-4 w-4 mr-2" />
-                        Télécharger
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm">
+                          <Download className="h-4 w-4 mr-2" />
+                          Télécharger
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteTemplate(template.id)}
+                          disabled={deletingTemplateId === template.id}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          {deletingTemplateId === template.id
+                            ? "Suppression..."
+                            : "Supprimer"}
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

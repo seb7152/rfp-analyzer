@@ -25,11 +25,7 @@ export function useRFPDocumentUpload(rfpId: string) {
   const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
 
   const uploadChunkedDocument = useCallback(
-    async (
-      file: File,
-      documentType: string,
-      supplierId?: string
-    ) => {
+    async (file: File, documentType: string, supplierId?: string) => {
       const documentId = `upload-${Date.now()}`;
 
       // Initialize progress tracking
@@ -113,7 +109,8 @@ export function useRFPDocumentUpload(rfpId: string) {
           if (!chunkResponse.ok) {
             const errorData = await chunkResponse.json();
             throw new Error(
-              errorData.error || `Failed to upload chunk ${i + 1}/${chunks.length}`
+              errorData.error ||
+                `Failed to upload chunk ${i + 1}/${chunks.length}`
             );
           }
 

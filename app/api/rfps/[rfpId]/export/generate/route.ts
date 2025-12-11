@@ -274,9 +274,37 @@ export async function POST(
           // Use a reasonable max row limit (1000) instead of worksheet.rowCount which might be 0
           const maxSearchRow = Math.max(worksheet.rowCount || 0, 1000);
           let targetRow = null;
+
+          // Debug: Log the first few cells to see what we're comparing
+          if (matchedCount === 0 && unmatchedCodes.length === 0) {
+            console.log(
+              `\nDEBUG: Looking for requirement code: "${requirementCode}" (type: ${typeof requirementCode})`
+            );
+            for (
+              let debugRow = startRow;
+              debugRow <= Math.min(startRow + 5, maxSearchRow);
+              debugRow++
+            ) {
+              const debugCell = worksheet.getCell(
+                `${mappingColumn}${debugRow}`
+              );
+              console.log(
+                `  Row ${debugRow}: "${debugCell.value}" (type: ${typeof debugCell.value}, text: "${debugCell.text}")`
+              );
+            }
+          }
+
           for (let rowNum = startRow; rowNum <= maxSearchRow; rowNum++) {
             const cell = worksheet.getCell(`${mappingColumn}${rowNum}`);
-            if (cell.value === requirementCode) {
+            const cellValue = cell.value;
+            const cellText = cell.text;
+
+            // Try multiple comparison methods
+            if (
+              cellValue === requirementCode ||
+              cellText === requirementCode ||
+              String(cellValue).trim() === String(requirementCode).trim()
+            ) {
               targetRow = rowNum;
               break;
             }
