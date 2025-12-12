@@ -104,6 +104,13 @@ export function ComparisonView({
   // Timers for hiding "Saved" indicator
   const savedTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
+  // Touch/Swipe tracking for mobile navigation
+  const touchStartXRef = useRef<number>(0);
+  const touchStartYRef = useRef<number>(0);
+  const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(null);
+  const SWIPE_THRESHOLD = 50; // Minimum pixels for a swipe to register
+  const SWIPE_RATIO_THRESHOLD = 2; // Min ratio of horizontal to vertical movement
+
   // Fetch the tree to determine if selected item is a category
   const { tree } = useRequirementsTree(rfpId || null);
 
@@ -263,6 +270,63 @@ export function ComparisonView({
       }, 300);
     }
   };
+
+  // Handle touch start for swipe detection
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (isMobile && flatReqs.length > 0) {
+      touchStartXRef.current = e.touches[0].clientX;
+      touchStartYRef.current = e.touches[0].clientY;
+      setSwipeDirection(null);
+    }
+  }, [isMobile, flatReqs.length]);
+
+  // Handle touch move to show feedback
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isMobile || flatReqs.length === 0) return;
+
+    const touchCurrentX = e.touches[0].clientX;
+    const touchCurrentY = e.touches[0].clientY;
+
+    const deltaX = touchCurrentX - touchStartXRef.current;
+    const deltaY = touchCurrentY - touchStartYRef.current;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    // Check if it looks like a horizontal swipe
+    if (absDeltaX > 20 && absDeltaX > absDeltaY * SWIPE_RATIO_THRESHOLD) {
+      setSwipeDirection(deltaX < 0 ? "left" : "right");
+    } else {
+      setSwipeDirection(null);
+    }
+  }, [isMobile, flatReqs.length]);
+
+  // Handle touch end for swipe detection
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!isMobile || flatReqs.length === 0) return;
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+
+    const deltaX = touchEndX - touchStartXRef.current;
+    const deltaY = touchEndY - touchStartYRef.current;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    // Check if it's a horizontal swipe (not a vertical scroll)
+    // Must move horizontally more than vertically
+    if (absDeltaX > SWIPE_THRESHOLD && absDeltaX > absDeltaY * SWIPE_RATIO_THRESHOLD) {
+      // Swipe left (negative deltaX) = next requirement
+      // Swipe right (positive deltaX) = previous requirement
+      if (deltaX < 0 && currentIndex < totalPages - 1) {
+        goToRequirement(currentIndex + 1);
+      } else if (deltaX > 0 && currentIndex > 0) {
+        goToRequirement(currentIndex - 1);
+      }
+    }
+
+    // Clear visual feedback
+    setSwipeDirection(null);
+  }, [isMobile, flatReqs.length, currentIndex, totalPages]);
 
   // Keyboard navigation handler
   const handleKeyDown = useCallback(
@@ -805,7 +869,17 @@ export function ComparisonView({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div
+      className="flex flex-col h-full"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Swipe direction indicator - Mobile only */}
+      {isMobile && swipeDirection && (
+        <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-75 z-50" />
+      )}
+
       {/* Breadcrumb - Hidden on mobile */}
       {!isMobile && (
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
