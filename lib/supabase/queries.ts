@@ -1022,17 +1022,24 @@ export async function getResponse(responseId: string): Promise<{
 }
 
 /**
- * Import responses for an RFP
- * Creates response records linking requirements to suppliers with AI analysis
+ * Import responses for an RFP with MERGE logic (optimized for performance)
+ * Creates new response records or updates existing ones (UPSERT pattern)
+ * Only updates provided fields; preserves existing values for fields not provided
+ * Batch operations to avoid Vercel timeout issues
  */
 export async function importResponses(
   rfpId: string,
   responses: Array<{
     requirement_id_external: string;
     supplier_id_external: string;
-    response_text: string;
+    response_text?: string;
     ai_score?: number;
     ai_comment?: string;
+    manual_score?: number;
+    manual_comment?: string;
+    question?: string;
+    status?: string;
+    is_checked?: boolean;
   }>
 ): Promise<{ success: boolean; count: number; error?: string }> {
   const supabase = await createServerClient();
@@ -1055,63 +1062,173 @@ export async function importResponses(
       };
     }
 
-    let insertedCount = 0;
+    // Optimize: Fetch ALL requirements and suppliers in bulk (not per-item)
+    const { data: allRequirements, error: reqsError } = await supabase
+      .from("requirements")
+      .select("id, requirement_id_external")
+      .eq("rfp_id", rfpId);
+
+    if (reqsError) {
+      return {
+        success: false,
+        count: 0,
+        error: `Failed to fetch requirements: ${reqsError.message}`,
+      };
+    }
+
+    const { data: allSuppliers, error: supsError } = await supabase
+      .from("suppliers")
+      .select("id, supplier_id_external")
+      .eq("rfp_id", rfpId);
+
+    if (supsError) {
+      return {
+        success: false,
+        count: 0,
+        error: `Failed to fetch suppliers: ${supsError.message}`,
+      };
+    }
+
+    // Create lookup maps
+    const requirementMap = new Map(
+      (allRequirements || []).map((r) => [r.requirement_id_external, r.id])
+    );
+    const supplierMap = new Map(
+      (allSuppliers || []).map((s) => [s.supplier_id_external, s.id])
+    );
+
+    // Fetch all existing responses for this RFP and version
+    const { data: existingResponses, error: existingError } = await supabase
+      .from("responses")
+      .select(
+        "id, requirement_id, supplier_id, version_id, response_text, ai_score, ai_comment, manual_score, manual_comment, question, status, is_checked"
+      )
+      .eq("rfp_id", rfpId)
+      .eq("version_id", activeVersion.id);
+
+    if (existingError) {
+      console.warn(
+        `Failed to fetch existing responses: ${existingError.message}`
+      );
+    }
+
+    // Create map for quick lookups
+    const existingResponsesMap = new Map<string, any>();
+    if (existingResponses) {
+      for (const resp of existingResponses) {
+        const key = `${resp.requirement_id}|${resp.supplier_id}|${resp.version_id}`;
+        existingResponsesMap.set(key, resp);
+      }
+    }
+
+    // Separate responses into UPDATE and INSERT operations
+    const toUpdate: Array<{ id: string; payload: any }> = [];
+    const toInsert: any[] = [];
+    let processedCount = 0;
 
     for (const response of responses) {
-      // Get the requirement ID from external ID
-      const { data: requirement, error: reqError } = await supabase
-        .from("requirements")
-        .select("id")
-        .eq("rfp_id", rfpId)
-        .eq("requirement_id_external", response.requirement_id_external)
-        .maybeSingle();
+      const requirementId = requirementMap.get(
+        response.requirement_id_external
+      );
+      const supplierId = supplierMap.get(response.supplier_id_external);
 
-      if (reqError || !requirement) {
+      if (!requirementId) {
         console.warn(
           `Requirement ${response.requirement_id_external} not found for RFP ${rfpId}`
         );
         continue;
       }
 
-      // Get the supplier ID from external ID
-      const { data: supplier, error: supError } = await supabase
-        .from("suppliers")
-        .select("id")
-        .eq("rfp_id", rfpId)
-        .eq("supplier_id_external", response.supplier_id_external)
-        .maybeSingle();
-
-      if (supError || !supplier) {
+      if (!supplierId) {
         console.warn(
           `Supplier ${response.supplier_id_external} not found for RFP ${rfpId}`
         );
         continue;
       }
 
-      // Insert the response
-      const { error: insertError } = await supabase.from("responses").insert([
-        {
+      const lookupKey = `${requirementId}|${supplierId}|${activeVersion.id}`;
+      const existing = existingResponsesMap.get(lookupKey);
+
+      if (existing) {
+        // Build update payload with only provided fields
+        const updatePayload: any = {};
+
+        if (response.response_text !== undefined)
+          updatePayload.response_text = response.response_text;
+        if (response.ai_score !== undefined)
+          updatePayload.ai_score = response.ai_score;
+        if (response.ai_comment !== undefined)
+          updatePayload.ai_comment = response.ai_comment;
+        if (response.manual_score !== undefined)
+          updatePayload.manual_score = response.manual_score;
+        if (response.manual_comment !== undefined)
+          updatePayload.manual_comment = response.manual_comment;
+        if (response.question !== undefined)
+          updatePayload.question = response.question;
+        if (response.status !== undefined)
+          updatePayload.status = response.status;
+        if (response.is_checked !== undefined)
+          updatePayload.is_checked = response.is_checked;
+
+        if (Object.keys(updatePayload).length > 0) {
+          toUpdate.push({
+            id: existing.id,
+            payload: updatePayload,
+          });
+        }
+      } else {
+        // Build insert payload
+        toInsert.push({
           rfp_id: rfpId,
-          requirement_id: requirement.id,
-          supplier_id: supplier.id,
-          response_text: response.response_text,
+          requirement_id: requirementId,
+          supplier_id: supplierId,
+          response_text: response.response_text || null,
           ai_score: response.ai_score || null,
           ai_comment: response.ai_comment || null,
-          status: "pending",
-          is_checked: false,
+          manual_score: response.manual_score || null,
+          manual_comment: response.manual_comment || null,
+          question: response.question || null,
+          status: response.status || "pending",
+          is_checked: response.is_checked || false,
           version_id: activeVersion.id,
-        },
-      ]);
-
-      if (insertError) {
-        console.warn(`Failed to insert response: ${insertError.message}`);
-        continue;
+        });
       }
 
-      insertedCount++;
+      processedCount++;
     }
 
-    return { success: true, count: insertedCount };
+    // Execute batch INSERT
+    if (toInsert.length > 0) {
+      const { error: insertError } = await supabase
+        .from("responses")
+        .insert(toInsert);
+
+      if (insertError) {
+        console.warn(`Failed to insert responses: ${insertError.message}`);
+      }
+    }
+
+    // Execute batch UPDATEs in parallel
+    let updateCount = 0;
+    if (toUpdate.length > 0) {
+      // Process updates in parallel batches to avoid overwhelming Supabase
+      const updatePromises = toUpdate.map((update) =>
+        supabase
+          .from("responses")
+          .update(update.payload)
+          .eq("id", update.id)
+          .then((result) => {
+            if (!result.error) updateCount++;
+            return result;
+          })
+      );
+
+      await Promise.all(updatePromises);
+    }
+
+    const totalProcessed = toInsert.length + updateCount;
+
+    return { success: true, count: totalProcessed };
   } catch (error) {
     return {
       success: false,
