@@ -264,7 +264,7 @@ export function PDFViewerSheet({
       {isOpen && !isMinimized && (
         <div
           className="fixed inset-0 bg-black/50 z-30"
-          onClick={() => handleOpenChange(false)}
+          onClick={() => setIsMinimized(true)}
         />
       )}
 
