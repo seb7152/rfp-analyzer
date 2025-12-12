@@ -100,6 +100,7 @@ export function PDFViewerWithAnnotations({
     searchQuery,
     searchResults,
     currentResultIndex,
+    isExtracting,
     search,
     nextResult,
     previousResult,
@@ -413,6 +414,7 @@ export function PDFViewerWithAnnotations({
           searchQuery={searchQuery}
           searchResults={searchResults}
           currentResultIndex={currentResultIndex}
+          isExtracting={isExtracting}
           onSearchChange={search}
           onNavigateResult={(direction) =>
             direction === "next" ? nextResult() : previousResult()

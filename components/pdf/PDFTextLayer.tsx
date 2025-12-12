@@ -137,7 +137,7 @@ export function PDFTextLayer({
           }
         });
 
-        // Notifier le composant parent du texte extrait
+        // Notifier le composant parent du texte extrait (seulement si pas déjà fait)
         if (onTextExtracted && textItems.length > 0) {
           onTextExtracted(textItems);
         }

@@ -52,12 +52,14 @@ class LRUCache implements TextCache {
 }
 
 export function usePDFTextSearch({
+  document,
   onPageChange,
 }: UsePDFTextSearchProps): UsePDFTextSearchReturn {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [currentResultIndex, setCurrentResultIndex] = useState(-1);
   const [isSearching, setIsSearching] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
 
   // Cache LRU pour le texte extrait
   const textCache = useRef<LRUCache>(new LRUCache(10));
@@ -71,6 +73,71 @@ export function usePDFTextSearch({
     setCurrentResultIndex(-1);
     setSearchQuery("");
   }, []);
+
+  // Extraire le texte de toutes les pages du document
+  const extractAllPagesText = useCallback(async () => {
+    if (!document) return;
+
+    console.log("[usePDFTextSearch] Starting text extraction for all pages");
+    setIsExtracting(true);
+    const numPages = document.numPages;
+
+    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+      try {
+        const page = await document.getPage(pageNum);
+        const textContent = await page.getTextContent();
+
+        const textItems: TextItem[] = [];
+
+        textContent.items.forEach((item: any, index: number) => {
+          if ("str" in item && item.str.trim()) {
+            const transform = item.transform || [1, 0, 0, 1, 0, 0];
+            const x = transform[4];
+            const y = transform[5];
+            const fontSize = Math.sqrt(
+              transform[0] * transform[0] + transform[1] * transform[1]
+            );
+
+            textItems.push({
+              text: item.str,
+              pageNumber: pageNum,
+              rects: [
+                {
+                  x: x,
+                  y: y,
+                  width: item.width > 0 ? item.width : 50,
+                  height: fontSize,
+                },
+              ],
+              pageIndex: index,
+            });
+          }
+        });
+
+        // Stocker directement dans le cache
+        textCache.current.set(pageNum, textItems);
+        extractedTextRef.current.set(pageNum, textItems);
+        console.log(
+          `[usePDFTextSearch] Extracted text for page ${pageNum}/${numPages}`
+        );
+      } catch (error) {
+        console.error(
+          `[usePDFTextSearch] Error extracting text from page ${pageNum}:`,
+          error
+        );
+      }
+    }
+
+    console.log("[usePDFTextSearch] Text extraction completed for all pages");
+    setIsExtracting(false);
+  }, [document]);
+
+  // Lancer l'extraction quand le document change
+  useEffect(() => {
+    if (document) {
+      extractAllPagesText();
+    }
+  }, [document, extractAllPagesText]);
 
   // Fonction pour générer le contexte autour du texte trouvé
   const generateContext = useCallback(
@@ -227,7 +294,7 @@ export function usePDFTextSearch({
     debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  // Nettoyer quand le document change
+  // Nettoyer et extraire quand le document change
   useEffect(() => {
     handleDocumentChange();
   }, [handleDocumentChange]);
@@ -237,6 +304,7 @@ export function usePDFTextSearch({
     searchResults,
     currentResultIndex,
     isSearching,
+    isExtracting,
     totalResults: searchResults.length,
     search,
     navigateToResult,

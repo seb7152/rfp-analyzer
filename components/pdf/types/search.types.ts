@@ -27,6 +27,7 @@ export interface UsePDFTextSearchReturn {
   searchResults: SearchResult[];
   currentResultIndex: number;
   isSearching: boolean;
+  isExtracting: boolean;
   totalResults: number;
   search: (query: string) => void;
   navigateToResult: (index: number) => void;

@@ -31,6 +31,7 @@ interface ExtendedPDFToolbarProps extends PDFToolbarProps {
   searchQuery?: string;
   searchResults?: SearchResult[];
   currentResultIndex?: number;
+  isExtracting?: boolean;
   onSearchChange?: (query: string) => void;
   onNavigateResult?: (direction: "next" | "previous") => void;
   onClearSearch?: () => void;
@@ -51,6 +52,7 @@ export function PDFToolbar({
   searchQuery = "",
   searchResults = [],
   currentResultIndex = -1,
+  isExtracting = false,
   onSearchChange,
   onNavigateResult,
   onClearSearch,
@@ -196,14 +198,24 @@ export function PDFToolbar({
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <Input
             type="text"
-            placeholder="Rechercher dans le PDF..."
+            placeholder={
+              isExtracting
+                ? "Extraction du texte..."
+                : "Rechercher dans le PDF..."
+            }
             value={searchTerm}
             onChange={handleSearchChange}
             onFocus={() => setIsSearchFocused(true)}
             onBlur={() => setIsSearchFocused(false)}
+            disabled={isExtracting}
             className="pl-8 h-8 text-sm w-48 lg:w-64"
           />
-          {searchTerm && (
+          {isExtracting && (
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+              <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
+          {searchTerm && !isExtracting && (
             <Button
               variant="ghost"
               size="sm"
