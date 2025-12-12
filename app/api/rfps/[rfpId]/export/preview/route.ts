@@ -119,7 +119,7 @@ export async function POST(
       requirementId: string,
       categoryId: string | null
     ): number => {
-      if (!categoryId) return 100; // No category = 100%
+      if (!categoryId) return 1; // No category = 100% = 1.0
 
       // Find all siblings (requirements with same category_id)
       const siblings = requirements.filter((r) => r.category_id === categoryId);
@@ -134,11 +134,11 @@ export async function POST(
       const currentReq = siblings.find((r) => r.id === requirementId);
       const currentWeight = currentReq?.weight || 0;
 
-      // Calculate local percentage: (current / total) * 100
-      const localPercent = (currentWeight / totalWeight) * 100;
+      // Calculate local weight as decimal: (current / total)
+      const localWeight = currentWeight / totalWeight;
 
-      // Round to 1 decimal place
-      return Math.round(localPercent * 10) / 10;
+      // Round to 4 decimal places (same as database weight format)
+      return Math.round(localWeight * 10000) / 10000;
     };
 
     // Get responses for this supplier

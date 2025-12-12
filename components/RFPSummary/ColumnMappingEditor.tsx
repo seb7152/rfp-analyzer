@@ -58,8 +58,8 @@ const EXPORT_FIELDS = [
   },
   {
     value: "requirement_weight_local_percent",
-    label: "Poids Local %",
-    description: "Poids en % au sein de la catégorie (ex: 30.5%)",
+    label: "Poids Local (décimal)",
+    description: "Poids local au sein de la catégorie (ex: 0.305 pour 30.5%)",
   },
   {
     value: "supplier_response",
