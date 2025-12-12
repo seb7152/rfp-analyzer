@@ -1030,9 +1030,14 @@ export async function importResponses(
   responses: Array<{
     requirement_id_external: string;
     supplier_id_external: string;
-    response_text: string;
+    response_text?: string;
     ai_score?: number;
     ai_comment?: string;
+    manual_score?: number;
+    manual_comment?: string;
+    question?: string;
+    status?: string;
+    is_checked?: boolean;
   }>
 ): Promise<{ success: boolean; count: number; error?: string }> {
   const supabase = await createServerClient();
@@ -1094,11 +1099,14 @@ export async function importResponses(
           rfp_id: rfpId,
           requirement_id: requirement.id,
           supplier_id: supplier.id,
-          response_text: response.response_text,
+          response_text: response.response_text || null,
           ai_score: response.ai_score || null,
           ai_comment: response.ai_comment || null,
-          status: "pending",
-          is_checked: false,
+          manual_score: response.manual_score || null,
+          manual_comment: response.manual_comment || null,
+          question: response.question || null,
+          status: response.status || "pending",
+          is_checked: response.is_checked || false,
           version_id: activeVersion.id,
         },
       ]);

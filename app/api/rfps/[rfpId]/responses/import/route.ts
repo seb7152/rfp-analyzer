@@ -10,11 +10,16 @@ import { importResponses } from "@/lib/supabase/queries";
  * {
  *   responses: [
  *     {
- *       requirement_id_external: "REQ001",
- *       supplier_id_external: "SUP001",
- *       response_text: "...",
- *       ai_score: 4,
- *       ai_comment: "..."
+ *       requirement_id_external: "REQ001",           // Required
+ *       supplier_id_external: "SUP001",              // Required
+ *       response_text: "...",                        // Optional
+ *       ai_score: 4,                                 // Optional (0-5 or 0.5 increments)
+ *       ai_comment: "...",                           // Optional
+ *       manual_score: 3,                             // Optional (0-5 or 0.5 increments)
+ *       manual_comment: "...",                       // Optional
+ *       question: "...",                             // Optional
+ *       status: "pass",                              // Optional (pending, pass, partial, fail)
+ *       is_checked: true                             // Optional (default: false)
  *     }
  *   ]
  * }

@@ -1017,14 +1017,30 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                     {isExpanded && (
                       <div className="border-t border-slate-200 dark:border-slate-800 p-4 space-y-4 bg-slate-50 dark:bg-slate-900/50">
                         {/* Example JSON */}
-                        <div className="bg-slate-100 dark:bg-slate-900 p-3 rounded text-xs font-mono text-slate-700 dark:text-slate-300 overflow-auto max-h-32">
+                        <div className="bg-slate-100 dark:bg-slate-900 p-3 rounded text-xs font-mono text-slate-700 dark:text-slate-300 overflow-auto max-h-52">
                           <pre>
                             {`[
   {
-    "requirement_id_external": "REQ001",
+    "requirement_id_external": "REQ001",            // Obligatoire
+    "response_text": "Réponse du fournisseur",      // Optionnel
+    "ai_score": 4,                                  // Optionnel (0-5 ou 0.5)
+    "ai_comment": "Analyse IA...",                  // Optionnel
+    "manual_score": 3,                              // Optionnel (0-5 ou 0.5)
+    "manual_comment": "Commentaire du relecteur",   // Optionnel
+    "question": "Question d'évaluation",            // Optionnel
+    "status": "pass",                               // Optionnel (pending, pass, partial, fail)
+    "is_checked": true                              // Optionnel (défaut: false)
+  },
+  {
+    "requirement_id_external": "REQ002",
     "response_text": "...",
-    "ai_score": 4,
+    "ai_score": 5,
     "ai_comment": "..."
+  },
+  {
+    "requirement_id_external": "REQ003",
+    "manual_score": 2,
+    "manual_comment": "À améliorer"
   }
 ]`}
                           </pre>
@@ -1033,7 +1049,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                             size="sm"
                             onClick={() =>
                               handleCopyExample(
-                                `[{"requirement_id_external":"REQ001","response_text":"...","ai_score":4,"ai_comment":"..."}]`
+                                `[{"requirement_id_external":"REQ001","response_text":"Réponse du fournisseur","ai_score":4,"ai_comment":"Analyse IA...","manual_score":3,"manual_comment":"Commentaire du relecteur","question":"Question d'évaluation","status":"pass","is_checked":true},{"requirement_id_external":"REQ002","response_text":"...","ai_score":5,"ai_comment":"..."},{"requirement_id_external":"REQ003","manual_score":2,"manual_comment":"À améliorer"}]`
                               )
                             }
                             className="mt-2 text-xs"
@@ -1090,10 +1106,8 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                 <TableHeader>
                                   <TableRow className="bg-slate-50 dark:bg-slate-900">
                                     <TableHead>Exigence</TableHead>
-                                    <TableHead>Aperçu réponse</TableHead>
-                                    <TableHead className="text-right">
-                                      Score IA
-                                    </TableHead>
+                                    <TableHead className="text-right">Score IA</TableHead>
+                                    <TableHead className="text-right">Score Manuel</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -1107,8 +1121,9 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                         (
                                           response: {
                                             requirement_id_external: string;
-                                            response_text: string;
+                                            response_text?: string;
                                             ai_score?: number;
+                                            manual_score?: number;
                                           },
                                           idx: number
                                         ) => {
@@ -1118,7 +1133,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                             );
                                           return (
                                             <TableRow key={idx}>
-                                              <TableCell className="font-mono text-xs">
+                                              <TableCell className="font-mono text-sm">
                                                 <div className="flex items-center gap-2">
                                                   <span>
                                                     {
@@ -1132,20 +1147,21 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                                   )}
                                                 </div>
                                               </TableCell>
-                                              <TableCell className="text-sm text-slate-600 dark:text-slate-400 truncate max-w-xs">
-                                                {response.response_text?.substring(
-                                                  0,
-                                                  50
-                                                )}
-                                                {response.response_text
-                                                  ?.length > 50
-                                                  ? "..."
-                                                  : ""}
-                                              </TableCell>
                                               <TableCell className="text-right">
                                                 {response.ai_score ? (
-                                                  <span className="inline-flex items-center gap-1 text-sm font-semibold">
+                                                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400">
                                                     {response.ai_score}/5
+                                                  </span>
+                                                ) : (
+                                                  <span className="text-slate-400">
+                                                    —
+                                                  </span>
+                                                )}
+                                              </TableCell>
+                                              <TableCell className="text-right">
+                                                {response.manual_score ? (
+                                                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-purple-600 dark:text-purple-400">
+                                                    {response.manual_score}/5
                                                   </span>
                                                 ) : (
                                                   <span className="text-slate-400">
