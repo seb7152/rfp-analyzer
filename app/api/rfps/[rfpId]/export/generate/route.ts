@@ -121,7 +121,8 @@ export async function POST(
         requirement_id_external,
         title,
         description,
-        weight
+        weight,
+        category_id
       `
       )
       .eq("rfp_id", rfpId)
@@ -134,6 +135,33 @@ export async function POST(
         { status: 500 }
       );
     }
+
+    // Helper to calculate local weight percentage for a requirement
+    const calculateLocalWeightPercent = (
+      requirementId: string,
+      categoryId: string | null
+    ): number => {
+      if (!categoryId) return 1; // No category = 100% = 1.0
+
+      // Find all siblings (requirements with same category_id)
+      const siblings = requirements.filter((r) => r.category_id === categoryId);
+
+      // Calculate total weight of siblings
+      const totalWeight = siblings.reduce((sum, r) => sum + (r.weight || 0), 0);
+
+      // Avoid division by zero
+      if (totalWeight === 0) return 0;
+
+      // Find current requirement's weight
+      const currentReq = siblings.find((r) => r.id === requirementId);
+      const currentWeight = currentReq?.weight || 0;
+
+      // Calculate local weight as decimal: (current / total)
+      const localWeight = currentWeight / totalWeight;
+
+      // Round to 4 decimal places (same as database weight format)
+      return Math.round(localWeight * 10000) / 10000;
+    };
 
     // 4. Load Template File
     const { generateDownloadSignedUrl } = await import("@/lib/gcs");
@@ -216,6 +244,11 @@ export async function POST(
             return requirement.description;
           case "requirement_weight":
             return requirement.weight;
+          case "requirement_weight_local_percent":
+            return calculateLocalWeightPercent(
+              requirement.id,
+              requirement.category_id
+            );
           case "supplier_response":
             return response?.response_text || "";
           case "ai_score":

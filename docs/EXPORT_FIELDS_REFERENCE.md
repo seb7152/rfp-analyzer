@@ -6,12 +6,22 @@ This document lists all available fields that can be mapped when configuring exp
 
 ### Requirement Fields
 
-| Field Name                | Description                      | Type   | Example                      |
-| ------------------------- | -------------------------------- | ------ | ---------------------------- |
-| `requirement_code`        | External requirement identifier  | string | "REQ-001"                    |
-| `requirement_title`       | Requirement title                | string | "Authentication System"      |
-| `requirement_description` | Detailed requirement description | string | "The system must support..." |
-| `requirement_weight`      | Requirement weight/importance    | number | 3                            |
+| Field Name                           | Description                                            | Type   | Example                      |
+| ------------------------------------ | ------------------------------------------------------ | ------ | ---------------------------- |
+| `requirement_code`                   | External requirement identifier                        | string | "REQ-001"                    |
+| `requirement_title`                  | Requirement title                                      | string | "Authentication System"      |
+| `requirement_description`            | Detailed requirement description                       | string | "The system must support..." |
+| `requirement_weight`                 | Requirement weight/importance (absolute)               | number | 0.15                         |
+| `requirement_weight_local_percent`\* | Local weight within parent category (decimal 0.0-1.0) | number | 0.305                        |
+
+\***Note on `requirement_weight_local_percent`**: This field is **calculated on-the-fly** and not stored in the database.
+
+- Formula: `requirement weight / sum of sibling weights`
+- Example: If 3 requirements in category with weights 0.15, 0.20, 0.15, the first shows 0.30 (30%)
+- Returned as decimal (0.305 = 30.5%)
+- Rounded to 4 decimal places (DECIMAL(5,4) format)
+- Returns 1.0 (100%) if requirement has no category assigned
+- Returns 0.0 if total sibling weight is zero
 
 ### Supplier Response Fields
 
