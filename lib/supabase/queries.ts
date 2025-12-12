@@ -1061,21 +1061,22 @@ export async function importResponses(
       };
     }
 
-    // Fetch all existing responses for this RFP to check for updates
+    // Fetch all existing responses for this RFP and version to check for updates
     const { data: existingResponses, error: existingError } = await supabase
       .from("responses")
-      .select("id, requirement_id, supplier_id, response_text, ai_score, ai_comment, manual_score, manual_comment, question, status, is_checked")
-      .eq("rfp_id", rfpId);
+      .select("id, requirement_id, supplier_id, version_id, response_text, ai_score, ai_comment, manual_score, manual_comment, question, status, is_checked")
+      .eq("rfp_id", rfpId)
+      .eq("version_id", activeVersion.id);
 
     if (existingError) {
       console.warn(`Failed to fetch existing responses: ${existingError.message}`);
     }
 
-    // Create maps for quick lookups by (requirement_id, supplier_id)
+    // Create maps for quick lookups by (requirement_id, supplier_id, version_id)
     const existingResponsesMap = new Map<string, any>();
     if (existingResponses) {
       for (const resp of existingResponses) {
-        const key = `${resp.requirement_id}|${resp.supplier_id}`;
+        const key = `${resp.requirement_id}|${resp.supplier_id}|${resp.version_id}`;
         existingResponsesMap.set(key, resp);
       }
     }
@@ -1113,7 +1114,7 @@ export async function importResponses(
         continue;
       }
 
-      const lookupKey = `${requirement.id}|${supplier.id}`;
+      const lookupKey = `${requirement.id}|${supplier.id}|${activeVersion.id}`;
       const existing = existingResponsesMap.get(lookupKey);
 
       if (existing) {

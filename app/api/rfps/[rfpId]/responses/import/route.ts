@@ -64,9 +64,15 @@ export async function POST(
     const result = await importResponses(rfpId, responses);
 
     if (!result.success) {
+      const errorMessage = result.error || "Failed to import responses";
       return NextResponse.json(
-        { error: result.error || "Failed to import responses" },
-        { status: result.error?.includes("version") ? 400 : 500 }
+        {
+          success: false,
+          error: errorMessage,
+          imported: result.count || 0,
+          total: responses.length,
+        },
+        { status: errorMessage?.includes("version") ? 400 : 500 }
       );
     }
 
@@ -78,8 +84,12 @@ export async function POST(
     });
   } catch (error) {
     console.error("Error importing responses:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to import responses";
     return NextResponse.json(
-      { error: "Failed to import responses" },
+      {
+        success: false,
+        error: errorMessage,
+      },
       { status: 500 }
     );
   }
