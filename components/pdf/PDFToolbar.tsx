@@ -66,15 +66,17 @@ export function PDFToolbar({
   const [searchTerm, setSearchTerm] = useState("");
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [pageInputValue, setPageInputValue] = useState(currentPage.toString());
 
   const pageInputRef = useRef<HTMLInputElement>(null);
 
   const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    setPageInputValue(value);
 
     // Permettre les valeurs partielles pendant la saisie
     if (value === "") {
-      onPageChange(1); // Valeur par défaut si vide
+      // Ne pas changer de page si le champ est vide, permettre la saisie
       return;
     }
 
@@ -86,6 +88,7 @@ export function PDFToolbar({
 
   const handlePageInputFocus = () => {
     // Sélectionner tout le contenu au focus pour faciliter l'édition
+    setPageInputValue(currentPage.toString());
     if (pageInputRef.current) {
       pageInputRef.current.select();
     }
@@ -99,12 +102,22 @@ export function PDFToolbar({
       if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= numPages) {
         onPageChange(pageNum);
         e.currentTarget.blur();
+      } else if (value === "") {
+        // Si champ vide, aller à la page 1
+        onPageChange(1);
+        setPageInputValue("1");
+        e.currentTarget.blur();
       }
     }
-    // Échap pour annuler
+    // Échap pour annuler et restaurer la page actuelle
     if (e.key === "Escape") {
-      e.currentTarget.value = currentPage.toString();
+      setPageInputValue(currentPage.toString());
       e.currentTarget.blur();
+    }
+    // Backspace et Delete pour permettre la suppression - pas de traitement spécial
+    if (e.key === "Backspace" || e.key === "Delete") {
+      // Laisser le comportement par défaut du navigateur
+      return;
     }
   };
 
@@ -137,6 +150,17 @@ export function PDFToolbar({
       setSearchTerm(searchQuery);
     }
   }, [searchQuery, searchTerm]);
+
+  // Synchroniser l'input quand currentPage change (par navigation externe)
+  useEffect(() => {
+    // Ne mettre à jour que si l'input n'a pas le focus pour éviter d'écraser la saisie
+    if (
+      pageInputRef.current &&
+      document.activeElement !== pageInputRef.current
+    ) {
+      setPageInputValue(currentPage.toString());
+    }
+  }, [currentPage]);
 
   // Gérer les raccourcis clavier
   useEffect(() => {
@@ -213,10 +237,17 @@ export function PDFToolbar({
           type="text"
           min={1}
           max={numPages}
-          value={currentPage}
+          value={pageInputValue}
           onChange={handlePageInputChange}
           onFocus={handlePageInputFocus}
           onKeyDown={handlePageInputKeyDown}
+          onBlur={() => {
+            // Au blur, s'assurer que la valeur est valide
+            const pageNum = parseInt(pageInputValue);
+            if (isNaN(pageNum) || pageNum < 1 || pageNum > numPages) {
+              setPageInputValue(currentPage.toString());
+            }
+          }}
           placeholder="1"
           className="w-12 text-center h-8 text-sm p-1"
         />
