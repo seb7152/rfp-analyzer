@@ -60,6 +60,7 @@ export function usePDFTextSearch({
   const [currentResultIndex, setCurrentResultIndex] = useState(-1);
   const [isSearching, setIsSearching] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Cache LRU pour le texte extrait
   const textCache = useRef<LRUCache>(new LRUCache(10));
@@ -221,12 +222,10 @@ export function usePDFTextSearch({
       textCache.current.set(pageNumber, items);
       extractedTextRef.current.set(pageNumber, items);
 
-      // Si une recherche est active, relancer la recherche
-      if (searchQuery.trim()) {
-        performSearch(searchQuery);
-      }
+      // Ne jamais relancer la recherche depuis registerPageText pour éviter les boucles
+      // La recherche est déjà faite sur tout le document au chargement
     },
-    [searchQuery, performSearch]
+    []
   );
 
   // Version debouncée de la recherche
@@ -256,9 +255,15 @@ export function usePDFTextSearch({
           result: searchResults[index],
           currentPage: searchResults[index].pageNumber,
         });
+        setIsNavigating(true);
         setCurrentResultIndex(index);
         const result = searchResults[index];
         onPageChange?.(result.pageNumber);
+
+        // Réinitialiser le flag après un court délai pour éviter les conflits
+        setTimeout(() => {
+          setIsNavigating(false);
+        }, 100);
       }
     },
     [searchResults, onPageChange]
@@ -266,25 +271,25 @@ export function usePDFTextSearch({
 
   // Résultat suivant
   const nextResult = useCallback(() => {
-    if (searchResults.length === 0) return;
+    if (searchResults.length === 0 || isNavigating) return;
 
     const nextIndex =
       currentResultIndex >= searchResults.length - 1
         ? 0
         : currentResultIndex + 1;
     navigateToResult(nextIndex);
-  }, [searchResults, currentResultIndex, navigateToResult]);
+  }, [searchResults, currentResultIndex, navigateToResult, isNavigating]);
 
   // Résultat précédent
   const previousResult = useCallback(() => {
-    if (searchResults.length === 0) return;
+    if (searchResults.length === 0 || isNavigating) return;
 
     const prevIndex =
       currentResultIndex <= 0
         ? searchResults.length - 1
         : currentResultIndex - 1;
     navigateToResult(prevIndex);
-  }, [searchResults, currentResultIndex, navigateToResult]);
+  }, [searchResults, currentResultIndex, navigateToResult, isNavigating]);
 
   // Effacer la recherche
   const clearSearch = useCallback(() => {
@@ -305,6 +310,7 @@ export function usePDFTextSearch({
     currentResultIndex,
     isSearching,
     isExtracting,
+    isNavigating,
     totalResults: searchResults.length,
     search,
     navigateToResult,

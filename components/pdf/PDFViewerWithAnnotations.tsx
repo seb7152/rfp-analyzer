@@ -189,7 +189,7 @@ export function PDFViewerWithAnnotations({
     setTextSelection(null);
   }, [currentPage]);
 
-  // Effacer la sélection lors du scroll
+  // Effacer la sélection lors du scroll (seulement si pas en navigation de recherche)
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -204,7 +204,7 @@ export function PDFViewerWithAnnotations({
     return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Effacer la sélection lors du clic à l'extérieur
+  // Effacer la sélection lors du clic à l'extérieur (éviter les conflits avec navigation recherche)
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -218,6 +218,12 @@ export function PDFViewerWithAnnotations({
       // Ne pas effacer si on clique dans le PDF text layer
       if (target.closest(".pdf-text-layer")) {
         console.log("[PDFViewer] Click on text layer, ignoring");
+        return;
+      }
+
+      // Ne pas effacer si on clique sur les contrôles de recherche
+      if (target.closest("input") || target.closest("button")) {
+        console.log("[PDFViewer] Click on search controls, ignoring");
         return;
       }
 
