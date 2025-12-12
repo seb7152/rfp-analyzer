@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import type { PDFSearchLayerProps } from "./types/search.types";
 
 export function PDFSearchLayer({
@@ -9,10 +9,46 @@ export function PDFSearchLayer({
   scale,
   pageNumber,
 }: PDFSearchLayerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // Filtrer les résultats pour la page actuelle
   const pageResults = searchResults.filter(
     (result) => result.pageNumber === pageNumber
   );
+
+  // Scroller vers le résultat actif sur la page actuelle
+  useEffect(() => {
+    if (pageResults.length === 0 || currentResultIndex === -1) return;
+
+    const activeResult = pageResults.find(
+      (result) =>
+        searchResults.findIndex((r) => r.id === result.id) ===
+        currentResultIndex
+    );
+
+    if (activeResult && activeResult.rects.length > 0 && containerRef.current) {
+      const firstRect = activeResult.rects[0];
+      const element = document.querySelector(
+        `[data-page-number="${pageNumber}"]`
+      ) as HTMLElement;
+
+      if (element) {
+        // Calculer la position du highlight par rapport au container
+        const highlightTop = firstRect.y * scale;
+        const highlightHeight = firstRect.height * scale;
+        const containerHeight = element.parentElement?.clientHeight || 0;
+
+        // Centrer verticalement le résultat dans la vue
+        const scrollTop =
+          highlightTop - containerHeight / 2 + highlightHeight / 2;
+
+        element.parentElement?.scrollTo({
+          top: Math.max(0, scrollTop),
+          behavior: "smooth",
+        });
+      }
+    }
+  }, [currentResultIndex, pageResults, pageNumber, scale]);
 
   if (pageResults.length === 0) {
     return null;
@@ -20,6 +56,7 @@ export function PDFSearchLayer({
 
   return (
     <div
+      ref={containerRef}
       className="absolute inset-0 pointer-events-none"
       style={{ zIndex: 25 }} // Entre TextLayer (20) et AnnotationLayer (30)
     >

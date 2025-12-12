@@ -125,10 +125,10 @@ export function PDFTextLayer({
                 pageNumber: page.pageNumber,
                 rects: [
                   {
-                    x: viewX,
-                    y: viewY - scaledFontSize * 0.9,
-                    width: calculatedWidth,
-                    height: scaledFontSize,
+                    x: viewX / scale, // Stocker les coordonnées sans scale
+                    y: (viewY - scaledFontSize * 0.9) / scale,
+                    width: calculatedWidth / scale,
+                    height: scaledFontSize / scale,
                   },
                 ],
                 pageIndex: index,

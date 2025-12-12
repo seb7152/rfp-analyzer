@@ -184,6 +184,11 @@ export function usePDFTextSearch({
   const navigateToResult = useCallback(
     (index: number) => {
       if (index >= 0 && index < searchResults.length) {
+        console.log("[usePDFTextSearch] Navigating to result:", {
+          index,
+          result: searchResults[index],
+          currentPage: searchResults[index].pageNumber,
+        });
         setCurrentResultIndex(index);
         const result = searchResults[index];
         onPageChange?.(result.pageNumber);
