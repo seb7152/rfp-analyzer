@@ -1022,8 +1022,9 @@ export async function getResponse(responseId: string): Promise<{
 }
 
 /**
- * Import responses for an RFP
- * Creates response records linking requirements to suppliers with AI analysis
+ * Import responses for an RFP with MERGE logic
+ * Creates new response records or updates existing ones (UPSERT pattern)
+ * Only updates provided fields; preserves existing values for fields not provided
  */
 export async function importResponses(
   rfpId: string,
@@ -1060,7 +1061,26 @@ export async function importResponses(
       };
     }
 
-    let insertedCount = 0;
+    // Fetch all existing responses for this RFP to check for updates
+    const { data: existingResponses, error: existingError } = await supabase
+      .from("responses")
+      .select("id, requirement_id, supplier_id, response_text, ai_score, ai_comment, manual_score, manual_comment, question, status, is_checked")
+      .eq("rfp_id", rfpId);
+
+    if (existingError) {
+      console.warn(`Failed to fetch existing responses: ${existingError.message}`);
+    }
+
+    // Create maps for quick lookups by (requirement_id, supplier_id)
+    const existingResponsesMap = new Map<string, any>();
+    if (existingResponses) {
+      for (const resp of existingResponses) {
+        const key = `${resp.requirement_id}|${resp.supplier_id}`;
+        existingResponsesMap.set(key, resp);
+      }
+    }
+
+    let upsertedCount = 0;
 
     for (const response of responses) {
       // Get the requirement ID from external ID
@@ -1093,33 +1113,73 @@ export async function importResponses(
         continue;
       }
 
-      // Insert the response
-      const { error: insertError } = await supabase.from("responses").insert([
-        {
-          rfp_id: rfpId,
-          requirement_id: requirement.id,
-          supplier_id: supplier.id,
-          response_text: response.response_text || null,
-          ai_score: response.ai_score || null,
-          ai_comment: response.ai_comment || null,
-          manual_score: response.manual_score || null,
-          manual_comment: response.manual_comment || null,
-          question: response.question || null,
-          status: response.status || "pending",
-          is_checked: response.is_checked || false,
-          version_id: activeVersion.id,
-        },
-      ]);
+      const lookupKey = `${requirement.id}|${supplier.id}`;
+      const existing = existingResponsesMap.get(lookupKey);
 
-      if (insertError) {
-        console.warn(`Failed to insert response: ${insertError.message}`);
-        continue;
+      if (existing) {
+        // UPDATE: merge with existing, only updating provided fields
+        const updatePayload: any = {};
+
+        if (response.response_text !== undefined)
+          updatePayload.response_text = response.response_text;
+        if (response.ai_score !== undefined)
+          updatePayload.ai_score = response.ai_score;
+        if (response.ai_comment !== undefined)
+          updatePayload.ai_comment = response.ai_comment;
+        if (response.manual_score !== undefined)
+          updatePayload.manual_score = response.manual_score;
+        if (response.manual_comment !== undefined)
+          updatePayload.manual_comment = response.manual_comment;
+        if (response.question !== undefined)
+          updatePayload.question = response.question;
+        if (response.status !== undefined)
+          updatePayload.status = response.status;
+        if (response.is_checked !== undefined)
+          updatePayload.is_checked = response.is_checked;
+
+        // Only update if there are fields to update
+        if (Object.keys(updatePayload).length > 0) {
+          const { error: updateError } = await supabase
+            .from("responses")
+            .update(updatePayload)
+            .eq("id", existing.id);
+
+          if (updateError) {
+            console.warn(`Failed to update response: ${updateError.message}`);
+            continue;
+          }
+        }
+      } else {
+        // INSERT: create new response with defaults for required fields
+        const { error: insertError } = await supabase
+          .from("responses")
+          .insert([
+            {
+              rfp_id: rfpId,
+              requirement_id: requirement.id,
+              supplier_id: supplier.id,
+              response_text: response.response_text || null,
+              ai_score: response.ai_score || null,
+              ai_comment: response.ai_comment || null,
+              manual_score: response.manual_score || null,
+              manual_comment: response.manual_comment || null,
+              question: response.question || null,
+              status: response.status || "pending",
+              is_checked: response.is_checked || false,
+              version_id: activeVersion.id,
+            },
+          ]);
+
+        if (insertError) {
+          console.warn(`Failed to insert response: ${insertError.message}`);
+          continue;
+        }
       }
 
-      insertedCount++;
+      upsertedCount++;
     }
 
-    return { success: true, count: insertedCount };
+    return { success: true, count: upsertedCount };
   } catch (error) {
     return {
       success: false,

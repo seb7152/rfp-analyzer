@@ -912,9 +912,14 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
           <div className="space-y-4">
             <div>
               <h2 className="text-2xl font-bold mb-2">Importer les réponses</h2>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-slate-600 mb-3">
                 Importez les réponses pour chaque fournisseur
               </p>
+              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  <span className="font-semibold">💡 Mode UPSERT :</span> Les réponses existantes seront mises à jour avec les champs fournis. Les champs non fournis conserveront leurs valeurs existantes.
+                </p>
+              </div>
             </div>
 
             {/* Suppliers table - showing import status */}

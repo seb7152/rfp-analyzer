@@ -4,7 +4,10 @@ import { importResponses } from "@/lib/supabase/queries";
 
 /**
  * POST /api/rfps/[rfpId]/responses/import
- * Import responses for an RFP from JSON
+ * Import or update responses for an RFP from JSON (UPSERT pattern)
+ *
+ * For existing responses: Updates only the provided fields, preserves others
+ * For new responses: Creates with provided fields, uses defaults for the rest
  *
  * Request body:
  * {
@@ -12,17 +15,22 @@ import { importResponses } from "@/lib/supabase/queries";
  *     {
  *       requirement_id_external: "REQ001",           // Required
  *       supplier_id_external: "SUP001",              // Required
- *       response_text: "...",                        // Optional
+ *       response_text: "...",                        // Optional - if not provided, existing value preserved
  *       ai_score: 4,                                 // Optional (0-5 or 0.5 increments)
  *       ai_comment: "...",                           // Optional
  *       manual_score: 3,                             // Optional (0-5 or 0.5 increments)
  *       manual_comment: "...",                       // Optional
  *       question: "...",                             // Optional
  *       status: "pass",                              // Optional (pending, pass, partial, fail)
- *       is_checked: true                             // Optional (default: false)
+ *       is_checked: true                             // Optional (default: false for new records)
  *     }
  *   ]
  * }
+ *
+ * Examples:
+ * - Import complete response with AI and manual scores
+ * - Update only manual notes without affecting AI scores
+ * - Import only notes without response_text
  */
 export async function POST(
   request: NextRequest,
