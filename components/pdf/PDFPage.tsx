@@ -10,6 +10,7 @@ interface PDFPageProps {
   scale: number;
   onPageLoad?: (page: PDFPageProxy) => void;
   onTextSelected?: (text: string, rects: DOMRect[]) => void;
+  onTextExtracted?: (items: any[]) => void;
   className?: string;
   children?: React.ReactNode; // Pour les couches d'annotations et de texte
 }
@@ -20,6 +21,7 @@ export function PDFPage({
   scale,
   onPageLoad,
   onTextSelected,
+  onTextExtracted,
   className,
   children,
 }: PDFPageProps) {
@@ -140,7 +142,17 @@ export function PDFPage({
         />
       )}
 
-      {/* Couches supplémentaires (texte, annotations) */}
+      {/* Couche de texte pour la sélection et la recherche */}
+      {page && (onTextSelected || onTextExtracted) && (
+        <PDFTextLayer
+          page={page}
+          scale={scale}
+          onTextSelected={onTextSelected}
+          onTextExtracted={onTextExtracted}
+        />
+      )}
+
+      {/* Couches supplémentaires (annotations) */}
       {children}
     </div>
   );

@@ -4,9 +4,11 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 import { usePDFDocument } from "./hooks/usePDFDocument";
 import { usePDFAnnotations } from "./hooks/usePDFAnnotations";
 import { usePDFNavigation } from "./hooks/usePDFNavigation";
+import { usePDFTextSearch } from "./hooks/usePDFTextSearch";
 import { PDFPage } from "./PDFPage";
 import { PDFToolbar } from "./PDFToolbar";
 import { PDFAnnotationLayer } from "./PDFAnnotationLayer";
+import { PDFSearchLayer } from "./PDFSearchLayer";
 import { SelectionToolbar } from "./SelectionToolbar";
 import { SelectionDialog } from "./SelectionDialog";
 import { Loader2 } from "lucide-react";
@@ -93,6 +95,23 @@ export function PDFViewerWithAnnotations({
     [numPages, onPageChange]
   );
 
+  // Hook de recherche
+  const {
+    searchQuery,
+    searchResults,
+    currentResultIndex,
+    isExtracting,
+    search,
+    nextResult,
+    previousResult,
+    clearSearch,
+    registerPageText,
+  } = usePDFTextSearch({
+    document,
+    scale,
+    onPageChange: handlePageChange,
+  });
+
   const handleZoomIn = useCallback(() => {
     setScale((prev) => Math.min(prev + 0.05, 3));
   }, []);
@@ -152,13 +171,25 @@ export function PDFViewerWithAnnotations({
     [loadedPage, scale, currentPage]
   );
 
+  // Callback pour gérer le texte extrait (pour la recherche)
+  const handleTextExtracted = useCallback(
+    (items: any[]) => {
+      console.log("[PDFViewer] handleTextExtracted called", {
+        pageNumber: currentPage,
+        itemsCount: items.length,
+      });
+      registerPageText(currentPage, items);
+    },
+    [currentPage, registerPageText]
+  );
+
   // Effacer la sélection lors du changement de page
   useEffect(() => {
     console.log("[PDFViewer] Page changed, clearing selection");
     setTextSelection(null);
   }, [currentPage]);
 
-  // Effacer la sélection lors du scroll
+  // Effacer la sélection lors du scroll (seulement si pas en navigation de recherche)
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -173,7 +204,7 @@ export function PDFViewerWithAnnotations({
     return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Effacer la sélection lors du clic à l'extérieur
+  // Effacer la sélection lors du clic à l'extérieur (éviter les conflits avec navigation recherche)
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -187,6 +218,12 @@ export function PDFViewerWithAnnotations({
       // Ne pas effacer si on clique dans le PDF text layer
       if (target.closest(".pdf-text-layer")) {
         console.log("[PDFViewer] Click on text layer, ignoring");
+        return;
+      }
+
+      // Ne pas effacer si on clique sur les contrôles de recherche
+      if (target.closest("input") || target.closest("button")) {
+        console.log("[PDFViewer] Click on search controls, ignoring");
         return;
       }
 
@@ -380,6 +417,15 @@ export function PDFViewerWithAnnotations({
           onAnnotationModeChange={setAnnotationMode}
           annotations={annotations}
           requirements={requirements}
+          searchQuery={searchQuery}
+          searchResults={searchResults}
+          currentResultIndex={currentResultIndex}
+          isExtracting={isExtracting}
+          onSearchChange={search}
+          onNavigateResult={(direction) =>
+            direction === "next" ? nextResult() : previousResult()
+          }
+          onClearSearch={clearSearch}
         />
 
         <div
@@ -401,8 +447,19 @@ export function PDFViewerWithAnnotations({
                 scale={scale}
                 onPageLoad={handlePageLoad}
                 onTextSelected={handleTextSelected}
+                onTextExtracted={handleTextExtracted}
                 className="shadow-lg"
               >
+                {/* Couche de recherche */}
+                {loadedPage && viewport && (
+                  <PDFSearchLayer
+                    searchResults={searchResults}
+                    currentResultIndex={currentResultIndex}
+                    scale={scale}
+                    pageNumber={currentPage}
+                  />
+                )}
+
                 {/* Couche d'annotations */}
                 {loadedPage && viewport && (
                   <PDFAnnotationLayer
