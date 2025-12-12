@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -61,10 +67,44 @@ export function PDFToolbar({
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
+  const pageInputRef = useRef<HTMLInputElement>(null);
+
   const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    if (!isNaN(value) && value >= 1 && value <= numPages) {
-      onPageChange(value);
+    const value = e.target.value;
+
+    // Permettre les valeurs partielles pendant la saisie
+    if (value === "") {
+      onPageChange(1); // Valeur par défaut si vide
+      return;
+    }
+
+    const pageNum = parseInt(value);
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= numPages) {
+      onPageChange(pageNum);
+    }
+  };
+
+  const handlePageInputFocus = () => {
+    // Sélectionner tout le contenu au focus pour faciliter l'édition
+    if (pageInputRef.current) {
+      pageInputRef.current.select();
+    }
+  };
+
+  const handlePageInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Permettre la navigation avec Entrée
+    if (e.key === "Enter") {
+      const value = e.currentTarget.value;
+      const pageNum = parseInt(value);
+      if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= numPages) {
+        onPageChange(pageNum);
+        e.currentTarget.blur();
+      }
+    }
+    // Échap pour annuler
+    if (e.key === "Escape") {
+      e.currentTarget.value = currentPage.toString();
+      e.currentTarget.blur();
     }
   };
 
@@ -169,11 +209,15 @@ export function PDFToolbar({
         </Button>
 
         <Input
-          type="number"
+          ref={pageInputRef}
+          type="text"
           min={1}
           max={numPages}
           value={currentPage}
           onChange={handlePageInputChange}
+          onFocus={handlePageInputFocus}
+          onKeyDown={handlePageInputKeyDown}
+          placeholder="1"
           className="w-12 text-center h-8 text-sm p-1"
         />
 
