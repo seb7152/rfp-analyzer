@@ -57,6 +57,11 @@ const EXPORT_FIELDS = [
     description: "Pondération de l'exigence",
   },
   {
+    value: "requirement_weight_local_percent",
+    label: "Poids Local %",
+    description: "Poids en % au sein de la catégorie (ex: 30.5%)",
+  },
+  {
     value: "supplier_response",
     label: "Réponse Fournisseur",
     description: "Texte de la réponse",

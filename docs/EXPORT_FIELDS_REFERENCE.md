@@ -6,12 +6,21 @@ This document lists all available fields that can be mapped when configuring exp
 
 ### Requirement Fields
 
-| Field Name                | Description                      | Type   | Example                      |
-| ------------------------- | -------------------------------- | ------ | ---------------------------- |
-| `requirement_code`        | External requirement identifier  | string | "REQ-001"                    |
-| `requirement_title`       | Requirement title                | string | "Authentication System"      |
-| `requirement_description` | Detailed requirement description | string | "The system must support..." |
-| `requirement_weight`      | Requirement weight/importance    | number | 3                            |
+| Field Name                           | Description                                         | Type   | Example                      |
+| ------------------------------------ | --------------------------------------------------- | ------ | ---------------------------- |
+| `requirement_code`                   | External requirement identifier                     | string | "REQ-001"                    |
+| `requirement_title`                  | Requirement title                                   | string | "Authentication System"      |
+| `requirement_description`            | Detailed requirement description                    | string | "The system must support..." |
+| `requirement_weight`                 | Requirement weight/importance (absolute)            | number | 0.15                         |
+| `requirement_weight_local_percent`\* | Local weight percentage within parent category (0-100%) | number | 30.5                         |
+
+\***Note on `requirement_weight_local_percent`**: This field is **calculated on-the-fly** and not stored in the database.
+
+- Formula: `(requirement weight / sum of sibling weights) × 100`
+- Example: If 3 requirements in category with weights 0.15, 0.20, 0.15, the first shows 30.0%
+- Rounded to 1 decimal place
+- Returns 100% if requirement has no category assigned
+- Returns 0% if total sibling weight is zero
 
 ### Supplier Response Fields
 
