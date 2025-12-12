@@ -1,18 +1,13 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import type { PDFPageProxy } from "./types/pdf.types";
-
-interface PDFTextLayerProps {
-  page: PDFPageProxy;
-  scale: number;
-  onTextSelected?: (text: string, rects: DOMRect[]) => void;
-}
+import type { PDFTextLayerProps, TextItem } from "./types/search.types";
 
 export function PDFTextLayer({
   page,
   scale,
   onTextSelected,
+  onTextExtracted,
 }: PDFTextLayerProps) {
   const textLayerRef = useRef<HTMLDivElement>(null);
 
@@ -32,13 +27,17 @@ export function PDFTextLayer({
     );
     page
       .getTextContent()
-      .then((textContent) => {
+      .then((textContent: any) => {
         console.log(
           "[PDFTextLayer] Text content loaded, items:",
           textContent.items.length
         );
+
+        // Préparer les items de texte pour la recherche
+        const textItems: TextItem[] = [];
+
         // Créer les éléments de texte
-        textContent.items.forEach((item: any) => {
+        textContent.items.forEach((item: any, index: number) => {
           if ("str" in item) {
             const textDiv = document.createElement("div");
             textDiv.textContent = item.str;
@@ -115,10 +114,35 @@ export function PDFTextLayer({
             textDiv.style.pointerEvents = "all"; // Ensure clickable
 
             textLayerDiv.appendChild(textDiv);
+
+            // Ajouter aux items de texte pour la recherche
+            if ("str" in item && item.str.trim()) {
+              const calculatedWidth =
+                item.width > 0 ? item.width * transform[0] : 50; // Largeur par défaut si non spécifiée
+
+              textItems.push({
+                text: item.str,
+                pageNumber: page.pageNumber,
+                rects: [
+                  {
+                    x: viewX,
+                    y: viewY - scaledFontSize * 0.9,
+                    width: calculatedWidth,
+                    height: scaledFontSize,
+                  },
+                ],
+                pageIndex: index,
+              });
+            }
           }
         });
+
+        // Notifier le composant parent du texte extrait
+        if (onTextExtracted && textItems.length > 0) {
+          onTextExtracted(textItems);
+        }
       })
-      .catch((err) => {
+      .catch((err: any) => {
         console.error("[PDFTextLayer] Error loading text content:", err);
       });
   }, [page, scale]);

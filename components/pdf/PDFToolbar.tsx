@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -11,6 +11,9 @@ import {
   MousePointer,
   List,
   Search,
+  X,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +25,16 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { PDFToolbarProps } from "./types/pdf.types";
 import type { PDFAnnotation, RequirementInfo } from "./types/annotation.types";
+import type { SearchResult } from "./types/search.types";
+
+interface ExtendedPDFToolbarProps extends PDFToolbarProps {
+  searchQuery?: string;
+  searchResults?: SearchResult[];
+  currentResultIndex?: number;
+  onSearchChange?: (query: string) => void;
+  onNavigateResult?: (direction: "next" | "previous") => void;
+  onClearSearch?: () => void;
+}
 
 export function PDFToolbar({
   currentPage,
@@ -35,9 +48,16 @@ export function PDFToolbar({
   onAnnotationModeChange,
   annotations = [],
   requirements = [],
-}: PDFToolbarProps) {
+  searchQuery = "",
+  searchResults = [],
+  currentResultIndex = -1,
+  onSearchChange,
+  onNavigateResult,
+  onClearSearch,
+}: ExtendedPDFToolbarProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
@@ -45,6 +65,70 @@ export function PDFToolbar({
       onPageChange(value);
     }
   };
+
+  // Gérer la recherche
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setSearchTerm(value);
+      onSearchChange?.(value);
+    },
+    [onSearchChange]
+  );
+
+  const handleClearSearch = useCallback(() => {
+    setSearchTerm("");
+    onClearSearch?.();
+  }, [onClearSearch]);
+
+  const handleNextResult = useCallback(() => {
+    onNavigateResult?.("next");
+  }, [onNavigateResult]);
+
+  const handlePreviousResult = useCallback(() => {
+    onNavigateResult?.("previous");
+  }, [onNavigateResult]);
+
+  // Synchroniser le searchQuery externe avec l'état local
+  useEffect(() => {
+    if (searchQuery !== searchTerm) {
+      setSearchTerm(searchQuery);
+    }
+  }, [searchQuery, searchTerm]);
+
+  // Gérer les raccourcis clavier
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+F pour focus la recherche
+      if ((e.ctrlKey || e.metaKey) && e.key === "f") {
+        e.preventDefault();
+        setIsSearchFocused(true);
+      }
+      // Échap pour effacer la recherche
+      if (e.key === "Escape" && isSearchFocused) {
+        handleClearSearch();
+        setIsSearchFocused(false);
+      }
+      // F3 ou Entrée pour résultat suivant
+      if ((e.key === "F3" || e.key === "Enter") && isSearchFocused) {
+        e.preventDefault();
+        handleNextResult();
+      }
+      // Shift+F3 pour résultat précédent
+      if (e.shiftKey && e.key === "F3" && isSearchFocused) {
+        e.preventDefault();
+        handlePreviousResult();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [
+    isSearchFocused,
+    handleClearSearch,
+    handleNextResult,
+    handlePreviousResult,
+  ]);
 
   const bookmarks = useMemo(() => {
     return (annotations as PDFAnnotation[])
@@ -104,6 +188,61 @@ export function PDFToolbar({
         >
           <ChevronRight className="w-4 h-4" />
         </Button>
+      </div>
+
+      {/* Barre de recherche */}
+      <div className="flex items-center gap-1 min-w-fit border-l pl-2">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Rechercher dans le PDF..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
+            className="pl-8 h-8 text-sm w-48 lg:w-64"
+          />
+          {searchTerm && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearSearch}
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
+
+        {/* Navigation des résultats */}
+        {searchResults.length > 0 && (
+          <div className="flex items-center gap-1 text-xs text-gray-600">
+            <span className="whitespace-nowrap">
+              {currentResultIndex + 1} / {searchResults.length}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePreviousResult}
+              disabled={searchResults.length === 0}
+              className="h-6 w-6 p-0"
+              title="Résultat précédent (Shift+F3)"
+            >
+              <ChevronUp className="w-3 h-3" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNextResult}
+              disabled={searchResults.length === 0}
+              className="h-6 w-6 p-0"
+              title="Résultat suivant (F3)"
+            >
+              <ChevronDown className="w-3 h-3" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Contrôles de zoom */}
