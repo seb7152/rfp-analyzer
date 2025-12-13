@@ -28,6 +28,8 @@ export function TextEnhancer({
   disabled = false,
 }: TextEnhancerProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showRevert, setShowRevert] = useState(false);
+  const [originalText, setOriginalText] = useState("");
   const { toast } = useToast();
 
   const handleEnhance = async () => {
@@ -40,6 +42,8 @@ export function TextEnhancer({
       return;
     }
 
+    // Save original text for revert option
+    setOriginalText(currentText);
     setIsProcessing(true);
 
     try {
@@ -70,6 +74,12 @@ export function TextEnhancer({
           title: "Texte amélioré",
           description: "Le texte a été reformulé et complété par l'IA.",
         });
+
+        // Show revert button for 5 seconds
+        setShowRevert(true);
+        setTimeout(() => {
+          setShowRevert(false);
+        }, 5000);
       } else {
         throw new Error("Aucun texte retourné");
       }
@@ -86,8 +96,17 @@ export function TextEnhancer({
     }
   };
 
+  const handleRevert = () => {
+    onEnhancementComplete(originalText);
+    setShowRevert(false);
+    toast({
+      title: "Annulation",
+      description: "Le texte original a été restauré.",
+    });
+  };
+
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn("relative flex items-center gap-1", className)}>
       <Button
         type="button"
         variant="ghost"
@@ -115,6 +134,34 @@ export function TextEnhancer({
             <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
           </span>
         </div>
+      )}
+
+      {/* Revert button - visible for 5 seconds after enhancement */}
+      {showRevert && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={handleRevert}
+          className="h-8 w-8 rounded-full transition-all animate-in fade-in zoom-in-95 duration-200"
+          title="Annuler l'amélioration"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-orange-500"
+          >
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+          </svg>
+        </Button>
       )}
     </div>
   );
