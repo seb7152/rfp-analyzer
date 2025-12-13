@@ -10,6 +10,7 @@ import {
   Loader2,
   Copy,
 } from "lucide-react";
+import { AudioRecorder } from "@/components/AudioRecorder";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { RoundCheckbox } from "@/components/ui/round-checkbox";
@@ -189,26 +190,54 @@ export function MobileSupplierCard({
               <div className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
                 Votre commentaire
               </div>
-              <Textarea
-                value={manualComment}
-                onChange={(e) => onCommentChange?.(e.target.value)}
-                onBlur={() => onCommentBlur?.()}
-                placeholder="Ajoutez vos observations..."
-                className="min-h-32"
-              />
+              <div className="space-y-2">
+                <Textarea
+                  value={manualComment}
+                  onChange={(e) => onCommentChange?.(e.target.value)}
+                  onBlur={() => onCommentBlur?.()}
+                  placeholder="Ajoutez vos observations..."
+                  className="min-h-32"
+                />
+                {!manualComment.trim() && (
+                  <div className="flex justify-end">
+                    <AudioRecorder
+                      onTranscriptionComplete={(text) => {
+                        onCommentChange?.(text);
+                        setTimeout(() => {
+                          onCommentBlur?.();
+                        }, 100);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
               <div className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
                 Questions / Doutes
               </div>
-              <Textarea
-                value={questionText}
-                onChange={(e) => onQuestionChange?.(e.target.value)}
-                onBlur={() => onQuestionBlur?.()}
-                placeholder="Posez vos questions..."
-                className="min-h-24"
-              />
+              <div className="space-y-2">
+                <Textarea
+                  value={questionText}
+                  onChange={(e) => onQuestionChange?.(e.target.value)}
+                  onBlur={() => onQuestionBlur?.()}
+                  placeholder="Posez vos questions..."
+                  className="min-h-24"
+                />
+                {!questionText.trim() && (
+                  <div className="flex justify-end">
+                    <AudioRecorder
+                      onTranscriptionComplete={(text) => {
+                        onQuestionChange?.(text);
+                        setTimeout(() => {
+                          onQuestionBlur?.();
+                        }, 100);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </TabsContent>
 
