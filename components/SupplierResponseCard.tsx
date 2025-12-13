@@ -18,6 +18,7 @@ import { SupplierBookmarks } from "@/components/SupplierBookmarks";
 import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
 import { ResponseFocusModal } from "@/components/ResponseFocusModal";
 import { AudioRecorder } from "@/components/AudioRecorder";
+import { TextEnhancer } from "@/components/TextEnhancer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,6 +55,8 @@ export interface SupplierResponseCardProps {
   collapsible?: boolean;
   hasDocuments?: boolean;
   requirementId?: string;
+  requirementTitle?: string;
+  requirementDescription?: string;
   onOpenBookmark?: (bookmark: PDFAnnotation) => void;
 }
 
@@ -84,6 +87,8 @@ export function SupplierResponseCard({
   collapsible = true,
   hasDocuments,
   requirementId,
+  requirementTitle = "",
+  requirementDescription = "",
   onOpenBookmark,
 }: SupplierResponseCardProps) {
   const [isFocusModalOpen, setIsFocusModalOpen] = React.useState(false);
@@ -327,8 +332,8 @@ export function SupplierResponseCard({
                   placeholder="Ajoutez vos observations..."
                   className="text-sm h-24 pr-10"
                 />
-                {!manualComment.trim() && (
-                  <div className="absolute bottom-2 right-2">
+                <div className="absolute bottom-2 right-2">
+                  {!manualComment.trim() ? (
                     <AudioRecorder
                       onTranscriptionComplete={(text) => {
                         onCommentChange?.(text);
@@ -337,8 +342,20 @@ export function SupplierResponseCard({
                         }, 100);
                       }}
                     />
-                  </div>
-                )}
+                  ) : (
+                    <TextEnhancer
+                      currentText={manualComment}
+                      responseText={responseText}
+                      requirementText={`${requirementTitle}\n\n${requirementDescription}`}
+                      onEnhancementComplete={(enhancedText) => {
+                        onCommentChange?.(enhancedText);
+                        setTimeout(() => {
+                          onCommentBlur?.();
+                        }, 100);
+                      }}
+                    />
+                  )}
+                </div>
               </div>
             </div>
 
@@ -362,8 +379,8 @@ export function SupplierResponseCard({
                   placeholder="Posez vos questions..."
                   className="text-sm h-24 pr-10"
                 />
-                {!questionText.trim() && (
-                  <div className="absolute bottom-2 right-2">
+                <div className="absolute bottom-2 right-2">
+                  {!questionText.trim() ? (
                     <AudioRecorder
                       onTranscriptionComplete={(text) => {
                         onQuestionChange?.(text);
@@ -372,8 +389,20 @@ export function SupplierResponseCard({
                         }, 100);
                       }}
                     />
-                  </div>
-                )}
+                  ) : (
+                    <TextEnhancer
+                      currentText={questionText}
+                      responseText={responseText}
+                      requirementText={`${requirementTitle}\n\n${requirementDescription}`}
+                      onEnhancementComplete={(enhancedText) => {
+                        onQuestionChange?.(enhancedText);
+                        setTimeout(() => {
+                          onQuestionBlur?.();
+                        }, 100);
+                      }}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </div>

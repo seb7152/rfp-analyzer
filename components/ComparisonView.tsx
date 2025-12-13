@@ -1229,6 +1229,10 @@ export function ComparisonView({
                           questionText={state.question}
                           isSaving={state.isSaving}
                           showSaved={state.showSaved}
+                          requirementTitle={selectedRequirement?.title || ""}
+                          requirementDescription={
+                            selectedRequirement?.description || ""
+                          }
                           onStatusChange={(status) =>
                             updateResponseState(response.id, { status })
                           }
@@ -1333,6 +1337,8 @@ export function ComparisonView({
                         onOpenDocuments={handleOpenSupplierDocuments}
                         hasDocuments={response.supplier?.has_documents}
                         requirementId={selectedRequirementId}
+                        requirementTitle={requirement?.title || ""}
+                        requirementDescription={requirement?.description || ""}
                         onOpenBookmark={handleOpenBookmark}
                       />
                     );

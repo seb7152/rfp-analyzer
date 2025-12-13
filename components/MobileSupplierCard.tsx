@@ -11,6 +11,7 @@ import {
   Copy,
 } from "lucide-react";
 import { AudioRecorder } from "@/components/AudioRecorder";
+import { TextEnhancer } from "@/components/TextEnhancer";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { RoundCheckbox } from "@/components/ui/round-checkbox";
@@ -30,6 +31,8 @@ export interface MobileSupplierCardProps {
   questionText?: string;
   isSaving?: boolean;
   showSaved?: boolean;
+  requirementTitle?: string;
+  requirementDescription?: string;
   onStatusChange?: (status: "pending" | "pass" | "partial" | "fail") => void;
   onCheckChange?: (checked: boolean) => void;
   onScoreChange?: (score: number) => void;
@@ -51,6 +54,8 @@ export function MobileSupplierCard({
   questionText = "",
   isSaving = false,
   showSaved = false,
+  requirementTitle = "",
+  requirementDescription = "",
   onStatusChange,
   onCheckChange,
   onScoreChange,
@@ -198,8 +203,8 @@ export function MobileSupplierCard({
                   placeholder="Ajoutez vos observations..."
                   className="min-h-32 pr-12"
                 />
-                {!manualComment.trim() && (
-                  <div className="absolute bottom-3 right-3 z-10">
+                <div className="absolute bottom-3 right-3 z-10">
+                  {!manualComment.trim() ? (
                     <AudioRecorder
                       onTranscriptionComplete={(text) => {
                         onCommentChange?.(text);
@@ -208,8 +213,20 @@ export function MobileSupplierCard({
                         }, 100);
                       }}
                     />
-                  </div>
-                )}
+                  ) : (
+                    <TextEnhancer
+                      currentText={manualComment}
+                      responseText={responseText}
+                      requirementText={`${requirementTitle}\n\n${requirementDescription}`}
+                      onEnhancementComplete={(enhancedText) => {
+                        onCommentChange?.(enhancedText);
+                        setTimeout(() => {
+                          onCommentBlur?.();
+                        }, 100);
+                      }}
+                    />
+                  )}
+                </div>
               </div>
             </div>
 
@@ -225,8 +242,8 @@ export function MobileSupplierCard({
                   placeholder="Posez vos questions..."
                   className="min-h-24 pr-12"
                 />
-                {!questionText.trim() && (
-                  <div className="absolute bottom-3 right-3 z-10">
+                <div className="absolute bottom-3 right-3 z-10">
+                  {!questionText.trim() ? (
                     <AudioRecorder
                       onTranscriptionComplete={(text) => {
                         onQuestionChange?.(text);
@@ -235,8 +252,20 @@ export function MobileSupplierCard({
                         }, 100);
                       }}
                     />
-                  </div>
-                )}
+                  ) : (
+                    <TextEnhancer
+                      currentText={questionText}
+                      responseText={responseText}
+                      requirementText={`${requirementTitle}\n\n${requirementDescription}`}
+                      onEnhancementComplete={(enhancedText) => {
+                        onQuestionChange?.(enhancedText);
+                        setTimeout(() => {
+                          onQuestionBlur?.();
+                        }, 100);
+                      }}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </TabsContent>

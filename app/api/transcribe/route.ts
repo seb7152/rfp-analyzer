@@ -4,14 +4,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const audioFile = formData.get("audio") as File | null;
-    const mode = formData.get("mode") as string | null;
-
-    if (!audioFile) {
-      return NextResponse.json(
-        { error: "Aucun fichier audio fourni" },
-        { status: 400 }
-      );
-    }
+    const mode = (formData.get("mode") as string) || "transcript";
 
     // Get N8N webhook URL from environment
     const webhookUrl = process.env.N8N_TRANSCRIPTION_WEBHOOK_URL;
@@ -26,8 +19,36 @@ export async function POST(request: NextRequest) {
 
     // Create new FormData for N8N
     const n8nFormData = new FormData();
-    n8nFormData.append("audio", audioFile);
-    n8nFormData.append("mode", mode || "transcript");
+    n8nFormData.append("mode", mode);
+
+    if (mode === "enhance") {
+      // Text enhancement mode
+      const currentText = formData.get("currentText") as string;
+      const responseText = formData.get("responseText") as string;
+      const requirementText = formData.get("requirementText") as string;
+
+      if (!currentText) {
+        return NextResponse.json(
+          { error: "Aucun texte à améliorer" },
+          { status: 400 }
+        );
+      }
+
+      n8nFormData.append("currentText", currentText);
+      n8nFormData.append("responseText", responseText || "");
+      n8nFormData.append("requirementText", requirementText || "");
+      // Add dummy audio for compatibility
+      n8nFormData.append("audio", new Blob([""]), "dummy.txt");
+    } else {
+      // Transcription mode
+      if (!audioFile) {
+        return NextResponse.json(
+          { error: "Aucun fichier audio fourni" },
+          { status: 400 }
+        );
+      }
+      n8nFormData.append("audio", audioFile);
+    }
 
     // Forward to N8N webhook
     const n8nResponse = await fetch(webhookUrl, {
@@ -39,14 +60,19 @@ export async function POST(request: NextRequest) {
       const errorText = await n8nResponse.text();
       console.error("N8N webhook error:", errorText);
       return NextResponse.json(
-        { error: "Échec de la transcription" },
+        {
+          error:
+            mode === "enhance"
+              ? "Échec de l'amélioration"
+              : "Échec de la transcription",
+        },
         { status: n8nResponse.status }
       );
     }
 
     const result = await n8nResponse.json();
 
-    // N8N returns the transcription result directly
+    // N8N returns the result directly
     // Format: { text: "...", usage: { type: "duration", seconds: 8 } }
     if (result && result.text) {
       return NextResponse.json({ text: result.text });
@@ -59,9 +85,9 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   } catch (error) {
-    console.error("Transcription error:", error);
+    console.error("Transcription/Enhancement error:", error);
     return NextResponse.json(
-      { error: "Erreur lors de la transcription" },
+      { error: "Erreur lors du traitement" },
       { status: 500 }
     );
   }
