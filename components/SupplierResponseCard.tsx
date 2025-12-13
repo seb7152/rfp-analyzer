@@ -57,6 +57,7 @@ export interface SupplierResponseCardProps {
   requirementId?: string;
   requirementTitle?: string;
   requirementDescription?: string;
+  supplierNames?: string[];
   onOpenBookmark?: (bookmark: PDFAnnotation) => void;
 }
 
@@ -89,6 +90,7 @@ export function SupplierResponseCard({
   requirementId,
   requirementTitle = "",
   requirementDescription = "",
+  supplierNames = [],
   onOpenBookmark,
 }: SupplierResponseCardProps) {
   const [isFocusModalOpen, setIsFocusModalOpen] = React.useState(false);
@@ -347,6 +349,7 @@ export function SupplierResponseCard({
                       currentText={manualComment}
                       responseText={responseText}
                       requirementText={`${requirementTitle}\n\n${requirementDescription}`}
+                      supplierNames={supplierNames}
                       onEnhancementComplete={(enhancedText) => {
                         onCommentChange?.(enhancedText);
                         setTimeout(() => {
@@ -394,6 +397,7 @@ export function SupplierResponseCard({
                       currentText={questionText}
                       responseText={responseText}
                       requirementText={`${requirementTitle}\n\n${requirementDescription}`}
+                      supplierNames={supplierNames}
                       onEnhancementComplete={(enhancedText) => {
                         onQuestionChange?.(enhancedText);
                         setTimeout(() => {

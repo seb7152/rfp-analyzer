@@ -311,10 +311,7 @@ export function RFPDocumentsList({
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <div className="flex-shrink-0 mt-0.5">
-            {getFileIcon(
-              doc.mime_type,
-              doc.original_filename || doc.filename
-            )}
+            {getFileIcon(doc.mime_type, doc.original_filename || doc.filename)}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-slate-900 truncate">
@@ -441,7 +438,10 @@ export function RFPDocumentsList({
     <>
       <Accordion type="multiple">
         {documentGroups.map((group, groupIndex) => (
-          <AccordionItem key={`group-${groupIndex}`} value={`group-${groupIndex}`}>
+          <AccordionItem
+            key={`group-${groupIndex}`}
+            value={`group-${groupIndex}`}
+          >
             <AccordionTrigger className="hover:no-underline justify-start">
               <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
                 {group.documents.length}

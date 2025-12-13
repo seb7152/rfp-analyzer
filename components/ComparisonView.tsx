@@ -155,6 +155,11 @@ export function ComparisonView({
     return Array.from(supplierMap.values());
   }, [responses, supplierId]);
 
+  // Extract supplier names for context in AI text enhancement
+  const supplierNames = useMemo(() => {
+    return suppliers.map((s: any) => s.name);
+  }, [suppliers]);
+
   const isSingleSupplierView = suppliers.length === 1;
 
   // Find the selected node in the tree to check its type
@@ -1233,6 +1238,7 @@ export function ComparisonView({
                           requirementDescription={
                             selectedRequirement?.description || ""
                           }
+                          supplierNames={supplierNames}
                           onStatusChange={(status) =>
                             updateResponseState(response.id, { status })
                           }
@@ -1339,6 +1345,7 @@ export function ComparisonView({
                         requirementId={selectedRequirementId}
                         requirementTitle={requirement?.title || ""}
                         requirementDescription={requirement?.description || ""}
+                        supplierNames={supplierNames}
                         onOpenBookmark={handleOpenBookmark}
                       />
                     );

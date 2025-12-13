@@ -10,6 +10,7 @@ interface TextEnhancerProps {
   currentText: string;
   responseText: string;
   requirementText: string;
+  supplierNames?: string[];
   onEnhancementComplete: (enhancedText: string) => void;
   className?: string;
   disabled?: boolean;
@@ -19,6 +20,7 @@ export function TextEnhancer({
   currentText,
   responseText,
   requirementText,
+  supplierNames = [],
   onEnhancementComplete,
   className,
   disabled = false,
@@ -47,6 +49,7 @@ export function TextEnhancer({
       formData.append("currentText", currentText);
       formData.append("responseText", responseText);
       formData.append("requirementText", requirementText);
+      formData.append("supplierNames", JSON.stringify(supplierNames));
 
       const response = await fetch("/api/transcribe", {
         method: "POST",

@@ -84,7 +84,8 @@ export async function POST(
     });
   } catch (error) {
     console.error("Error importing responses:", error);
-    const errorMessage = error instanceof Error ? error.message : "Failed to import responses";
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to import responses";
     return NextResponse.json(
       {
         success: false,

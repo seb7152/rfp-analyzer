@@ -917,7 +917,10 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
               </p>
               <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
                 <p className="text-xs text-blue-700 dark:text-blue-300">
-                  <span className="font-semibold">💡 Mode UPSERT :</span> Les réponses existantes seront mises à jour avec les champs fournis. Les champs non fournis conserveront leurs valeurs existantes.
+                  <span className="font-semibold">💡 Mode UPSERT :</span> Les
+                  réponses existantes seront mises à jour avec les champs
+                  fournis. Les champs non fournis conserveront leurs valeurs
+                  existantes.
                 </p>
               </div>
             </div>
@@ -1111,8 +1114,12 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                 <TableHeader>
                                   <TableRow className="bg-slate-50 dark:bg-slate-900">
                                     <TableHead>Exigence</TableHead>
-                                    <TableHead className="text-right">Score IA</TableHead>
-                                    <TableHead className="text-right">Score Manuel</TableHead>
+                                    <TableHead className="text-right">
+                                      Score IA
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                      Score Manuel
+                                    </TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>

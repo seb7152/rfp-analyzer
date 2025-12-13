@@ -6,12 +6,12 @@ This document lists all available fields that can be mapped when configuring exp
 
 ### Requirement Fields
 
-| Field Name                           | Description                                            | Type   | Example                      |
-| ------------------------------------ | ------------------------------------------------------ | ------ | ---------------------------- |
-| `requirement_code`                   | External requirement identifier                        | string | "REQ-001"                    |
-| `requirement_title`                  | Requirement title                                      | string | "Authentication System"      |
-| `requirement_description`            | Detailed requirement description                       | string | "The system must support..." |
-| `requirement_weight`                 | Requirement weight/importance (absolute)               | number | 0.15                         |
+| Field Name                           | Description                                           | Type   | Example                      |
+| ------------------------------------ | ----------------------------------------------------- | ------ | ---------------------------- |
+| `requirement_code`                   | External requirement identifier                       | string | "REQ-001"                    |
+| `requirement_title`                  | Requirement title                                     | string | "Authentication System"      |
+| `requirement_description`            | Detailed requirement description                      | string | "The system must support..." |
+| `requirement_weight`                 | Requirement weight/importance (absolute)              | number | 0.15                         |
 | `requirement_weight_local_percent`\* | Local weight within parent category (decimal 0.0-1.0) | number | 0.305                        |
 
 \***Note on `requirement_weight_local_percent`**: This field is **calculated on-the-fly** and not stored in the database.

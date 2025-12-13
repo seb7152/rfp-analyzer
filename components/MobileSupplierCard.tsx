@@ -33,6 +33,7 @@ export interface MobileSupplierCardProps {
   showSaved?: boolean;
   requirementTitle?: string;
   requirementDescription?: string;
+  supplierNames?: string[];
   onStatusChange?: (status: "pending" | "pass" | "partial" | "fail") => void;
   onCheckChange?: (checked: boolean) => void;
   onScoreChange?: (score: number) => void;
@@ -56,6 +57,7 @@ export function MobileSupplierCard({
   showSaved = false,
   requirementTitle = "",
   requirementDescription = "",
+  supplierNames = [],
   onStatusChange,
   onCheckChange,
   onScoreChange,
@@ -218,6 +220,7 @@ export function MobileSupplierCard({
                       currentText={manualComment}
                       responseText={responseText}
                       requirementText={`${requirementTitle}\n\n${requirementDescription}`}
+                      supplierNames={supplierNames}
                       onEnhancementComplete={(enhancedText) => {
                         onCommentChange?.(enhancedText);
                         setTimeout(() => {
@@ -257,6 +260,7 @@ export function MobileSupplierCard({
                       currentText={questionText}
                       responseText={responseText}
                       requirementText={`${requirementTitle}\n\n${requirementDescription}`}
+                      supplierNames={supplierNames}
                       onEnhancementComplete={(enhancedText) => {
                         onQuestionChange?.(enhancedText);
                         setTimeout(() => {
