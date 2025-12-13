@@ -220,6 +220,7 @@ export function MobileSupplierCard({
                       currentText={manualComment}
                       responseText={responseText}
                       requirementText={`${requirementTitle}\n\n${requirementDescription}`}
+                      supplierName={supplierName}
                       supplierNames={supplierNames}
                       onEnhancementComplete={(enhancedText) => {
                         onCommentChange?.(enhancedText);
@@ -260,6 +261,7 @@ export function MobileSupplierCard({
                       currentText={questionText}
                       responseText={responseText}
                       requirementText={`${requirementTitle}\n\n${requirementDescription}`}
+                      supplierName={supplierName}
                       supplierNames={supplierNames}
                       onEnhancementComplete={(enhancedText) => {
                         onQuestionChange?.(enhancedText);

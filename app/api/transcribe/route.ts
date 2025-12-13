@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
       const currentText = formData.get("currentText") as string;
       const responseText = formData.get("responseText") as string;
       const requirementText = formData.get("requirementText") as string;
+      const supplierName = formData.get("supplierName") as string;
       const supplierNames = formData.get("supplierNames") as string;
 
       if (!currentText) {
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
       n8nFormData.append("currentText", currentText);
       n8nFormData.append("responseText", responseText || "");
       n8nFormData.append("requirementText", requirementText || "");
+      n8nFormData.append("supplierName", supplierName || "");
       n8nFormData.append("supplierNames", supplierNames || "[]");
       // Add dummy audio for compatibility
       n8nFormData.append("audio", new Blob([""]), "dummy.txt");
