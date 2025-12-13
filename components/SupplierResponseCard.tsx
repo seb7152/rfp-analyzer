@@ -17,6 +17,7 @@ import {
 import { SupplierBookmarks } from "@/components/SupplierBookmarks";
 import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
 import { ResponseFocusModal } from "@/components/ResponseFocusModal";
+import { AudioRecorder } from "@/components/AudioRecorder";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -318,13 +319,27 @@ export function SupplierResponseCard({
                   </span>
                 )}
               </div>
-              <Textarea
-                value={manualComment}
-                onChange={(e) => onCommentChange?.(e.target.value)}
-                onBlur={() => onCommentBlur?.()}
-                placeholder="Ajoutez vos observations..."
-                className="text-sm h-24"
-              />
+              <div className="relative">
+                <Textarea
+                  value={manualComment}
+                  onChange={(e) => onCommentChange?.(e.target.value)}
+                  onBlur={() => onCommentBlur?.()}
+                  placeholder="Ajoutez vos observations..."
+                  className="text-sm h-24 pr-10"
+                />
+                {!manualComment.trim() && (
+                  <div className="absolute bottom-2 right-2">
+                    <AudioRecorder
+                      onTranscriptionComplete={(text) => {
+                        onCommentChange?.(text);
+                        setTimeout(() => {
+                          onCommentBlur?.();
+                        }, 100);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
@@ -339,13 +354,27 @@ export function SupplierResponseCard({
                   </span>
                 )}
               </div>
-              <Textarea
-                value={questionText}
-                onChange={(e) => onQuestionChange?.(e.target.value)}
-                onBlur={() => onQuestionBlur?.()}
-                placeholder="Posez vos questions..."
-                className="text-sm h-24"
-              />
+              <div className="relative">
+                <Textarea
+                  value={questionText}
+                  onChange={(e) => onQuestionChange?.(e.target.value)}
+                  onBlur={() => onQuestionBlur?.()}
+                  placeholder="Posez vos questions..."
+                  className="text-sm h-24 pr-10"
+                />
+                {!questionText.trim() && (
+                  <div className="absolute bottom-2 right-2">
+                    <AudioRecorder
+                      onTranscriptionComplete={(text) => {
+                        onQuestionChange?.(text);
+                        setTimeout(() => {
+                          onQuestionBlur?.();
+                        }, 100);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

@@ -104,10 +104,15 @@ export function ComparisonView({
   // Timers for hiding "Saved" indicator
   const savedTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
+  // Ref to always have access to the latest responseStates (avoids stale closures)
+  const responseStatesRef = useRef(responseStates);
+
   // Touch/Swipe tracking for mobile navigation
   const touchStartXRef = useRef<number>(0);
   const touchStartYRef = useRef<number>(0);
-  const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(null);
+  const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(
+    null
+  );
   const SWIPE_THRESHOLD = 50; // Minimum pixels for a swipe to register
   const SWIPE_RATIO_THRESHOLD = 2; // Min ratio of horizontal to vertical movement
 
@@ -272,61 +277,73 @@ export function ComparisonView({
   };
 
   // Handle touch start for swipe detection
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (isMobile && flatReqs.length > 0) {
-      touchStartXRef.current = e.touches[0].clientX;
-      touchStartYRef.current = e.touches[0].clientY;
-      setSwipeDirection(null);
-    }
-  }, [isMobile, flatReqs.length]);
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (isMobile && flatReqs.length > 0) {
+        touchStartXRef.current = e.touches[0].clientX;
+        touchStartYRef.current = e.touches[0].clientY;
+        setSwipeDirection(null);
+      }
+    },
+    [isMobile, flatReqs.length]
+  );
 
   // Handle touch move to show feedback
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isMobile || flatReqs.length === 0) return;
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!isMobile || flatReqs.length === 0) return;
 
-    const touchCurrentX = e.touches[0].clientX;
-    const touchCurrentY = e.touches[0].clientY;
+      const touchCurrentX = e.touches[0].clientX;
+      const touchCurrentY = e.touches[0].clientY;
 
-    const deltaX = touchCurrentX - touchStartXRef.current;
-    const deltaY = touchCurrentY - touchStartYRef.current;
-    const absDeltaX = Math.abs(deltaX);
-    const absDeltaY = Math.abs(deltaY);
+      const deltaX = touchCurrentX - touchStartXRef.current;
+      const deltaY = touchCurrentY - touchStartYRef.current;
+      const absDeltaX = Math.abs(deltaX);
+      const absDeltaY = Math.abs(deltaY);
 
-    // Check if it looks like a horizontal swipe
-    if (absDeltaX > 20 && absDeltaX > absDeltaY * SWIPE_RATIO_THRESHOLD) {
-      setSwipeDirection(deltaX < 0 ? "left" : "right");
-    } else {
-      setSwipeDirection(null);
-    }
-  }, [isMobile, flatReqs.length]);
+      // Check if it looks like a horizontal swipe
+      if (absDeltaX > 20 && absDeltaX > absDeltaY * SWIPE_RATIO_THRESHOLD) {
+        setSwipeDirection(deltaX < 0 ? "left" : "right");
+      } else {
+        setSwipeDirection(null);
+      }
+    },
+    [isMobile, flatReqs.length]
+  );
 
   // Handle touch end for swipe detection
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!isMobile || flatReqs.length === 0) return;
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (!isMobile || flatReqs.length === 0) return;
 
-    const touchEndX = e.changedTouches[0].clientX;
-    const touchEndY = e.changedTouches[0].clientY;
+      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
 
-    const deltaX = touchEndX - touchStartXRef.current;
-    const deltaY = touchEndY - touchStartYRef.current;
-    const absDeltaX = Math.abs(deltaX);
-    const absDeltaY = Math.abs(deltaY);
+      const deltaX = touchEndX - touchStartXRef.current;
+      const deltaY = touchEndY - touchStartYRef.current;
+      const absDeltaX = Math.abs(deltaX);
+      const absDeltaY = Math.abs(deltaY);
 
-    // Check if it's a horizontal swipe (not a vertical scroll)
-    // Must move horizontally more than vertically
-    if (absDeltaX > SWIPE_THRESHOLD && absDeltaX > absDeltaY * SWIPE_RATIO_THRESHOLD) {
-      // Swipe left (negative deltaX) = next requirement
-      // Swipe right (positive deltaX) = previous requirement
-      if (deltaX < 0 && currentIndex < totalPages - 1) {
-        goToRequirement(currentIndex + 1);
-      } else if (deltaX > 0 && currentIndex > 0) {
-        goToRequirement(currentIndex - 1);
+      // Check if it's a horizontal swipe (not a vertical scroll)
+      // Must move horizontally more than vertically
+      if (
+        absDeltaX > SWIPE_THRESHOLD &&
+        absDeltaX > absDeltaY * SWIPE_RATIO_THRESHOLD
+      ) {
+        // Swipe left (negative deltaX) = next requirement
+        // Swipe right (positive deltaX) = previous requirement
+        if (deltaX < 0 && currentIndex < totalPages - 1) {
+          goToRequirement(currentIndex + 1);
+        } else if (deltaX > 0 && currentIndex > 0) {
+          goToRequirement(currentIndex - 1);
+        }
       }
-    }
 
-    // Clear visual feedback
-    setSwipeDirection(null);
-  }, [isMobile, flatReqs.length, currentIndex, totalPages]);
+      // Clear visual feedback
+      setSwipeDirection(null);
+    },
+    [isMobile, flatReqs.length, currentIndex, totalPages]
+  );
 
   // Keyboard navigation handler
   const handleKeyDown = useCallback(
@@ -361,6 +378,11 @@ export function ComparisonView({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [handleKeyDown, flatReqs.length]);
+
+  // Keep responseStatesRef in sync with responseStates to avoid stale closures
+  useEffect(() => {
+    responseStatesRef.current = responseStates;
+  }, [responseStates]);
 
   // Initialize and sync response states with data from database
   // This ensures all response data is loaded on initial render
@@ -498,7 +520,7 @@ export function ComparisonView({
           },
           {
             onSuccess: () => {
-              // Show "Saved" indicator and clear dirty flags for saved fields
+              // Clear dirty flags and show "Saved" indicator
               setResponseStates((prev) => {
                 const currentDirtyFields = new Set(
                   prev[responseId]?.dirtyFields || []
@@ -523,8 +545,15 @@ export function ComparisonView({
                 };
               });
 
-              // Refetch responses to ensure UI is in sync with database
-              refetchResponses();
+              // Only refetch if we saved fields other than comments/questions
+              // Comments and questions are never modified by the server, so we already have the correct value
+              const savedNonCommentFields =
+                updates.manualScore !== undefined ||
+                updates.status !== undefined ||
+                updates.isChecked !== undefined;
+              if (savedNonCommentFields) {
+                refetchResponses();
+              }
 
               // Clear existing timer
               if (savedTimers.current[responseId]) {
@@ -1218,14 +1247,22 @@ export function ComparisonView({
                           onCommentBlur={() =>
                             updateResponseState(
                               response.id,
-                              { manualComment: state.manualComment },
+                              {
+                                manualComment:
+                                  responseStatesRef.current[response.id]
+                                    ?.manualComment || "",
+                              },
                               true
                             )
                           }
                           onQuestionBlur={() =>
                             updateResponseState(
                               response.id,
-                              { question: state.question },
+                              {
+                                question:
+                                  responseStatesRef.current[response.id]
+                                    ?.question || "",
+                              },
                               true
                             )
                           }
@@ -1274,14 +1311,22 @@ export function ComparisonView({
                         onCommentBlur={() =>
                           updateResponseState(
                             response.id,
-                            { manualComment: state.manualComment },
+                            {
+                              manualComment:
+                                responseStatesRef.current[response.id]
+                                  ?.manualComment || "",
+                            },
                             true
                           )
                         }
                         onQuestionBlur={() =>
                           updateResponseState(
                             response.id,
-                            { question: state.question },
+                            {
+                              question:
+                                responseStatesRef.current[response.id]
+                                  ?.question || "",
+                            },
                             true
                           )
                         }
