@@ -106,7 +106,35 @@ export function TextEnhancer({
   };
 
   return (
-    <div className={cn("relative flex items-center gap-1", className)}>
+    <div className={cn("relative flex items-center gap-0.5", className)}>
+      {/* Revert button - visible for 5 seconds after enhancement, positioned to the left */}
+      {showRevert && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={handleRevert}
+          className="h-7 w-7 rounded-full transition-all animate-in fade-in slide-in-from-right-2 duration-200"
+          title="Annuler l'amélioration"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+          >
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+          </svg>
+        </Button>
+      )}
+
       <Button
         type="button"
         variant="ghost"
@@ -134,34 +162,6 @@ export function TextEnhancer({
             <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
           </span>
         </div>
-      )}
-
-      {/* Revert button - visible for 5 seconds after enhancement */}
-      {showRevert && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={handleRevert}
-          className="h-8 w-8 rounded-full transition-all animate-in fade-in zoom-in-95 duration-200"
-          title="Annuler l'amélioration"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-orange-500"
-          >
-            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-            <path d="M3 3v5h5" />
-          </svg>
-        </Button>
       )}
     </div>
   );
