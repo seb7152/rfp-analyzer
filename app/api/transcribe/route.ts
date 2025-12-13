@@ -74,10 +74,21 @@ export async function POST(request: NextRequest) {
 
     const result = await n8nResponse.json();
 
-    // N8N returns the result directly
-    // Format: { text: "...", usage: { type: "duration", seconds: 8 } }
-    if (result && result.text) {
-      return NextResponse.json({ text: result.text });
+    // N8N returns the result in different formats:
+    // Format 1 (direct): { text: "...", usage: { type: "duration", seconds: 8 } }
+    // Format 2 (wrapped): { output: { text: "..." } }
+    let responseText = null;
+
+    if (result?.output?.text) {
+      // Format 2: wrapped in output object
+      responseText = result.output.text;
+    } else if (result?.text) {
+      // Format 1: direct text field
+      responseText = result.text;
+    }
+
+    if (responseText) {
+      return NextResponse.json({ text: responseText });
     }
 
     // Fallback if format is unexpected
