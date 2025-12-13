@@ -38,10 +38,11 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supplierId = searchParams.get("supplierId");
+  const requirementId = searchParams.get("requirementId");
   const { user, isLoading: authLoading } = useAuth();
   const [selectedRequirementId, setSelectedRequirementId] = useState<
     string | null
-  >(null);
+  >(requirementId || null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
   const [rfpData, setRfpData] = useState<RFP | null>(null);
