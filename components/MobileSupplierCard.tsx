@@ -190,16 +190,16 @@ export function MobileSupplierCard({
               <div className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
                 Votre commentaire
               </div>
-              <div className="space-y-2">
+              <div className="relative">
                 <Textarea
                   value={manualComment}
                   onChange={(e) => onCommentChange?.(e.target.value)}
                   onBlur={() => onCommentBlur?.()}
                   placeholder="Ajoutez vos observations..."
-                  className="min-h-32"
+                  className="min-h-32 pr-12"
                 />
                 {!manualComment.trim() && (
-                  <div className="flex justify-end">
+                  <div className="absolute bottom-3 right-3 z-10">
                     <AudioRecorder
                       onTranscriptionComplete={(text) => {
                         onCommentChange?.(text);
@@ -217,16 +217,16 @@ export function MobileSupplierCard({
               <div className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
                 Questions / Doutes
               </div>
-              <div className="space-y-2">
+              <div className="relative">
                 <Textarea
                   value={questionText}
                   onChange={(e) => onQuestionChange?.(e.target.value)}
                   onBlur={() => onQuestionBlur?.()}
                   placeholder="Posez vos questions..."
-                  className="min-h-24"
+                  className="min-h-24 pr-12"
                 />
                 {!questionText.trim() && (
-                  <div className="flex justify-end">
+                  <div className="absolute bottom-3 right-3 z-10">
                     <AudioRecorder
                       onTranscriptionComplete={(text) => {
                         onQuestionChange?.(text);
