@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Select,
@@ -16,7 +17,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Info, Search } from "lucide-react";
+import { Info, Search, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { Supplier } from "@/types/supplier";
@@ -333,13 +334,29 @@ export function RequirementsHeatmap({
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-80 p-4" align="start">
-                              <div className="space-y-2">
-                                <h4 className="font-medium leading-none">
-                                  Description
-                                </h4>
-                                <p className="text-sm text-muted-foreground">
-                                  {req.description}
-                                </p>
+                              <div className="space-y-3">
+                                <div>
+                                  <h4 className="font-medium leading-none">
+                                    Description
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {req.description}
+                                  </p>
+                                </div>
+                                <div className="pt-2 border-t">
+                                  <Link
+                                    href={`/dashboard/rfp/${rfpId}/evaluate?requirementId=${req.id}`}
+                                  >
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="w-full gap-2"
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                      Voir dans l'évaluation
+                                    </Button>
+                                  </Link>
+                                </div>
                               </div>
                             </PopoverContent>
                           </Popover>
