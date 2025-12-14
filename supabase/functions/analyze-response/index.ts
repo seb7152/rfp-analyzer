@@ -9,17 +9,23 @@ interface AnalyzeRequest {
   systemPrompt?: string;
 }
 
+interface RequirementPayload {
+  requirement_id: string;
+  title: string;
+  content: string;
+  context: string;
+  suppliers_responses: Array<{
+    supplier_code: string;
+    supplier_name: string;
+    response_text: string;
+  }>;
+}
+
 interface N8NPayload {
   rfp_id: string;
-  requirement_id: string;
-  supplier_id: string;
-  requirement_title: string;
-  requirement_description: string;
-  requirement_context: string;
-  supplier_code: string;
-  supplier_name: string;
-  response_text: string;
+  jobId: string;
   system_prompt: string;
+  requirements: RequirementPayload[];
   timestamp: string;
 }
 
@@ -105,18 +111,30 @@ serve(async (req) => {
       }
     }
 
+    // Generate jobId for consistency with batch analysis
+    const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     // Build N8N payload for single response analysis
+    // Wrap in requirements array to reuse batch workflow
     const payload: N8NPayload = {
       rfp_id: rfpId,
-      requirement_id: requirementId,
-      supplier_id: supplierId,
-      requirement_title: requirement.title,
-      requirement_description: requirement.description || "",
-      requirement_context: requirement.context || "",
-      supplier_code: supplier.supplier_id_external,
-      supplier_name: supplier.name,
-      response_text: responseText,
+      jobId,
       system_prompt: finalSystemPrompt || "",
+      requirements: [
+        {
+          requirement_id: requirement.requirement_id_external,
+          title: requirement.title,
+          content: requirement.description || "",
+          context: requirement.context || "",
+          suppliers_responses: [
+            {
+              supplier_code: supplier.supplier_id_external,
+              supplier_name: supplier.name,
+              response_text: responseText,
+            },
+          ],
+        },
+      ],
       timestamp: new Date().toISOString(),
     };
 
@@ -129,7 +147,7 @@ serve(async (req) => {
 
     // Send to N8N
     console.log(
-      `[Edge Function] Sending analysis to N8N for response: requirement=${requirementId}, supplier=${supplierId}`
+      `[Edge Function] Sending single response analysis to N8N for requirement=${requirementId}, supplier=${supplierId}, jobId=${jobId}`
     );
 
     const n8nResponse = await fetch(n8nWebhookUrl, {
@@ -156,6 +174,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        jobId,
         message: "Single response analysis request sent to N8N",
       }),
       {
