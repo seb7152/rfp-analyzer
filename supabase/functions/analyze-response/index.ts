@@ -151,16 +151,12 @@ serve(async (req) => {
     const n8nResult = await n8nResponse.json();
     console.log(`[Edge Function] N8N response:`, n8nResult);
 
-    // Extract ai_comment and ai_score from N8N response
-    const aiComment = n8nResult?.ai_comment || "";
-    const aiScore = n8nResult?.ai_score || 0;
-
+    // N8N updates the database asynchronously in the background
+    // Frontend will refetch responses to get the updated AI comment and score
     return new Response(
       JSON.stringify({
         success: true,
-        aiComment,
-        aiScore,
-        message: "Single response analysis completed",
+        message: "Single response analysis request sent to N8N",
       }),
       {
         status: 200,

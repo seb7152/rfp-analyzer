@@ -63,7 +63,7 @@ export interface SupplierResponseCardProps {
   supplierNames?: string[];
   onOpenBookmark?: (bookmark: PDFAnnotation) => void;
   rfpId?: string;
-  onAICommentUpdate?: (comment: string, score: number) => void;
+  onAICommentUpdate?: () => void;
 }
 
 export function SupplierResponseCard({
@@ -124,22 +124,23 @@ export function SupplierResponseCard({
     }
 
     try {
-      const result = await analyzeResponse.mutateAsync({
+      await analyzeResponse.mutateAsync({
         rfpId,
         requirementId,
         supplierId,
         responseText,
       });
 
-      if (result.success) {
-        setLocalAIComment(result.aiComment);
-        setLocalAIScore(result.aiScore);
-        onAICommentUpdate?.(result.aiComment, result.aiScore);
-        toast({
-          title: "Succès",
-          description: "Analyse IA mise à jour",
-        });
-      }
+      toast({
+        title: "Succès",
+        description: "Analyse IA en cours...",
+      });
+
+      // Call parent callback to refetch data
+      // N8N updates database asynchronously, so we need to refetch
+      setTimeout(() => {
+        onAICommentUpdate?.();
+      }, 1000); // Wait 1s for N8N to process before refetching
     } catch (error) {
       toast({
         title: "Erreur",

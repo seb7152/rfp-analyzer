@@ -5,14 +5,13 @@ import { createClient } from "@/lib/supabase/client";
 
 export interface AnalyzeResponseResult {
   success: boolean;
-  aiComment: string;
-  aiScore: number;
   message: string;
 }
 
 /**
  * Hook to trigger AI analysis for a single response
- * Calls Supabase Edge Function which sends data to N8N webhook for individual response analysis
+ * Sends request to N8N which updates database asynchronously
+ * Frontend must refetch to get updated AI comment and score
  */
 export function useAnalyzeResponse() {
   const supabase = createClient();
