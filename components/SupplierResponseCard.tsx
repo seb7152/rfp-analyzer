@@ -13,6 +13,7 @@ import {
   Loader2,
   FileText,
   Maximize2,
+  Sparkles,
 } from "lucide-react";
 import { SupplierBookmarks } from "@/components/SupplierBookmarks";
 import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
@@ -26,6 +27,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { RoundCheckbox } from "@/components/ui/round-checkbox";
 import { StatusSwitch } from "@/components/ui/status-switch";
 import { StarRating } from "@/components/ui/star-rating";
+import { useToast } from "@/hooks/use-toast";
+import { useAnalyzeResponse } from "@/hooks/use-analyze-response";
 import { cn } from "@/lib/utils";
 
 export interface SupplierResponseCardProps {
@@ -59,6 +62,8 @@ export interface SupplierResponseCardProps {
   requirementDescription?: string;
   supplierNames?: string[];
   onOpenBookmark?: (bookmark: PDFAnnotation) => void;
+  rfpId?: string;
+  onAICommentUpdate?: (comment: string, score: number) => void;
 }
 
 export function SupplierResponseCard({
@@ -92,9 +97,57 @@ export function SupplierResponseCard({
   requirementDescription = "",
   supplierNames = [],
   onOpenBookmark,
+  rfpId,
+  onAICommentUpdate,
 }: SupplierResponseCardProps) {
   const [isFocusModalOpen, setIsFocusModalOpen] = React.useState(false);
-  const currentScore = manualScore ?? aiScore;
+  const [localAIComment, setLocalAIComment] = React.useState(aiComment);
+  const [localAIScore, setLocalAIScore] = React.useState(aiScore);
+  const { toast } = useToast();
+  const analyzeResponse = useAnalyzeResponse();
+  const currentScore = manualScore ?? localAIScore;
+
+  // Update local state when props change
+  React.useEffect(() => {
+    setLocalAIComment(aiComment);
+    setLocalAIScore(aiScore);
+  }, [aiComment, aiScore]);
+
+  const handleReanalyzeResponse = async () => {
+    if (!rfpId || !requirementId || !supplierId) {
+      toast({
+        title: "Erreur",
+        description: "Données manquantes pour l'analyse",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const result = await analyzeResponse.mutateAsync({
+        rfpId,
+        requirementId,
+        supplierId,
+        responseText,
+      });
+
+      if (result.success) {
+        setLocalAIComment(result.aiComment);
+        setLocalAIScore(result.aiScore);
+        onAICommentUpdate?.(result.aiComment, result.aiScore);
+        toast({
+          title: "Succès",
+          description: "Analyse IA mise à jour",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Erreur lors de l'analyse",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStatusBadge = () => {
     switch (status) {
@@ -287,25 +340,44 @@ export function SupplierResponseCard({
                 />
               </div>
 
-              {/* AI comment with copy button */}
+              {/* AI comment with copy and reanalyze buttons */}
               <div className="flex flex-col flex-1">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold text-slate-900 dark:text-white">
                     Commentaire IA
                   </span>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(aiComment);
-                    }}
-                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition-colors"
-                    title="Copier le commentaire"
-                  >
-                    <Copy className="w-3 h-3 text-slate-600 dark:text-slate-400" />
-                  </button>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(localAIComment);
+                      }}
+                      className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition-colors"
+                      title="Copier le commentaire"
+                    >
+                      <Copy className="w-3 h-3 text-slate-600 dark:text-slate-400" />
+                    </button>
+                    <button
+                      onClick={handleReanalyzeResponse}
+                      disabled={analyzeResponse.isPending}
+                      className={cn(
+                        "p-1 rounded transition-colors relative",
+                        analyzeResponse.isPending
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-slate-200 dark:hover:bg-slate-800"
+                      )}
+                      title="Relancer l'analyse IA"
+                    >
+                      {analyzeResponse.isPending ? (
+                        <Loader2 className="w-3 h-3 text-slate-600 dark:text-slate-400 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3 h-3 text-slate-600 dark:text-slate-400" />
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <ScrollArea className="flex-1 rounded border border-slate-200 dark:border-slate-700">
                   <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed p-3">
-                    {aiComment}
+                    {localAIComment}
                   </p>
                 </ScrollArea>
               </div>

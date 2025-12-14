@@ -1223,7 +1223,9 @@ export function ComparisonView({
                       return (
                         <MobileSupplierCard
                           key={response.id}
+                          supplierId={supplier.id}
                           supplierName={supplier.name}
+                          responseId={response.id}
                           responseText={response.response_text || ""}
                           aiScore={response.ai_score ?? 0}
                           aiComment={response.ai_comment ?? ""}
@@ -1276,6 +1278,12 @@ export function ComparisonView({
                               true
                             )
                           }
+                          rfpId={rfpId}
+                          requirementId={selectedRequirementId}
+                          onAICommentUpdate={() => {
+                            // Refetch to ensure we have the latest data
+                            refetchResponses();
+                          }}
                         />
                       );
                     }
@@ -1347,6 +1355,11 @@ export function ComparisonView({
                         requirementDescription={requirement?.description || ""}
                         supplierNames={supplierNames}
                         onOpenBookmark={handleOpenBookmark}
+                        rfpId={rfpId}
+                        onAICommentUpdate={() => {
+                          // Refetch to ensure we have the latest data
+                          refetchResponses();
+                        }}
                       />
                     );
                   })}
