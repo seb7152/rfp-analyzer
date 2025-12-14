@@ -142,12 +142,22 @@ The system will:
 
 ### FR-1: AI Analysis Engine
 
-**Input Data (Per Category)**
+**Important:** Analysis is **PER SUPPLIER** - we analyze one supplier's evaluation at a time.
 
-To minimize hallucination risk, send **aggregated statistics only**, NOT full text comments:
+**Input Data (Per Category, Per Supplier)**
+
+To minimize hallucination risk while providing context, we send:
+- **For the analyzed supplier:** Full manual comments and questions (text)
+- **For other suppliers:** Only scores (for comparison)
+- **No AI comments, no audit trail**
 
 ```typescript
 {
+  supplier: {
+    id: string,
+    name: string
+  },
+
   category: {
     id: string,
     title: string,
@@ -156,42 +166,39 @@ To minimize hallucination risk, send **aggregated statistics only**, NOT full te
     requirements_count: number
   },
 
-  // Per-requirement aggregated statistics
-  requirements_stats: [
+  // Per-requirement data
+  requirements: [
     {
       requirement_id: string,
       requirement_title: string,
+      requirement_description: string,  // Context for AI
       weight: number,
 
-      // Aggregated scoring data
-      scores_summary: {
-        avg_score: number,
-        min_score: number,
-        max_score: number,
-        score_gap: number,        // max - min
-        score_std_dev: number,    // Standard deviation
-        suppliers_count: number
+      // ANALYZED SUPPLIER - Full evaluation data
+      supplier_evaluation: {
+        score: number,                   // manual_score (priority) or ai_score
+        manual_comment: string | null,   // ← Full text sent to AI
+        question: string | null,         // ← Doubts/open questions sent to AI
+        status: "pass" | "partial" | "fail" | "pending",
+        annotation_count: number         // Evidence level
       },
 
-      // AI vs Manual consistency
-      ai_manual_gap: number,      // Average |ai_score - manual_score|
+      // OTHER SUPPLIERS - Comparative stats only
+      other_suppliers_scores: [
+        {
+          supplier_id: string,
+          supplier_name: string,
+          score: number                  // For comparison only
+        }
+      ],
 
-      // Evaluation completeness
-      has_manual_comment: boolean,
-      has_ai_comment: boolean,
-      has_open_question: boolean,
-      annotation_count: number,
-
-      // Audit indicators
-      modification_count: number,  // From response_audit
-      last_modified_at: string,
-
-      // Status distribution
-      status_distribution: {
-        pass: number,
-        partial: number,
-        fail: number,
-        pending: number
+      // Comparative metrics
+      comparative_stats: {
+        avg_score_all_suppliers: number,
+        min_score: number,
+        max_score: number,
+        score_gap: number,               // max - min
+        rank: number                     // Where analyzed supplier ranks (1 = best)
       }
     }
   ]
@@ -203,46 +210,52 @@ To minimize hallucination risk, send **aggregated statistics only**, NOT full te
 ```
 Vous êtes un assistant d'analyse pour la préparation d'une soutenance RFP.
 
-Analysez la catégorie "{category_title}" ({requirements_count} exigences, poids total {total_weight}).
+Analysez la catégorie "{category_title}" pour le fournisseur "{supplier_name}".
+({requirements_count} exigences, poids total {total_weight})
 
-Pour chaque dimension, considérez :
-- POIDS de l'exigence (priorité business)
-- ÉCART entre fournisseurs (score_gap)
-- COHÉRENCE de l'évaluation (ai_manual_gap, modification_count)
-- COMPLÉTUDE (annotations, commentaires, questions ouvertes)
+Vous disposez pour chaque exigence :
+- Évaluation du fournisseur (score, commentaire manuel, question/doute)
+- Scores des autres fournisseurs (pour comparaison)
+- Pondération de l'exigence
 
 Générez une synthèse en 3 dimensions :
 
 ✅ FORCES (max 5)
-Exigences avec :
-- Consensus fort (score_gap < 1.0)
-- Évaluation bien documentée (annotations, commentaires)
-- Scores élevés (avg_score >= 3.5)
+Identifiez les points forts du fournisseur :
+- Score élevé (≥ 3.5/5) ET bien justifié (commentaire détaillé)
+- Performance supérieure aux autres fournisseurs
+- Evidence documentée (annotations)
+- Pas de doutes exprimés
 Priorisez par poids décroissant.
-Format : "[Titre exigence] (poids X): [raison en 10 mots max]"
+Format : "[Titre exigence] (poids X): [synthèse du commentaire en 15 mots max]"
 
 ⚠️ FAIBLESSES (max 5)
-Exigences avec :
-- Scores faibles généralisés (avg_score < 2.5)
-- Manque documentation (pas annotations, pas commentaire manuel)
-- Statut "pending" ou "fail"
+Identifiez les points faibles du fournisseur :
+- Score faible (< 2.5/5)
+- Performance inférieure aux autres fournisseurs
+- Commentaire négatif ou manquant
+- Statut "partial" ou "fail"
+- Manque d'evidence (peu d'annotations)
 Priorisez par poids décroissant.
-Format : "[Titre exigence] (poids X): [problème + impact en 10 mots max]"
+Format : "[Titre exigence] (poids X): [problème identifié en 15 mots max]"
 
 ❓ QUESTIONS À PRÉPARER (max 5)
-Exigences nécessitant justification :
-- Écart significatif entre fournisseurs (score_gap > 2.0)
-- Question ouverte non résolue (has_open_question)
-- Incohérence AI/manuel (ai_manual_gap > 1.0)
-- Modifications multiples (modification_count > 2)
-Priorisez par : poids × score_gap
-Format : "[Titre exigence] (poids X): [question à préparer en 15 mots max]"
+Identifiez les points nécessitant justification en soutenance :
+- Question/doute explicite exprimé dans le champ "question"
+- Écart important avec les autres fournisseurs (à justifier)
+- Score moyen mais commentaire ambigu/incomplet
+- Statut "partial" (compromis à expliquer)
+Priorisez par : poids × criticité
+Format : "[Titre exigence] (poids X): [question précise à préparer en 20 mots max]"
 
-RÈGLES :
+RÈGLES IMPORTANTES :
+- Analysez les COMMENTAIRES MANUELS pour comprendre le raisonnement
+- Si une QUESTION est posée, c'est une faiblesse potentielle → à préparer
+- Comparez aux autres fournisseurs pour identifier écarts
+- Priorisez par POIDS (exigences importantes d'abord)
 - MAX 5 items par dimension
-- CONCIS (pas de phrases longues)
-- CHIFFRES inclus (scores, écarts)
-- PRIORISATION par poids
+- Soyez CONCIS et FACTUEL
+- Incluez les CHIFFRES (scores, écarts)
 - Référencez requirement_id pour traçabilité
 ```
 
@@ -250,6 +263,8 @@ RÈGLES :
 
 ```typescript
 {
+  supplier_id: string,
+  supplier_name: string,
   category_id: string,
   category_title: string,
   level: number,
@@ -259,9 +274,10 @@ RÈGLES :
       requirement_id: string,
       requirement_title: string,
       weight: number,
-      summary: string,            // AI-generated
-      avg_score: number,
-      evidence_count: number
+      summary: string,                    // AI-generated from manual_comment
+      score: number,                      // Supplier's score
+      rank: number,                       // Rank vs other suppliers (1 = best)
+      evidence_count: number              // Number of annotations
     }
   ],
 
@@ -270,9 +286,11 @@ RÈGLES :
       requirement_id: string,
       requirement_title: string,
       weight: number,
-      summary: string,
-      avg_score: number,
-      evidence_count: number
+      summary: string,                    // AI-generated issue description
+      score: number,
+      rank: number,
+      evidence_count: number,
+      status: "pass" | "partial" | "fail" | "pending"
     }
   ],
 
@@ -281,18 +299,20 @@ RÈGLES :
       requirement_id: string,
       requirement_title: string,
       weight: number,
-      question: string,           // AI-generated question to prepare
-      score_gap: number,
-      open_question?: string,     // Original open question if exists
-      ai_manual_gap?: number
+      question_to_prepare: string,        // AI-generated question for defense
+      score: number,
+      score_gap: number,                  // Gap with other suppliers
+      original_question?: string,         // From response.question field if exists
+      manual_comment_excerpt?: string     // Relevant excerpt if ambiguous
     }
   ],
 
   metrics: {
     total_weight: number,
-    avg_score_weighted: number,
+    avg_score_weighted: number,           // Weighted average for this category
     requirements_count: number,
-    high_divergence_count: number,
+    strengths_count: number,
+    weaknesses_count: number,
     open_questions_count: number
   }
 }
@@ -1055,25 +1075,25 @@ Synthèse par domaine (collapsed view)
 
 ## Open Questions
 
-1. **Multi-Supplier vs Single-Supplier Analysis:**
-   - Should default analysis compare all suppliers or focus on one?
-   - **Recommendation:** Default to multi-supplier (comparative). Allow supplier-specific filter.
-
-2. **AI Model Selection:**
+1. **AI Model Selection:**
    - Use Claude Sonnet (fast, cheaper) or Opus (higher quality)?
    - **Recommendation:** Start with Sonnet. A/B test Opus if quality issues arise.
 
-3. **Cache Invalidation Strategy:**
+2. **Cache Invalidation Strategy:**
    - Should we invalidate on ANY response change or only significant ones (score change)?
    - **Recommendation:** Invalidate on score, comment, question, or status change. Ignore minor edits.
 
-4. **PDF Storage:**
+3. **PDF Storage:**
    - Store generated PDFs in GCS or generate on-demand?
    - **Recommendation:** Generate on-demand (simpler, always fresh). Consider GCS if performance issues.
 
-5. **Access Control:**
+4. **Access Control:**
    - Should analysts be able to generate defense reports or only coordinators?
    - **Recommendation:** All users with RFP access can generate. Track in audit log.
+
+5. **Parallel Processing:**
+   - Generate all suppliers' analyses in parallel or sequentially?
+   - **Recommendation:** Parallel for up to 5 suppliers. Sequential if timeout risks.
 
 ---
 
@@ -1084,63 +1104,204 @@ Synthèse par domaine (collapsed view)
 ```
 Vous êtes un assistant d'analyse pour la préparation d'une soutenance RFP.
 
-Analysez la catégorie "Authentification & SSO" (8 exigences, poids total 15.5).
+Analysez la catégorie "Authentification & SSO" pour le fournisseur "Supplier A".
+(8 exigences, poids total 15.5)
 
-Données agrégées des exigences :
+Vous disposez pour chaque exigence :
+- Évaluation du fournisseur (score, commentaire manuel, question/doute)
+- Scores des autres fournisseurs (pour comparaison)
+- Pondération de l'exigence
+
+Données des exigences :
 
 1. OAuth 2.0 Support (poids 3.0)
-   - Scores: avg=4.3, min=4.0, max=4.5, gap=0.5, std_dev=0.2
-   - AI/Manuel gap: 0.1
-   - Evidence: 5 annotations, commentaire manuel ✓
-   - Status: 3 pass, 0 partial, 0 fail
-   - Modifications: 1
+   SUPPLIER A:
+   - Score: 4.5/5
+   - Commentaire: "Excellente implémentation OAuth 2.0 avec support PKCE.
+     Le fournisseur a démontré une conformité complète avec RFC 6749 et 7636.
+     Documentation technique très détaillée avec exemples de code."
+   - Question: null
+   - Status: pass
+   - Evidence: 5 annotations
+
+   AUTRES FOURNISSEURS:
+   - Supplier B: 4.0/5
+   - Supplier C: 4.5/5
+
+   COMPARAISON: Rang 1/3 (ex-aequo), gap: 0.5
 
 2. Multi-Factor Authentication (poids 4.0)
-   - Scores: avg=2.1, min=1.5, max=2.5, gap=1.0, std_dev=0.4
-   - AI/Manuel gap: 0.3
-   - Evidence: 1 annotation, pas de commentaire manuel
-   - Status: 0 pass, 2 partial, 1 fail
-   - Modifications: 3
-   - Question ouverte: "Support SMS ou TOTP uniquement?"
+   SUPPLIER A:
+   - Score: 2.0/5
+   - Commentaire: "Support MFA basique uniquement via SMS. Pas de support TOTP
+     ou authentification biométrique. Solution moins robuste que les concurrents."
+   - Question: "Le support SMS uniquement est-il acceptable pour nos besoins sécurité?"
+   - Status: partial
+   - Evidence: 1 annotation
 
-3. ...
+   AUTRES FOURNISSEURS:
+   - Supplier B: 4.5/5 (TOTP + biométrie)
+   - Supplier C: 4.0/5 (TOTP)
+
+   COMPARAISON: Rang 3/3, gap: 2.5
+
+3. Session Management (poids 2.5)
+   SUPPLIER A:
+   - Score: 3.5/5
+   - Commentaire: "Gestion sessions correcte avec timeout configurable et
+     refresh tokens. Pas de support distributed sessions (Redis/Memcached)."
+   - Question: null
+   - Status: pass
+   - Evidence: 3 annotations
+
+   AUTRES FOURNISSEURS:
+   - Supplier B: 3.0/5
+   - Supplier C: 4.0/5
+
+   COMPARAISON: Rang 2/3, gap: 1.0
+
+4. Password Policy (poids 1.5)
+   SUPPLIER A:
+   - Score: 4.0/5
+   - Commentaire: null
+   - Question: null
+   - Status: pass
+   - Evidence: 0 annotations
+
+   AUTRES FOURNISSEURS:
+   - Supplier B: 4.0/5
+   - Supplier C: 3.5/5
+
+   COMPARAISON: Rang 1/3, gap: 0.5
+
+[... 4 autres exigences ...]
 
 Générez une synthèse en 3 dimensions :
 
-✅ FORCES (max 5) ...
-⚠️ FAIBLESSES (max 5) ...
-❓ QUESTIONS (max 5) ...
+✅ FORCES (max 5)
+Identifiez les points forts du fournisseur :
+- Score élevé (≥ 3.5/5) ET bien justifié (commentaire détaillé)
+- Performance supérieure aux autres fournisseurs
+- Evidence documentée (annotations)
+- Pas de doutes exprimés
+Priorisez par poids décroissant.
+Format : "[Titre exigence] (poids X): [synthèse du commentaire en 15 mots max]"
+
+⚠️ FAIBLESSES (max 5)
+Identifiez les points faibles du fournisseur :
+- Score faible (< 2.5/5)
+- Performance inférieure aux autres fournisseurs
+- Commentaire négatif ou manquant
+- Statut "partial" ou "fail"
+- Manque d'evidence (peu d'annotations)
+Priorisez par poids décroissant.
+Format : "[Titre exigence] (poids X): [problème identifié en 15 mots max]"
+
+❓ QUESTIONS À PRÉPARER (max 5)
+Identifiez les points nécessitant justification en soutenance :
+- Question/doute explicite exprimé dans le champ "question"
+- Écart important avec les autres fournisseurs (à justifier)
+- Score moyen mais commentaire ambigu/incomplet
+- Statut "partial" (compromis à expliquer)
+Priorisez par : poids × criticité
+Format : "[Titre exigence] (poids X): [question précise à préparer en 20 mots max]"
+
+RÈGLES IMPORTANTES :
+- Analysez les COMMENTAIRES MANUELS pour comprendre le raisonnement
+- Si une QUESTION est posée, c'est une faiblesse potentielle → à préparer
+- Comparez aux autres fournisseurs pour identifier écarts
+- Priorisez par POIDS (exigences importantes d'abord)
+- MAX 5 items par dimension
+- Soyez CONCIS et FACTUEL
+- Incluez les CHIFFRES (scores, écarts)
+- Référencez requirement_id pour traçabilité
 ```
 
 ### B. Sample AI Response
 
 ```json
 {
+  "supplier_id": "sup_a123",
+  "supplier_name": "Supplier A",
+  "category_id": "cat_auth_sso",
+  "category_title": "Authentification & SSO",
+  "level": 3,
+
   "strengths": [
     {
       "requirement_id": "req_oauth",
-      "summary": "Consensus fort (4.0-4.5), excellente documentation",
+      "requirement_title": "OAuth 2.0 Support",
       "weight": 3.0,
-      "avg_score": 4.3
+      "summary": "Conformité complète RFC 6749/7636 avec PKCE, documentation technique excellente",
+      "score": 4.5,
+      "rank": 1,
+      "evidence_count": 5
+    },
+    {
+      "requirement_id": "req_password_policy",
+      "requirement_title": "Password Policy",
+      "weight": 1.5,
+      "summary": "Politique robuste, meilleur que concurrents",
+      "score": 4.0,
+      "rank": 1,
+      "evidence_count": 0
     }
   ],
+
   "weaknesses": [
     {
       "requirement_id": "req_mfa",
-      "summary": "Scores faibles généralisés, manque commentaires techniques",
+      "requirement_title": "Multi-Factor Authentication",
       "weight": 4.0,
-      "avg_score": 2.1
+      "summary": "Support SMS uniquement, pas TOTP ni biométrie, moins robuste que concurrents",
+      "score": 2.0,
+      "rank": 3,
+      "evidence_count": 1,
+      "status": "partial"
     }
   ],
+
   "questions": [
     {
       "requirement_id": "req_mfa",
-      "question": "Justifier écart entre fournisseurs et type MFA accepté",
+      "requirement_title": "Multi-Factor Authentication",
       "weight": 4.0,
+      "question_to_prepare": "Justifier acceptabilité SMS-only MFA vs besoins sécurité, expliquer écart 2.5 points avec concurrents",
+      "score": 2.0,
+      "score_gap": 2.5,
+      "original_question": "Le support SMS uniquement est-il acceptable pour nos besoins sécurité?",
+      "manual_comment_excerpt": "Solution moins robuste que les concurrents"
+    },
+    {
+      "requirement_id": "req_session_mgmt",
+      "requirement_title": "Session Management",
+      "weight": 2.5,
+      "question_to_prepare": "Expliquer pourquoi absence distributed sessions acceptable malgré environnement multi-serveurs",
+      "score": 3.5,
       "score_gap": 1.0,
-      "open_question": "Support SMS ou TOTP uniquement?"
+      "original_question": null,
+      "manual_comment_excerpt": "Pas de support distributed sessions (Redis/Memcached)"
+    },
+    {
+      "requirement_id": "req_password_policy",
+      "requirement_title": "Password Policy",
+      "weight": 1.5,
+      "question_to_prepare": "Préparer justification technique (aucun commentaire documenté)",
+      "score": 4.0,
+      "score_gap": 0.5,
+      "original_question": null,
+      "manual_comment_excerpt": null
     }
-  ]
+  ],
+
+  "metrics": {
+    "total_weight": 15.5,
+    "avg_score_weighted": 3.4,
+    "requirements_count": 8,
+    "strengths_count": 2,
+    "weaknesses_count": 1,
+    "open_questions_count": 1
+  }
 }
 ```
 
