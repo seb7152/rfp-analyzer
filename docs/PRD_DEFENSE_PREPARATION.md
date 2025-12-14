@@ -71,17 +71,17 @@ The system will:
 - Generation triggers N8N workflow
 - Loading state shown during processing (< 30 seconds)
 - Results displayed in modal when clicking on category row
-- Cached for 24 hours to avoid re-computation
+
 
 ---
 
 **US-2: View Category Synthesis Details**
-> As a project manager, I want to click on a category in the heatmap to see its detailed synthesis (Forces/Faiblesses/Questions) so that I can prepare specific talking points.
+> As a project manager, I want to click on a dedicated button on the category in the heatmap to see its detailed synthesis (Forces/Faiblesses/Questions) so that I can prepare specific talking points.
 
 **Acceptance Criteria:**
-- Click on category row opens modal
-- Modal displays Forces (top 5), Faiblesses (top 5), Questions (top 5)
-- Each item shows: requirement title, weight, summary, scores
+- Click on category row dedicatd icon opens modal
+- Modal displays Forces (top 5), Faiblesses (top 5), Questions (top 5) for each supplier (tabs to switch)
+- Modal also displays a synthesis of all suppliers cabilities (positive / negative trend & lacks )
 - Click on requirement navigates to detailed view
 - Modal includes "Generate AI suggestions" for presentation talking points
 
@@ -119,11 +119,9 @@ The system will:
 > As a coordinator, I want to regenerate the defense analysis if evaluation data has changed so that I always work with up-to-date information.
 
 **Acceptance Criteria:**
-- System detects stale data (responses modified after last analysis)
-- Visual indicator shows "Analysis outdated"
 - "Regenerate" button available
 - Confirmation prompt before regeneration
-- Old analysis archived
+
 
 ---
 
@@ -149,7 +147,6 @@ The system will:
 To minimize hallucination risk while providing context, we send:
 - **For the analyzed supplier:** Full manual comments and questions (text)
 - **For other suppliers:** Only scores (for comparison)
-- **No AI comments, no audit trail**
 
 ```typescript
 {
@@ -492,7 +489,7 @@ EXECUTE FUNCTION mark_defense_analyses_stale();
 ```
 
 **Business Logic**
-1. Check for existing fresh analysis (not stale, not expired)
+1. Check for existing analysis
 2. If exists and !force_regenerate → return cached
 3. If not exists or stale:
    - Build category hierarchy tree
