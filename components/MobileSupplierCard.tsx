@@ -9,6 +9,7 @@ import {
   Check,
   Loader2,
   Copy,
+  Sparkles,
 } from "lucide-react";
 import { AudioRecorder } from "@/components/AudioRecorder";
 import { TextEnhancer } from "@/components/TextEnhancer";
@@ -18,9 +19,13 @@ import { RoundCheckbox } from "@/components/ui/round-checkbox";
 import { StatusSwitch } from "@/components/ui/status-switch";
 import { StarRating } from "@/components/ui/star-rating";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { useAnalyzeResponse } from "@/hooks/use-analyze-response";
 
 export interface MobileSupplierCardProps {
+  supplierId?: string;
   supplierName: string;
+  responseId?: string;
   responseText: string;
   aiScore: number;
   aiComment: string;
@@ -41,10 +46,15 @@ export interface MobileSupplierCardProps {
   onQuestionChange?: (question: string) => void;
   onCommentBlur?: () => void;
   onQuestionBlur?: () => void;
+  rfpId?: string;
+  requirementId?: string;
+  onAICommentUpdate?: () => void;
 }
 
 export function MobileSupplierCard({
+  supplierId,
   supplierName,
+  responseId: _responseId,
   responseText,
   aiScore,
   aiComment,
@@ -65,9 +75,125 @@ export function MobileSupplierCard({
   onQuestionChange,
   onCommentBlur,
   onQuestionBlur,
+  rfpId,
+  requirementId,
+  onAICommentUpdate,
 }: MobileSupplierCardProps) {
   const [commentTab, setCommentTab] = useState<"manual" | "ai">("manual");
-  const currentScore = manualScore ?? aiScore;
+  const [localAIComment, setLocalAIComment] = useState(aiComment);
+  const [localAIScore, setLocalAIScore] = useState(aiScore);
+  const [isPolling, setIsPolling] = useState(false);
+  const { toast } = useToast();
+  const analyzeResponse = useAnalyzeResponse();
+  const currentScore = manualScore ?? localAIScore;
+  const pollingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const originalCommentRef = React.useRef<string | null>(null);
+
+  // Update local state when props change
+  React.useEffect(() => {
+    setLocalAIComment(aiComment);
+    setLocalAIScore(aiScore);
+
+    // Stop polling if aiComment changed while polling
+    if (
+      isPolling &&
+      originalCommentRef.current !== null &&
+      aiComment !== originalCommentRef.current
+    ) {
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+        pollingTimeoutRef.current = null;
+      }
+      setIsPolling(false);
+      originalCommentRef.current = null;
+    }
+  }, [aiComment, aiScore, isPolling]);
+
+  // Cleanup polling on unmount
+  React.useEffect(() => {
+    return () => {
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleReanalyzeResponse = async () => {
+    if (!rfpId || !requirementId || !supplierId) {
+      toast({
+        title: "Erreur",
+        description: "Données manquantes pour l'analyse",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Clear any existing polling
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+        pollingTimeoutRef.current = null;
+      }
+
+      await analyzeResponse.mutateAsync({
+        rfpId,
+        requirementId,
+        supplierId,
+        responseText,
+      });
+
+      toast({
+        title: "Succès",
+        description: "Analyse IA en cours...",
+      });
+
+      // Start polling - track original comment
+      originalCommentRef.current = aiComment;
+      setIsPolling(true);
+
+      // Poll for updates with 4s interval and 15s timeout
+      // N8N updates database asynchronously, so we need to poll
+      const startTime = Date.now();
+      const pollInterval = 4000; // 4 seconds
+      const timeout = 15000; // 15 seconds
+
+      const pollForUpdate = () => {
+        const elapsed = Date.now() - startTime;
+
+        if (elapsed >= timeout) {
+          // Timeout reached - stop polling
+          toast({
+            title: "Timeout",
+            description:
+              "L'analyse prend plus de temps que prévu. Rafraîchissez la page pour voir les résultats.",
+            variant: "destructive",
+          });
+          pollingTimeoutRef.current = null;
+          setIsPolling(false);
+          originalCommentRef.current = null;
+          return;
+        }
+
+        // Refetch data
+        onAICommentUpdate?.();
+
+        // Continue polling - useEffect will stop it when aiComment changes
+        pollingTimeoutRef.current = setTimeout(pollForUpdate, pollInterval);
+      };
+
+      // Start polling after initial delay
+      pollingTimeoutRef.current = setTimeout(pollForUpdate, pollInterval);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description:
+          error instanceof Error ? error.message : "Erreur lors de l'analyse",
+        variant: "destructive",
+      });
+      setIsPolling(false);
+      originalCommentRef.current = null;
+    }
+  };
 
   const getStatusBadge = () => {
     switch (status) {
@@ -281,19 +407,37 @@ export function MobileSupplierCard({
               <span className="text-sm font-semibold text-slate-900 dark:text-white">
                 Analyse IA
               </span>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(aiComment);
-                }}
-                className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition-colors"
-                title="Copier le commentaire IA"
-              >
-                <Copy className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-              </button>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(localAIComment);
+                  }}
+                  className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition-colors"
+                  title="Copier le commentaire IA"
+                >
+                  <Copy className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                </button>
+                <button
+                  onClick={handleReanalyzeResponse}
+                  disabled={analyzeResponse.isPending}
+                  className={`p-1.5 rounded transition-colors ${
+                    analyzeResponse.isPending
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:bg-slate-200 dark:hover:bg-slate-800"
+                  }`}
+                  title="Relancer l'analyse IA"
+                >
+                  {analyzeResponse.isPending ? (
+                    <Loader2 className="w-4 h-4 text-slate-600 dark:text-slate-400 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  )}
+                </button>
+              </div>
             </div>
             <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 max-h-64 overflow-y-auto">
               <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-                {aiComment}
+                {localAIComment}
               </p>
             </div>
           </TabsContent>
