@@ -115,15 +115,48 @@ export function MobileSupplierCard({
         description: "Analyse IA en cours...",
       });
 
-      // Call parent callback to refetch data
-      // N8N updates database asynchronously, so we need to refetch
-      setTimeout(() => {
+      // Poll for updates with 4s interval and 15s timeout
+      // N8N updates database asynchronously, so we need to poll
+      const startTime = Date.now();
+      const pollInterval = 4000; // 4 seconds
+      const timeout = 15000; // 15 seconds
+      const originalComment = localAIComment;
+
+      const pollForUpdate = () => {
+        const elapsed = Date.now() - startTime;
+
+        if (elapsed >= timeout) {
+          // Timeout reached - stop polling
+          toast({
+            title: "Timeout",
+            description:
+              "L'analyse prend plus de temps que prévu. Rafraîchissez la page pour voir les résultats.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Refetch data
         onAICommentUpdate?.();
-      }, 1000); // Wait 1s for N8N to process before refetching
+
+        // Check if data was updated by comparing with original
+        // If not updated yet, continue polling
+        setTimeout(() => {
+          // The parent will trigger a re-render if data changed
+          // If comment is still the same after refetch, continue polling
+          if (localAIComment === originalComment) {
+            pollForUpdate();
+          }
+        }, pollInterval);
+      };
+
+      // Start polling after initial delay
+      setTimeout(pollForUpdate, pollInterval);
     } catch (error) {
       toast({
         title: "Erreur",
-        description: error instanceof Error ? error.message : "Erreur lors de l'analyse",
+        description:
+          error instanceof Error ? error.message : "Erreur lors de l'analyse",
         variant: "destructive",
       });
     }
