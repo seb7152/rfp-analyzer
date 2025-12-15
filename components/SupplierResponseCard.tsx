@@ -103,15 +103,41 @@ export function SupplierResponseCard({
   const [isFocusModalOpen, setIsFocusModalOpen] = React.useState(false);
   const [localAIComment, setLocalAIComment] = React.useState(aiComment);
   const [localAIScore, setLocalAIScore] = React.useState(aiScore);
+  const [isPolling, setIsPolling] = React.useState(false);
   const { toast } = useToast();
   const analyzeResponse = useAnalyzeResponse();
   const currentScore = manualScore ?? localAIScore;
+  const pollingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const originalCommentRef = React.useRef<string | null>(null);
 
   // Update local state when props change
   React.useEffect(() => {
     setLocalAIComment(aiComment);
     setLocalAIScore(aiScore);
-  }, [aiComment, aiScore]);
+
+    // Stop polling if aiComment changed while polling
+    if (
+      isPolling &&
+      originalCommentRef.current !== null &&
+      aiComment !== originalCommentRef.current
+    ) {
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+        pollingTimeoutRef.current = null;
+      }
+      setIsPolling(false);
+      originalCommentRef.current = null;
+    }
+  }, [aiComment, aiScore, isPolling]);
+
+  // Cleanup polling on unmount
+  React.useEffect(() => {
+    return () => {
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleReanalyzeResponse = async () => {
     if (!rfpId || !requirementId || !supplierId) {
@@ -124,6 +150,12 @@ export function SupplierResponseCard({
     }
 
     try {
+      // Clear any existing polling
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+        pollingTimeoutRef.current = null;
+      }
+
       await analyzeResponse.mutateAsync({
         rfpId,
         requirementId,
@@ -136,12 +168,15 @@ export function SupplierResponseCard({
         description: "Analyse IA en cours...",
       });
 
+      // Start polling - track original comment
+      originalCommentRef.current = aiComment;
+      setIsPolling(true);
+
       // Poll for updates with 4s interval and 15s timeout
       // N8N updates database asynchronously, so we need to poll
       const startTime = Date.now();
       const pollInterval = 4000; // 4 seconds
       const timeout = 15000; // 15 seconds
-      const originalComment = localAIComment;
 
       const pollForUpdate = () => {
         const elapsed = Date.now() - startTime;
@@ -154,25 +189,21 @@ export function SupplierResponseCard({
               "L'analyse prend plus de temps que prévu. Rafraîchissez la page pour voir les résultats.",
             variant: "destructive",
           });
+          pollingTimeoutRef.current = null;
+          setIsPolling(false);
+          originalCommentRef.current = null;
           return;
         }
 
         // Refetch data
         onAICommentUpdate?.();
 
-        // Check if data was updated by comparing with original
-        // If not updated yet, continue polling
-        setTimeout(() => {
-          // The parent will trigger a re-render if data changed
-          // If comment is still the same after refetch, continue polling
-          if (localAIComment === originalComment) {
-            pollForUpdate();
-          }
-        }, pollInterval);
+        // Continue polling - useEffect will stop it when aiComment changes
+        pollingTimeoutRef.current = setTimeout(pollForUpdate, pollInterval);
       };
 
       // Start polling after initial delay
-      setTimeout(pollForUpdate, pollInterval);
+      pollingTimeoutRef.current = setTimeout(pollForUpdate, pollInterval);
     } catch (error) {
       toast({
         title: "Erreur",
@@ -180,6 +211,8 @@ export function SupplierResponseCard({
           error instanceof Error ? error.message : "Erreur lors de l'analyse",
         variant: "destructive",
       });
+      setIsPolling(false);
+      originalCommentRef.current = null;
     }
   };
 
