@@ -158,6 +158,61 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     return null;
   };
 
+  // Helper function to get average category score across all suppliers
+  const getAverageCategoryScore = (categoryId: string): number | null => {
+    const requirementIds = new Set<string>();
+
+    // Collect all requirement IDs under this category
+    const collectRequirementIds = (nodes: TreeNode[]) => {
+      for (const node of nodes) {
+        if (node.type === "requirement") {
+          requirementIds.add(node.id);
+        } else if (node.children) {
+          collectRequirementIds(node.children);
+        }
+      }
+    };
+
+    const categoryNode = findNodeById(tree, categoryId);
+    if (categoryNode && categoryNode.children) {
+      collectRequirementIds(categoryNode.children);
+    }
+
+    // Calculate average score across all suppliers
+    const supplierScores: Record<string, { weightedSum: number; totalWeight: number }> = {};
+
+    responses.forEach((response) => {
+      if (requirementIds.has(response.requirement_id)) {
+        const weight = weights[response.requirement_id] || 0;
+        if (weight > 0) {
+          const score = response.manual_score ?? response.ai_score ?? null;
+          if (score !== null) {
+            if (!supplierScores[response.supplier_id]) {
+              supplierScores[response.supplier_id] = { weightedSum: 0, totalWeight: 0 };
+            }
+            supplierScores[response.supplier_id].weightedSum += score * weight;
+            supplierScores[response.supplier_id].totalWeight += weight;
+          }
+        }
+      }
+    });
+
+    // Calculate final scores for each supplier
+    const scores: number[] = [];
+    for (const supplierId in supplierScores) {
+      const data = supplierScores[supplierId];
+      if (data.totalWeight > 0) {
+        scores.push(data.weightedSum / data.totalWeight);
+      }
+    }
+
+    // Return average
+    if (scores.length > 0) {
+      return scores.reduce((a, b) => a + b, 0) / scores.length;
+    }
+    return null;
+  };
+
   // Color function for scores
   const getScoreColor = (score: number | null) => {
     if (score === null) return "bg-slate-200 text-slate-600";
@@ -360,7 +415,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                 <th className="px-6 py-4 font-medium sticky left-0 bg-slate-50 z-30 border-b border-r min-w-[350px]">
                   Catégorie
                 </th>
-                <th className="px-6 py-4 font-medium border-b border-r min-w-[120px] text-center">
+                <th className="px-6 py-4 font-medium border-b border-r min-w-[160px] text-center">
                   Note
                 </th>
                 <th className="px-6 py-4 font-medium border-b border-r min-w-[250px]">
@@ -386,6 +441,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                   selectedSupplierId && selectedSupplierId !== ""
                     ? getCategoryScore(category.id, selectedSupplierId)
                     : null;
+                const averageScore = getAverageCategoryScore(category.id);
                 return (
                   <tr
                     key={category.id}
@@ -428,13 +484,24 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                       </div>
                     </td>
                     <td className="px-6 py-4 border-r text-center">
-                      <div
-                        className={cn(
-                          "w-10 h-8 rounded flex items-center justify-center text-xs font-bold mx-auto",
-                          getScoreColor(score)
-                        )}
-                      >
-                        {formatScore(score)}
+                      <div className="flex items-center justify-center gap-1 mx-auto">
+                        <div
+                          className={cn(
+                            "w-12 h-8 rounded flex items-center justify-center text-xs font-bold",
+                            getScoreColor(score)
+                          )}
+                        >
+                          {formatScore(score)}
+                        </div>
+                        <span className="text-slate-400 text-xs font-medium">/</span>
+                        <div
+                          className={cn(
+                            "w-12 h-8 rounded flex items-center justify-center text-xs font-bold",
+                            getScoreColor(averageScore)
+                          )}
+                        >
+                          {formatScore(averageScore)}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 border-r text-slate-600">
