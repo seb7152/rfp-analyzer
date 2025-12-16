@@ -390,7 +390,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   }
 
   return (
-    <Card className="w-full overflow-hidden mb-8">
+    <Card className="w-full overflow-hidden mb-8 h-full">
       <CardHeader className="pb-4">
         <div className="flex flex-row items-center justify-between gap-4">
           <CardTitle className="text-lg font-medium">
@@ -440,8 +440,8 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="relative w-full overflow-auto border rounded-md">
+      <CardContent className="p-0 flex-1 flex flex-col">
+        <div className="relative w-full overflow-auto flex-1 border-t border-slate-200">
           <table className="w-full text-sm text-left border-collapse">
             <thead className="text-xs text-slate-700 uppercase bg-slate-50 sticky top-0 z-20 shadow-sm">
               <tr>
@@ -511,10 +511,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                         <span className="font-mono text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded flex-shrink-0">
                           {category.code}
                         </span>
-                        <span
-                          className="truncate max-w-[200px]"
-                          title={category.title}
-                        >
+                        <span className="whitespace-normal break-words">
                           {category.title}
                         </span>
                       </div>
