@@ -351,8 +351,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
               {flatCategories.map((category) => {
                 const attentionPoints = getAttentionPoints(category.id);
                 const score =
-                  selectedSupplierId &&
-                  getCategoryScore(category.id, selectedSupplierId);
+                  selectedSupplierId && selectedSupplierId !== ""
+                    ? getCategoryScore(category.id, selectedSupplierId)
+                    : null;
                 return (
                   <tr
                     key={category.id}
