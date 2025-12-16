@@ -299,6 +299,24 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     return null;
   };
 
+  // Get direct child titles (either requirements or subcategories)
+  const getChildTitles = (categoryId: string): string[] => {
+    const categoryNode = findNodeById(tree, categoryId);
+    if (!categoryNode || !categoryNode.children) {
+      return [];
+    }
+
+    const titles: string[] = [];
+    for (const child of categoryNode.children) {
+      if (child.type === "requirement") {
+        titles.push(child.title);
+      } else if (child.type === "category") {
+        titles.push(child.title);
+      }
+    }
+    return titles;
+  };
+
   const toggleCategory = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setExpandedCategories((prev) => {
@@ -315,8 +333,8 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   // Generate markdown table
   const generateMarkdown = (): string => {
     let markdown =
-      "| Catégorie | Forces | Faiblesses | Points d'attention |\n";
-    markdown += "|-----------|--------|-----------|--------------------|\n";
+      "| Catégorie | Détail | Note | Forces | Faiblesses | Points d'attention |\n";
+    markdown += "|-----------|--------|------|--------|-----------|--------------------|\n";
 
     for (const category of flatCategories) {
       const isExpanded = expandedCategories.has(category.id);
@@ -325,13 +343,28 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         selectedSupplierId || undefined,
         isExpanded
       );
+      const childTitles = getChildTitles(category.id);
       const indent = "  ".repeat(category.level);
       const pointsList =
         attentionPoints.length > 0
           ? attentionPoints.map((p) => `• ${p}`).join("\n")
           : "";
+      const detailList =
+        childTitles.length > 0
+          ? childTitles.map((p) => `• ${p}`).join("\n")
+          : "";
 
-      markdown += `| ${indent}**${category.code}** - ${category.title} | | | ${pointsList} |\n`;
+      const score =
+        selectedSupplierId && selectedSupplierId !== ""
+          ? getCategoryScore(category.id, selectedSupplierId)
+          : null;
+      const averageScore = getAverageCategoryScore(category.id);
+      const scoreStr =
+        score !== null && averageScore !== null
+          ? `${formatScore(score)} / ${formatScore(averageScore)}`
+          : "-";
+
+      markdown += `| ${indent}**${category.code}** - ${category.title} | ${detailList} | ${scoreStr} | | | ${pointsList} |\n`;
     }
 
     return markdown;
@@ -415,6 +448,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                 <th className="px-6 py-4 font-medium sticky left-0 bg-slate-50 z-30 border-b border-r min-w-[350px]">
                   Catégorie
                 </th>
+                <th className="px-6 py-4 font-medium border-b border-r min-w-[300px]">
+                  Détail
+                </th>
                 <th className="px-6 py-4 font-medium border-b border-r min-w-[160px] text-center">
                   Note
                 </th>
@@ -482,6 +518,21 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                           {category.title}
                         </span>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 border-r text-slate-600">
+                      {(() => {
+                        const childTitles = getChildTitles(category.id);
+                        return childTitles.length > 0 ? (
+                          <ul className="space-y-1 text-xs">
+                            {childTitles.map((title, idx) => (
+                              <li key={idx} className="flex gap-2">
+                                <span className="flex-shrink-0">•</span>
+                                <span className="break-words">{title}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null;
+                      })()}
                     </td>
                     <td className="px-6 py-4 border-r text-center">
                       <div className="flex items-center justify-center gap-1 mx-auto">
