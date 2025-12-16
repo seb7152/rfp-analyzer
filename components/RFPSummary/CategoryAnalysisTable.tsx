@@ -23,6 +23,7 @@ interface CategoryAnalysisTableProps {
 
 export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const [tree, setTree] = useState<TreeNode[]>([]);
+  const [responses, setResponses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set()
@@ -33,9 +34,15 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     async function fetchData() {
       try {
         setLoading(true);
-        const treeRes = await fetch(`/api/rfps/${rfpId}/tree`);
+        const [treeRes, responsesRes] = await Promise.all([
+          fetch(`/api/rfps/${rfpId}/tree`),
+          fetch(`/api/rfps/${rfpId}/responses`),
+        ]);
         const treeData = await treeRes.json();
+        const responsesData = await responsesRes.json();
+
         setTree(treeData || []);
+        setResponses(responsesData.responses || []);
 
         // Initialize expanded categories (expand top level by default)
         const topLevelIds = (treeData || []).map((n: TreeNode) => n.id);
@@ -71,59 +78,39 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     return flat;
   }, [tree, expandedCategories]);
 
-  // Get attention points (requirements) for a category
+  // Get attention points (questions from responses) for a category
   const getAttentionPoints = (categoryId: string): string[] => {
-    const points: string[] = [];
+    const questions = new Set<string>();
+    const requirementIds = new Set<string>();
 
-    const traverse = (nodes: TreeNode[]) => {
+    // Collect all requirement IDs under this category
+    const collectRequirementIds = (nodes: TreeNode[]) => {
       for (const node of nodes) {
-        if (node.id === categoryId && node.children) {
-          // Get all requirements under this category
-          const collectRequirements = (children: TreeNode[]) => {
-            for (const child of children) {
-              if (child.type === "requirement") {
-                points.push(child.title);
-              } else if (child.children) {
-                collectRequirements(child.children);
-              }
-            }
-          };
-          collectRequirements(node.children);
+        if (node.type === "requirement") {
+          requirementIds.add(node.id);
         } else if (node.children) {
-          traverse(node.children);
+          collectRequirementIds(node.children);
         }
       }
     };
 
-    traverse([
-      {
-        id: categoryId,
-        code: "",
-        title: "",
-        type: "category",
-        children: findNodeById(tree, categoryId)?.children,
-      } as TreeNode,
-    ]);
-
-    // If the above didn't work, try direct traversal
-    if (points.length === 0) {
-      const node = findNodeById(tree, categoryId);
-      if (node) {
-        const collectRequirements = (children: TreeNode[] | undefined) => {
-          if (!children) return;
-          for (const child of children) {
-            if (child.type === "requirement") {
-              points.push(child.title);
-            } else if (child.children) {
-              collectRequirements(child.children);
-            }
-          }
-        };
-        collectRequirements(node.children);
-      }
+    const categoryNode = findNodeById(tree, categoryId);
+    if (categoryNode && categoryNode.children) {
+      collectRequirementIds(categoryNode.children);
     }
 
-    return points;
+    // Get unique questions from responses for these requirements
+    responses.forEach((response) => {
+      if (
+        requirementIds.has(response.requirement_id) &&
+        response.question &&
+        response.question.trim()
+      ) {
+        questions.add(response.question);
+      }
+    });
+
+    return Array.from(questions);
   };
 
   // Helper to find a node by ID
@@ -160,11 +147,12 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     for (const category of flatCategories) {
       const attentionPoints = getAttentionPoints(category.id);
       const indent = "  ".repeat(category.level);
-      const pointsList = attentionPoints
-        .map((p) => `• ${p}`)
-        .join("\n");
+      const pointsList =
+        attentionPoints.length > 0
+          ? attentionPoints.map((p) => `• ${p}`).join("\n")
+          : "";
 
-      markdown += `| ${indent}**${category.code}** - ${category.title} | | | ${pointsList ? "```\n" + pointsList + "\n```" : ""} |\n`;
+      markdown += `| ${indent}**${category.code}** - ${category.title} | | | ${pointsList} |\n`;
     }
 
     return markdown;
@@ -295,11 +283,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                             </li>
                           ))}
                         </ul>
-                      ) : (
-                        <span className="text-slate-400 italic">
-                          Aucune exigence
-                        </span>
-                      )}
+                      ) : null}
                     </td>
                   </tr>
                 );
