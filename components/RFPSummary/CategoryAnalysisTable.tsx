@@ -175,8 +175,11 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     return score.toFixed(1);
   };
 
-  // Get attention points (questions from responses) for a category
-  const getAttentionPoints = (categoryId: string): string[] => {
+  // Get attention points (questions from responses) for a category and supplier
+  const getAttentionPoints = (
+    categoryId: string,
+    supplierId?: string
+  ): string[] => {
     const questions = new Set<string>();
     const requirementIds = new Set<string>();
 
@@ -201,7 +204,8 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       if (
         requirementIds.has(response.requirement_id) &&
         response.question &&
-        response.question.trim()
+        response.question.trim() &&
+        (!supplierId || response.supplier_id === supplierId)
       ) {
         questions.add(response.question);
       }
@@ -242,7 +246,10 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     markdown += "|-----------|--------|-----------|--------------------|\n";
 
     for (const category of flatCategories) {
-      const attentionPoints = getAttentionPoints(category.id);
+      const attentionPoints = getAttentionPoints(
+        category.id,
+        selectedSupplierId || undefined
+      );
       const indent = "  ".repeat(category.level);
       const pointsList =
         attentionPoints.length > 0
@@ -349,7 +356,10 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
             </thead>
             <tbody>
               {flatCategories.map((category) => {
-                const attentionPoints = getAttentionPoints(category.id);
+                const attentionPoints = getAttentionPoints(
+                  category.id,
+                  selectedSupplierId || undefined
+                );
                 const score =
                   selectedSupplierId && selectedSupplierId !== ""
                     ? getCategoryScore(category.id, selectedSupplierId)
