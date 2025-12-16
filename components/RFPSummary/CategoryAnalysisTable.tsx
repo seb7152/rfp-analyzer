@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronRight, Copy, Check } from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, Check, Sparkles } from "lucide-react";
 import { Supplier } from "@/types/supplier";
 
 // Types
@@ -29,6 +29,11 @@ interface CategoryAnalysisTableProps {
   rfpId: string;
 }
 
+interface CategoryAnalysis {
+  forces: string[];
+  faiblesses: string[];
+}
+
 export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
@@ -42,6 +47,10 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(
     null
   );
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [categoryAnalyses, setCategoryAnalyses] = useState<
+    Record<string, CategoryAnalysis>
+  >({});
 
   useEffect(() => {
     async function fetchData() {
@@ -370,6 +379,135 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     return markdown;
   };
 
+  // Get direct child requirements for a category (not recursively)
+  const getDirectRequirements = (categoryId: string): TreeNode[] => {
+    const categoryNode = findNodeById(tree, categoryId);
+    if (!categoryNode || !categoryNode.children) {
+      return [];
+    }
+
+    return categoryNode.children.filter((child) => child.type === "requirement");
+  };
+
+  // Build payload for N8N analysis
+  const buildAnalysisPayload = (categoryId: string) => {
+    const categoryNode = findNodeById(tree, categoryId);
+    if (!categoryNode) return null;
+
+    if (!selectedSupplierId) return null;
+
+    const selectedSupplier = suppliers.find((s) => s.id === selectedSupplierId);
+    if (!selectedSupplier) return null;
+
+    const categoryScore = getCategoryScore(categoryId, selectedSupplierId);
+    const averageScore = getAverageCategoryScore(categoryId);
+
+    // Get direct child requirements
+    const directRequirements = getDirectRequirements(categoryId);
+
+    // Get requirement IDs (including descendants for response filtering)
+    const requirementIds = new Set<string>();
+    const collectRequirementIds = (nodes: TreeNode[]) => {
+      for (const node of nodes) {
+        if (node.type === "requirement") {
+          requirementIds.add(node.id);
+        } else if (node.children) {
+          collectRequirementIds(node.children);
+        }
+      }
+    };
+    if (categoryNode.children) {
+      collectRequirementIds(categoryNode.children);
+    }
+
+    // Build requirements array (direct children only)
+    const requirementsArray = directRequirements.map((req) => ({
+      id: req.id,
+      code: req.code,
+      title: req.title,
+      description: req.description || "",
+    }));
+
+    // Build responses array (filtered by category requirements and selected supplier)
+    const responsesArray = responses
+      .filter(
+        (r) =>
+          r.supplier_id === selectedSupplierId &&
+          requirementIds.has(r.requirement_id)
+      )
+      .map((r) => ({
+        requirement_id: r.requirement_id,
+        response_text: r.response_text,
+        question: r.question,
+        comment: r.manual_comment || r.ai_comment || "",
+        score: r.manual_score ?? r.ai_score,
+      }));
+
+    return {
+      rfp_id: rfpId,
+      supplier_id: selectedSupplierId,
+      supplier_name: selectedSupplier.name,
+      category_id: categoryId,
+      category_code: categoryNode.code,
+      category_name: categoryNode.title,
+      category_score: categoryScore,
+      average_score: averageScore,
+      requirements: requirementsArray,
+      responses: responsesArray,
+      timestamp: new Date().toISOString(),
+    };
+  };
+
+  // Trigger N8N analysis
+  const triggerAnalysis = async (categoryId: string) => {
+    try {
+      setAnalysisLoading(true);
+
+      const payload = buildAnalysisPayload(categoryId);
+      if (!payload) {
+        console.error("Failed to build analysis payload");
+        return;
+      }
+
+      console.log("Sending payload to N8N:", payload);
+
+      // Call N8N webhook
+      const response = await fetch(
+        "https://n8n.srv828065.hstgr.cloud/webhook/1240b9c7-ca02-429a-a4e9-2d6afb74f311",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        console.error("N8N response error:", response.status);
+        return;
+      }
+
+      const result = await response.json();
+      console.log("N8N analysis result:", result);
+
+      // Update category analysis with results
+      if (result.forces && result.faiblesses) {
+        setCategoryAnalyses((prev) => ({
+          ...prev,
+          [categoryId]: {
+            forces: result.forces,
+            faiblesses: result.faiblesses,
+          },
+        }));
+      }
+    } catch (error) {
+      console.error("Error triggering analysis:", error);
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
+
   const copyToClipboard = async () => {
     try {
       const markdown = generateMarkdown();
@@ -419,6 +557,25 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                 </Select>
               </div>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => selectedSupplierId && triggerAnalysis(flatCategories[0]?.id || "")}
+              disabled={analysisLoading || !selectedSupplierId || flatCategories.length === 0}
+              className="gap-2"
+            >
+              {analysisLoading ? (
+                <>
+                  <span className="animate-spin">✨</span>
+                  Analyse...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Analyser
+                </>
+              )}
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -553,12 +710,32 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                       </div>
                     </td>
                     <td className="px-6 py-4 border-r text-slate-600">
-                      {/* Forces - to be filled by AI later */}
-                      <span className="text-slate-400 italic">À compléter</span>
+                      {categoryAnalyses[category.id]?.forces ? (
+                        <ul className="space-y-1 text-xs">
+                          {categoryAnalyses[category.id].forces.map((force, idx) => (
+                            <li key={idx} className="flex gap-2">
+                              <span className="flex-shrink-0">✓</span>
+                              <span className="break-words">{force}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-slate-400 italic">À compléter</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 border-r text-slate-600">
-                      {/* Weaknesses - to be filled by AI later */}
-                      <span className="text-slate-400 italic">À compléter</span>
+                      {categoryAnalyses[category.id]?.faiblesses ? (
+                        <ul className="space-y-1 text-xs">
+                          {categoryAnalyses[category.id].faiblesses.map((weakness, idx) => (
+                            <li key={idx} className="flex gap-2">
+                              <span className="flex-shrink-0">✗</span>
+                              <span className="break-words">{weakness}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-slate-400 italic">À compléter</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-slate-600">
                       {attentionPoints.length > 0 ? (
