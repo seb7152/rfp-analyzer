@@ -14,7 +14,6 @@ export function AnalysisTab({ rfpId }: AnalysisTabProps) {
 
   return (
     <div className="space-y-8">
-      <CategoryAnalysisTable rfpId={rfpId} />
       <CategoryHeatmap
         rfpId={rfpId}
         onCategorySelect={setSelectedCategoryId}
@@ -24,6 +23,7 @@ export function AnalysisTab({ rfpId }: AnalysisTabProps) {
         rfpId={rfpId}
         selectedCategoryId={selectedCategoryId}
       />
+      <CategoryAnalysisTable rfpId={rfpId} />
     </div>
   );
 }

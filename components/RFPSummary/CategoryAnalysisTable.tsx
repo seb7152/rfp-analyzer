@@ -3,8 +3,16 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight, Copy, Check } from "lucide-react";
+import { Supplier } from "@/types/supplier";
 
 // Types
 interface TreeNode {
@@ -24,29 +32,52 @@ interface CategoryAnalysisTableProps {
 export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [weights, setWeights] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set()
   );
   const [copied, setCopied] = useState(false);
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
-        const [treeRes, responsesRes] = await Promise.all([
-          fetch(`/api/rfps/${rfpId}/tree`),
-          fetch(`/api/rfps/${rfpId}/responses`),
-        ]);
+        const [treeRes, responsesRes, suppliersRes, weightsRes] =
+          await Promise.all([
+            fetch(`/api/rfps/${rfpId}/tree`),
+            fetch(`/api/rfps/${rfpId}/responses`),
+            fetch(`/api/rfps/${rfpId}/suppliers`),
+            fetch(`/api/rfps/${rfpId}/weights`),
+          ]);
         const treeData = await treeRes.json();
         const responsesData = await responsesRes.json();
+        const suppliersData = await suppliersRes.json();
+        const weightsData = await weightsRes.json();
 
         setTree(treeData || []);
         setResponses(responsesData.responses || []);
+        setSuppliers(suppliersData.suppliers || []);
+
+        // Flatten weights (requirements only)
+        const flatWeights: Record<string, number> = {};
+        if (weightsData.requirements) {
+          Object.assign(flatWeights, weightsData.requirements);
+        }
+        setWeights(flatWeights);
 
         // Initialize expanded categories (expand top level by default)
         const topLevelIds = (treeData || []).map((n: TreeNode) => n.id);
         setExpandedCategories(new Set(topLevelIds));
+
+        // Set first supplier as selected by default
+        if (suppliersData.suppliers && suppliersData.suppliers.length > 0) {
+          setSelectedSupplierId(suppliersData.suppliers[0].id);
+        }
       } catch (error) {
         console.error("Error fetching category analysis data:", error);
       } finally {
@@ -77,6 +108,72 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     traverse(tree, 0);
     return flat;
   }, [tree, expandedCategories]);
+
+  // Helper function to get category score for a supplier
+  const getCategoryScore = (
+    categoryId: string,
+    supplierId: string
+  ): number | null => {
+    const requirementIds = new Set<string>();
+
+    // Collect all requirement IDs under this category
+    const collectRequirementIds = (nodes: TreeNode[]) => {
+      for (const node of nodes) {
+        if (node.type === "requirement") {
+          requirementIds.add(node.id);
+        } else if (node.children) {
+          collectRequirementIds(node.children);
+        }
+      }
+    };
+
+    const categoryNode = findNodeById(tree, categoryId);
+    if (categoryNode && categoryNode.children) {
+      collectRequirementIds(categoryNode.children);
+    }
+
+    // Calculate weighted score
+    let weightedSum = 0;
+    let totalWeight = 0;
+
+    responses.forEach((response) => {
+      if (
+        response.supplier_id === supplierId &&
+        requirementIds.has(response.requirement_id)
+      ) {
+        const weight = weights[response.requirement_id] || 0;
+        if (weight > 0) {
+          const score = response.manual_score ?? response.ai_score ?? null;
+          if (score !== null) {
+            weightedSum += score * weight;
+            totalWeight += weight;
+          }
+        }
+      }
+    });
+
+    if (totalWeight > 0) {
+      return weightedSum / totalWeight;
+    }
+    return null;
+  };
+
+  // Color function for scores
+  const getScoreColor = (score: number | null) => {
+    if (score === null) return "bg-slate-200 text-slate-600";
+
+    if (score >= 3.5) return "bg-emerald-600 text-white";
+    if (score >= 3.0) return "bg-emerald-500 text-white";
+    if (score >= 2.5) return "bg-emerald-400 text-white";
+    if (score >= 2.0) return "bg-yellow-400 text-slate-900";
+    if (score >= 1.0) return "bg-orange-400 text-white";
+    return "bg-red-500 text-white";
+  };
+
+  const formatScore = (score: number | null) => {
+    if (score === null) return "-";
+    return score.toFixed(1);
+  };
 
   // Get attention points (questions from responses) for a category
   const getAttentionPoints = (categoryId: string): string[] => {
@@ -179,28 +276,54 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
 
   return (
     <Card className="w-full overflow-hidden mb-8">
-      <CardHeader className="pb-4 flex flex-row items-center justify-between">
-        <CardTitle className="text-lg font-medium">
-          Analyse par Catégorie
-        </CardTitle>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={copyToClipboard}
-          className="gap-2"
-        >
-          {copied ? (
-            <>
-              <Check className="h-4 w-4" />
-              Copié!
-            </>
-          ) : (
-            <>
-              <Copy className="h-4 w-4" />
-              Copier en Markdown
-            </>
-          )}
-        </Button>
+      <CardHeader className="pb-4">
+        <div className="flex flex-row items-center justify-between gap-4">
+          <CardTitle className="text-lg font-medium">
+            Analyse par Catégorie
+          </CardTitle>
+          <div className="flex items-center gap-3">
+            {suppliers.length > 0 && (
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-slate-700">
+                  Soumissionnaire:
+                </label>
+                <Select
+                  value={selectedSupplierId || ""}
+                  onValueChange={setSelectedSupplierId}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Sélectionner un soumissionnaire" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {suppliers.map((supplier) => (
+                      <SelectItem key={supplier.id} value={supplier.id}>
+                        {supplier.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={copyToClipboard}
+              className="gap-2"
+            >
+              {copied ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  Copié!
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4" />
+                  Copier en Markdown
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="relative w-full overflow-auto border rounded-md">
@@ -209,6 +332,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
               <tr>
                 <th className="px-4 py-3 font-medium sticky left-0 bg-slate-50 z-30 border-b border-r min-w-[300px]">
                   Catégorie
+                </th>
+                <th className="px-4 py-3 font-medium border-b border-r min-w-[100px] text-center">
+                  Note
                 </th>
                 <th className="px-4 py-3 font-medium border-b border-r min-w-[200px]">
                   Forces
@@ -224,6 +350,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
             <tbody>
               {flatCategories.map((category) => {
                 const attentionPoints = getAttentionPoints(category.id);
+                const score =
+                  selectedSupplierId &&
+                  getCategoryScore(category.id, selectedSupplierId);
                 return (
                   <tr
                     key={category.id}
@@ -263,6 +392,16 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                         >
                           {category.title}
                         </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 border-r text-center">
+                      <div
+                        className={cn(
+                          "w-10 h-8 rounded flex items-center justify-center text-xs font-bold mx-auto",
+                          getScoreColor(score)
+                        )}
+                      >
+                        {formatScore(score)}
                       </div>
                     </td>
                     <td className="px-4 py-3 border-r text-slate-600">
