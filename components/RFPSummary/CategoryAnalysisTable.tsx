@@ -176,27 +176,45 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   };
 
   // Get attention points (questions from responses) for a category and supplier
+  // If category is expanded, only show direct child requirements
+  // If category is collapsed, show all descendant requirements
   const getAttentionPoints = (
     categoryId: string,
-    supplierId?: string
+    supplierId?: string,
+    isExpanded?: boolean
   ): string[] => {
     const questions = new Set<string>();
     const requirementIds = new Set<string>();
 
-    // Collect all requirement IDs under this category
-    const collectRequirementIds = (nodes: TreeNode[]) => {
-      for (const node of nodes) {
-        if (node.type === "requirement") {
-          requirementIds.add(node.id);
-        } else if (node.children) {
-          collectRequirementIds(node.children);
-        }
-      }
-    };
-
     const categoryNode = findNodeById(tree, categoryId);
-    if (categoryNode && categoryNode.children) {
-      collectRequirementIds(categoryNode.children);
+    if (!categoryNode || !categoryNode.children) {
+      return [];
+    }
+
+    // Collect requirement IDs based on expansion state
+    if (isExpanded) {
+      // Category is expanded: only collect direct child requirements (not from subcategories)
+      const collectDirectRequirements = (nodes: TreeNode[]) => {
+        for (const node of nodes) {
+          if (node.type === "requirement") {
+            requirementIds.add(node.id);
+          }
+          // Don't recurse into subcategories when expanded
+        }
+      };
+      collectDirectRequirements(categoryNode.children);
+    } else {
+      // Category is collapsed: collect all descendant requirements
+      const collectAllRequirements = (nodes: TreeNode[]) => {
+        for (const node of nodes) {
+          if (node.type === "requirement") {
+            requirementIds.add(node.id);
+          } else if (node.children) {
+            collectAllRequirements(node.children);
+          }
+        }
+      };
+      collectAllRequirements(categoryNode.children);
     }
 
     // Get unique questions from responses for these requirements
@@ -246,9 +264,11 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     markdown += "|-----------|--------|-----------|--------------------|\n";
 
     for (const category of flatCategories) {
+      const isExpanded = expandedCategories.has(category.id);
       const attentionPoints = getAttentionPoints(
         category.id,
-        selectedSupplierId || undefined
+        selectedSupplierId || undefined,
+        isExpanded
       );
       const indent = "  ".repeat(category.level);
       const pointsList =
@@ -337,28 +357,30 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
           <table className="w-full text-sm text-left border-collapse">
             <thead className="text-xs text-slate-700 uppercase bg-slate-50 sticky top-0 z-20 shadow-sm">
               <tr>
-                <th className="px-4 py-3 font-medium sticky left-0 bg-slate-50 z-30 border-b border-r min-w-[300px]">
+                <th className="px-6 py-4 font-medium sticky left-0 bg-slate-50 z-30 border-b border-r min-w-[350px]">
                   Catégorie
                 </th>
-                <th className="px-4 py-3 font-medium border-b border-r min-w-[100px] text-center">
+                <th className="px-6 py-4 font-medium border-b border-r min-w-[120px] text-center">
                   Note
                 </th>
-                <th className="px-4 py-3 font-medium border-b border-r min-w-[200px]">
+                <th className="px-6 py-4 font-medium border-b border-r min-w-[250px]">
                   Forces
                 </th>
-                <th className="px-4 py-3 font-medium border-b border-r min-w-[200px]">
+                <th className="px-6 py-4 font-medium border-b border-r min-w-[250px]">
                   Faiblesses
                 </th>
-                <th className="px-4 py-3 font-medium border-b min-w-[300px]">
+                <th className="px-6 py-4 font-medium border-b min-w-[400px]">
                   Points d'attention
                 </th>
               </tr>
             </thead>
             <tbody>
               {flatCategories.map((category) => {
+                const isExpanded = expandedCategories.has(category.id);
                 const attentionPoints = getAttentionPoints(
                   category.id,
-                  selectedSupplierId || undefined
+                  selectedSupplierId || undefined,
+                  isExpanded
                 );
                 const score =
                   selectedSupplierId && selectedSupplierId !== ""
@@ -371,7 +393,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                   >
                     <td
                       className={cn(
-                        "px-4 py-3 font-medium text-slate-900 sticky left-0 z-10 border-r bg-white hover:bg-slate-50 min-w-[300px]"
+                        "px-6 py-4 font-medium text-slate-900 sticky left-0 z-10 border-r bg-white hover:bg-slate-50 min-w-[350px]"
                       )}
                     >
                       <div
@@ -405,7 +427,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 border-r text-center">
+                    <td className="px-6 py-4 border-r text-center">
                       <div
                         className={cn(
                           "w-10 h-8 rounded flex items-center justify-center text-xs font-bold mx-auto",
@@ -415,17 +437,17 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                         {formatScore(score)}
                       </div>
                     </td>
-                    <td className="px-4 py-3 border-r text-slate-600">
+                    <td className="px-6 py-4 border-r text-slate-600">
                       {/* Forces - to be filled by AI later */}
                       <span className="text-slate-400 italic">À compléter</span>
                     </td>
-                    <td className="px-4 py-3 border-r text-slate-600">
+                    <td className="px-6 py-4 border-r text-slate-600">
                       {/* Weaknesses - to be filled by AI later */}
                       <span className="text-slate-400 italic">À compléter</span>
                     </td>
-                    <td className="px-4 py-3 text-slate-600">
+                    <td className="px-6 py-4 text-slate-600">
                       {attentionPoints.length > 0 ? (
-                        <ul className="space-y-1 max-h-40 overflow-y-auto">
+                        <ul className="space-y-1 max-h-48 overflow-y-auto">
                           {attentionPoints.map((point, idx) => (
                             <li key={idx} className="text-xs flex gap-2">
                               <span className="flex-shrink-0">•</span>
