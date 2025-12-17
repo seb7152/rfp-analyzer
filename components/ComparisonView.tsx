@@ -52,6 +52,7 @@ import type { TreeNode } from "@/hooks/use-requirements";
 import type { Requirement } from "@/lib/supabase/types";
 import { getRequirementById } from "@/lib/fake-data";
 import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
+import { useVersion } from "@/contexts/VersionContext";
 
 interface ComparisonViewProps {
   selectedRequirementId: string;
@@ -101,6 +102,9 @@ export function ComparisonView({
   // Initialize mutation hook for persisting changes
   const mutation = useResponseMutation();
 
+  // Get version context to filter removed suppliers
+  const { activeVersion } = useVersion();
+
   // Timers for hiding "Saved" indicator
   const savedTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
@@ -130,7 +134,8 @@ export function ComparisonView({
   // Fetch responses for the selected requirement
   const { data: responsesData, refetch: refetchResponses } = useResponses(
     rfpId || "",
-    selectedRequirementId
+    selectedRequirementId,
+    activeVersion?.id
   );
 
   // Fetch annotations for the selected requirement

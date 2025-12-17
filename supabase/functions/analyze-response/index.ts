@@ -43,18 +43,14 @@ serve(async (req) => {
   }
 
   try {
-    const {
-      rfpId,
-      requirementId,
-      supplierId,
-      responseText,
-      systemPrompt,
-    } = (await req.json()) as AnalyzeRequest;
+    const { rfpId, requirementId, supplierId, responseText, systemPrompt } =
+      (await req.json()) as AnalyzeRequest;
 
     if (!rfpId || !requirementId || !supplierId || !responseText) {
       return new Response(
         JSON.stringify({
-          error: "Missing required parameters: rfpId, requirementId, supplierId, responseText",
+          error:
+            "Missing required parameters: rfpId, requirementId, supplierId, responseText",
         }),
         {
           status: 400,

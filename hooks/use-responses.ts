@@ -44,15 +44,22 @@ export interface GetResponsesResponse {
 
 /**
  * Hook to fetch all responses for a specific RFP
- * Optionally filters by requirement ID
+ * Optionally filters by requirement ID and version ID
  */
-export function useResponses(rfpId: string, requirementId?: string) {
+export function useResponses(
+  rfpId: string,
+  requirementId?: string,
+  versionId?: string
+) {
   return useQuery<GetResponsesResponse>({
-    queryKey: ["responses", rfpId, requirementId] as const,
+    queryKey: ["responses", rfpId, requirementId, versionId] as const,
     queryFn: async () => {
       const params = new URLSearchParams();
       if (requirementId) {
         params.append("requirementId", requirementId);
+      }
+      if (versionId) {
+        params.append("versionId", versionId);
       }
 
       const response = await fetch(

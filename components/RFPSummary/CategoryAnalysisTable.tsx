@@ -188,7 +188,10 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     }
 
     // Calculate average score across all suppliers
-    const supplierScores: Record<string, { weightedSum: number; totalWeight: number }> = {};
+    const supplierScores: Record<
+      string,
+      { weightedSum: number; totalWeight: number }
+    > = {};
 
     responses.forEach((response) => {
       if (requirementIds.has(response.requirement_id)) {
@@ -197,7 +200,10 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
           const score = response.manual_score ?? response.ai_score ?? null;
           if (score !== null) {
             if (!supplierScores[response.supplier_id]) {
-              supplierScores[response.supplier_id] = { weightedSum: 0, totalWeight: 0 };
+              supplierScores[response.supplier_id] = {
+                weightedSum: 0,
+                totalWeight: 0,
+              };
             }
             supplierScores[response.supplier_id].weightedSum += score * weight;
             supplierScores[response.supplier_id].totalWeight += weight;
@@ -343,7 +349,8 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const generateMarkdown = (): string => {
     let markdown =
       "| Catégorie | Détail | Note | Forces | Faiblesses | Points d'attention |\n";
-    markdown += "|-----------|--------|------|--------|-----------|--------------------|\n";
+    markdown +=
+      "|-----------|--------|------|--------|-----------|--------------------|\n";
 
     for (const category of flatCategories) {
       const isExpanded = expandedCategories.has(category.id);
@@ -386,7 +393,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       return [];
     }
 
-    return categoryNode.children.filter((child) => child.type === "requirement");
+    return categoryNode.children.filter(
+      (child) => child.type === "requirement"
+    );
   };
 
   // Build payload for N8N analysis
@@ -560,8 +569,15 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => selectedSupplierId && triggerAnalysis(flatCategories[0]?.id || "")}
-              disabled={analysisLoading || !selectedSupplierId || flatCategories.length === 0}
+              onClick={() =>
+                selectedSupplierId &&
+                triggerAnalysis(flatCategories[0]?.id || "")
+              }
+              disabled={
+                analysisLoading ||
+                !selectedSupplierId ||
+                flatCategories.length === 0
+              }
               className="gap-2"
             >
               {analysisLoading ? (
@@ -654,7 +670,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                           onClick={(e) => toggleCategory(category.id, e)}
                         >
                           {category.children &&
-                          category.children.some((c) => c.type === "category") ? (
+                          category.children.some(
+                            (c) => c.type === "category"
+                          ) ? (
                             expandedCategories.has(category.id) ? (
                               <ChevronDown className="h-4 w-4 text-slate-400" />
                             ) : (
@@ -698,7 +716,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                         >
                           {formatScore(score)}
                         </div>
-                        <span className="text-slate-400 text-xs font-medium">/</span>
+                        <span className="text-slate-400 text-xs font-medium">
+                          /
+                        </span>
                         <div
                           className={cn(
                             "w-12 h-8 rounded flex items-center justify-center text-xs font-bold",
@@ -712,29 +732,37 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                     <td className="px-6 py-4 border-r text-slate-600">
                       {categoryAnalyses[category.id]?.forces ? (
                         <ul className="space-y-1 text-xs">
-                          {categoryAnalyses[category.id].forces.map((force, idx) => (
-                            <li key={idx} className="flex gap-2">
-                              <span className="flex-shrink-0">✓</span>
-                              <span className="break-words">{force}</span>
-                            </li>
-                          ))}
+                          {categoryAnalyses[category.id].forces.map(
+                            (force, idx) => (
+                              <li key={idx} className="flex gap-2">
+                                <span className="flex-shrink-0">✓</span>
+                                <span className="break-words">{force}</span>
+                              </li>
+                            )
+                          )}
                         </ul>
                       ) : (
-                        <span className="text-slate-400 italic">À compléter</span>
+                        <span className="text-slate-400 italic">
+                          À compléter
+                        </span>
                       )}
                     </td>
                     <td className="px-6 py-4 border-r text-slate-600">
                       {categoryAnalyses[category.id]?.faiblesses ? (
                         <ul className="space-y-1 text-xs">
-                          {categoryAnalyses[category.id].faiblesses.map((weakness, idx) => (
-                            <li key={idx} className="flex gap-2">
-                              <span className="flex-shrink-0">✗</span>
-                              <span className="break-words">{weakness}</span>
-                            </li>
-                          ))}
+                          {categoryAnalyses[category.id].faiblesses.map(
+                            (weakness, idx) => (
+                              <li key={idx} className="flex gap-2">
+                                <span className="flex-shrink-0">✗</span>
+                                <span className="break-words">{weakness}</span>
+                              </li>
+                            )
+                          )}
                         </ul>
                       ) : (
-                        <span className="text-slate-400 italic">À compléter</span>
+                        <span className="text-slate-400 italic">
+                          À compléter
+                        </span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-slate-600">

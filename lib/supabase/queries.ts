@@ -856,11 +856,12 @@ export async function getResponsesForRequirement(
 }
 
 /**
- * Fetch all responses for an RFP, optionally filtered by requirement
+ * Fetch all responses for an RFP, optionally filtered by requirement and version
  */
 export async function getResponsesForRFP(
   rfpId: string,
-  requirementId?: string
+  requirementId?: string,
+  versionId?: string
 ): Promise<
   Array<{
     id: string;
@@ -926,6 +927,10 @@ export async function getResponsesForRFP(
 
   if (requirementId) {
     query = query.eq("requirement_id", requirementId);
+  }
+
+  if (versionId) {
+    query = query.eq("version_id", versionId);
   }
 
   const { data, error } = await query;

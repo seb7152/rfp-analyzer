@@ -30,15 +30,18 @@ export function useAnalyzeResponse() {
       responseText: string;
       systemPrompt?: string;
     }): Promise<AnalyzeResponseResult> => {
-      const { data, error } = await supabase.functions.invoke("analyze-response", {
-        body: {
-          rfpId,
-          requirementId,
-          supplierId,
-          responseText,
-          systemPrompt,
-        },
-      });
+      const { data, error } = await supabase.functions.invoke(
+        "analyze-response",
+        {
+          body: {
+            rfpId,
+            requirementId,
+            supplierId,
+            responseText,
+            systemPrompt,
+          },
+        }
+      );
 
       if (error) {
         throw new Error(error.message || "Failed to analyze response");

@@ -12,6 +12,7 @@
 This PRD defines the AI-powered Defense Preparation feature for the RFP Analyzer platform. The feature generates structured synthesis reports (Forces/Faiblesses/Questions) to prepare stakeholders for RFP evaluation defense presentations (soutenances).
 
 The system will:
+
 - Analyze evaluation data at the category level using aggregated statistics
 - Generate synthesis using AI (via N8N) with minimal hallucination risk
 - Aggregate results bottom-up through the category hierarchy
@@ -49,13 +50,13 @@ The system will:
 
 ### Success Metrics
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Time to prepare defense | < 30 min | User surveys |
-| User adoption rate | > 80% of RFPs | Usage analytics |
-| Report generation success rate | > 95% | System logs |
-| User satisfaction (NPS) | > 8/10 | Post-use survey |
-| PDF export usage | > 60% | Feature analytics |
+| Metric                         | Target        | Measurement       |
+| ------------------------------ | ------------- | ----------------- |
+| Time to prepare defense        | < 30 min      | User surveys      |
+| User adoption rate             | > 80% of RFPs | Usage analytics   |
+| Report generation success rate | > 95%         | System logs       |
+| User satisfaction (NPS)        | > 8/10        | Post-use survey   |
+| PDF export usage               | > 60%         | Feature analytics |
 
 ---
 
@@ -64,21 +65,24 @@ The system will:
 ### Primary Flows
 
 **US-1: Generate Category-Level Analysis**
+
 > As an evaluation coordinator, I want to generate an AI analysis of each evaluation category so that I can quickly identify strengths, weaknesses, and open questions.
 
 **Acceptance Criteria:**
+
 - Analysis button visible in Analysis tab
 - Generation triggers N8N workflow
 - Loading state shown during processing (< 30 seconds)
 - Results displayed in modal when clicking on category row
 
-
 ---
 
 **US-2: View Category Synthesis Details**
+
 > As a project manager, I want to click on a dedicated button on the category in the heatmap to see its detailed synthesis (Forces/Faiblesses/Questions) so that I can prepare specific talking points.
 
 **Acceptance Criteria:**
+
 - Click on category row dedicatd icon opens modal
 - Modal displays Forces (top 5), Faiblesses (top 5), Questions (top 5) for each supplier (tabs to switch)
 - Modal also displays a synthesis of all suppliers cabilities (positive / negative trend & lacks )
@@ -88,9 +92,11 @@ The system will:
 ---
 
 **US-3: Access Supplier-Specific Defense Report**
+
 > As an analyst, I want to access a comprehensive defense report for a specific supplier so that I can review all evaluation decisions before the presentation.
 
 **Acceptance Criteria:**
+
 - Link in Analysis tab: "Voir rapport de soutenance par fournisseur"
 - Dedicated page per supplier (/rfps/[rfpId]/defense/[supplierId])
 - Displays aggregated synthesis across all categories
@@ -101,9 +107,11 @@ The system will:
 ---
 
 **US-4: Export Defense Report to PDF**
+
 > As a project manager, I want to export the defense synthesis to PDF so that I can share it with stakeholders and review it offline.
 
 **Acceptance Criteria:**
+
 - "Export PDF" button on supplier defense page
 - PDF includes: RFP title, supplier name, generation date
 - Sections: Executive Summary, Strengths, Weaknesses, Questions
@@ -116,19 +124,22 @@ The system will:
 ### Secondary Flows
 
 **US-5: Regenerate Stale Analysis**
+
 > As a coordinator, I want to regenerate the defense analysis if evaluation data has changed so that I always work with up-to-date information.
 
 **Acceptance Criteria:**
+
 - "Regenerate" button available
 - Confirmation prompt before regeneration
-
 
 ---
 
 **US-6: View Analysis Generation Progress**
+
 > As a user, I want to see the progress of analysis generation so that I know the system is working.
 
 **Acceptance Criteria:**
+
 - Progress indicator shows: "Analyzing X/Y categories"
 - Estimated time remaining displayed
 - Can navigate away and return (background processing)
@@ -145,6 +156,7 @@ The system will:
 **Input Data (Per Category, Per Supplier)**
 
 To minimize hallucination risk while providing context, we send:
+
 - **For the analyzed supplier:** Full manual comments and questions (text)
 - **For other suppliers:** Only scores (for comparison)
 
@@ -322,33 +334,38 @@ RÈGLES IMPORTANTES :
 **Algorithm**
 
 ```typescript
-function aggregateToParent(childrenAnalyses: CategoryAnalysis[]): CategoryAnalysis {
+function aggregateToParent(
+  childrenAnalyses: CategoryAnalysis[]
+): CategoryAnalysis {
   // Merge all children strengths
-  const allStrengths = childrenAnalyses.flatMap(c => c.strengths)
+  const allStrengths = childrenAnalyses.flatMap((c) => c.strengths);
 
   // Deduplicate by requirement_id
-  const uniqueStrengths = deduplicateByRequirementId(allStrengths)
+  const uniqueStrengths = deduplicateByRequirementId(allStrengths);
 
   // Sort by weight descending
-  const sortedStrengths = sortBy(uniqueStrengths, 'weight', 'desc')
+  const sortedStrengths = sortBy(uniqueStrengths, "weight", "desc");
 
   // Keep top 5
-  const topStrengths = sortedStrengths.slice(0, 5)
+  const topStrengths = sortedStrengths.slice(0, 5);
 
   // Same process for weaknesses and questions
-  const topWeaknesses = processItems(childrenAnalyses, 'weaknesses')
+  const topWeaknesses = processItems(childrenAnalyses, "weaknesses");
 
   // For questions, sort by priority = weight × score_gap
-  const topQuestions = processQuestions(childrenAnalyses)
+  const topQuestions = processQuestions(childrenAnalyses);
 
   // Aggregate metrics
   const metrics = {
-    total_weight: sum(childrenAnalyses, 'metrics.total_weight'),
+    total_weight: sum(childrenAnalyses, "metrics.total_weight"),
     avg_score_weighted: weightedAverage(childrenAnalyses),
-    requirements_count: sum(childrenAnalyses, 'metrics.requirements_count'),
-    high_divergence_count: sum(childrenAnalyses, 'metrics.high_divergence_count'),
-    open_questions_count: sum(childrenAnalyses, 'metrics.open_questions_count')
-  }
+    requirements_count: sum(childrenAnalyses, "metrics.requirements_count"),
+    high_divergence_count: sum(
+      childrenAnalyses,
+      "metrics.high_divergence_count"
+    ),
+    open_questions_count: sum(childrenAnalyses, "metrics.open_questions_count"),
+  };
 
   return {
     category_id: parentId,
@@ -358,8 +375,8 @@ function aggregateToParent(childrenAnalyses: CategoryAnalysis[]): CategoryAnalys
     weaknesses: topWeaknesses,
     questions: topQuestions,
     metrics,
-    children_analyses: childrenAnalyses  // Keep for drill-down
-  }
+    children_analyses: childrenAnalyses, // Keep for drill-down
+  };
 }
 ```
 
@@ -440,6 +457,7 @@ EXECUTE FUNCTION mark_defense_analyses_stale();
 #### POST /api/rfps/[rfpId]/defense-prep/generate
 
 **Request**
+
 ```typescript
 {
   supplier_id?: string,       // Optional: specific supplier
@@ -449,6 +467,7 @@ EXECUTE FUNCTION mark_defense_analyses_stale();
 ```
 
 **Response**
+
 ```typescript
 {
   analysis_id: string,
@@ -489,6 +508,7 @@ EXECUTE FUNCTION mark_defense_analyses_stale();
 ```
 
 **Business Logic**
+
 1. Check for existing analysis
 2. If exists and !force_regenerate → return cached
 3. If not exists or stale:
@@ -500,6 +520,7 @@ EXECUTE FUNCTION mark_defense_analyses_stale();
    - Return analysis
 
 **Error Handling**
+
 - 400: Invalid rfpId/supplierId/versionId
 - 404: RFP not found
 - 429: Too many requests (rate limit: 5/min per RFP)
@@ -519,6 +540,7 @@ Retrieve existing analysis by ID.
 Get latest analysis (fresh or stale).
 
 **Query Params:**
+
 - `supplier_id` (optional)
 - `version_id` (optional)
 
@@ -529,6 +551,7 @@ Get latest analysis (fresh or stale).
 Generate PDF export.
 
 **Request**
+
 ```typescript
 {
   analysis_id: string,
@@ -538,6 +561,7 @@ Generate PDF export.
 ```
 
 **Response**
+
 - Content-Type: application/pdf
 - File download
 
@@ -548,6 +572,7 @@ Generate PDF export.
 **New Webhook:** `/webhook/defense-category-analysis`
 
 **Input:**
+
 ```typescript
 {
   category: {...},
@@ -556,6 +581,7 @@ Generate PDF export.
 ```
 
 **N8N Workflow Steps:**
+
 1. Receive webhook data
 2. Construct AI prompt with category + stats
 3. Call Claude API (via OpenAI-compatible endpoint or native)
@@ -576,6 +602,7 @@ Generate PDF export.
 **Location:** `/components/RFPSummary/AnalysisTab.tsx`
 
 **Changes:**
+
 1. Add button in CategoryHeatmap header: "Générer analyse de soutenance"
 2. Button triggers defense analysis generation
 3. Show loading overlay during generation
@@ -583,6 +610,7 @@ Generate PDF export.
 5. Add link above heatmap: "Voir rapport complet par fournisseur →"
 
 **Mockup:**
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │ Synthèse par Catégorie                                  │
@@ -602,6 +630,7 @@ Generate PDF export.
 **Location:** `/components/defense/CategorySynthesisModal.tsx`
 
 **Props:**
+
 ```typescript
 {
   categoryId: string,
@@ -612,6 +641,7 @@ Generate PDF export.
 ```
 
 **Content:**
+
 ```
 ┌─────────────────────────────────────────────────────┐
 │ Synthèse - Sécurité (Score: 4.1/5)            [✕]  │
@@ -657,6 +687,7 @@ Generate PDF export.
 **URL:** `/dashboard/rfp/{rfpId}/defense/{supplierId}`
 
 **Layout:**
+
 ```
 ┌─────────────────────────────────────────────────────┐
 │ [← Retour]  Rapport de Soutenance - Supplier A     │
@@ -707,6 +738,7 @@ Generate PDF export.
 **Location:** `/components/defense/DefenseExportButton.tsx`
 
 **Functionality:**
+
 - Calls `/api/rfps/[rfpId]/defense-prep/export-pdf`
 - Shows loading spinner during PDF generation
 - Triggers browser download on success
@@ -787,13 +819,13 @@ Synthèse par domaine (collapsed view)
 
 ### Performance Requirements
 
-| Metric | Target | Notes |
-|--------|--------|-------|
-| Analysis generation time | < 30s | For RFP with 200 requirements, 20 categories |
-| Category analysis (N8N) | < 15s each | Parallel processing |
-| Modal open latency | < 200ms | Cached data |
-| PDF export generation | < 5s | A4 format, 10-15 pages |
-| Cache hit rate | > 80% | Within 24h window |
+| Metric                   | Target     | Notes                                        |
+| ------------------------ | ---------- | -------------------------------------------- |
+| Analysis generation time | < 30s      | For RFP with 200 requirements, 20 categories |
+| Category analysis (N8N)  | < 15s each | Parallel processing                          |
+| Modal open latency       | < 200ms    | Cached data                                  |
+| PDF export generation    | < 5s       | A4 format, 10-15 pages                       |
+| Cache hit rate           | > 80%      | Within 24h window                            |
 
 ### Security & Permissions
 
@@ -819,12 +851,14 @@ Synthèse par domaine (collapsed view)
 **Location:** Existing Analysis tab
 
 **Additions:**
+
 - **Header button:** "Générer analyse de soutenance" (primary CTA)
 - **Link:** "Voir rapports par fournisseur →" (secondary action)
 - **Row click behavior:** Open CategorySynthesisModal
 - **Loading state:** Full-screen overlay with progress bar during generation
 
 **Visual Indicators:**
+
 - ⚠️ Badge on button if analysis is stale
 - ✓ Badge if fresh analysis exists
 - 🔄 Spinner if generation in progress
@@ -836,6 +870,7 @@ Synthèse par domaine (collapsed view)
 **Trigger:** Click on category row in heatmap
 
 **Design:**
+
 - **Width:** 800px
 - **Height:** Auto (max-height: 80vh, scrollable)
 - **Close:** Click outside, ESC key, or [×] button
@@ -843,6 +878,7 @@ Synthèse par domaine (collapsed view)
 - **Empty state:** "Aucune analyse disponible. [Générer maintenant →]"
 
 **Item Card Design:**
+
 ```
 ┌───────────────────────────────────────┐
 │ 1. OAuth 2.0 Support (poids 3.0) ✅  │
@@ -856,6 +892,7 @@ Synthèse par domaine (collapsed view)
 ```
 
 **Colors:**
+
 - Forces: Green accent (#10b981)
 - Faiblesses: Yellow/Orange accent (#f59e0b)
 - Questions: Blue accent (#3b82f6)
@@ -865,16 +902,19 @@ Synthèse par domaine (collapsed view)
 #### 3. Supplier Defense Page
 
 **Navigation:**
+
 - From Analysis tab → Click "Voir rapports par fournisseur"
 - Shows supplier selector dropdown
 - Redirects to `/dashboard/rfp/{rfpId}/defense/{supplierId}`
 
 **Header:**
+
 - Breadcrumb: Dashboard > RFP > Defense > Supplier A
 - Title: "Rapport de Soutenance - {Supplier Name}"
 - Actions: [← Retour] [🔄 Régénérer] [📥 Export PDF]
 
 **Content Sections:**
+
 1. **Overview Card** (collapsed by default)
    - Key metrics
    - Stale indicator if applicable
@@ -891,6 +931,7 @@ Synthèse par domaine (collapsed view)
    - "Voir détail" button → opens CategorySynthesisModal
 
 **Empty State:**
+
 - Message: "Aucune analyse disponible pour ce fournisseur"
 - CTA: "Générer l'analyse maintenant"
 
@@ -937,6 +978,7 @@ Synthèse par domaine (collapsed view)
 ### Phase 1: Foundation (Week 1-2)
 
 **Sprint 1.1: Backend Infrastructure**
+
 - [ ] Database schema creation (defense_analyses table)
 - [ ] Trigger for stale analysis detection
 - [ ] API endpoint: POST /generate
@@ -945,6 +987,7 @@ Synthèse par domaine (collapsed view)
 - [ ] Unit tests for aggregation logic
 
 **Sprint 1.2: N8N Workflow**
+
 - [ ] Create defense-category-analysis webhook
 - [ ] Implement AI prompt construction
 - [ ] Integrate Claude API call
@@ -957,6 +1000,7 @@ Synthèse par domaine (collapsed view)
 ### Phase 2: Core Features (Week 3-4)
 
 **Sprint 2.1: UI Components**
+
 - [ ] CategorySynthesisModal component
 - [ ] DefenseExportButton component
 - [ ] AnalysisTab enhancements (button, link, click handling)
@@ -964,6 +1008,7 @@ Synthèse par domaine (collapsed view)
 - [ ] Error states & retry mechanisms
 
 **Sprint 2.2: Supplier Defense Page**
+
 - [ ] Page layout & routing
 - [ ] Overview section
 - [ ] Global synthesis tabs
@@ -976,6 +1021,7 @@ Synthèse par domaine (collapsed view)
 ### Phase 3: Export & Polish (Week 5)
 
 **Sprint 3.1: PDF Export**
+
 - [ ] PDF template design (HTML)
 - [ ] Puppeteer integration
 - [ ] API endpoint: POST /export-pdf
@@ -983,6 +1029,7 @@ Synthèse par domaine (collapsed view)
 - [ ] Error handling (timeouts, memory)
 
 **Sprint 3.2: Testing & Refinement**
+
 - [ ] End-to-end testing (Cypress/Playwright)
 - [ ] Performance testing (100+ requirements)
 - [ ] User acceptance testing
@@ -1025,14 +1072,14 @@ Synthèse par domaine (collapsed view)
 
 ## Risks & Mitigation
 
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| **AI Hallucinations** | High | Medium | Use aggregated stats only (no full text). Validate output format. Show "AI-generated" disclaimer. |
-| **N8N Webhook Timeouts** | High | Medium | Implement retries. Process categories in parallel. Set 15s timeout per category. |
-| **Performance with Large RFPs** | Medium | High | Implement caching (24h). Paginate category processing. Show progress indicator. |
-| **Stale Data Issues** | Medium | Medium | Auto-detect via trigger. Show clear warnings. Easy regenerate button. |
-| **PDF Generation Failures** | Low | Low | Implement server-side rendering (Puppeteer). Fallback to simplified format. |
-| **User Confusion** | Medium | Low | Onboarding tooltips. Clear labels. User documentation. |
+| Risk                            | Impact | Probability | Mitigation                                                                                        |
+| ------------------------------- | ------ | ----------- | ------------------------------------------------------------------------------------------------- |
+| **AI Hallucinations**           | High   | Medium      | Use aggregated stats only (no full text). Validate output format. Show "AI-generated" disclaimer. |
+| **N8N Webhook Timeouts**        | High   | Medium      | Implement retries. Process categories in parallel. Set 15s timeout per category.                  |
+| **Performance with Large RFPs** | Medium | High        | Implement caching (24h). Paginate category processing. Show progress indicator.                   |
+| **Stale Data Issues**           | Medium | Medium      | Auto-detect via trigger. Show clear warnings. Easy regenerate button.                             |
+| **PDF Generation Failures**     | Low    | Low         | Implement server-side rendering (Puppeteer). Fallback to simplified format.                       |
+| **User Confusion**              | Medium | Low         | Onboarding tooltips. Clear labels. User documentation.                                            |
 
 ---
 
@@ -1040,13 +1087,13 @@ Synthèse par domaine (collapsed view)
 
 ### Events to Track
 
-| Event | Properties | Purpose |
-|-------|-----------|---------|
-| `defense_analysis_generated` | rfpId, supplierId, duration_ms, categories_count | Monitor usage & performance |
-| `defense_modal_opened` | categoryId, source (heatmap/page) | Understand user navigation |
-| `defense_pdf_exported` | rfpId, supplierId, format (executive/detailed) | Measure export adoption |
-| `defense_analysis_regenerated` | rfpId, reason (stale/force) | Track data freshness issues |
-| `defense_page_viewed` | rfpId, supplierId | Measure feature adoption |
+| Event                          | Properties                                       | Purpose                     |
+| ------------------------------ | ------------------------------------------------ | --------------------------- |
+| `defense_analysis_generated`   | rfpId, supplierId, duration_ms, categories_count | Monitor usage & performance |
+| `defense_modal_opened`         | categoryId, source (heatmap/page)                | Understand user navigation  |
+| `defense_pdf_exported`         | rfpId, supplierId, format (executive/detailed)   | Measure export adoption     |
+| `defense_analysis_regenerated` | rfpId, reason (stale/force)                      | Track data freshness issues |
+| `defense_page_viewed`          | rfpId, supplierId                                | Measure feature adoption    |
 
 ### Dashboards
 
@@ -1319,15 +1366,15 @@ CREATE INDEX idx_responses_requirement ON responses(requirement_id);
 
 ## Changelog
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | 2025-12-14 | Product Team | Initial PRD draft |
+| Version | Date       | Author       | Changes           |
+| ------- | ---------- | ------------ | ----------------- |
+| 1.0     | 2025-12-14 | Product Team | Initial PRD draft |
 
 ---
 
 **Approval Sign-offs:**
 
-- [ ] Product Owner: _______________
-- [ ] Tech Lead: _______________
-- [ ] Design Lead: _______________
-- [ ] Stakeholder: _______________
+- [ ] Product Owner: **\*\***\_\_\_**\*\***
+- [ ] Tech Lead: **\*\***\_\_\_**\*\***
+- [ ] Design Lead: **\*\***\_\_\_**\*\***
+- [ ] Stakeholder: **\*\***\_\_\_**\*\***
