@@ -467,51 +467,44 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     };
   };
 
-  // Trigger N8N analysis
-  const triggerAnalysis = async (categoryId: string) => {
+  // Trigger async defense analysis workflow
+  const triggerAnalysis = async () => {
     try {
-      setAnalysisLoading(true);
-
-      const payload = buildAnalysisPayload(categoryId);
-      if (!payload) {
-        console.error("Failed to build analysis payload");
+      if (!selectedSupplierId) {
+        console.error("No supplier selected");
         return;
       }
 
-      console.log("Sending payload to N8N:", payload);
+      setAnalysisLoading(true);
 
-      // Call N8N webhook
-      const response = await fetch(
-        "https://n8n.srv828065.hstgr.cloud/webhook/1240b9c7-ca02-429a-a4e9-2d6afb74f311",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      // Call backend API to initiate async analysis
+      const response = await fetch(`/api/rfps/${rfpId}/analyze-defense`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          supplierId: selectedSupplierId,
+          versionId: null,
+        }),
+      });
 
       if (!response.ok) {
-        console.error("N8N response error:", response.status);
+        const errorData = await response.json();
+        console.error("Analysis initiation error:", errorData);
         return;
       }
 
       const result = await response.json();
-      console.log("N8N analysis result:", result);
+      console.log("Analysis initiated:", result);
 
-      // Update category analysis with results
-      if (result.forces && result.faiblesses) {
-        setCategoryAnalyses((prev) => ({
-          ...prev,
-          [categoryId]: {
-            forces: result.forces,
-            faiblesses: result.faiblesses,
-          },
-        }));
-      }
+      // Show success message with analysis ID
+      alert(
+        `Analysis started!\nAnalysis ID: ${result.analysisId}\nCorrelation ID: ${result.correlationId}\n\nThe workflow will process all leaf categories and synthesize parent results.`
+      );
     } catch (error) {
       console.error("Error triggering analysis:", error);
+      alert(`Error initiating analysis: ${error}`);
     } finally {
       setAnalysisLoading(false);
     }
@@ -569,15 +562,8 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                selectedSupplierId &&
-                triggerAnalysis(flatCategories[0]?.id || "")
-              }
-              disabled={
-                analysisLoading ||
-                !selectedSupplierId ||
-                flatCategories.length === 0
-              }
+              onClick={triggerAnalysis}
+              disabled={analysisLoading || !selectedSupplierId}
               className="gap-2"
             >
               {analysisLoading ? (
