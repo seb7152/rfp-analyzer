@@ -103,19 +103,12 @@ export function Sidebar({
     const matchingIds = new Set<string>();
 
     responses.forEach((response) => {
-      // Calculate combined score (average of available scores)
-      const hasManualScore = response.manual_score !== null;
-      const hasAiScore = response.ai_score !== null;
-      const manualScore = response.manual_score ?? 0;
-      const aiScore = response.ai_score ?? 0;
-
+      // Calculate score: manual score if available, otherwise AI score
       let combinedScore = 0;
-      if (hasManualScore && hasAiScore) {
-        combinedScore = (manualScore + aiScore) / 2;
-      } else if (hasManualScore) {
-        combinedScore = manualScore;
-      } else if (hasAiScore) {
-        combinedScore = aiScore;
+      if (response.manual_score !== null) {
+        combinedScore = response.manual_score;
+      } else if (response.ai_score !== null) {
+        combinedScore = response.ai_score;
       }
       // else combinedScore stays 0
 

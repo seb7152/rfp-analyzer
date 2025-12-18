@@ -106,15 +106,15 @@ export function EvaluationFilters({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-4">
+      <PopoverContent className="w-80 p-4">
         <div className="space-y-4">
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <h3 className="font-semibold text-sm">Filtres</h3>
             {hasActiveFilters && (
               <button
                 onClick={resetFilters}
-                className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 flex-shrink-0"
               >
                 Réinitialiser
               </button>
@@ -152,7 +152,7 @@ export function EvaluationFilters({
 
           {/* Score Range Filter */}
           <div className="space-y-3">
-            <Label className="text-xs font-semibold">Score combiné (0-100)</Label>
+            <Label className="text-xs font-semibold">Score (0-100)</Label>
             <div className="flex gap-2 items-center">
               <input
                 type="number"
@@ -162,7 +162,7 @@ export function EvaluationFilters({
                 onChange={(e) => handleScoreRangeChange("min", e.target.value)}
                 className="w-16 px-2 py-1 text-sm border rounded dark:bg-slate-800 dark:border-slate-700"
               />
-              <span className="text-xs text-slate-500">à</span>
+              <span className="text-xs text-slate-500 flex-shrink-0">à</span>
               <input
                 type="number"
                 min="0"
@@ -189,7 +189,7 @@ export function EvaluationFilters({
                   )
                 }
               >
-                Avec questions
+                Avec
               </Button>
               <Button
                 variant={filters.hasQuestions === false ? "secondary" : "outline"}
@@ -202,7 +202,7 @@ export function EvaluationFilters({
                   )
                 }
               >
-                Sans questions
+                Sans
               </Button>
             </div>
           </div>
@@ -224,7 +224,7 @@ export function EvaluationFilters({
                   )
                 }
               >
-                Avec commentaires
+                Avec
               </Button>
               <Button
                 variant={
@@ -239,7 +239,7 @@ export function EvaluationFilters({
                   )
                 }
               >
-                Sans commentaires
+                Sans
               </Button>
             </div>
           </div>
@@ -259,7 +259,7 @@ export function EvaluationFilters({
                   )
                 }
               >
-                Avec score
+                Avec
               </Button>
               <Button
                 variant={
@@ -274,7 +274,7 @@ export function EvaluationFilters({
                   )
                 }
               >
-                Sans score
+                Sans
               </Button>
             </div>
           </div>
