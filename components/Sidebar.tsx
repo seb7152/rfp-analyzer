@@ -18,7 +18,6 @@ interface SidebarProps {
   className?: string;
   responses?: ResponseWithSupplier[];
   isSingleSupplier?: boolean;
-  supplierId?: string;
 }
 
 export function Sidebar({
@@ -28,7 +27,6 @@ export function Sidebar({
   className = "",
   responses = [],
   isSingleSupplier = false,
-  supplierId,
 }: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
