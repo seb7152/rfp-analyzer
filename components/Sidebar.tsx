@@ -254,18 +254,9 @@ export function Sidebar({
     >
       {/* Header */}
       <div className="flex-shrink-0 border-b border-slate-200 dark:border-slate-800 p-4 space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Requirements
-          </h2>
-          {isSingleSupplier && (
-            <EvaluationFilters
-              filters={filters}
-              onFiltersChange={setFilters}
-              activeFilterCount={activeFilterCount}
-            />
-          )}
-        </div>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          Requirements
+        </h2>
 
         {/* Search Input */}
         <div className="relative">
@@ -278,7 +269,7 @@ export function Sidebar({
           />
         </div>
 
-        {/* Expand/Collapse Buttons */}
+        {/* Expand/Collapse Buttons + Filters */}
         <div className="flex gap-2">
           <Button
             variant="secondary"
@@ -298,6 +289,13 @@ export function Sidebar({
             <ChevronUp className="w-4 h-4 mr-1" />
             Collapse All
           </Button>
+          {isSingleSupplier && (
+            <EvaluationFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              activeFilterCount={activeFilterCount}
+            />
+          )}
         </div>
       </div>
 
