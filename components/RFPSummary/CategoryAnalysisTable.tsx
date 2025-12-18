@@ -33,11 +33,6 @@ interface CategoryAnalysisTableProps {
   rfpId: string;
 }
 
-interface CategoryAnalysis {
-  forces: string[];
-  faiblesses: string[];
-}
-
 export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [responses, setResponses] = useState<any[]>([]);

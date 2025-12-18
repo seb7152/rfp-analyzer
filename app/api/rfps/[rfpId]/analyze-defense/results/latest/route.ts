@@ -1,10 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export async function GET(
   _request: NextRequest,
@@ -16,17 +11,20 @@ export async function GET(
     console.log("[/latest] ===== START =====");
     console.log("[/latest] rfpId:", rfpId);
 
-    // Get ALL analyses first
-    const { data: allData } = await supabase
-      .from("defense_analyses")
-      .select("id, rfp_id, generated_at");
+    // Get authenticated user
+    const supabase = await createServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    console.log("[/latest] ALL data in DB:", {
-      count: allData?.length,
-      sample: allData?.slice(0, 3),
-    });
+    if (!user) {
+      console.log("[/latest] User not authenticated");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    // Get latest analyses for this RFP
+    console.log("[/latest] Authenticated user:", user.id);
+
+    // Get latest analyses for this RFP (RLS will filter by user's organization)
     const { data: analyses, error: analysisError } = await supabase
       .from("defense_analyses")
       .select("id, analysis_data, generated_at, rfp_id")
