@@ -74,7 +74,7 @@ serve(async (req) => {
 
     const categoryHierarchy = categories.map((cat) => ({
       id: cat.id,
-      level: cat.parent_id ? 1 : 0,
+      level: cat.parent_id ? 0 : 1,
       parentId: cat.parent_id,
     }));
 
