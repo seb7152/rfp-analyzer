@@ -179,7 +179,7 @@ export function EvaluationFilters({
             <Label className="text-xs font-semibold">Questions</Label>
             <div className="flex gap-2">
               <Button
-                variant={filters.hasQuestions === true ? "default" : "outline"}
+                variant={filters.hasQuestions === true ? "secondary" : "outline"}
                 size="sm"
                 className="flex-1 text-xs"
                 onClick={() =>
@@ -192,7 +192,7 @@ export function EvaluationFilters({
                 Avec questions
               </Button>
               <Button
-                variant={filters.hasQuestions === false ? "default" : "outline"}
+                variant={filters.hasQuestions === false ? "secondary" : "outline"}
                 size="sm"
                 className="flex-1 text-xs"
                 onClick={() =>
@@ -213,7 +213,7 @@ export function EvaluationFilters({
             <div className="flex gap-2">
               <Button
                 variant={
-                  filters.hasManualComments === true ? "default" : "outline"
+                  filters.hasManualComments === true ? "secondary" : "outline"
                 }
                 size="sm"
                 className="flex-1 text-xs"
@@ -228,7 +228,7 @@ export function EvaluationFilters({
               </Button>
               <Button
                 variant={
-                  filters.hasManualComments === false ? "default" : "outline"
+                  filters.hasManualComments === false ? "secondary" : "outline"
                 }
                 size="sm"
                 className="flex-1 text-xs"
@@ -249,7 +249,7 @@ export function EvaluationFilters({
             <Label className="text-xs font-semibold">Score manuel</Label>
             <div className="flex gap-2">
               <Button
-                variant={filters.hasManualScore === true ? "default" : "outline"}
+                variant={filters.hasManualScore === true ? "secondary" : "outline"}
                 size="sm"
                 className="flex-1 text-xs"
                 onClick={() =>
@@ -263,7 +263,7 @@ export function EvaluationFilters({
               </Button>
               <Button
                 variant={
-                  filters.hasManualScore === false ? "default" : "outline"
+                  filters.hasManualScore === false ? "secondary" : "outline"
                 }
                 size="sm"
                 className="flex-1 text-xs"
