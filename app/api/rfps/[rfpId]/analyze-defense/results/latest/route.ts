@@ -17,11 +17,14 @@ export async function GET(
     console.log("[/latest] rfpId:", rfpId);
 
     // Get ALL analyses first
-    const { data: allData, error: allError } = await supabase
+    const { data: allData } = await supabase
       .from("defense_analyses")
       .select("id, rfp_id, generated_at");
 
-    console.log("[/latest] ALL data in DB:", { count: allData?.length, sample: allData?.slice(0, 3) });
+    console.log("[/latest] ALL data in DB:", {
+      count: allData?.length,
+      sample: allData?.slice(0, 3),
+    });
 
     // Get latest analyses for this RFP
     const { data: analyses, error: analysisError } = await supabase
@@ -30,7 +33,11 @@ export async function GET(
       .eq("rfp_id", rfpId)
       .order("generated_at", { ascending: false });
 
-    console.log("[/latest] Filtered result:", { rfpId, count: analyses?.length, error: analysisError?.message });
+    console.log("[/latest] Filtered result:", {
+      rfpId,
+      count: analyses?.length,
+      error: analysisError?.message,
+    });
 
     if (analysisError) {
       console.error("[/latest] Error:", analysisError);
