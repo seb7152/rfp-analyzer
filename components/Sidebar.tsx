@@ -6,14 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RequirementsTreeView } from "./RequirementsTreeView";
+import { EvaluationFilters, type EvaluationFilterState } from "./EvaluationFilters";
 import { useRequirementsTree } from "@/hooks/use-requirements";
 import type { TreeNode } from "@/hooks/use-requirements";
+import type { ResponseWithSupplier } from "@/hooks/use-responses";
 
 interface SidebarProps {
   rfpId: string | null;
   selectedRequirementId: string | null;
   onSelectRequirement: (id: string) => void;
   className?: string;
+  responses?: ResponseWithSupplier[];
+  isSingleSupplier?: boolean;
+  supplierId?: string;
 }
 
 export function Sidebar({
@@ -21,12 +26,22 @@ export function Sidebar({
   selectedRequirementId,
   onSelectRequirement,
   className = "",
+  responses = [],
+  isSingleSupplier = false,
+  supplierId,
 }: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
     new Set()
   );
   const [expandAll, setExpandAll] = useState(false);
+  const [filters, setFilters] = useState<EvaluationFilterState>({
+    status: [],
+    scoreRange: { min: 0, max: 100 },
+    hasQuestions: null,
+    hasManualComments: null,
+    hasManualScore: null,
+  });
 
   // Use the new tree hook that includes categories + requirements
   const { tree, isLoading, error } = useRequirementsTree(rfpId);
@@ -68,26 +83,118 @@ export function Sidebar({
     }
   }, [selectedRequirementId, tree]);
 
-  // Filter tree based on search query
-  const filteredTree = useMemo(() => {
-    if (!searchQuery || searchQuery.trim().length === 0) {
-      return tree;
+  // Build a set of requirement IDs that match the current filters
+  const filteredRequirementIds = useMemo(() => {
+    if (!isSingleSupplier || responses.length === 0) {
+      return new Set<string>();
     }
 
+    // Check if any filters are active
+    const hasActiveFilters =
+      filters.status.length > 0 ||
+      filters.scoreRange.min > 0 ||
+      filters.scoreRange.max < 100 ||
+      filters.hasQuestions !== null ||
+      filters.hasManualComments !== null ||
+      filters.hasManualScore !== null;
+
+    if (!hasActiveFilters) {
+      return new Set<string>();
+    }
+
+    const matchingIds = new Set<string>();
+
+    responses.forEach((response) => {
+      // Calculate combined score (average of manual and AI scores)
+      const manualScore = response.manual_score ?? 0;
+      const aiScore = response.ai_score ?? 0;
+      const combinedScore =
+        (manualScore + aiScore) / (manualScore && aiScore ? 2 : 1);
+
+      // Check status filter
+      if (
+        filters.status.length > 0 &&
+        !filters.status.includes(response.status)
+      ) {
+        return;
+      }
+
+      // Check score range filter
+      if (
+        combinedScore < filters.scoreRange.min ||
+        combinedScore > filters.scoreRange.max
+      ) {
+        return;
+      }
+
+      // Check questions filter
+      if (filters.hasQuestions !== null) {
+        const hasQuestions = !!response.question && response.question.trim().length > 0;
+        if (filters.hasQuestions !== hasQuestions) {
+          return;
+        }
+      }
+
+      // Check manual comments filter
+      if (filters.hasManualComments !== null) {
+        const hasComments =
+          !!response.manual_comment && response.manual_comment.trim().length > 0;
+        if (filters.hasManualComments !== hasComments) {
+          return;
+        }
+      }
+
+      // Check manual score filter
+      if (filters.hasManualScore !== null) {
+        const hasManualScore = response.manual_score !== null;
+        if (filters.hasManualScore !== hasManualScore) {
+          return;
+        }
+      }
+
+      matchingIds.add(response.requirement_id);
+    });
+
+    return matchingIds;
+  }, [responses, filters, isSingleSupplier]);
+
+  // Count active filters for badge display
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.status.length > 0) count += filters.status.length;
+    if (filters.scoreRange.min > 0 || filters.scoreRange.max < 100) count += 1;
+    if (filters.hasQuestions !== null) count += 1;
+    if (filters.hasManualComments !== null) count += 1;
+    if (filters.hasManualScore !== null) count += 1;
+    return count;
+  }, [filters]);
+
+  // Filter tree based on search query and evaluation filters
+  const filteredTree = useMemo(() => {
     const lowerQuery = searchQuery.toLowerCase();
+    const hasSearchQuery = searchQuery && searchQuery.trim().length > 0;
+    const hasEvaluationFilters = filteredRequirementIds.size > 0;
 
     function filterNodes(nodes: TreeNode[]): TreeNode[] {
       return nodes.reduce<TreeNode[]>((acc, node) => {
-        const matches =
+        // Check search match
+        const matchesSearch =
+          !hasSearchQuery ||
           node.code.toLowerCase().includes(lowerQuery) ||
           node.title.toLowerCase().includes(lowerQuery);
 
-        const filteredChildren = node.children
-          ? filterNodes(node.children)
-          : [];
+        // Check evaluation filter match (only for requirements, not categories)
+        const matchesEvaluation =
+          node.type === "category" || !hasEvaluationFilters || filteredRequirementIds.has(node.id);
+
+        // Filter children
+        const filteredChildren = node.children ? filterNodes(node.children) : [];
 
         // Include node if it matches or has matching children
-        if (matches || filteredChildren.length > 0) {
+        if (
+          (matchesSearch && matchesEvaluation) ||
+          filteredChildren.length > 0
+        ) {
           acc.push({
             ...node,
             children:
@@ -100,7 +207,7 @@ export function Sidebar({
     }
 
     return filterNodes(tree);
-  }, [tree, searchQuery]);
+  }, [tree, searchQuery, filteredRequirementIds]);
 
   // Auto-expand all nodes when searching
   const displayedExpandedNodeIds = useMemo(() => {
@@ -149,9 +256,18 @@ export function Sidebar({
     >
       {/* Header */}
       <div className="flex-shrink-0 border-b border-slate-200 dark:border-slate-800 p-4 space-y-3">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-          Requirements
-        </h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Requirements
+          </h2>
+          {isSingleSupplier && (
+            <EvaluationFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              activeFilterCount={activeFilterCount}
+            />
+          )}
+        </div>
 
         {/* Search Input */}
         <div className="relative">
