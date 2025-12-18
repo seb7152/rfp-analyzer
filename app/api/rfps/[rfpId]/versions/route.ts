@@ -245,13 +245,15 @@ export async function POST(
         .eq("version_id", copy_from_version_id);
 
       if (sourceResponses && sourceResponses.length > 0) {
-        const responsesToInsert = sourceResponses.map((r) => ({
-          ...r,
-          id: undefined, // Let DB generate new IDs
-          version_id: newVersion.id,
-          is_snapshot: true,
-          original_response_id: r.id,
-        }));
+        const responsesToInsert = sourceResponses.map((r) => {
+          const { id, ...responseWithoutId } = r; // Remove id completely
+          return {
+            ...responseWithoutId,
+            version_id: newVersion.id,
+            is_snapshot: true,
+            original_response_id: r.id,
+          };
+        });
 
         const { error: responseError } = await supabase
           .from("responses")
@@ -288,11 +290,13 @@ export async function POST(
         .eq("version_id", copy_from_version_id);
 
       if (sourceStatuses && sourceStatuses.length > 0) {
-        const statusesToInsert = sourceStatuses.map((s) => ({
-          ...s,
-          id: undefined,
-          version_id: newVersion.id,
-        }));
+        const statusesToInsert = sourceStatuses.map((s) => {
+          const { id, ...statusWithoutId } = s; // Remove id completely
+          return {
+            ...statusWithoutId,
+            version_id: newVersion.id,
+          };
+        });
 
         await supabase
           .from("version_supplier_status")

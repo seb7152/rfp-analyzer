@@ -15,6 +15,7 @@ import { KPICard } from "@/components/RFPSummary/KPICard";
 import { SuppliersTab } from "@/components/RFPSummary/SuppliersTab";
 import { AnalystsTab } from "@/components/RFPSummary/AnalystsTab";
 import { AnalysisTab } from "@/components/RFPSummary/AnalysisTab";
+import { CategoryAnalysisTable } from "@/components/RFPSummary/CategoryAnalysisTable";
 import { WeightsTab } from "@/components/RFPSummary/WeightsTab";
 import { RequirementsTab } from "@/components/RFPSummary/RequirementsTab";
 import { ExportTab } from "@/components/RFPSummary/ExportTab";
@@ -41,6 +42,7 @@ import {
   Download,
   GitBranch,
   FileJson,
+  Presentation,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AIAnalysisButton } from "@/components/AIAnalysisButton";
@@ -465,6 +467,13 @@ export default function RFPSummaryPage() {
                   <span className="hidden sm:inline">Analyse</span>
                 </TabsTrigger>
                 <TabsTrigger
+                  value="soutenances"
+                  className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+                >
+                  <Presentation className="h-4 w-4" />
+                  <span className="hidden sm:inline">Soutenances</span>
+                </TabsTrigger>
+                <TabsTrigger
                   value="export"
                   className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
                 >
@@ -574,6 +583,14 @@ export default function RFPSummaryPage() {
                   <Skeleton className="h-64 rounded-2xl" />
                 ) : (
                   <AnalysisTab rfpId={rfpId} />
+                )}
+              </TabsContent>
+
+              <TabsContent value="soutenances" className="space-y-6">
+                {loading ? (
+                  <Skeleton className="h-64 rounded-2xl" />
+                ) : (
+                  <CategoryAnalysisTable rfpId={rfpId} />
                 )}
               </TabsContent>
 
