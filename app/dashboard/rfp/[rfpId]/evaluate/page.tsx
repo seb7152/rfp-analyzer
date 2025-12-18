@@ -57,18 +57,19 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
     useRFPCompletion(params.rfpId);
 
   // Load all responses for filter evaluation
-  const { data: allResponsesData } = useAllResponses(
-    params.rfpId,
-    supplierId || undefined
-  );
+  const { data: allResponsesData } = useAllResponses(params.rfpId);
   const allResponses = (allResponsesData as any)?.responses || [];
 
-  // Determine if this is a single supplier view
-  const isSingleSupplierView = useMemo(() => {
-    if (!allResponses || allResponses.length === 0) return false;
-    const uniqueSuppliers = new Set(allResponses.map((r: any) => r.supplier_id));
-    return uniqueSuppliers.size === 1;
-  }, [allResponses]);
+  // Determine if this is a single supplier view: when supplierId is present in query params
+  const isSingleSupplierView = !!supplierId;
+
+  // Filter responses to the current supplier if in single supplier view
+  const filteredResponses = useMemo(() => {
+    if (!isSingleSupplierView) return allResponses;
+    return allResponses.filter(
+      (r: any) => r.supplier_id === supplierId
+    );
+  }, [allResponses, supplierId, isSingleSupplierView]);
 
   // Fetch RFP data and responses count
   useEffect(() => {
@@ -254,7 +255,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
               rfpId={params.rfpId}
               selectedRequirementId={selectedRequirementId}
               onSelectRequirement={setSelectedRequirementId}
-              responses={allResponses}
+              responses={filteredResponses}
               isSingleSupplier={isSingleSupplierView}
             />
           </div>
