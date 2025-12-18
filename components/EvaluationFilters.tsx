@@ -62,7 +62,7 @@ export function EvaluationFilters({
   };
 
   const handleCheckboxChange = (
-    field: "hasQuestions" | "hasManualComments" | "hasManualScore",
+    field: "hasQuestions" | "hasManualComments",
     checked: boolean | null
   ) => {
     onFiltersChange({
@@ -74,7 +74,7 @@ export function EvaluationFilters({
   const resetFilters = () => {
     onFiltersChange({
       status: [],
-      scoreRange: { min: 0, max: 100 },
+      scoreRange: { min: 0, max: 5 },
       hasQuestions: null,
       hasManualComments: null,
       hasManualScore: null,
@@ -84,10 +84,9 @@ export function EvaluationFilters({
   const hasActiveFilters =
     filters.status.length > 0 ||
     filters.scoreRange.min > 0 ||
-    filters.scoreRange.max < 100 ||
+    filters.scoreRange.max < 5 ||
     filters.hasQuestions !== null ||
-    filters.hasManualComments !== null ||
-    filters.hasManualScore !== null;
+    filters.hasManualComments !== null;
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -150,27 +149,34 @@ export function EvaluationFilters({
             </div>
           </div>
 
-          {/* Score Range Filter */}
+          {/* Score Range Filter (1-5 stars) */}
           <div className="space-y-3">
-            <Label className="text-xs font-semibold">Score (0-100)</Label>
+            <Label className="text-xs font-semibold">Score</Label>
             <div className="flex gap-2 items-center">
-              <input
-                type="number"
-                min="0"
-                max="100"
+              <select
                 value={filters.scoreRange.min}
                 onChange={(e) => handleScoreRangeChange("min", e.target.value)}
-                className="w-16 px-2 py-1 text-sm border rounded dark:bg-slate-800 dark:border-slate-700"
-              />
+                className="flex-1 px-2 py-1 text-sm border rounded dark:bg-slate-800 dark:border-slate-700"
+              >
+                <option value="0">Min</option>
+                <option value="1">1 ⭐</option>
+                <option value="2">2 ⭐</option>
+                <option value="3">3 ⭐</option>
+                <option value="4">4 ⭐</option>
+                <option value="5">5 ⭐</option>
+              </select>
               <span className="text-xs text-slate-500 flex-shrink-0">à</span>
-              <input
-                type="number"
-                min="0"
-                max="100"
+              <select
                 value={filters.scoreRange.max}
                 onChange={(e) => handleScoreRangeChange("max", e.target.value)}
-                className="w-16 px-2 py-1 text-sm border rounded dark:bg-slate-800 dark:border-slate-700"
-              />
+                className="flex-1 px-2 py-1 text-sm border rounded dark:bg-slate-800 dark:border-slate-700"
+              >
+                <option value="1">1 ⭐</option>
+                <option value="2">2 ⭐</option>
+                <option value="3">3 ⭐</option>
+                <option value="4">4 ⭐</option>
+                <option value="5">5 ⭐</option>
+              </select>
             </div>
           </div>
 
@@ -244,40 +250,6 @@ export function EvaluationFilters({
             </div>
           </div>
 
-          {/* Manual Score Filter */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold">Score manuel</Label>
-            <div className="flex gap-2">
-              <Button
-                variant={filters.hasManualScore === true ? "secondary" : "outline"}
-                size="sm"
-                className="flex-1 text-xs"
-                onClick={() =>
-                  handleCheckboxChange(
-                    "hasManualScore",
-                    filters.hasManualScore === true ? null : true
-                  )
-                }
-              >
-                Avec
-              </Button>
-              <Button
-                variant={
-                  filters.hasManualScore === false ? "secondary" : "outline"
-                }
-                size="sm"
-                className="flex-1 text-xs"
-                onClick={() =>
-                  handleCheckboxChange(
-                    "hasManualScore",
-                    filters.hasManualScore === false ? null : false
-                  )
-                }
-              >
-                Sans
-              </Button>
-            </div>
-          </div>
         </div>
       </PopoverContent>
     </Popover>

@@ -18,6 +18,7 @@ interface SidebarProps {
   className?: string;
   responses?: ResponseWithSupplier[];
   isSingleSupplier?: boolean;
+  requirements?: any[];
 }
 
 export function Sidebar({
@@ -27,6 +28,7 @@ export function Sidebar({
   className = "",
   responses = [],
   isSingleSupplier = false,
+  requirements = [],
 }: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
@@ -35,7 +37,7 @@ export function Sidebar({
   const [expandAll, setExpandAll] = useState(false);
   const [filters, setFilters] = useState<EvaluationFilterState>({
     status: [],
-    scoreRange: { min: 0, max: 100 },
+    scoreRange: { min: 0, max: 5 },
     hasQuestions: null,
     hasManualComments: null,
     hasManualScore: null,
@@ -91,26 +93,31 @@ export function Sidebar({
     const hasActiveFilters =
       filters.status.length > 0 ||
       filters.scoreRange.min > 0 ||
-      filters.scoreRange.max < 100 ||
+      filters.scoreRange.max < 5 ||
       filters.hasQuestions !== null ||
-      filters.hasManualComments !== null ||
-      filters.hasManualScore !== null;
+      filters.hasManualComments !== null;
 
     if (!hasActiveFilters) {
       return new Set<string>();
     }
 
+    // Create a map of responses by requirement_id
+    const responsesByRequirementId = new Map<string, ResponseWithSupplier>();
+    responses.forEach((response) => {
+      responsesByRequirementId.set(response.requirement_id, response);
+    });
+
     const matchingIds = new Set<string>();
 
-    responses.forEach((response) => {
+    // For each requirement that has a response, check if it matches the filters
+    responsesByRequirementId.forEach((response) => {
       // Calculate score: manual score if available, otherwise AI score
-      let combinedScore = 0;
+      let score = 0;
       if (response.manual_score !== null) {
-        combinedScore = response.manual_score;
+        score = response.manual_score;
       } else if (response.ai_score !== null) {
-        combinedScore = response.ai_score;
+        score = response.ai_score;
       }
-      // else combinedScore stays 0
 
       // Check status filter
       if (
@@ -122,8 +129,8 @@ export function Sidebar({
 
       // Check score range filter
       if (
-        combinedScore < filters.scoreRange.min ||
-        combinedScore > filters.scoreRange.max
+        score < filters.scoreRange.min ||
+        score > filters.scoreRange.max
       ) {
         return;
       }
@@ -145,14 +152,6 @@ export function Sidebar({
         }
       }
 
-      // Check manual score filter
-      if (filters.hasManualScore !== null) {
-        const responseHasManualScore = response.manual_score !== null;
-        if (filters.hasManualScore !== responseHasManualScore) {
-          return;
-        }
-      }
-
       matchingIds.add(response.requirement_id);
     });
 
@@ -163,10 +162,9 @@ export function Sidebar({
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filters.status.length > 0) count += filters.status.length;
-    if (filters.scoreRange.min > 0 || filters.scoreRange.max < 100) count += 1;
+    if (filters.scoreRange.min > 0 || filters.scoreRange.max < 5) count += 1;
     if (filters.hasQuestions !== null) count += 1;
     if (filters.hasManualComments !== null) count += 1;
-    if (filters.hasManualScore !== null) count += 1;
     return count;
   }, [filters]);
 
