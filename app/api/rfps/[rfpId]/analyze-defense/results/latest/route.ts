@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
 export async function GET(
@@ -13,24 +13,12 @@ export async function GET(
   try {
     const { rfpId } = params;
 
-    console.log("[/latest] Fetching latest analysis for rfpId:", rfpId);
-
-    // Get ALL analyses for this RFP first (without .single())
+    // Get latest analyses for this RFP
     const { data: analyses, error: analysisError } = await supabase
       .from("defense_analyses")
       .select("id, analysis_data, generated_at")
       .eq("rfp_id", rfpId)
       .order("generated_at", { ascending: false });
-
-    console.log("[/latest] Query result:", {
-      rfpId,
-      count: analyses?.length,
-      error: analysisError,
-      analyses: analyses?.map((a) => ({
-        id: a.id,
-        hasData: !!a.analysis_data,
-      })),
-    });
 
     if (analysisError) {
       console.error("[/latest] Error fetching analyses:", analysisError);
@@ -38,20 +26,23 @@ export async function GET(
     }
 
     if (!analyses || analyses.length === 0) {
-      console.log("[/latest] No analyses found for rfpId:", rfpId);
       return NextResponse.json({ analyses: [], count: 0 }, { status: 200 });
     }
 
     const latestAnalysis = analyses[0];
 
     if (!latestAnalysis.analysis_data) {
-      console.log("[/latest] No analysis_data in latest analysis");
       return NextResponse.json({ analyses: [], count: 0 }, { status: 200 });
     }
 
     // Parse analysis_data and convert to task-like format
     try {
-      const analysisData = JSON.parse(latestAnalysis.analysis_data);
+      // Supabase returns JSONB as an object, not a string
+      const analysisData =
+        typeof latestAnalysis.analysis_data === "string"
+          ? JSON.parse(latestAnalysis.analysis_data)
+          : latestAnalysis.analysis_data;
+
       const resultAnalyses = Object.entries(analysisData).map(
         ([categoryId, data]: [string, any]) => ({
           id: categoryId,
@@ -63,8 +54,6 @@ export async function GET(
           },
         })
       );
-
-      console.log("[/latest] Parsed analyses:", resultAnalyses.length);
 
       return NextResponse.json({
         analyses: resultAnalyses,
