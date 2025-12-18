@@ -103,11 +103,21 @@ export function Sidebar({
     const matchingIds = new Set<string>();
 
     responses.forEach((response) => {
-      // Calculate combined score (average of manual and AI scores)
+      // Calculate combined score (average of available scores)
+      const hasManualScore = response.manual_score !== null;
+      const hasAiScore = response.ai_score !== null;
       const manualScore = response.manual_score ?? 0;
       const aiScore = response.ai_score ?? 0;
-      const combinedScore =
-        (manualScore + aiScore) / (manualScore && aiScore ? 2 : 1);
+
+      let combinedScore = 0;
+      if (hasManualScore && hasAiScore) {
+        combinedScore = (manualScore + aiScore) / 2;
+      } else if (hasManualScore) {
+        combinedScore = manualScore;
+      } else if (hasAiScore) {
+        combinedScore = aiScore;
+      }
+      // else combinedScore stays 0
 
       // Check status filter
       if (
@@ -144,8 +154,8 @@ export function Sidebar({
 
       // Check manual score filter
       if (filters.hasManualScore !== null) {
-        const hasManualScore = response.manual_score !== null;
-        if (filters.hasManualScore !== hasManualScore) {
+        const responseHasManualScore = response.manual_score !== null;
+        if (filters.hasManualScore !== responseHasManualScore) {
           return;
         }
       }
