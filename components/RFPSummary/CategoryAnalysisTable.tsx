@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronRight, Copy, Check, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, Check, Sparkles, RefreshCw } from "lucide-react";
 import { Supplier } from "@/types/supplier";
 
 // Types
@@ -48,6 +48,56 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   );
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [lastAnalysisId, setLastAnalysisId] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const refreshAnalysisResults = async () => {
+    try {
+      setIsRefreshing(true);
+      const resultsRes = await fetch(
+        `/api/rfps/${rfpId}/analyze-defense/results/latest`
+      );
+      const resultsData = await resultsRes.json();
+
+      let analysisMap: Record<
+        string,
+        { forces: string[]; faiblesses: string[] }
+      > = {};
+
+      if (resultsData.analyses && resultsData.analyses.length > 0) {
+        resultsData.analyses.forEach((task: any) => {
+          if (task.category_id && task.result) {
+            analysisMap[task.category_id] = {
+              forces: task.result.forces || [],
+              faiblesses: task.result.faiblesses || [],
+            };
+          }
+        });
+      }
+
+      const enrichTree = (nodes: TreeNode[]): TreeNode[] => {
+        return nodes.map((node) => {
+          if (node.type === "category" && analysisMap[node.id]) {
+            return {
+              ...node,
+              analysis: analysisMap[node.id],
+              children: node.children ? enrichTree(node.children) : undefined,
+            };
+          }
+          return {
+            ...node,
+            children: node.children ? enrichTree(node.children) : undefined,
+          };
+        });
+      };
+
+      const enrichedTree = enrichTree(tree || []);
+      setTree(enrichedTree);
+    } catch (error) {
+      console.error("Error refreshing analysis results:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -616,6 +666,16 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                 </Select>
               </div>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshAnalysisResults}
+              disabled={isRefreshing}
+              className="gap-2"
+              title="Rafraîchir les analyses"
+            >
+              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+            </Button>
             <Button
               variant="outline"
               size="sm"
