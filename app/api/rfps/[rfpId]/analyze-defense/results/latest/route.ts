@@ -13,8 +13,6 @@ export async function GET(
   try {
     const { rfpId } = params;
 
-    console.log("[/latest] Fetching analyses for rfpId:", rfpId);
-
     // Get latest analyses for this RFP
     const { data: analyses, error: analysisError } = await supabase
       .from("defense_analyses")
@@ -22,16 +20,10 @@ export async function GET(
       .eq("rfp_id", rfpId)
       .order("generated_at", { ascending: false });
 
-    console.log("[/latest] Query result:", {
-      rfpId,
-      count: analyses?.length,
-      error: analysisError?.message,
-    });
-
     if (analysisError) {
       console.error("[/latest] Error fetching analyses:", analysisError);
       return NextResponse.json(
-        { analyses: [], count: 0, error: analysisError?.message },
+        { analyses: [], count: 0 },
         { status: 200 }
       );
     }
