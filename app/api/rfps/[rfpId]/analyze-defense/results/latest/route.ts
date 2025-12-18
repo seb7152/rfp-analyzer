@@ -13,22 +13,32 @@ export async function GET(
   try {
     const { rfpId } = params;
 
+    console.log("[/latest] ===== START =====");
+    console.log("[/latest] rfpId:", rfpId);
+
+    // Get ALL analyses first
+    const { data: allData, error: allError } = await supabase
+      .from("defense_analyses")
+      .select("id, rfp_id, generated_at");
+
+    console.log("[/latest] ALL data in DB:", { count: allData?.length, sample: allData?.slice(0, 3) });
+
     // Get latest analyses for this RFP
     const { data: analyses, error: analysisError } = await supabase
       .from("defense_analyses")
-      .select("id, analysis_data, generated_at")
+      .select("id, analysis_data, generated_at, rfp_id")
       .eq("rfp_id", rfpId)
       .order("generated_at", { ascending: false });
 
+    console.log("[/latest] Filtered result:", { rfpId, count: analyses?.length, error: analysisError?.message });
+
     if (analysisError) {
-      console.error("[/latest] Error fetching analyses:", analysisError);
-      return NextResponse.json(
-        { analyses: [], count: 0 },
-        { status: 200 }
-      );
+      console.error("[/latest] Error:", analysisError);
+      return NextResponse.json({ analyses: [], count: 0 }, { status: 200 });
     }
 
     if (!analyses || analyses.length === 0) {
+      console.log("[/latest] No analyses found for this rfpId");
       return NextResponse.json({ analyses: [], count: 0 }, { status: 200 });
     }
 
