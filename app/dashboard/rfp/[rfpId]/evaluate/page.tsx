@@ -257,7 +257,6 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
               onSelectRequirement={setSelectedRequirementId}
               responses={filteredResponses}
               isSingleSupplier={isSingleSupplierView}
-              requirements={allRequirements}
             />
           </div>
 
