@@ -132,10 +132,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
 
   // Store all analyses grouped by supplier_id
   const [allAnalysesBySupplier, setAllAnalysesBySupplier] = useState<
-    Record<
-      string,
-      Record<string, { forces: string[]; faiblesses: string[] }>
-    >
+    Record<string, Record<string, { forces: string[]; faiblesses: string[] }>>
   >({});
 
   // Load analysis results when rfpId or selectedSupplierId changes
@@ -227,10 +224,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
 
       setTree((prevTree) => {
         const enrichedTree = enrichTree(prevTree || []);
-        console.log(
-          "[ANALYSIS LOADER] Updated tree for supplier:",
-          supplierId
-        );
+        console.log("[ANALYSIS LOADER] Updated tree for supplier:", supplierId);
         return enrichedTree;
       });
     } catch (error) {

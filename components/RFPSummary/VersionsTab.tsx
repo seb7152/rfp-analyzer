@@ -222,7 +222,10 @@ export function VersionsTab({ rfpId }: VersionsTabProps) {
                       )}
                     </div>
                     {version.description && (
-                      <p className="text-sm text-gray-600">
+                      <p
+                        className="text-sm text-gray-600 truncate max-w-xs"
+                        title={version.description}
+                      >
                         {version.description}
                       </p>
                     )}

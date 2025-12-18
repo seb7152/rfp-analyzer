@@ -73,7 +73,7 @@ export async function GET(
       );
     } else {
       // Multi-supplier mode: group by supplier_id and take latest for each
-      const bySupplier = new Map<string, typeof analyses[0]>();
+      const bySupplier = new Map<string, (typeof analyses)[0]>();
       for (const analysis of analyses) {
         const key = analysis.supplier_id || "default";
         if (!bySupplier.has(key)) {

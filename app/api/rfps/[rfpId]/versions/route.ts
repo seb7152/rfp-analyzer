@@ -105,11 +105,23 @@ export async function GET(
           `    ✓ Final counts - Active: ${activeSuppliers}, Removed: ${removedSuppliers}`
         );
 
-        // Calculate completion percentage
+        // Calculate completion percentage based on active suppliers only
+        const { data: activeSupplierIds } = await supabase
+          .from("version_supplier_status")
+          .select("supplier_id")
+          .eq("version_id", version.id)
+          .in("shortlist_status", ["active", "shortlisted"]);
+
+        const activeSupplierIdSet = new Set(
+          (activeSupplierIds || []).map((s) => s.supplier_id)
+        );
+
+        // Get responses only from active suppliers
         const { data: responses } = await supabase
           .from("responses")
-          .select("id, is_checked")
-          .eq("version_id", version.id);
+          .select("id, is_checked, supplier_id")
+          .eq("version_id", version.id)
+          .in("supplier_id", Array.from(activeSupplierIdSet));
 
         const evaluatedCount =
           responses?.filter((r) => r.is_checked).length || 0;
