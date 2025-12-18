@@ -118,18 +118,15 @@ export function Sidebar({
       }
 
       // Check status filter
-      if (
-        filters.status.length > 0 &&
-        !filters.status.includes(response.status)
-      ) {
-        return;
+      if (filters.status.length > 0) {
+        // Only include if status matches one of the selected statuses
+        if (!filters.status.includes(response.status)) {
+          return;
+        }
       }
 
       // Check score range filter
-      if (
-        score < filters.scoreRange.min ||
-        score > filters.scoreRange.max
-      ) {
+      if (score < filters.scoreRange.min || score > filters.scoreRange.max) {
         return;
       }
 

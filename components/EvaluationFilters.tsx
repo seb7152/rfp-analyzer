@@ -51,7 +51,7 @@ export function EvaluationFilters({
     field: "min" | "max",
     value: string
   ) => {
-    const numValue = Math.max(0, Math.min(100, parseInt(value) || 0));
+    const numValue = Math.max(0, Math.min(5, parseInt(value) || 0));
     onFiltersChange({
       ...filters,
       scoreRange: {
