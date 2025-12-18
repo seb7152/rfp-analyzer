@@ -26,8 +26,6 @@ interface SupplierStatusDialogProps {
   onSuccess?: () => void;
 }
 
-type Action = "remove" | "restore";
-
 export function SupplierStatusDialog({
   open,
   onOpenChange,
@@ -179,7 +177,7 @@ export function SupplierStatusDialog({
             </Button>
             <Button
               type="submit"
-              variant={isRemoving ? "destructive" : "default"}
+              variant={isRemoving ? "destructive" : "primary"}
               disabled={loading}
             >
               {loading ? "Traitement..." : actionText}

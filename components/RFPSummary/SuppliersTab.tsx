@@ -103,21 +103,12 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
         const activeSuppliers = activeData.suppliers || [];
         const allSuppliers = allData.suppliers || [];
 
-        // If we have a version, fetch removed suppliers
         let removedSuppliersList: any[] = [];
         if (activeVersion?.id) {
-          const removedResponse = await fetch(
-            `/api/rfps/${rfpId}/suppliers?includeStats=true&versionId=${activeVersion.id}&includeRemoved=true`
+          const activeIds = new Set(activeSuppliers.map((s: any) => s.id));
+          removedSuppliersList = allSuppliers.filter(
+            (s: any) => !activeIds.has(s.id)
           );
-
-          if (removedResponse.ok) {
-            const removedData = await removedResponse.json();
-            // For now, we'll determine removed suppliers by comparing active vs all
-            const activeIds = new Set(activeSuppliers.map((s: any) => s.id));
-            removedSuppliersList = allSuppliers.filter(
-              (s: any) => !activeIds.has(s.id)
-            );
-          }
         }
 
         // Map active suppliers
@@ -149,6 +140,7 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
             documents: supplier.documents || [],
             hasDocuments: (supplier.documents || []).length > 0,
             shortlist_status: "removed" as const,
+            ranking: 0, // Removed suppliers don't have ranking
           })
         );
 
@@ -178,6 +170,114 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
       fetchSuppliers();
     }
   }, [rfpId, activeVersion?.id]);
+
+  const handleSupplierStatus = (
+    supplierId: string,
+    supplierName: string,
+    currentStatus: "active" | "shortlisted" | "removed",
+    removalReason?: string
+  ) => {
+    setStatusDialog({
+      open: true,
+      supplierId,
+      supplierName,
+      currentStatus,
+      removalReason,
+    });
+  };
+
+  const handleStatusSuccess = () => {
+    // Refetch suppliers to update the lists
+    if (rfpId) {
+      const fetchSuppliers = async () => {
+        try {
+          setLoading(true);
+
+          let activeUrl = `/api/rfps/${rfpId}/suppliers?includeStats=true`;
+          if (activeVersion?.id) {
+            activeUrl += `&versionId=${activeVersion.id}`;
+          }
+
+          const allUrl = `/api/rfps/${rfpId}/suppliers?includeStats=true`;
+
+          const [activeResponse, allResponse] = await Promise.all([
+            fetch(activeUrl),
+            fetch(allUrl),
+          ]);
+
+          if (!activeResponse.ok || !allResponse.ok) {
+            throw new Error("Failed to fetch suppliers");
+          }
+
+          const activeData = await activeResponse.json();
+          const allData = await allResponse.json();
+
+          const activeSuppliers = activeData.suppliers || [];
+          const allSuppliers = allData.suppliers || [];
+
+          let removedSuppliersList: any[] = [];
+          if (activeVersion?.id) {
+            const activeIds = new Set(activeSuppliers.map((s: any) => s.id));
+            removedSuppliersList = allSuppliers.filter(
+              (s: any) => !activeIds.has(s.id)
+            );
+          }
+
+          const activeSuppliersWithDocs = activeSuppliers.map(
+            (supplier: any) => ({
+              id: supplier.id,
+              name: supplier.name,
+              scorePercentage: supplier.scorePercentage || 0,
+              responseCompletionPercentage:
+                supplier.responseCompletionPercentage || 0,
+              checkedResponses: supplier.checkedResponses || 0,
+              totalResponses: supplier.totalResponses || 0,
+              documents: supplier.documents || [],
+              hasDocuments: (supplier.documents || []).length > 0,
+              shortlist_status: "active" as const,
+            })
+          );
+
+          const removedSuppliersWithDocs = removedSuppliersList.map(
+            (supplier: any) => ({
+              id: supplier.id,
+              name: supplier.name,
+              scorePercentage: supplier.scorePercentage || 0,
+              responseCompletionPercentage:
+                supplier.responseCompletionPercentage || 0,
+              checkedResponses: supplier.checkedResponses || 0,
+              totalResponses: supplier.totalResponses || 0,
+              documents: supplier.documents || [],
+              hasDocuments: (supplier.documents || []).length > 0,
+              shortlist_status: "removed" as const,
+              ranking: 0, // Removed suppliers don't have ranking
+            })
+          );
+
+          const sortedActiveSuppliers = [...activeSuppliersWithDocs].sort(
+            (a, b) => b.scorePercentage - a.scorePercentage
+          );
+          const suppliersWithRanking = sortedActiveSuppliers.map(
+            (supplier, index) => ({
+              ...supplier,
+              ranking: index + 1,
+            })
+          );
+
+          setSuppliers(suppliersWithRanking);
+          setRemovedSuppliers(removedSuppliersWithDocs);
+        } catch (err) {
+          setError(
+            err instanceof Error ? err.message : "Une erreur est survenue"
+          );
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchSuppliers();
+    }
+  };
 
   if (loading) {
     return (
@@ -242,105 +342,6 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
     );
   };
 
-  const handleSupplierStatus = (
-    supplierId: string,
-    supplierName: string,
-    currentStatus: "active" | "shortlisted" | "removed",
-    removalReason?: string
-  ) => {
-    setStatusDialog({
-      open: true,
-      supplierId,
-      supplierName,
-      currentStatus,
-      removalReason,
-    });
-  };
-
-  const handleStatusSuccess = () => {
-    // Refetch suppliers to update the lists
-    if (rfpId) {
-      const fetchSuppliers = async () => {
-        try {
-          setLoading(true);
-          
-          let activeUrl = `/api/rfps/${rfpId}/suppliers?includeStats=true`;
-          if (activeVersion?.id) {
-            activeUrl += `&versionId=${activeVersion.id}`;
-          }
-          
-          const allUrl = `/api/rfps/${rfpId}/suppliers?includeStats=true`;
-          
-          const [activeResponse, allResponse] = await Promise.all([
-            fetch(activeUrl),
-            fetch(allUrl)
-          ]);
-
-          if (!activeResponse.ok || !allResponse.ok) {
-            throw new Error("Failed to fetch suppliers");
-          }
-
-          const activeData = await activeResponse.json();
-          const allData = await allResponse.json();
-          
-          const activeSuppliers = activeData.suppliers || [];
-          const allSuppliers = allData.suppliers || [];
-
-          let removedSuppliersList: any[] = [];
-          if (activeVersion?.id) {
-            const activeIds = new Set(activeSuppliers.map((s: any) => s.id));
-            removedSuppliersList = allSuppliers.filter((s: any) => !activeIds.has(s.id));
-          }
-
-          const activeSuppliersWithDocs = activeSuppliers.map((supplier: any) => ({
-            id: supplier.id,
-            name: supplier.name,
-            scorePercentage: supplier.scorePercentage || 0,
-            responseCompletionPercentage:
-              supplier.responseCompletionPercentage || 0,
-            checkedResponses: supplier.checkedResponses || 0,
-            totalResponses: supplier.totalResponses || 0,
-            documents: supplier.documents || [],
-            hasDocuments: (supplier.documents || []).length > 0,
-            shortlist_status: "active" as const,
-          }));
-
-          const removedSuppliersWithDocs = removedSuppliersList.map((supplier: any) => ({
-            id: supplier.id,
-            name: supplier.name,
-            scorePercentage: supplier.scorePercentage || 0,
-            responseCompletionPercentage:
-              supplier.responseCompletionPercentage || 0,
-            checkedResponses: supplier.checkedResponses || 0,
-            totalResponses: supplier.totalResponses || 0,
-            documents: supplier.documents || [],
-            hasDocuments: (supplier.documents || []).length > 0,
-            shortlist_status: "removed" as const,
-          }));
-
-          const sortedActiveSuppliers = [...activeSuppliersWithDocs].sort(
-            (a, b) => b.scorePercentage - a.scorePercentage
-          );
-          const suppliersWithRanking = sortedActiveSuppliers.map((supplier, index) => ({
-            ...supplier,
-            ranking: index + 1,
-          }));
-
-          setSuppliers(suppliersWithRanking);
-          setRemovedSuppliers(removedSuppliersWithDocs);
-        } catch (err) {
-          setError(
-            err instanceof Error ? err.message : "Une erreur est survenue"
-          );
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      fetchSuppliers();
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Active Suppliers */}
@@ -351,161 +352,172 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
         </h3>
         <div className="overflow-x-auto">
           <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead
-                className="cursor-pointer hover:bg-slate-100"
-                onClick={() => handleSort("name")}
-              >
-                <div className="flex items-center gap-2">
-                  Fournisseur
-                  <SortIcon column="name" />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer hover:bg-slate-100"
-                onClick={() => handleSort("score")}
-              >
-                <div className="flex items-center gap-2">
-                  Note
-                  <SortIcon column="score" />
-                </div>
-              </TableHead>
-              <TableHead
-                className="cursor-pointer hover:bg-slate-100"
-                onClick={() => handleSort("responses")}
-              >
-                <div className="flex items-center gap-2">
-                  Réponses
-                  <SortIcon column="responses" />
-                </div>
-              </TableHead>
-              <TableHead>Fichiers</TableHead>
-              <TableHead className="w-20">Actions</TableHead>
-              <TableHead className="w-10"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {suppliersWithCurrentRanking.map((supplier) => (
-              <>
-                <TableRow
-                  key={supplier.id}
-                  className="cursor-pointer hover:bg-gray-50"
-                  onClick={() =>
-                    setExpandedSupplier(
-                      expandedSupplier === supplier.id ? null : supplier.id
-                    )
-                  }
+            <TableHeader>
+              <TableRow>
+                <TableHead
+                  className="cursor-pointer hover:bg-slate-100"
+                  onClick={() => handleSort("name")}
                 >
-                  <TableCell className="font-medium">{supplier.name}</TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="font-semibold text-slate-900">
-                        {((supplier.scorePercentage / 100) * 20).toFixed(2)}/20
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        Pos. {supplier.currentRanking}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="font-medium text-slate-900">
-                        {supplier.checkedResponses}/{supplier.totalResponses}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        {supplier.responseCompletionPercentage}%
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {supplier.documents.length} fichier(s)
-                    </Badge>
-                  </TableCell>
-                   <TableCell>
-                     <div className="flex items-center gap-1">
-                       <Link
-                         href={`/dashboard/rfp/${rfpId}/evaluate?supplierId=${supplier.id}`}
-                         onClick={(e) => e.stopPropagation()}
-                         title="Évaluer ce fournisseur"
-                       >
-                         <Button variant="ghost" size="icon" className="h-8 w-8">
-                           <Zap className="h-4 w-4 text-blue-600" />
-                         </Button>
-                       </Link>
-                       <Button
-                         variant="ghost"
-                         size="icon"
-                         className="h-8 w-8"
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           handleSupplierStatus(
-                             supplier.id,
-                             supplier.name,
-                             supplier.shortlist_status || "active"
-                           );
-                         }}
-                         title="Supprimer ce fournisseur"
-                       >
-                         <Trash2 className="h-4 w-4 text-red-600" />
-                       </Button>
-                     </div>
-                   </TableCell>
-                  <TableCell className="w-10">
-                    {supplier.hasDocuments && (
-                      <div>
-                        {expandedSupplier === supplier.id ? (
-                          <ChevronUp className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )}
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-
-                {expandedSupplier === supplier.id && supplier.hasDocuments && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="bg-gray-50 p-4">
-                      <Card className="border-0 bg-white">
-                        <div className="p-4">
-                          <h4 className="font-semibold mb-3">Fichiers</h4>
-                          <div className="space-y-2">
-                            {supplier.documents.map((doc) => {
-                              const uploadDate = new Date(doc.uploadedAt);
-                              const isValidDate = !isNaN(uploadDate.getTime());
-                              return (
-                                <div
-                                  key={doc.id}
-                                  className="flex items-center gap-2 p-2 rounded hover:bg-gray-100"
-                                >
-                                  <FileText className="h-4 w-4 text-blue-500" />
-                                  <div className="flex-1">
-                                    <p className="text-sm font-medium">
-                                      {doc.name}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {isValidDate
-                                        ? uploadDate.toLocaleDateString("fr-FR")
-                                        : "Date inconnue"}
-                                    </p>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+                  <div className="flex items-center gap-2">
+                    Fournisseur
+                    <SortIcon column="name" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer hover:bg-slate-100"
+                  onClick={() => handleSort("score")}
+                >
+                  <div className="flex items-center gap-2">
+                    Note
+                    <SortIcon column="score" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer hover:bg-slate-100"
+                  onClick={() => handleSort("responses")}
+                >
+                  <div className="flex items-center gap-2">
+                    Réponses
+                    <SortIcon column="responses" />
+                  </div>
+                </TableHead>
+                <TableHead>Fichiers</TableHead>
+                <TableHead className="w-20">Actions</TableHead>
+                <TableHead className="w-10"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {suppliersWithCurrentRanking.map((supplier) => (
+                <>
+                  <TableRow
+                    key={supplier.id}
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() =>
+                      setExpandedSupplier(
+                        expandedSupplier === supplier.id ? null : supplier.id
+                      )
+                    }
+                  >
+                    <TableCell className="font-medium">
+                      {supplier.name}
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="font-semibold text-slate-900">
+                          {((supplier.scorePercentage / 100) * 20).toFixed(2)}
+                          /20
                         </div>
-                      </Card>
+                        <div className="text-xs text-slate-500">
+                          Pos. {supplier.currentRanking}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="font-medium text-slate-900">
+                          {supplier.checkedResponses}/{supplier.totalResponses}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {supplier.responseCompletionPercentage}%
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {supplier.documents.length} fichier(s)
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Link
+                          href={`/dashboard/rfp/${rfpId}/evaluate?supplierId=${supplier.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          title="Évaluer ce fournisseur"
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                          >
+                            <Zap className="h-4 w-4 text-blue-600" />
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSupplierStatus(
+                              supplier.id,
+                              supplier.name,
+                              supplier.shortlist_status || "active"
+                            );
+                          }}
+                          title="Supprimer ce fournisseur"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell className="w-10">
+                      {supplier.hasDocuments && (
+                        <div>
+                          {expandedSupplier === supplier.id ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
-                )}
-              </>
-            ))}
-          </TableBody>
-          </TableBody>
-        </Table>
-      </div>
+
+                  {expandedSupplier === supplier.id &&
+                    supplier.hasDocuments && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="bg-gray-50 p-4">
+                          <Card className="border-0 bg-white">
+                            <div className="p-4">
+                              <h4 className="font-semibold mb-3">Fichiers</h4>
+                              <div className="space-y-2">
+                                {supplier.documents.map((doc) => {
+                                  const uploadDate = new Date(doc.uploadedAt);
+                                  const isValidDate = !isNaN(
+                                    uploadDate.getTime()
+                                  );
+                                  return (
+                                    <div
+                                      key={doc.id}
+                                      className="flex items-center gap-2 p-2 rounded hover:bg-gray-100"
+                                    >
+                                      <FileText className="h-4 w-4 text-blue-500" />
+                                      <div className="flex-1">
+                                        <p className="text-sm font-medium">
+                                          {doc.name}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {isValidDate
+                                            ? uploadDate.toLocaleDateString(
+                                                "fr-FR"
+                                              )
+                                            : "Date inconnue"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </Card>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                </>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Removed Suppliers */}
@@ -529,7 +541,9 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
               <TableBody>
                 {removedSuppliers.map((supplier) => (
                   <TableRow key={supplier.id} className="opacity-60">
-                    <TableCell className="font-medium">{supplier.name}</TableCell>
+                    <TableCell className="font-medium">
+                      {supplier.name}
+                    </TableCell>
                     <TableCell>
                       <div className="font-semibold text-slate-700">
                         {((supplier.scorePercentage / 100) * 20).toFixed(2)}/20
@@ -578,9 +592,7 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
       {/* Status Dialog */}
       <SupplierStatusDialog
         open={statusDialog.open}
-        onOpenChange={(open) =>
-          setStatusDialog((prev) => ({ ...prev, open }))
-        }
+        onOpenChange={(open) => setStatusDialog((prev) => ({ ...prev, open }))}
         supplierId={statusDialog.supplierId}
         supplierName={statusDialog.supplierName}
         currentStatus={statusDialog.currentStatus}

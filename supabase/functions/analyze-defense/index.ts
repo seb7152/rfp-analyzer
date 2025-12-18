@@ -83,7 +83,7 @@ serve(async (req) => {
       {
         p_analysis_id: analysisId,
         p_rfp_id: rfpId,
-        p_category_hierarchy: JSON.stringify(categoryHierarchy),
+        p_category_hierarchy: categoryHierarchy,
       }
     );
 
@@ -132,46 +132,90 @@ serve(async (req) => {
 
     for (const task of leafTasks) {
       try {
+        console.log(
+          `[analyze-defense] Processing task ${task.id} for category ${task.category_id}`
+        );
+
+        console.log(
+          `[analyze-defense-v6] Step 1: Fetching category ${task.category_id}`
+        );
         const { data: category, error: catDetailError } = await supabase
           .from("categories")
-          .select("id, code, title, description")
+          .select("id, code, title")
           .eq("id", task.category_id)
           .single();
 
-        if (catDetailError || !category) {
-          console.warn(
-            `[analyze-defense] Failed to fetch category ${task.category_id}`
+        if (catDetailError) {
+          console.error(
+            `[analyze-defense-v6] ❌ Category SELECT failed:`,
+            catDetailError
           );
           continue;
         }
+        if (!category) {
+          console.error(
+            `[analyze-defense-v6] ❌ Category not found for id ${task.category_id}`
+          );
+          continue;
+        }
+        console.log(
+          `[analyze-defense-v6] ✓ Category fetched: ${category.code} (${category.id})`
+        );
 
+        console.log(
+          `[analyze-defense-v6] Step 2: Fetching supplier ${supplierId}`
+        );
         const { data: supplier, error: supplierError } = await supabase
           .from("suppliers")
           .select("id, name")
           .eq("id", supplierId)
           .single();
 
-        if (supplierError || !supplier) {
-          console.warn(
-            `[analyze-defense] Failed to fetch supplier ${supplierId}`
+        if (supplierError) {
+          console.error(
+            `[analyze-defense-v6] ❌ Supplier SELECT failed:`,
+            supplierError
           );
           continue;
         }
+        if (!supplier) {
+          console.error(
+            `[analyze-defense-v6] ❌ Supplier not found for id ${supplierId}`
+          );
+          continue;
+        }
+        console.log(
+          `[analyze-defense-v6] ✓ Supplier fetched: ${supplier.name}`
+        );
 
+        console.log(
+          `[analyze-defense-v6] Step 3: Fetching requirements for category ${task.category_id}`
+        );
         const { data: requirements, error: reqError } = await supabase
           .from("requirements")
-          .select("id, code, title, description")
+          .select("id, requirement_id_external, title, description")
           .eq("category_id", task.category_id)
           .eq("rfp_id", rfpId);
 
-        if (reqError || !requirements) {
-          console.warn(
-            `[analyze-defense] Failed to fetch requirements for category ${task.category_id}`
+        if (reqError) {
+          console.error(
+            `[analyze-defense-v6] ❌ Requirements SELECT failed:`,
+            reqError
           );
           continue;
         }
+        if (!requirements) {
+          console.error(`[analyze-defense-v6] ❌ Requirements array is null`);
+          continue;
+        }
+        console.log(
+          `[analyze-defense-v6] ✓ Found ${requirements.length} requirements`
+        );
 
         const requirementIds = requirements.map((r) => r.id);
+        console.log(
+          `[analyze-defense-v6] Step 4: Fetching responses for ${requirementIds.length} requirements`
+        );
         const { data: responses, error: respError } = await supabase
           .from("responses")
           .select(
@@ -180,12 +224,20 @@ serve(async (req) => {
           .eq("supplier_id", supplierId)
           .in("requirement_id", requirementIds);
 
-        if (respError || !responses) {
-          console.warn(
-            `[analyze-defense] Failed to fetch responses for category ${task.category_id}`
+        if (respError) {
+          console.error(
+            `[analyze-defense-v6] ❌ Responses SELECT failed:`,
+            respError
           );
           continue;
         }
+        if (!responses) {
+          console.error(`[analyze-defense-v6] ❌ Responses array is null`);
+          continue;
+        }
+        console.log(
+          `[analyze-defense-v6] ✓ Found ${responses.length} responses`
+        );
 
         const n8nPayload = {
           taskId: task.id,
@@ -195,11 +247,11 @@ serve(async (req) => {
           categoryId: task.category_id,
           categoryCode: category.code,
           categoryName: category.title,
-          categoryDescription: category.description || "",
+          categoryDescription: "",
           supplierName: supplier.name,
           requirements: requirements.map((r) => ({
             id: r.id,
-            code: r.code,
+            code: r.requirement_id_external,
             title: r.title,
             description: r.description || "",
           })),
@@ -214,7 +266,10 @@ serve(async (req) => {
           timestamp: new Date().toISOString(),
         };
 
-        await supabase
+        console.log(
+          `[analyze-defense-v6] Step 5: Updating task status to processing for ${task.id}`
+        );
+        const { error: updateError } = await supabase
           .from("defense_analysis_tasks")
           .update({
             status: "processing",
@@ -222,12 +277,21 @@ serve(async (req) => {
           })
           .eq("id", task.id);
 
+        if (updateError) {
+          console.error(
+            `[analyze-defense-v6] ❌ Task UPDATE failed:`,
+            updateError
+          );
+          continue;
+        }
+        console.log(`[analyze-defense-v6] ✓ Task status updated to processing`);
+
         const n8nWebhookUrl =
           Deno.env.get("N8N_DEFENSE_ANALYSIS_WEBHOOK_URL") ||
           "https://n8n.srv828065.hstgr.cloud/webhook/1240b9c7-ca02-429a-a4e9-2d6afb74f311";
 
         console.log(
-          `[analyze-defense] Sending task ${task.id} to N8N for category ${category.code}`
+          `[analyze-defense-v6] Step 6: Sending task to N8N for ${category.code}`
         );
 
         try {
@@ -239,8 +303,9 @@ serve(async (req) => {
 
           if (!n8nResponse.ok) {
             console.error(
-              `[analyze-defense] N8N error for task ${task.id}:`,
-              n8nResponse.status
+              `[analyze-defense-v6] ❌ N8N error for task ${task.id}:`,
+              n8nResponse.status,
+              await n8nResponse.text()
             );
             await supabase
               .from("defense_analysis_tasks")
@@ -250,23 +315,30 @@ serve(async (req) => {
                 completed_at: new Date().toISOString(),
               })
               .eq("id", task.id);
+          } else {
+            console.log(
+              `[analyze-defense-v6] ✓ Task ${task.id} sent to N8N successfully`
+            );
           }
         } catch (n8nError) {
           console.error(
-            `[analyze-defense] Failed to call N8N for task ${task.id}:`,
+            `[analyze-defense-v6] ❌ Failed to call N8N for task ${task.id}:`,
             n8nError
           );
           await supabase
             .from("defense_analysis_tasks")
             .update({
               status: "failed",
-              error_message: `N8N call failed: ${n8nError}`,
+              error_message: `N8N call failed: ${String(n8nError)}`,
               completed_at: new Date().toISOString(),
             })
             .eq("id", task.id);
         }
       } catch (error) {
-        console.error(`[analyze-defense] Error processing task:`, error);
+        console.error(
+          `[analyze-defense-v6] ❌ Outer catch - Error processing task ${task.id}:`,
+          error
+        );
       }
     }
 

@@ -51,6 +51,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const [categoryAnalyses, setCategoryAnalyses] = useState<
     Record<string, CategoryAnalysis>
   >({});
+  const [lastAnalysisId, setLastAnalysisId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -87,6 +88,29 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         if (suppliersData.suppliers && suppliersData.suppliers.length > 0) {
           setSelectedSupplierId(suppliersData.suppliers[0].id);
         }
+
+        // Load existing analysis results from /latest endpoint
+        try {
+          const resultsRes = await fetch(
+            `/api/rfps/${rfpId}/analyze-defense/results/latest`
+          );
+          const resultsData = await resultsRes.json();
+
+          if (resultsData.analyses && resultsData.analyses.length > 0) {
+            const analyses: Record<string, CategoryAnalysis> = {};
+            resultsData.analyses.forEach((task: any) => {
+              if (task.category_id && task.result) {
+                analyses[task.category_id] = {
+                  forces: task.result.forces || [],
+                  faiblesses: task.result.faiblesses || [],
+                };
+              }
+            });
+            setCategoryAnalyses(analyses);
+          }
+        } catch (error) {
+          console.error("Error loading existing analysis results:", error);
+        }
       } catch (error) {
         console.error("Error fetching category analysis data:", error);
       } finally {
@@ -98,6 +122,43 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       fetchData();
     }
   }, [rfpId]);
+
+  // Poll for completed analysis results
+  useEffect(() => {
+    if (!lastAnalysisId) return;
+
+    const pollForResults = async () => {
+      try {
+        // Fetch completed analysis tasks for this RFP with results
+        const response = await fetch(
+          `/api/rfps/${rfpId}/analyze-defense/results?analysisId=${lastAnalysisId}`
+        );
+        const data = await response.json();
+
+        if (data.analyses) {
+          const analyses: Record<string, CategoryAnalysis> = {};
+          data.analyses.forEach((task: any) => {
+            if (task.category_id && task.result) {
+              analyses[task.category_id] = {
+                forces: task.result.forces || [],
+                faiblesses: task.result.faiblesses || [],
+              };
+            }
+          });
+          setCategoryAnalyses(analyses);
+        }
+      } catch (error) {
+        console.error("Error fetching analysis results:", error);
+      }
+    };
+
+    // Initial poll
+    pollForResults();
+
+    // Poll every 2 seconds
+    const interval = setInterval(pollForResults, 2000);
+    return () => clearInterval(interval);
+  }, [lastAnalysisId, rfpId]);
 
   // Flatten categories for display
   const flatCategories = useMemo(() => {
@@ -386,87 +447,6 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     return markdown;
   };
 
-  // Get direct child requirements for a category (not recursively)
-  const getDirectRequirements = (categoryId: string): TreeNode[] => {
-    const categoryNode = findNodeById(tree, categoryId);
-    if (!categoryNode || !categoryNode.children) {
-      return [];
-    }
-
-    return categoryNode.children.filter(
-      (child) => child.type === "requirement"
-    );
-  };
-
-  // Build payload for N8N analysis
-  const buildAnalysisPayload = (categoryId: string) => {
-    const categoryNode = findNodeById(tree, categoryId);
-    if (!categoryNode) return null;
-
-    if (!selectedSupplierId) return null;
-
-    const selectedSupplier = suppliers.find((s) => s.id === selectedSupplierId);
-    if (!selectedSupplier) return null;
-
-    const categoryScore = getCategoryScore(categoryId, selectedSupplierId);
-    const averageScore = getAverageCategoryScore(categoryId);
-
-    // Get direct child requirements
-    const directRequirements = getDirectRequirements(categoryId);
-
-    // Get requirement IDs (including descendants for response filtering)
-    const requirementIds = new Set<string>();
-    const collectRequirementIds = (nodes: TreeNode[]) => {
-      for (const node of nodes) {
-        if (node.type === "requirement") {
-          requirementIds.add(node.id);
-        } else if (node.children) {
-          collectRequirementIds(node.children);
-        }
-      }
-    };
-    if (categoryNode.children) {
-      collectRequirementIds(categoryNode.children);
-    }
-
-    // Build requirements array (direct children only)
-    const requirementsArray = directRequirements.map((req) => ({
-      id: req.id,
-      code: req.code,
-      title: req.title,
-      description: req.description || "",
-    }));
-
-    // Build responses array (filtered by category requirements and selected supplier)
-    const responsesArray = responses
-      .filter(
-        (r) =>
-          r.supplier_id === selectedSupplierId &&
-          requirementIds.has(r.requirement_id)
-      )
-      .map((r) => ({
-        requirement_id: r.requirement_id,
-        response_text: r.response_text,
-        question: r.question,
-        comment: r.manual_comment || r.ai_comment || "",
-        score: r.manual_score ?? r.ai_score,
-      }));
-
-    return {
-      rfp_id: rfpId,
-      supplier_id: selectedSupplierId,
-      supplier_name: selectedSupplier.name,
-      category_id: categoryId,
-      category_code: categoryNode.code,
-      category_name: categoryNode.title,
-      category_score: categoryScore,
-      average_score: averageScore,
-      requirements: requirementsArray,
-      responses: responsesArray,
-      timestamp: new Date().toISOString(),
-    };
-  };
-
   // Trigger async defense analysis workflow
   const triggerAnalysis = async () => {
     try {
@@ -497,6 +477,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
 
       const result = await response.json();
       console.log("Analysis initiated:", result);
+
+      // Store analysis ID for polling results
+      setLastAnalysisId(result.analysisId);
 
       // Show success message with analysis ID
       alert(

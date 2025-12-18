@@ -8,14 +8,14 @@ export async function POST(
   try {
     const { rfpId } = params;
 
-    if (\!rfpId || typeof rfpId \!== "string") {
+    if (!rfpId || typeof rfpId !== "string") {
       return NextResponse.json({ error: "Invalid RFP ID" }, { status: 400 });
     }
 
     const body = await request.json();
     const { supplierId, versionId } = body;
 
-    if (\!supplierId || typeof supplierId \!== "string") {
+    if (!supplierId || typeof supplierId !== "string") {
       return NextResponse.json(
         { error: "Missing required field: supplierId" },
         { status: 400 }
@@ -30,7 +30,7 @@ export async function POST(
       .eq("id", rfpId)
       .single();
 
-    if (rfpError || \!rfp) {
+    if (rfpError || !rfp) {
       return NextResponse.json({ error: "RFP not found" }, { status: 404 });
     }
 
@@ -41,7 +41,7 @@ export async function POST(
       .eq("rfp_id", rfpId)
       .single();
 
-    if (supplierError || \!supplier) {
+    if (supplierError || !supplier) {
       return NextResponse.json(
         { error: "Supplier not found" },
         { status: 404 }
@@ -52,11 +52,11 @@ export async function POST(
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (\!user) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const correlationId = `defense-`${rfpId}`-`${supplierId}`-`${Date.now()}`;
+    const correlationId = `defense-${rfpId}-${supplierId}-${Date.now()}`;
 
     const { data: analysis, error: analysisError } = await supabase
       .from("defense_analyses")
@@ -72,7 +72,7 @@ export async function POST(
       .select("id")
       .single();
 
-    if (analysisError || \!analysis) {
+    if (analysisError || !analysis) {
       console.error("Error creating defense_analyses record:", analysisError);
       return NextResponse.json(
         { error: "Failed to create analysis record" },
@@ -98,7 +98,7 @@ export async function POST(
         }),
       });
 
-      if (\!response.ok) {
+      if (!response.ok) {
         console.error("Edge Function error:", response.status);
       }
     } catch (error) {
