@@ -8,7 +8,7 @@ const supabase = createClient(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { rfpId: string } }
+  _: { params: { rfpId: string } }
 ) {
   try {
     const { searchParams } = new URL(request.url);

@@ -7,7 +7,7 @@ const supabase = createClient(
 );
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { rfpId: string } }
 ) {
   try {
