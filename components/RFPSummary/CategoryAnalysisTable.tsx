@@ -23,6 +23,10 @@ interface TreeNode {
   description?: string;
   children?: TreeNode[];
   level?: number;
+  analysis?: {
+    forces: string[];
+    faiblesses: string[];
+  };
 }
 
 interface CategoryAnalysisTableProps {
@@ -48,9 +52,6 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     null
   );
   const [analysisLoading, setAnalysisLoading] = useState(false);
-  const [categoryAnalyses, setCategoryAnalyses] = useState<
-    Record<string, CategoryAnalysis>
-  >({});
   const [lastAnalysisId, setLastAnalysisId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -69,7 +70,6 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         const suppliersData = await suppliersRes.json();
         const weightsData = await weightsRes.json();
 
-        setTree(treeData || []);
         setResponses(responsesData.responses || []);
         setSuppliers(suppliersData.suppliers || []);
 
@@ -80,16 +80,16 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         }
         setWeights(flatWeights);
 
-        // Initialize expanded categories (expand top level by default)
-        const topLevelIds = (treeData || []).map((n: TreeNode) => n.id);
-        setExpandedCategories(new Set(topLevelIds));
-
         // Set first supplier as selected by default
         if (suppliersData.suppliers && suppliersData.suppliers.length > 0) {
           setSelectedSupplierId(suppliersData.suppliers[0].id);
         }
 
         // Load existing analysis results from /latest endpoint
+        let analysisMap: Record<
+          string,
+          { forces: string[]; faiblesses: string[] }
+        > = {};
         try {
           const resultsRes = await fetch(
             `/api/rfps/${rfpId}/analyze-defense/results/latest`
@@ -97,20 +97,73 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
           const resultsData = await resultsRes.json();
 
           if (resultsData.analyses && resultsData.analyses.length > 0) {
-            const analyses: Record<string, CategoryAnalysis> = {};
-            resultsData.analyses.forEach((task: any) => {
+            console.log(
+              "[NEW APPROACH] Building analysis map from",
+              resultsData.analyses.length,
+              "tasks"
+            );
+
+            resultsData.analyses.forEach((task: any, index: number) => {
               if (task.category_id && task.result) {
-                analyses[task.category_id] = {
+                analysisMap[task.category_id] = {
                   forces: task.result.forces || [],
                   faiblesses: task.result.faiblesses || [],
                 };
+                if (index < 3) {
+                  console.log(`[NEW APPROACH] Mapped ${task.category_id}:`, {
+                    forces_sample: task.result.forces?.[0]?.substring(0, 40),
+                    forces_count: task.result.forces?.length,
+                  });
+                }
               }
             });
-            setCategoryAnalyses(analyses);
           }
         } catch (error) {
           console.error("Error loading existing analysis results:", error);
         }
+
+        // NOW inject analyses directly into tree nodes
+        const enrichTree = (nodes: TreeNode[]): TreeNode[] => {
+          return nodes.map((node) => {
+            if (node.type === "category" && analysisMap[node.id]) {
+              return {
+                ...node,
+                analysis: analysisMap[node.id],
+                children: node.children ? enrichTree(node.children) : undefined,
+              };
+            }
+            return {
+              ...node,
+              children: node.children ? enrichTree(node.children) : undefined,
+            };
+          });
+        };
+
+        const enrichedTree = enrichTree(treeData || []);
+        console.log(
+          "[NEW APPROACH] Enriched tree, checking first 3 categories:"
+        );
+        let count = 0;
+        const checkTree = (nodes: TreeNode[]) => {
+          for (const node of nodes) {
+            if (node.type === "category" && count < 3) {
+              console.log(`  ${node.code} (${node.id}):`, {
+                has_analysis: !!node.analysis,
+                forces_count: node.analysis?.forces?.length,
+                forces_sample: node.analysis?.forces?.[0]?.substring(0, 40),
+              });
+              count++;
+            }
+            if (node.children) checkTree(node.children);
+          }
+        };
+        checkTree(enrichedTree);
+
+        setTree(enrichedTree);
+
+        // Initialize expanded categories (expand top level by default)
+        const topLevelIds = enrichedTree.map((n: TreeNode) => n.id);
+        setExpandedCategories(new Set(topLevelIds));
       } catch (error) {
         console.error("Error fetching category analysis data:", error);
       } finally {
@@ -123,29 +176,55 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     }
   }, [rfpId]);
 
-  // Poll for completed analysis results
+  // Poll for completed analysis results and update tree
   useEffect(() => {
     if (!lastAnalysisId) return;
 
     const pollForResults = async () => {
       try {
-        // Fetch completed analysis tasks for this RFP with results
         const response = await fetch(
           `/api/rfps/${rfpId}/analyze-defense/results?analysisId=${lastAnalysisId}`
         );
         const data = await response.json();
 
-        if (data.analyses) {
-          const analyses: Record<string, CategoryAnalysis> = {};
+        if (data.analyses && data.analyses.length > 0) {
+          // Build analysis map
+          const analysisMap: Record<
+            string,
+            { forces: string[]; faiblesses: string[] }
+          > = {};
           data.analyses.forEach((task: any) => {
             if (task.category_id && task.result) {
-              analyses[task.category_id] = {
+              analysisMap[task.category_id] = {
                 forces: task.result.forces || [],
                 faiblesses: task.result.faiblesses || [],
               };
             }
           });
-          setCategoryAnalyses(analyses);
+
+          // Update tree with new analyses
+          setTree((prevTree) => {
+            const enrichTree = (nodes: TreeNode[]): TreeNode[] => {
+              return nodes.map((node) => {
+                if (node.type === "category" && analysisMap[node.id]) {
+                  return {
+                    ...node,
+                    analysis: analysisMap[node.id],
+                    children: node.children
+                      ? enrichTree(node.children)
+                      : undefined,
+                  };
+                }
+                return {
+                  ...node,
+                  children: node.children
+                    ? enrichTree(node.children)
+                    : undefined,
+                };
+              });
+            };
+            return enrichTree(prevTree);
+          });
         }
       } catch (error) {
         console.error("Error fetching analysis results:", error);
@@ -699,29 +778,49 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                       </div>
                     </td>
                     <td className="px-6 py-4 border-r text-slate-600">
-                      {categoryAnalyses[category.id]?.forces ? (
-                        <ul className="space-y-1 text-xs">
-                          {categoryAnalyses[category.id].forces.map(
-                            (force, idx) => (
-                              <li key={idx} className="flex gap-2">
-                                <span className="flex-shrink-0">✓</span>
-                                <span className="break-words">{force}</span>
-                              </li>
-                            )
-                          )}
-                        </ul>
-                      ) : (
-                        <span className="text-slate-400 italic">
-                          À compléter
-                        </span>
-                      )}
+                      {(() => {
+                        console.log(
+                          `[NEW RENDER] ${category.code} (${category.id}):`,
+                          {
+                            has_analysis: !!category.analysis,
+                            forces_count:
+                              category.analysis?.forces?.length || 0,
+                            forces_sample:
+                              category.analysis?.forces?.[0]?.substring(0, 30),
+                          }
+                        );
+                        return category.analysis?.forces &&
+                          category.analysis.forces.length > 0 ? (
+                          <ul className="space-y-1 text-xs">
+                            {category.analysis.forces.map(
+                              (force: string, idx: number) => (
+                                <li
+                                  key={`${category.id}-force-${idx}`}
+                                  className="flex gap-2"
+                                >
+                                  <span className="flex-shrink-0">✓</span>
+                                  <span className="break-words">{force}</span>
+                                </li>
+                              )
+                            )}
+                          </ul>
+                        ) : (
+                          <span className="text-slate-400 italic">
+                            À compléter
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 border-r text-slate-600">
-                      {categoryAnalyses[category.id]?.faiblesses ? (
+                      {category.analysis?.faiblesses &&
+                      category.analysis.faiblesses.length > 0 ? (
                         <ul className="space-y-1 text-xs">
-                          {categoryAnalyses[category.id].faiblesses.map(
-                            (weakness, idx) => (
-                              <li key={idx} className="flex gap-2">
+                          {category.analysis.faiblesses.map(
+                            (weakness: string, idx: number) => (
+                              <li
+                                key={`${category.id}-weakness-${idx}`}
+                                className="flex gap-2"
+                              >
                                 <span className="flex-shrink-0">✗</span>
                                 <span className="break-words">{weakness}</span>
                               </li>

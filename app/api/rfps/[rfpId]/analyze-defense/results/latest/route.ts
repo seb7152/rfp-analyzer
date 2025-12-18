@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 export async function GET(
@@ -63,16 +63,37 @@ export async function GET(
           ? JSON.parse(latestAnalysis.analysis_data)
           : latestAnalysis.analysis_data;
 
+      console.log(
+        "[/latest] analysis_data keys count:",
+        Object.keys(analysisData).length
+      );
+      console.log(
+        "[/latest] analysis_data object:",
+        JSON.stringify(analysisData, null, 2)
+      );
+
       const resultAnalyses = Object.entries(analysisData).map(
-        ([categoryId, data]: [string, any]) => ({
-          id: categoryId,
-          category_id: categoryId,
-          status: "completed",
-          result: {
-            forces: data.forces || [],
-            faiblesses: data.faiblesses || [],
-          },
-        })
+        ([categoryId, data]: [string, any]) => {
+          console.log(`[/latest] Entry for ${categoryId}:`, {
+            forces_count: data.forces?.length,
+            faiblesses_count: data.faiblesses?.length,
+            sample_force: data.forces?.[0]?.substring(0, 50),
+          });
+          return {
+            id: categoryId,
+            category_id: categoryId,
+            status: "completed",
+            result: {
+              forces: data.forces || [],
+              faiblesses: data.faiblesses || [],
+            },
+          };
+        }
+      );
+
+      console.log(
+        "[/latest] Final resultAnalyses count:",
+        resultAnalyses.length
       );
 
       return NextResponse.json({
