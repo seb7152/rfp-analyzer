@@ -60,6 +60,19 @@ export async function GET(
       );
 
       responses = responses.filter((r) => versionResponseIds.has(r.id));
+
+      // Also filter by supplier status to exclude removed suppliers
+      const { data: activeSupplierStatuses } = await supabase
+        .from("version_supplier_status")
+        .select("supplier_id")
+        .eq("version_id", versionId)
+        .in("shortlist_status", ["active", "shortlisted"]);
+
+      const activeSupplierIds = new Set(
+        (activeSupplierStatuses || []).map((status) => status.supplier_id)
+      );
+
+      responses = responses.filter((r) => activeSupplierIds.has(r.supplier_id));
     }
 
     // Fetch document availability for these suppliers

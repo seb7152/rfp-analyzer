@@ -11,7 +11,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronRight, Copy, Check, Sparkles, RefreshCw } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  Check,
+  Sparkles,
+  RefreshCw,
+} from "lucide-react";
 import { Supplier } from "@/types/supplier";
 
 // Types
@@ -53,27 +60,154 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const refreshAnalysisResults = async () => {
     try {
       setIsRefreshing(true);
+      console.log("[REFRESH] Refreshing analysis results");
+
+      // Reload all analyses from the server
       const resultsRes = await fetch(
         `/api/rfps/${rfpId}/analyze-defense/results/latest`
       );
       const resultsData = await resultsRes.json();
 
-      let analysisMap: Record<
+      const bySupplier: Record<
         string,
-        { forces: string[]; faiblesses: string[] }
+        Record<string, { forces: string[]; faiblesses: string[] }>
       > = {};
 
       if (resultsData.analyses && resultsData.analyses.length > 0) {
+        console.log("[REFRESH] Got", resultsData.analyses.length, "analyses");
+
         resultsData.analyses.forEach((task: any) => {
           if (task.category_id && task.result) {
-            analysisMap[task.category_id] = {
+            const supplierKey = task.supplier_id || "default";
+
+            if (!bySupplier[supplierKey]) {
+              bySupplier[supplierKey] = {};
+            }
+
+            bySupplier[supplierKey][task.category_id] = {
               forces: task.result.forces || [],
               faiblesses: task.result.faiblesses || [],
             };
           }
         });
+
+        console.log(
+          "[REFRESH] Built supplier map with keys:",
+          Object.keys(bySupplier)
+        );
+        setAllAnalysesBySupplier(bySupplier);
+
+        // Apply for current supplier
+        const analysisMap =
+          selectedSupplierId && bySupplier[selectedSupplierId]
+            ? bySupplier[selectedSupplierId]
+            : {};
+
+        const enrichTree = (nodes: TreeNode[]): TreeNode[] => {
+          return nodes.map((node) => {
+            if (node.type === "category" && analysisMap[node.id]) {
+              return {
+                ...node,
+                analysis: analysisMap[node.id],
+                children: node.children ? enrichTree(node.children) : undefined,
+              };
+            }
+            return {
+              ...node,
+              analysis: node.type === "category" ? undefined : node.analysis,
+              children: node.children ? enrichTree(node.children) : undefined,
+            };
+          });
+        };
+
+        const enrichedTree = enrichTree(tree || []);
+        setTree(enrichedTree);
+      }
+    } catch (error) {
+      console.error("Error refreshing analysis results:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Store all analyses grouped by supplier_id
+  const [allAnalysesBySupplier, setAllAnalysesBySupplier] = useState<
+    Record<
+      string,
+      Record<string, { forces: string[]; faiblesses: string[] }>
+    >
+  >({});
+
+  // Load analysis results when rfpId or selectedSupplierId changes
+  const loadAnalysisResults = async (supplierId: string | null) => {
+    try {
+      // First, load all analyses for this RFP if not already loaded
+      if (Object.keys(allAnalysesBySupplier).length === 0) {
+        console.log("[ANALYSIS LOADER] Loading all analyses for RFP");
+        const resultsRes = await fetch(
+          `/api/rfps/${rfpId}/analyze-defense/results/latest`
+        );
+        const resultsData = await resultsRes.json();
+
+        if (resultsData.analyses && resultsData.analyses.length > 0) {
+          console.log(
+            "[ANALYSIS LOADER] Got analyses, building map",
+            resultsData.analyses
+          );
+
+          // Build a map of analyses by supplier_id from the response
+          const bySupplier: Record<
+            string,
+            Record<string, { forces: string[]; faiblesses: string[] }>
+          > = {};
+
+          resultsData.analyses.forEach((task: any) => {
+            if (task.category_id && task.result) {
+              // Use supplier_id from response if available, otherwise use a default key
+              const supplierKey = task.supplier_id || "default";
+
+              if (!bySupplier[supplierKey]) {
+                bySupplier[supplierKey] = {};
+              }
+
+              bySupplier[supplierKey][task.category_id] = {
+                forces: task.result.forces || [],
+                faiblesses: task.result.faiblesses || [],
+              };
+
+              console.log(
+                `[ANALYSIS LOADER] Task for supplier ${supplierKey}, category ${task.category_id}:`,
+                {
+                  forces_count: task.result.forces?.length || 0,
+                  faiblesses_count: task.result.faiblesses?.length || 0,
+                }
+              );
+            }
+          });
+
+          console.log(
+            "[ANALYSIS LOADER] Built supplier map with keys:",
+            Object.keys(bySupplier)
+          );
+          setAllAnalysesBySupplier(bySupplier);
+        }
       }
 
+      // Now apply the analyses for the selected supplier to the tree
+      const analysisMap =
+        supplierId && allAnalysesBySupplier[supplierId]
+          ? allAnalysesBySupplier[supplierId]
+          : {};
+
+      console.log(
+        "[ANALYSIS LOADER] Applying analyses for supplier:",
+        supplierId,
+        "with",
+        Object.keys(analysisMap).length,
+        "categories"
+      );
+
+      // Update tree with loaded analyses
       const enrichTree = (nodes: TreeNode[]): TreeNode[] => {
         return nodes.map((node) => {
           if (node.type === "category" && analysisMap[node.id]) {
@@ -85,17 +219,22 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
           }
           return {
             ...node,
+            analysis: node.type === "category" ? undefined : node.analysis,
             children: node.children ? enrichTree(node.children) : undefined,
           };
         });
       };
 
-      const enrichedTree = enrichTree(tree || []);
-      setTree(enrichedTree);
+      setTree((prevTree) => {
+        const enrichedTree = enrichTree(prevTree || []);
+        console.log(
+          "[ANALYSIS LOADER] Updated tree for supplier:",
+          supplierId
+        );
+        return enrichedTree;
+      });
     } catch (error) {
-      console.error("Error refreshing analysis results:", error);
-    } finally {
-      setIsRefreshing(false);
+      console.error("Error in loadAnalysisResults:", error);
     }
   };
 
@@ -126,89 +265,22 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         setWeights(flatWeights);
 
         // Set first supplier as selected by default
+        let firstSupplierId: string | null = null;
         if (suppliersData.suppliers && suppliersData.suppliers.length > 0) {
-          setSelectedSupplierId(suppliersData.suppliers[0].id);
+          firstSupplierId = suppliersData.suppliers[0].id;
+          setSelectedSupplierId(firstSupplierId);
         }
 
-        // Load existing analysis results from /latest endpoint
-        let analysisMap: Record<
-          string,
-          { forces: string[]; faiblesses: string[] }
-        > = {};
-        try {
-          const resultsRes = await fetch(
-            `/api/rfps/${rfpId}/analyze-defense/results/latest`
-          );
-          const resultsData = await resultsRes.json();
-
-          if (resultsData.analyses && resultsData.analyses.length > 0) {
-            console.log(
-              "[NEW APPROACH] Building analysis map from",
-              resultsData.analyses.length,
-              "tasks"
-            );
-
-            resultsData.analyses.forEach((task: any, index: number) => {
-              if (task.category_id && task.result) {
-                analysisMap[task.category_id] = {
-                  forces: task.result.forces || [],
-                  faiblesses: task.result.faiblesses || [],
-                };
-                if (index < 3) {
-                  console.log(`[NEW APPROACH] Mapped ${task.category_id}:`, {
-                    forces_sample: task.result.forces?.[0]?.substring(0, 40),
-                    forces_count: task.result.forces?.length,
-                  });
-                }
-              }
-            });
-          }
-        } catch (error) {
-          console.error("Error loading existing analysis results:", error);
-        }
-
-        // NOW inject analyses directly into tree nodes
-        const enrichTree = (nodes: TreeNode[]): TreeNode[] => {
-          return nodes.map((node) => {
-            if (node.type === "category" && analysisMap[node.id]) {
-              return {
-                ...node,
-                analysis: analysisMap[node.id],
-                children: node.children ? enrichTree(node.children) : undefined,
-              };
-            }
-            return {
-              ...node,
-              children: node.children ? enrichTree(node.children) : undefined,
-            };
-          });
-        };
-
-        const enrichedTree = enrichTree(treeData || []);
-        console.log(
-          "[NEW APPROACH] Enriched tree, checking first 3 categories:"
-        );
-        let count = 0;
-        const checkTree = (nodes: TreeNode[]) => {
-          for (const node of nodes) {
-            if (node.type === "category" && count < 3) {
-              console.log(`  ${node.code} (${node.id}):`, {
-                has_analysis: !!node.analysis,
-                forces_count: node.analysis?.forces?.length,
-                forces_sample: node.analysis?.forces?.[0]?.substring(0, 40),
-              });
-              count++;
-            }
-            if (node.children) checkTree(node.children);
-          }
-        };
-        checkTree(enrichedTree);
-
-        setTree(enrichedTree);
+        setTree(treeData || []);
 
         // Initialize expanded categories (expand top level by default)
-        const topLevelIds = enrichedTree.map((n: TreeNode) => n.id);
+        const topLevelIds = (treeData || []).map((n: TreeNode) => n.id);
         setExpandedCategories(new Set(topLevelIds));
+
+        // Load analysis results for the first supplier
+        if (firstSupplierId) {
+          await loadAnalysisResults(firstSupplierId);
+        }
       } catch (error) {
         console.error("Error fetching category analysis data:", error);
       } finally {
@@ -220,6 +292,13 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       fetchData();
     }
   }, [rfpId]);
+
+  // Reload analysis results when selected supplier changes
+  useEffect(() => {
+    if (selectedSupplierId && rfpId) {
+      loadAnalysisResults(selectedSupplierId);
+    }
+  }, [selectedSupplierId, rfpId]);
 
   // Poll for completed analysis results and update tree
   useEffect(() => {
@@ -674,7 +753,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
               className="gap-2"
               title="Rafraîchir les analyses"
             >
-              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+              <RefreshCw
+                className={cn("h-4 w-4", isRefreshing && "animate-spin")}
+              />
             </Button>
             <Button
               variant="outline"

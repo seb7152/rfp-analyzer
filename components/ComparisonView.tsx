@@ -154,7 +154,10 @@ export function ComparisonView({
         if (supplierId && response.supplier.id !== supplierId) {
           return;
         }
-        supplierMap.set(response.supplier.id, response.supplier);
+        // Only include supplier if it's not removed in current version
+        if (response.supplier.shortlist_status !== "removed") {
+          supplierMap.set(response.supplier.id, response.supplier);
+        }
       }
     });
     return Array.from(supplierMap.values());
