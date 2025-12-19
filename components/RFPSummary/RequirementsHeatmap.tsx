@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useVersion } from "@/contexts/VersionContext";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Select,
@@ -76,6 +77,7 @@ export function RequirementsHeatmap({
   rfpId,
   selectedCategoryId,
 }: RequirementsHeatmapProps) {
+  const { activeVersion } = useVersion();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [requirements, setRequirements] = useState<RequirementTreeNode[]>([]);
   const [responses, setResponses] = useState<Response[]>([]);
@@ -96,8 +98,12 @@ export function RequirementsHeatmap({
         const treeRes = await fetch(`/api/rfps/${rfpId}/tree`);
         const treeData = await treeRes.json();
 
-        // Fetch responses
-        const responsesRes = await fetch(`/api/rfps/${rfpId}/responses`);
+        // Fetch responses with versionId if available
+        let responsesUrl = `/api/rfps/${rfpId}/responses`;
+        if (activeVersion?.id) {
+          responsesUrl += `?versionId=${activeVersion.id}`;
+        }
+        const responsesRes = await fetch(responsesUrl);
         const responsesData = await responsesRes.json();
 
         setSuppliers(suppliersData.suppliers || []);
@@ -113,7 +119,7 @@ export function RequirementsHeatmap({
     if (rfpId) {
       fetchData();
     }
-  }, [rfpId]);
+  }, [rfpId, activeVersion?.id]);
 
   // Flatten requirements tree
   const flatRequirements = useMemo(() => {
