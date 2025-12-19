@@ -1023,7 +1023,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
               Vue agrandie du tableau d'analyse des catégories
             </DialogDescription>
           </DialogHeader>
-          <Card className="w-full overflow-hidden h-full flex flex-col border-0 rounded-none">
+          <Card className="w-full overflow-hidden flex-1 flex flex-col border-0 rounded-none">
             {cardContent}
           </Card>
         </DialogContent>
