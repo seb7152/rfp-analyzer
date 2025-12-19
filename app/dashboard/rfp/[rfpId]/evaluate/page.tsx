@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useRequirements } from "@/hooks/use-requirements";
 import { useRFPCompletion } from "@/hooks/use-completion";
+import { useAllResponses } from "@/hooks/use-all-responses";
 import { Sidebar } from "@/components/Sidebar";
 import { ComparisonView } from "@/components/ComparisonView";
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
@@ -54,6 +55,21 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
 
   const { percentage: completionPercentage, isLoading: completionLoading } =
     useRFPCompletion(params.rfpId);
+
+  // Load all responses for filter evaluation
+  const { data: allResponsesData } = useAllResponses(params.rfpId);
+  const allResponses = (allResponsesData as any)?.responses || [];
+
+  // Determine if this is a single supplier view: when supplierId is present in query params
+  const isSingleSupplierView = !!supplierId;
+
+  // Filter responses to the current supplier if in single supplier view
+  const filteredResponses = useMemo(() => {
+    if (!isSingleSupplierView) return allResponses;
+    return allResponses.filter(
+      (r: any) => r.supplier_id === supplierId
+    );
+  }, [allResponses, supplierId, isSingleSupplierView]);
 
   // Fetch RFP data and responses count
   useEffect(() => {
@@ -239,6 +255,8 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
               rfpId={params.rfpId}
               selectedRequirementId={selectedRequirementId}
               onSelectRequirement={setSelectedRequirementId}
+              responses={filteredResponses}
+              isSingleSupplier={isSingleSupplierView}
             />
           </div>
 
