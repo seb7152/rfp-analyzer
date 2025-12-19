@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useVersion } from "@/contexts/VersionContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +27,10 @@ import {
   Sparkles,
   RefreshCw,
   Maximize2,
+  AlertTriangle,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Supplier } from "@/types/supplier";
 
 // Types
@@ -48,10 +52,20 @@ interface CategoryAnalysisTableProps {
   rfpId: string;
 }
 
+interface SupplierStatus {
+  id: string;
+  shortlist_status: "active" | "shortlisted" | "removed";
+  removal_reason?: string | null;
+}
+
 export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
+  const { activeVersion, versions } = useVersion();
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [supplierStatuses, setSupplierStatuses] = useState<
+    Record<string, SupplierStatus>
+  >({});
   const [weights, setWeights] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
@@ -59,6 +73,10 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   );
   const [copied, setCopied] = useState(false);
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(
+    null
+  );
+  // Initialize with activeVersion, fallback to first version if available
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
     null
   );
   const [analysisLoading, setAnalysisLoading] = useState(false);
@@ -72,9 +90,11 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       console.log("[REFRESH] Refreshing analysis results");
 
       // Reload all analyses from the server
-      const resultsRes = await fetch(
-        `/api/rfps/${rfpId}/analyze-defense/results/latest`
-      );
+      let resultsUrl = `/api/rfps/${rfpId}/analyze-defense/results/latest`;
+      if (selectedVersionId) {
+        resultsUrl += `?versionId=${selectedVersionId}`;
+      }
+      const resultsRes = await fetch(resultsUrl);
       const resultsData = await resultsRes.json();
 
       const bySupplier: Record<
@@ -141,21 +161,23 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
 
   // Store all analyses grouped by supplier_id
   const [allAnalysesBySupplier, setAllAnalysesBySupplier] = useState<
-    Record<
-      string,
-      Record<string, { forces: string[]; faiblesses: string[] }>
-    >
+    Record<string, Record<string, { forces: string[]; faiblesses: string[] }>>
   >({});
 
   // Load analysis results when rfpId or selectedSupplierId changes
-  const loadAnalysisResults = async (supplierId: string | null) => {
+  const loadAnalysisResults = async (
+    supplierId: string | null,
+    versionId: string | null = null
+  ) => {
     try {
       // First, load all analyses for this RFP if not already loaded
       if (Object.keys(allAnalysesBySupplier).length === 0) {
         console.log("[ANALYSIS LOADER] Loading all analyses for RFP");
-        const resultsRes = await fetch(
-          `/api/rfps/${rfpId}/analyze-defense/results/latest`
-        );
+        let resultsUrl = `/api/rfps/${rfpId}/analyze-defense/results/latest`;
+        if (versionId) {
+          resultsUrl += `?versionId=${versionId}`;
+        }
+        const resultsRes = await fetch(resultsUrl);
         const resultsData = await resultsRes.json();
 
         if (resultsData.analyses && resultsData.analyses.length > 0) {
@@ -236,10 +258,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
 
       setTree((prevTree) => {
         const enrichedTree = enrichTree(prevTree || []);
-        console.log(
-          "[ANALYSIS LOADER] Updated tree for supplier:",
-          supplierId
-        );
+        console.log("[ANALYSIS LOADER] Updated tree for supplier:", supplierId);
         return enrichedTree;
       });
     } catch (error) {
@@ -248,14 +267,35 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   };
 
   useEffect(() => {
+    console.log(
+      "[CATEGORY ANALYSIS] useEffect triggered! rfpId:",
+      rfpId,
+      "activeVersion:",
+      activeVersion
+    );
+
     async function fetchData() {
       try {
         setLoading(true);
+        console.log("[CATEGORY ANALYSIS] fetchData started, rfpId:", rfpId);
+
+        // Build suppliers URL with versionId if available
+        let suppliersUrl = `/api/rfps/${rfpId}/suppliers`;
+        if (activeVersion?.id) {
+          suppliersUrl += `?versionId=${activeVersion.id}`;
+        }
+
+        // Build responses URL with versionId if available
+        let responsesUrl = `/api/rfps/${rfpId}/responses`;
+        if (activeVersion?.id) {
+          responsesUrl += `?versionId=${activeVersion.id}`;
+        }
+
         const [treeRes, responsesRes, suppliersRes, weightsRes] =
           await Promise.all([
             fetch(`/api/rfps/${rfpId}/tree`),
-            fetch(`/api/rfps/${rfpId}/responses`),
-            fetch(`/api/rfps/${rfpId}/suppliers`),
+            fetch(responsesUrl),
+            fetch(suppliersUrl),
             fetch(`/api/rfps/${rfpId}/weights`),
           ]);
         const treeData = await treeRes.json();
@@ -263,8 +303,69 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         const suppliersData = await suppliersRes.json();
         const weightsData = await weightsRes.json();
 
+        console.log("[CATEGORY ANALYSIS] Responses URL was:", responsesUrl);
+        console.log("[CATEGORY ANALYSIS] Suppliers URL was:", suppliersUrl);
+        console.log(
+          "[CATEGORY ANALYSIS] Responses data received:",
+          responsesData.responses?.length
+        );
+        console.log(
+          "[CATEGORY ANALYSIS] Suppliers data received:",
+          suppliersData.suppliers?.length
+        );
+        if (suppliersData.suppliers && suppliersData.suppliers.length > 0) {
+          console.log("[CATEGORY ANALYSIS] First supplier:", {
+            id: suppliersData.suppliers[0].id,
+            name: suppliersData.suppliers[0].name,
+            shortlist_status: suppliersData.suppliers[0].shortlist_status,
+            removal_reason: suppliersData.suppliers[0].removal_reason,
+          });
+        }
+
         setResponses(responsesData.responses || []);
         setSuppliers(suppliersData.suppliers || []);
+
+        // Build supplier statuses map
+        const statusMap: Record<string, SupplierStatus> = {};
+        if (suppliersData.suppliers) {
+          suppliersData.suppliers.forEach((supplier: any) => {
+            statusMap[supplier.id] = {
+              id: supplier.id,
+              shortlist_status: supplier.shortlist_status || "active",
+              removal_reason: supplier.removal_reason || null,
+            };
+          });
+        }
+
+        console.log(
+          "[CATEGORY ANALYSIS] Status map built, size:",
+          Object.keys(statusMap).length
+        );
+        if (Object.keys(statusMap).length > 0) {
+          const firstKey = Object.keys(statusMap)[0];
+          console.log(
+            "[CATEGORY ANALYSIS] First status entry:",
+            firstKey,
+            statusMap[firstKey]
+          );
+        }
+
+        // Also log for Witco if it exists
+        const witcoId = suppliersData.suppliers?.find((s: any) =>
+          s.name?.includes("Witco")
+        )?.id;
+        if (witcoId) {
+          console.log(
+            "[CATEGORY ANALYSIS] Witco found, id:",
+            witcoId,
+            "status:",
+            statusMap[witcoId]
+          );
+        } else {
+          console.log("[CATEGORY ANALYSIS] Witco NOT found in suppliers list");
+        }
+
+        setSupplierStatuses(statusMap);
 
         // Flatten weights (requirements only)
         const flatWeights: Record<string, number> = {};
@@ -288,7 +389,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
 
         // Load analysis results for the first supplier
         if (firstSupplierId) {
-          await loadAnalysisResults(firstSupplierId);
+          await loadAnalysisResults(firstSupplierId, activeVersion?.id || null);
         }
       } catch (error) {
         console.error("Error fetching category analysis data:", error);
@@ -297,17 +398,43 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       }
     }
 
+    console.log(
+      "[CATEGORY ANALYSIS] About to call fetchData, rfpId check:",
+      !!rfpId
+    );
     if (rfpId) {
       fetchData();
+    } else {
+      console.log("[CATEGORY ANALYSIS] ERROR: rfpId is missing!");
     }
-  }, [rfpId]);
+  }, [rfpId, activeVersion?.id]);
 
-  // Reload analysis results when selected supplier changes
+  // Sync selected version with active version, with fallback to first version
+  useEffect(() => {
+    if (activeVersion?.id) {
+      console.log(
+        "[CategoryAnalysisTable] Setting selectedVersionId from activeVersion:",
+        activeVersion.id
+      );
+      setSelectedVersionId(activeVersion.id);
+    } else if (versions && versions.length > 0) {
+      console.log(
+        "[CategoryAnalysisTable] No activeVersion, using first version:",
+        versions[0].id
+      );
+      setSelectedVersionId(versions[0].id);
+    } else {
+      console.log("[CategoryAnalysisTable] No versions available");
+      setSelectedVersionId(null);
+    }
+  }, [activeVersion?.id, versions]);
+
+  // Reload analysis results when selected supplier or version changes
   useEffect(() => {
     if (selectedSupplierId && rfpId) {
-      loadAnalysisResults(selectedSupplierId);
+      loadAnalysisResults(selectedSupplierId, selectedVersionId);
     }
-  }, [selectedSupplierId, rfpId]);
+  }, [selectedSupplierId, selectedVersionId, rfpId]);
 
   // Poll for completed analysis results and update tree
   useEffect(() => {
@@ -667,7 +794,21 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         return;
       }
 
+      if (!selectedVersionId) {
+        console.error("No version selected. Available versions:", versions);
+        alert("Please select a version or ensure versions are loaded");
+        return;
+      }
+
       setAnalysisLoading(true);
+
+      const payload = {
+        supplierId: selectedSupplierId,
+        versionId: selectedVersionId,
+      };
+      console.log("[triggerAnalysis] Payload being sent:", payload);
+      console.log("[triggerAnalysis] activeVersion:", activeVersion);
+      console.log("[triggerAnalysis] selectedVersionId is:", selectedVersionId);
 
       // Call backend API to initiate async analysis
       const response = await fetch(`/api/rfps/${rfpId}/analyze-defense`, {
@@ -675,10 +816,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          supplierId: selectedSupplierId,
-          versionId: null,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -716,6 +854,13 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     }
   };
 
+  console.log(
+    "[CATEGORY ANALYSIS RENDER] Component rendering, loading:",
+    loading,
+    "suppliers:",
+    suppliers?.length
+  );
+
   if (loading) {
     return (
       <div className="py-8 text-center text-slate-500">
@@ -727,92 +872,160 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const cardContent = (
     <>
       <CardHeader className="pb-4">
-        <div className="flex flex-row items-center justify-between gap-4">
-          <CardTitle className="text-lg font-medium">
-            Analyse par Catégorie
-          </CardTitle>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsModalOpen(true)}
-              className="gap-2"
-              title="Agrandir le tableau"
-            >
-              <Maximize2 className="h-4 w-4" />
-            </Button>
-            {suppliers.length > 0 && (
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-slate-700">
-                  Soumissionnaire:
-                </label>
-                <Select
-                  value={selectedSupplierId || ""}
-                  onValueChange={setSelectedSupplierId}
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Sélectionner un soumissionnaire" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {suppliers.map((supplier) => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={refreshAnalysisResults}
-              disabled={isRefreshing}
-              className="gap-2"
-              title="Rafraîchir les analyses"
-            >
-              <RefreshCw
-                className={cn("h-4 w-4", isRefreshing && "animate-spin")}
-              />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={triggerAnalysis}
-              disabled={analysisLoading || !selectedSupplierId}
-              className="gap-2"
-            >
-              {analysisLoading ? (
-                <>
-                  <span className="animate-spin">✨</span>
-                  Analyse...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  Analyser
-                </>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-row items-center justify-between gap-4">
+            <CardTitle className="text-lg font-medium">
+              Analyse par Catégorie
+            </CardTitle>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsModalOpen(true)}
+                className="gap-2"
+                title="Agrandir le tableau"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+              {suppliers.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Soumissionnaire:
+                  </label>
+                  <Select
+                    value={selectedSupplierId || ""}
+                    onValueChange={setSelectedSupplierId}
+                  >
+                    <SelectTrigger className="w-64">
+                      <SelectValue placeholder="Sélectionner un soumissionnaire" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {suppliers.map((supplier) => {
+                        const status = supplierStatuses[supplier.id];
+                        if (supplier.name?.includes("Witco")) {
+                          console.log(
+                            "[CATEGORY ANALYSIS RENDER] Witco selectitem - status:",
+                            status
+                          );
+                        }
+                        return (
+                          <SelectItem key={supplier.id} value={supplier.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{supplier.name}</span>
+                              {status &&
+                                status.shortlist_status !== "active" && (
+                                  <Badge
+                                    variant={
+                                      status.shortlist_status === "removed"
+                                        ? "destructive"
+                                        : "secondary"
+                                    }
+                                    className="text-xs"
+                                  >
+                                    {status.shortlist_status === "removed"
+                                      ? "Supprimé"
+                                      : "Sélectionné"}
+                                  </Badge>
+                                )}
+                              {status?.removal_reason && (
+                                <span className="text-xs text-slate-500 ml-2">
+                                  ({status.removal_reason})
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={copyToClipboard}
-              className="gap-2"
-            >
-              {copied ? (
-                <>
-                  <Check className="h-4 w-4" />
-                  Copié!
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4" />
-                  Copier en Markdown
-                </>
-              )}
-            </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refreshAnalysisResults}
+                disabled={isRefreshing}
+                className="gap-2"
+                title="Rafraîchir les analyses"
+              >
+                <RefreshCw
+                  className={cn("h-4 w-4", isRefreshing && "animate-spin")}
+                />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={triggerAnalysis}
+                disabled={analysisLoading || !selectedSupplierId}
+                className="gap-2"
+              >
+                {analysisLoading ? (
+                  <>
+                    <span className="animate-spin">✨</span>
+                    Analyse...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Analyser
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyToClipboard}
+                className="gap-2"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Copié!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    Copier en Markdown
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
+          {/* Display supplier status and notes */}
+          {selectedSupplierId &&
+            (() => {
+              const status = supplierStatuses[selectedSupplierId];
+              console.log(
+                "[CATEGORY ANALYSIS ALERT] Selected supplier:",
+                selectedSupplierId,
+                "status:",
+                status
+              );
+              return (
+                status && (
+                  <div className="flex flex-col gap-2">
+                    {status.shortlist_status === "removed" &&
+                      status.removal_reason && (
+                        <Alert variant="destructive">
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertDescription>
+                            <strong>Raison de la suppression:</strong>{" "}
+                            {status.removal_reason}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    {status.shortlist_status === "shortlisted" && (
+                      <Alert>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          Ce fournisseur a été sélectionné pour cette version.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                )
+              );
+            })()}
         </div>
       </CardHeader>
       <CardContent className="p-0 flex-1 flex flex-col min-h-0">
@@ -1011,9 +1224,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
 
   return (
     <>
-      <Card className="w-full overflow-hidden mb-8 h-full">
-        {cardContent}
-      </Card>
+      <Card className="w-full overflow-hidden mb-8 h-full">{cardContent}</Card>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-[95vw] h-[95vh] flex flex-col p-0 gap-0 overflow-hidden">

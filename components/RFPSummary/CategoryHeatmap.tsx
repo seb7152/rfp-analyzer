@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useVersion } from "@/contexts/VersionContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Supplier } from "@/types/supplier";
@@ -45,6 +46,7 @@ export function CategoryHeatmap({
   onCategorySelect,
   selectedCategoryId,
 }: CategoryHeatmapProps) {
+  const { activeVersion } = useVersion();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [responses, setResponses] = useState<Response[]>([]);
@@ -59,11 +61,17 @@ export function CategoryHeatmap({
       try {
         setLoading(true);
 
+        // Build responses URL with versionId if available
+        let responsesUrl = `/api/rfps/${rfpId}/responses`;
+        if (activeVersion?.id) {
+          responsesUrl += `?versionId=${activeVersion.id}`;
+        }
+
         const [suppliersRes, treeRes, responsesRes, weightsRes] =
           await Promise.all([
             fetch(`/api/rfps/${rfpId}/suppliers`),
             fetch(`/api/rfps/${rfpId}/tree`),
-            fetch(`/api/rfps/${rfpId}/responses`),
+            fetch(responsesUrl),
             fetch(`/api/rfps/${rfpId}/weights`),
           ]);
 
@@ -96,7 +104,7 @@ export function CategoryHeatmap({
     if (rfpId) {
       fetchData();
     }
-  }, [rfpId]);
+  }, [rfpId, activeVersion?.id]);
 
   // Process data to calculate category scores
   const categoryScores = useMemo(() => {

@@ -6,7 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RequirementsTreeView } from "./RequirementsTreeView";
-import { EvaluationFilters, type EvaluationFilterState } from "./EvaluationFilters";
+import {
+  EvaluationFilters,
+  type EvaluationFilterState,
+} from "./EvaluationFilters";
 import { useRequirementsTree } from "@/hooks/use-requirements";
 import type { TreeNode } from "@/hooks/use-requirements";
 import type { ResponseWithSupplier } from "@/hooks/use-responses";
@@ -132,7 +135,8 @@ export function Sidebar({
 
       // Check questions filter
       if (filters.hasQuestions !== null) {
-        const hasQuestions = !!response.question && response.question.trim().length > 0;
+        const hasQuestions =
+          !!response.question && response.question.trim().length > 0;
         if (filters.hasQuestions !== hasQuestions) {
           return;
         }
@@ -141,7 +145,8 @@ export function Sidebar({
       // Check manual comments filter
       if (filters.hasManualComments !== null) {
         const hasComments =
-          !!response.manual_comment && response.manual_comment.trim().length > 0;
+          !!response.manual_comment &&
+          response.manual_comment.trim().length > 0;
         if (filters.hasManualComments !== hasComments) {
           return;
         }
@@ -179,10 +184,14 @@ export function Sidebar({
 
         // Check evaluation filter match (only for requirements, not categories)
         const matchesEvaluation =
-          node.type === "category" || !hasEvaluationFilters || filteredRequirementIds.has(node.id);
+          node.type === "category" ||
+          !hasEvaluationFilters ||
+          filteredRequirementIds.has(node.id);
 
         // Filter children
-        const filteredChildren = node.children ? filterNodes(node.children) : [];
+        const filteredChildren = node.children
+          ? filterNodes(node.children)
+          : [];
 
         // Include node if it matches or has matching children
         if (

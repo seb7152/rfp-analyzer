@@ -44,24 +44,11 @@ export async function GET(
       return NextResponse.json({ error: "RFP not found" }, { status: 404 });
     }
 
-    // Fetch responses with supplier information
-    let responses = await getResponsesForRFP(rfpId, requirementId);
+    // Fetch responses with supplier information, passing versionId if provided
+    let responses = await getResponsesForRFP(rfpId, requirementId, versionId);
 
-    // Filter by version if provided
+    // Filter by supplier status to exclude removed suppliers if version is specified
     if (versionId) {
-      const { data: versionResponses } = await supabase
-        .from("responses")
-        .select("id")
-        .eq("version_id", versionId)
-        .eq("rfp_id", rfpId);
-
-      const versionResponseIds = new Set(
-        (versionResponses || []).map((r) => r.id)
-      );
-
-      responses = responses.filter((r) => versionResponseIds.has(r.id));
-
-      // Also filter by supplier status to exclude removed suppliers
       const { data: activeSupplierStatuses } = await supabase
         .from("version_supplier_status")
         .select("supplier_id")

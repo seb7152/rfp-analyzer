@@ -53,6 +53,11 @@ serve(async (req) => {
       payload.correlation_id ||
       payload.data?.correlationId ||
       payload.data?.correlation_id;
+    const versionId =
+      payload.versionId ||
+      payload.version_id ||
+      payload.data?.versionId ||
+      payload.data?.version_id;
     let status =
       payload.status ||
       payload.data?.status ||
@@ -148,6 +153,44 @@ serve(async (req) => {
     console.log(
       `[analyze-defense-callback] Task ${taskId} updated with status ${status}, analysisId: ${analysisId}`
     );
+
+    // Validate version_id consistency if provided by N8N
+    if (versionId) {
+      const { data: analysis, error: analysisError } = await supabase
+        .from("defense_analyses")
+        .select("version_id")
+        .eq("id", analysisId)
+        .single();
+
+      if (analysisError || !analysis) {
+        console.error(
+          `[analyze-defense-callback] Analysis not found: ${analysisId}`
+        );
+        return new Response(
+          JSON.stringify({ error: `Analysis ${analysisId} not found` }),
+          { status: 404, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      if (versionId !== analysis.version_id) {
+        console.error(
+          `[analyze-defense-callback] Version mismatch for analysis ${analysisId}:`,
+          { expected: analysis.version_id, received: versionId }
+        );
+        return new Response(
+          JSON.stringify({
+            error: "Version mismatch",
+            expected: analysis.version_id,
+            received: versionId,
+          }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log(
+        `[analyze-defense-callback] Version validation passed for analysis ${analysisId}`
+      );
+    }
 
     // Check if all LEAF tasks (hierarchy_level = 0) for this analysis are complete
     // Parent tasks (hierarchy_level = 1) are for synthesis and will be handled separately
