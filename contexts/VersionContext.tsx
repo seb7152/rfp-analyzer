@@ -12,7 +12,9 @@ interface VersionContextType {
   refreshVersions: () => Promise<void>;
 }
 
-export const VersionContext = createContext<VersionContextType | undefined>(undefined);
+export const VersionContext = createContext<VersionContextType | undefined>(
+  undefined
+);
 
 interface VersionProviderProps {
   children: React.ReactNode;
