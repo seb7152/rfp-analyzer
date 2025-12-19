@@ -1016,7 +1016,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       </Card>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogContent className="max-w-[95vw] h-[95vh] flex flex-col p-0 gap-0 overflow-hidden">
           <DialogHeader className="px-6 py-4 border-b border-slate-200 bg-white flex-shrink-0">
             <DialogTitle>Analyse par Catégorie - Agrandie</DialogTitle>
             <DialogDescription>
