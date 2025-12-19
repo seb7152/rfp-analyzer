@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useVersion } from "@/contexts/VersionContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +27,10 @@ import {
   Sparkles,
   RefreshCw,
   Maximize2,
+  AlertTriangle,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Supplier } from "@/types/supplier";
 
 // Types
@@ -48,10 +52,18 @@ interface CategoryAnalysisTableProps {
   rfpId: string;
 }
 
+interface SupplierStatus {
+  id: string;
+  shortlist_status: "active" | "shortlisted" | "removed";
+  removal_reason?: string | null;
+}
+
 export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
+  const { activeVersion } = useVersion();
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [supplierStatuses, setSupplierStatuses] = useState<Record<string, SupplierStatus>>({});
   const [weights, setWeights] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
@@ -251,11 +263,18 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     async function fetchData() {
       try {
         setLoading(true);
+
+        // Build suppliers URL with versionId if available
+        let suppliersUrl = `/api/rfps/${rfpId}/suppliers`;
+        if (activeVersion?.id) {
+          suppliersUrl += `?versionId=${activeVersion.id}`;
+        }
+
         const [treeRes, responsesRes, suppliersRes, weightsRes] =
           await Promise.all([
             fetch(`/api/rfps/${rfpId}/tree`),
             fetch(`/api/rfps/${rfpId}/responses`),
-            fetch(`/api/rfps/${rfpId}/suppliers`),
+            fetch(suppliersUrl),
             fetch(`/api/rfps/${rfpId}/weights`),
           ]);
         const treeData = await treeRes.json();
@@ -265,6 +284,19 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
 
         setResponses(responsesData.responses || []);
         setSuppliers(suppliersData.suppliers || []);
+
+        // Build supplier statuses map
+        const statusMap: Record<string, SupplierStatus> = {};
+        if (suppliersData.suppliers) {
+          suppliersData.suppliers.forEach((supplier: any) => {
+            statusMap[supplier.id] = {
+              id: supplier.id,
+              shortlist_status: supplier.shortlist_status || "active",
+              removal_reason: supplier.removal_reason || null,
+            };
+          });
+        }
+        setSupplierStatuses(statusMap);
 
         // Flatten weights (requirements only)
         const flatWeights: Record<string, number> = {};
@@ -300,7 +332,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     if (rfpId) {
       fetchData();
     }
-  }, [rfpId]);
+  }, [rfpId, activeVersion?.id]);
 
   // Reload analysis results when selected supplier changes
   useEffect(() => {
@@ -727,11 +759,12 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const cardContent = (
     <>
       <CardHeader className="pb-4">
-        <div className="flex flex-row items-center justify-between gap-4">
-          <CardTitle className="text-lg font-medium">
-            Analyse par Catégorie
-          </CardTitle>
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-row items-center justify-between gap-4">
+            <CardTitle className="text-lg font-medium">
+              Analyse par Catégorie
+            </CardTitle>
+            <div className="flex items-center gap-3">
             <Button
               variant="outline"
               size="sm"
@@ -750,15 +783,39 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                   value={selectedSupplierId || ""}
                   onValueChange={setSelectedSupplierId}
                 >
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-64">
                     <SelectValue placeholder="Sélectionner un soumissionnaire" />
                   </SelectTrigger>
                   <SelectContent>
-                    {suppliers.map((supplier) => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </SelectItem>
-                    ))}
+                    {suppliers.map((supplier) => {
+                      const status = supplierStatuses[supplier.id];
+                      return (
+                        <SelectItem key={supplier.id} value={supplier.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{supplier.name}</span>
+                            {status && status.shortlist_status !== "active" && (
+                              <Badge
+                                variant={
+                                  status.shortlist_status === "removed"
+                                    ? "destructive"
+                                    : "secondary"
+                                }
+                                className="text-xs"
+                              >
+                                {status.shortlist_status === "removed"
+                                  ? "Supprimé"
+                                  : "Sélectionné"}
+                              </Badge>
+                            )}
+                            {status?.removal_reason && (
+                              <span className="text-xs text-slate-500 ml-2">
+                                ({status.removal_reason})
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -813,6 +870,31 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
               )}
             </Button>
           </div>
+          </div>
+          {/* Display supplier status and notes */}
+          {selectedSupplierId && supplierStatuses[selectedSupplierId] && (
+            <div className="flex flex-col gap-2">
+              {supplierStatuses[selectedSupplierId].shortlist_status ===
+                "removed" && supplierStatuses[selectedSupplierId].removal_reason && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Raison de la suppression:</strong>{" "}
+                    {supplierStatuses[selectedSupplierId].removal_reason}
+                  </AlertDescription>
+                </Alert>
+              )}
+              {supplierStatuses[selectedSupplierId].shortlist_status ===
+                "shortlisted" && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    Ce fournisseur a été sélectionné pour cette version.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-0 flex-1 flex flex-col min-h-0">
