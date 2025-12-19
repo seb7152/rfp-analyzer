@@ -90,12 +90,15 @@ export function Sidebar({
 
   // Apply filters when user clicks the "Filtrer" button
   const handleApplyFilters = () => {
+    console.log("Applying filters:", filters);
     setAppliedFilters(filters);
   };
 
   // Build a set of requirement IDs that match the applied filters
   const filteredRequirementIds = useMemo(() => {
+    console.log("Recalculating filtered IDs. isSingleSupplier:", isSingleSupplier, "responses count:", responses.length, "appliedFilters:", appliedFilters);
     if (!isSingleSupplier || responses.length === 0) {
+      console.log("Returning empty set - isSingleSupplier or no responses");
       return new Set<string>();
     }
 
@@ -107,7 +110,9 @@ export function Sidebar({
       appliedFilters.hasQuestions !== null ||
       appliedFilters.hasManualComments !== null;
 
+    console.log("Has active filters:", hasActiveFilters);
     if (!hasActiveFilters) {
+      console.log("No active filters, returning empty set");
       return new Set<string>();
     }
 
@@ -162,6 +167,7 @@ export function Sidebar({
       matchingIds.add(response.requirement_id);
     });
 
+    console.log("Filtered result - matching IDs count:", matchingIds.size);
     return matchingIds;
   }, [responses, appliedFilters, isSingleSupplier]);
 
@@ -172,6 +178,7 @@ export function Sidebar({
     if (filters.scoreRange.min > 0 || filters.scoreRange.max < 5) count += 1;
     if (filters.hasQuestions !== null) count += 1;
     if (filters.hasManualComments !== null) count += 1;
+    console.log("Active filter count for badge:", count, "filters:", filters);
     return count;
   }, [filters]);
 
