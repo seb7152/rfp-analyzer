@@ -48,12 +48,21 @@ export async function GET(
     let suppliersToUse = suppliers || [];
     let supplierStatusesMap: Record<string, any> = {};
 
+    console.log("[SUPPLIERS API] rfpId:", rfpId, "versionId:", versionId);
+    console.log("[SUPPLIERS API] Total suppliers from DB:", suppliers?.length);
+
     if (versionId) {
       // Fetch all supplier statuses for this version
-      const { data: supplierStatuses } = await supabase
+      const { data: supplierStatuses, error: statusError } = await supabase
         .from("version_supplier_status")
         .select("supplier_id, shortlist_status, removal_reason")
         .eq("version_id", versionId);
+
+      console.log("[SUPPLIERS API] Supplier statuses fetched:", supplierStatuses?.length, "error:", statusError);
+
+      if (supplierStatuses && supplierStatuses.length > 0) {
+        console.log("[SUPPLIERS API] Sample statuses:", supplierStatuses.slice(0, 3));
+      }
 
       // Build a map of supplier statuses
       supplierStatusesMap = {};
@@ -64,6 +73,9 @@ export async function GET(
         };
       });
 
+      console.log("[SUPPLIERS API] Status map size:", Object.keys(supplierStatusesMap).length);
+      console.log("[SUPPLIERS API] Status map keys (first 3):", Object.keys(supplierStatusesMap).slice(0, 3));
+
       // Filter out removed suppliers
       const removedSupplierIds = new Set(
         (supplierStatuses || [])
@@ -71,9 +83,15 @@ export async function GET(
           .map((s: any) => s.supplier_id)
       );
 
+      console.log("[SUPPLIERS API] Removed suppliers count:", removedSupplierIds.size);
+
       suppliersToUse = suppliersToUse.filter(
         (s) => !removedSupplierIds.has(s.id)
       );
+
+      console.log("[SUPPLIERS API] Suppliers after filtering:", suppliersToUse.length);
+    } else {
+      console.log("[SUPPLIERS API] No versionId provided, skipping version filtering");
     }
 
     // Add status info to suppliers before returning
@@ -82,6 +100,18 @@ export async function GET(
       shortlist_status: supplierStatusesMap[supplier.id]?.shortlist_status || "active",
       removal_reason: supplierStatusesMap[supplier.id]?.removal_reason || null,
     }));
+
+    console.log(
+      "[SUPPLIERS API] Response - first supplier:",
+      suppliersWithStatus[0]
+        ? {
+            id: suppliersWithStatus[0].id,
+            name: suppliersWithStatus[0].name,
+            shortlist_status: suppliersWithStatus[0].shortlist_status,
+            removal_reason: suppliersWithStatus[0].removal_reason,
+          }
+        : null
+    );
 
     if (!includeStats) {
       return NextResponse.json({

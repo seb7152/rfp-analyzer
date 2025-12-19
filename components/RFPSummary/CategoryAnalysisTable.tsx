@@ -282,6 +282,17 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         const suppliersData = await suppliersRes.json();
         const weightsData = await weightsRes.json();
 
+        console.log("[CATEGORY ANALYSIS] Suppliers URL was:", suppliersUrl);
+        console.log("[CATEGORY ANALYSIS] Suppliers data received:", suppliersData.suppliers?.length);
+        if (suppliersData.suppliers && suppliersData.suppliers.length > 0) {
+          console.log("[CATEGORY ANALYSIS] First supplier:", {
+            id: suppliersData.suppliers[0].id,
+            name: suppliersData.suppliers[0].name,
+            shortlist_status: suppliersData.suppliers[0].shortlist_status,
+            removal_reason: suppliersData.suppliers[0].removal_reason,
+          });
+        }
+
         setResponses(responsesData.responses || []);
         setSuppliers(suppliersData.suppliers || []);
 
@@ -296,6 +307,21 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
             };
           });
         }
+
+        console.log("[CATEGORY ANALYSIS] Status map built, size:", Object.keys(statusMap).length);
+        if (Object.keys(statusMap).length > 0) {
+          const firstKey = Object.keys(statusMap)[0];
+          console.log("[CATEGORY ANALYSIS] First status entry:", firstKey, statusMap[firstKey]);
+        }
+
+        // Also log for Witco if it exists
+        const witcoId = suppliersData.suppliers?.find((s: any) => s.name?.includes("Witco"))?.id;
+        if (witcoId) {
+          console.log("[CATEGORY ANALYSIS] Witco found, id:", witcoId, "status:", statusMap[witcoId]);
+        } else {
+          console.log("[CATEGORY ANALYSIS] Witco NOT found in suppliers list");
+        }
+
         setSupplierStatuses(statusMap);
 
         // Flatten weights (requirements only)
@@ -789,6 +815,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                   <SelectContent>
                     {suppliers.map((supplier) => {
                       const status = supplierStatuses[supplier.id];
+                      if (supplier.name?.includes("Witco")) {
+                        console.log("[CATEGORY ANALYSIS RENDER] Witco selectitem - status:", status);
+                      }
                       return (
                         <SelectItem key={supplier.id} value={supplier.id}>
                           <div className="flex items-center gap-2">
@@ -872,28 +901,33 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
           </div>
           </div>
           {/* Display supplier status and notes */}
-          {selectedSupplierId && supplierStatuses[selectedSupplierId] && (
-            <div className="flex flex-col gap-2">
-              {supplierStatuses[selectedSupplierId].shortlist_status ===
-                "removed" && supplierStatuses[selectedSupplierId].removal_reason && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Raison de la suppression:</strong>{" "}
-                    {supplierStatuses[selectedSupplierId].removal_reason}
-                  </AlertDescription>
-                </Alert>
-              )}
-              {supplierStatuses[selectedSupplierId].shortlist_status ===
-                "shortlisted" && (
-                <Alert>
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    Ce fournisseur a été sélectionné pour cette version.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
+          {selectedSupplierId && (
+            (() => {
+              const status = supplierStatuses[selectedSupplierId];
+              console.log("[CATEGORY ANALYSIS ALERT] Selected supplier:", selectedSupplierId, "status:", status);
+              return (
+                status && (
+                  <div className="flex flex-col gap-2">
+                    {status.shortlist_status === "removed" && status.removal_reason && (
+                      <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          <strong>Raison de la suppression:</strong> {status.removal_reason}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    {status.shortlist_status === "shortlisted" && (
+                      <Alert>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          Ce fournisseur a été sélectionné pour cette version.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                )
+              );
+            })()
           )}
         </div>
       </CardHeader>
