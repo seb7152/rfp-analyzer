@@ -815,7 +815,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-0 flex-1 flex flex-col">
+      <CardContent className="p-0 flex-1 flex flex-col min-h-0">
         <div className="relative w-full overflow-auto flex-1 border-t border-slate-200">
           <table className="w-full text-sm text-left border-collapse">
             <thead className="text-xs text-slate-700 uppercase bg-slate-50 sticky top-0 z-20 shadow-sm">
