@@ -47,10 +47,7 @@ export function EvaluationFilters({
     });
   };
 
-  const handleScoreRangeChange = (
-    field: "min" | "max",
-    value: string
-  ) => {
+  const handleScoreRangeChange = (field: "min" | "max", value: string) => {
     const numValue = Math.max(0, Math.min(5, parseInt(value) || 0));
     onFiltersChange({
       ...filters,
@@ -185,7 +182,9 @@ export function EvaluationFilters({
             <Label className="text-xs font-semibold">Questions</Label>
             <div className="flex gap-2">
               <Button
-                variant={filters.hasQuestions === true ? "secondary" : "outline"}
+                variant={
+                  filters.hasQuestions === true ? "secondary" : "outline"
+                }
                 size="sm"
                 className="flex-1 text-xs"
                 onClick={() =>
@@ -198,7 +197,9 @@ export function EvaluationFilters({
                 Avec
               </Button>
               <Button
-                variant={filters.hasQuestions === false ? "secondary" : "outline"}
+                variant={
+                  filters.hasQuestions === false ? "secondary" : "outline"
+                }
                 size="sm"
                 className="flex-1 text-xs"
                 onClick={() =>
@@ -249,7 +250,6 @@ export function EvaluationFilters({
               </Button>
             </div>
           </div>
-
         </div>
       </PopoverContent>
     </Popover>

@@ -59,7 +59,7 @@ interface SupplierStatus {
 }
 
 export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
-  const { activeVersion } = useVersion();
+  const { activeVersion, versions } = useVersion();
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -75,8 +75,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(
     null
   );
+  // Initialize with activeVersion, fallback to first version if available
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
-    activeVersion?.id || null
+    null
   );
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [lastAnalysisId, setLastAnalysisId] = useState<string | null>(null);
@@ -408,12 +409,25 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     }
   }, [rfpId, activeVersion?.id]);
 
-  // Sync selected version with active version
+  // Sync selected version with active version, with fallback to first version
   useEffect(() => {
     if (activeVersion?.id) {
+      console.log(
+        "[CategoryAnalysisTable] Setting selectedVersionId from activeVersion:",
+        activeVersion.id
+      );
       setSelectedVersionId(activeVersion.id);
+    } else if (versions && versions.length > 0) {
+      console.log(
+        "[CategoryAnalysisTable] No activeVersion, using first version:",
+        versions[0].id
+      );
+      setSelectedVersionId(versions[0].id);
+    } else {
+      console.log("[CategoryAnalysisTable] No versions available");
+      setSelectedVersionId(null);
     }
-  }, [activeVersion?.id]);
+  }, [activeVersion?.id, versions]);
 
   // Reload analysis results when selected supplier or version changes
   useEffect(() => {
@@ -780,7 +794,21 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         return;
       }
 
+      if (!selectedVersionId) {
+        console.error("No version selected. Available versions:", versions);
+        alert("Please select a version or ensure versions are loaded");
+        return;
+      }
+
       setAnalysisLoading(true);
+
+      const payload = {
+        supplierId: selectedSupplierId,
+        versionId: selectedVersionId,
+      };
+      console.log("[triggerAnalysis] Payload being sent:", payload);
+      console.log("[triggerAnalysis] activeVersion:", activeVersion);
+      console.log("[triggerAnalysis] selectedVersionId is:", selectedVersionId);
 
       // Call backend API to initiate async analysis
       const response = await fetch(`/api/rfps/${rfpId}/analyze-defense`, {
@@ -788,10 +816,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          supplierId: selectedSupplierId,
-          versionId: selectedVersionId,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -911,28 +936,6 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                           </SelectItem>
                         );
                       })}
-                    </SelectContent>
-                  </Select>
-                  <label className="text-sm font-medium text-slate-700">
-                    Version:
-                  </label>
-                  <Select
-                    value={selectedVersionId || ""}
-                    onValueChange={setSelectedVersionId}
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Sélectionner une version" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {activeVersion && (
-                        <SelectItem value={activeVersion.id}>
-                          {activeVersion.version_name ||
-                            `Version ${activeVersion.version_number}`}
-                          <Badge variant="default" className="ml-2 text-xs">
-                            Active
-                          </Badge>
-                        </SelectItem>
-                      )}
                     </SelectContent>
                   </Select>
                 </div>

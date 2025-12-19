@@ -1,11 +1,12 @@
 import { ReactNode } from "react";
+import { VersionProvider } from "@/contexts/VersionContext";
 
 export default function RFPLayout({
   children,
-  params: _params,
+  params,
 }: {
   children: ReactNode;
   params: { rfpId: string };
 }) {
-  return <>{children}</>;
+  return <VersionProvider rfpId={params.rfpId}>{children}</VersionProvider>;
 }

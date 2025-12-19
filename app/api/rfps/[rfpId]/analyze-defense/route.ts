@@ -15,6 +15,8 @@ export async function POST(
     const body = await request.json();
     const { supplierId, versionId } = body;
 
+    console.log("[/analyze-defense] Request body:", { supplierId, versionId });
+
     if (!supplierId || typeof supplierId !== "string") {
       return NextResponse.json(
         { error: "Missing required field: supplierId" },

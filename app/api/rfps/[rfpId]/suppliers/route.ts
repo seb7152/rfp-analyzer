@@ -58,10 +58,18 @@ export async function GET(
         .select("supplier_id, shortlist_status, removal_reason")
         .eq("version_id", versionId);
 
-      console.log("[SUPPLIERS API] Supplier statuses fetched:", supplierStatuses?.length, "error:", statusError);
+      console.log(
+        "[SUPPLIERS API] Supplier statuses fetched:",
+        supplierStatuses?.length,
+        "error:",
+        statusError
+      );
 
       if (supplierStatuses && supplierStatuses.length > 0) {
-        console.log("[SUPPLIERS API] Sample statuses:", supplierStatuses.slice(0, 3));
+        console.log(
+          "[SUPPLIERS API] Sample statuses:",
+          supplierStatuses.slice(0, 3)
+        );
       }
 
       // Build a map of supplier statuses
@@ -73,8 +81,14 @@ export async function GET(
         };
       });
 
-      console.log("[SUPPLIERS API] Status map size:", Object.keys(supplierStatusesMap).length);
-      console.log("[SUPPLIERS API] Status map keys (first 3):", Object.keys(supplierStatusesMap).slice(0, 3));
+      console.log(
+        "[SUPPLIERS API] Status map size:",
+        Object.keys(supplierStatusesMap).length
+      );
+      console.log(
+        "[SUPPLIERS API] Status map keys (first 3):",
+        Object.keys(supplierStatusesMap).slice(0, 3)
+      );
 
       // Filter out removed suppliers
       const removedSupplierIds = new Set(
@@ -83,21 +97,30 @@ export async function GET(
           .map((s: any) => s.supplier_id)
       );
 
-      console.log("[SUPPLIERS API] Removed suppliers count:", removedSupplierIds.size);
+      console.log(
+        "[SUPPLIERS API] Removed suppliers count:",
+        removedSupplierIds.size
+      );
 
       suppliersToUse = suppliersToUse.filter(
         (s) => !removedSupplierIds.has(s.id)
       );
 
-      console.log("[SUPPLIERS API] Suppliers after filtering:", suppliersToUse.length);
+      console.log(
+        "[SUPPLIERS API] Suppliers after filtering:",
+        suppliersToUse.length
+      );
     } else {
-      console.log("[SUPPLIERS API] No versionId provided, skipping version filtering");
+      console.log(
+        "[SUPPLIERS API] No versionId provided, skipping version filtering"
+      );
     }
 
     // Add status info to suppliers before returning
     const suppliersWithStatus = suppliersToUse.map((supplier) => ({
       ...supplier,
-      shortlist_status: supplierStatusesMap[supplier.id]?.shortlist_status || "active",
+      shortlist_status:
+        supplierStatusesMap[supplier.id]?.shortlist_status || "active",
       removal_reason: supplierStatusesMap[supplier.id]?.removal_reason || null,
     }));
 
@@ -249,8 +272,10 @@ export async function GET(
         totalResponses: totalResponsesCount,
         documents: formattedDocs,
         hasDocuments: formattedDocs.length > 0,
-        shortlist_status: supplierStatusesMap[supplier.id]?.shortlist_status || "active",
-        removal_reason: supplierStatusesMap[supplier.id]?.removal_reason || null,
+        shortlist_status:
+          supplierStatusesMap[supplier.id]?.shortlist_status || "active",
+        removal_reason:
+          supplierStatusesMap[supplier.id]?.removal_reason || null,
       };
     });
 

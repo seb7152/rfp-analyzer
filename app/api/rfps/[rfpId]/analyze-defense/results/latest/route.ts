@@ -8,10 +8,12 @@ export async function GET(
   try {
     const { rfpId } = params;
     const supplierId = request.nextUrl.searchParams.get("supplierId");
+    const versionId = request.nextUrl.searchParams.get("versionId");
 
     console.log("[/latest] ===== START =====");
     console.log("[/latest] rfpId:", rfpId);
     console.log("[/latest] supplierId filter:", supplierId || "none");
+    console.log("[/latest] versionId filter:", versionId || "none");
 
     // Get authenticated user
     const supabase = await createServerClient();
@@ -35,6 +37,11 @@ export async function GET(
     // Filter by supplier_id if provided
     if (supplierId) {
       query = query.eq("supplier_id", supplierId);
+    }
+
+    // Filter by version_id if provided
+    if (versionId) {
+      query = query.eq("version_id", versionId);
     }
 
     const { data: analyses, error: analysisError } = await query.order(
@@ -73,7 +80,7 @@ export async function GET(
       );
     } else {
       // Multi-supplier mode: group by supplier_id and take latest for each
-      const bySupplier = new Map<string, typeof analyses[0]>();
+      const bySupplier = new Map<string, (typeof analyses)[0]>();
       for (const analysis of analyses) {
         const key = analysis.supplier_id || "default";
         if (!bySupplier.has(key)) {
