@@ -260,9 +260,12 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   };
 
   useEffect(() => {
+    console.log("[CATEGORY ANALYSIS] useEffect triggered! rfpId:", rfpId, "activeVersion:", activeVersion);
+
     async function fetchData() {
       try {
         setLoading(true);
+        console.log("[CATEGORY ANALYSIS] fetchData started, rfpId:", rfpId);
 
         // Build suppliers URL with versionId if available
         let suppliersUrl = `/api/rfps/${rfpId}/suppliers`;
@@ -355,8 +358,11 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       }
     }
 
+    console.log("[CATEGORY ANALYSIS] About to call fetchData, rfpId check:", !!rfpId);
     if (rfpId) {
       fetchData();
+    } else {
+      console.log("[CATEGORY ANALYSIS] ERROR: rfpId is missing!");
     }
   }, [rfpId, activeVersion?.id]);
 
@@ -773,6 +779,8 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       console.error("Error copying to clipboard:", error);
     }
   };
+
+  console.log("[CATEGORY ANALYSIS RENDER] Component rendering, loading:", loading, "suppliers:", suppliers?.length);
 
   if (loading) {
     return (
