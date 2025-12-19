@@ -44,17 +44,31 @@ export async function GET(
       );
     }
 
-    // Filter suppliers by version if versionId is provided
+    // Filter suppliers by version and fetch statuses if versionId is provided
     let suppliersToUse = suppliers || [];
-    if (versionId) {
-      const { data: removedSuppliers } = await supabase
-        .from("version_supplier_status")
-        .select("supplier_id")
-        .eq("version_id", versionId)
-        .eq("shortlist_status", "removed");
+    let supplierStatusesMap: Record<string, any> = {};
 
+    if (versionId) {
+      // Fetch all supplier statuses for this version
+      const { data: supplierStatuses } = await supabase
+        .from("version_supplier_status")
+        .select("supplier_id, shortlist_status, removal_reason")
+        .eq("version_id", versionId);
+
+      // Build a map of supplier statuses
+      supplierStatusesMap = {};
+      (supplierStatuses || []).forEach((status: any) => {
+        supplierStatusesMap[status.supplier_id] = {
+          shortlist_status: status.shortlist_status,
+          removal_reason: status.removal_reason,
+        };
+      });
+
+      // Filter out removed suppliers
       const removedSupplierIds = new Set(
-        (removedSuppliers || []).map((rs) => rs.supplier_id)
+        (supplierStatuses || [])
+          .filter((s: any) => s.shortlist_status === "removed")
+          .map((s: any) => s.supplier_id)
       );
 
       suppliersToUse = suppliersToUse.filter(
@@ -62,10 +76,17 @@ export async function GET(
       );
     }
 
+    // Add status info to suppliers before returning
+    const suppliersWithStatus = suppliersToUse.map((supplier) => ({
+      ...supplier,
+      shortlist_status: supplierStatusesMap[supplier.id]?.shortlist_status || "active",
+      removal_reason: supplierStatusesMap[supplier.id]?.removal_reason || null,
+    }));
+
     if (!includeStats) {
       return NextResponse.json({
         success: true,
-        suppliers: suppliersToUse,
+        suppliers: suppliersWithStatus,
       });
     }
 
@@ -198,6 +219,8 @@ export async function GET(
         totalResponses: totalResponsesCount,
         documents: formattedDocs,
         hasDocuments: formattedDocs.length > 0,
+        shortlist_status: supplierStatusesMap[supplier.id]?.shortlist_status || "active",
+        removal_reason: supplierStatusesMap[supplier.id]?.removal_reason || null,
       };
     });
 
