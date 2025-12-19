@@ -10,6 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
   ChevronDown,
@@ -18,6 +25,7 @@ import {
   Check,
   Sparkles,
   RefreshCw,
+  Maximize2,
 } from "lucide-react";
 import { Supplier } from "@/types/supplier";
 
@@ -56,6 +64,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [lastAnalysisId, setLastAnalysisId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const refreshAnalysisResults = async () => {
     try {
@@ -715,14 +724,23 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     );
   }
 
-  return (
-    <Card className="w-full overflow-hidden mb-8 h-full">
+  const cardContent = (
+    <>
       <CardHeader className="pb-4">
         <div className="flex flex-row items-center justify-between gap-4">
           <CardTitle className="text-lg font-medium">
             Analyse par Catégorie
           </CardTitle>
           <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsModalOpen(true)}
+              className="gap-2"
+              title="Agrandir le tableau"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
             {suppliers.length > 0 && (
               <div className="flex items-center gap-2">
                 <label className="text-sm font-medium text-slate-700">
@@ -797,7 +815,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-0 flex-1 flex flex-col">
+      <CardContent className="p-0 flex-1 flex flex-col min-h-0">
         <div className="relative w-full overflow-auto flex-1 border-t border-slate-200">
           <table className="w-full text-sm text-left border-collapse">
             <thead className="text-xs text-slate-700 uppercase bg-slate-50 sticky top-0 z-20 shadow-sm">
@@ -988,6 +1006,28 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
           </table>
         </div>
       </CardContent>
-    </Card>
+    </>
+  );
+
+  return (
+    <>
+      <Card className="w-full overflow-hidden mb-8 h-full">
+        {cardContent}
+      </Card>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-[95vw] h-[95vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogHeader className="px-6 py-4 border-b border-slate-200 bg-white flex-shrink-0">
+            <DialogTitle>Analyse par Catégorie - Agrandie</DialogTitle>
+            <DialogDescription>
+              Vue agrandie du tableau d'analyse des catégories
+            </DialogDescription>
+          </DialogHeader>
+          <Card className="w-full overflow-hidden flex-1 flex flex-col border-0 rounded-none min-h-0">
+            {cardContent}
+          </Card>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
