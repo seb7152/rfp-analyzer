@@ -40,6 +40,13 @@ export function Sidebar({
     hasManualComments: null,
     hasManualScore: null,
   });
+  const [appliedFilters, setAppliedFilters] = useState<EvaluationFilterState>({
+    status: [],
+    scoreRange: { min: 0, max: 5 },
+    hasQuestions: null,
+    hasManualComments: null,
+    hasManualScore: null,
+  });
 
   // Use the new tree hook that includes categories + requirements
   const { tree, isLoading, error } = useRequirementsTree(rfpId);
@@ -81,7 +88,12 @@ export function Sidebar({
     }
   }, [selectedRequirementId, tree]);
 
-  // Build a set of requirement IDs that match the current filters
+  // Apply filters when user clicks the "Filtrer" button
+  const handleApplyFilters = () => {
+    setAppliedFilters(filters);
+  };
+
+  // Build a set of requirement IDs that match the applied filters
   const filteredRequirementIds = useMemo(() => {
     if (!isSingleSupplier || responses.length === 0) {
       return new Set<string>();
@@ -89,11 +101,11 @@ export function Sidebar({
 
     // Check if any filters are active
     const hasActiveFilters =
-      filters.status.length > 0 ||
-      filters.scoreRange.min > 0 ||
-      filters.scoreRange.max < 5 ||
-      filters.hasQuestions !== null ||
-      filters.hasManualComments !== null;
+      appliedFilters.status.length > 0 ||
+      appliedFilters.scoreRange.min > 0 ||
+      appliedFilters.scoreRange.max < 5 ||
+      appliedFilters.hasQuestions !== null ||
+      appliedFilters.hasManualComments !== null;
 
     if (!hasActiveFilters) {
       return new Set<string>();
@@ -118,31 +130,31 @@ export function Sidebar({
       }
 
       // Check status filter
-      if (filters.status.length > 0) {
+      if (appliedFilters.status.length > 0) {
         // Only include if status matches one of the selected statuses
-        if (!filters.status.includes(response.status)) {
+        if (!appliedFilters.status.includes(response.status)) {
           return;
         }
       }
 
       // Check score range filter
-      if (score < filters.scoreRange.min || score > filters.scoreRange.max) {
+      if (score < appliedFilters.scoreRange.min || score > appliedFilters.scoreRange.max) {
         return;
       }
 
       // Check questions filter
-      if (filters.hasQuestions !== null) {
+      if (appliedFilters.hasQuestions !== null) {
         const hasQuestions = !!response.question && response.question.trim().length > 0;
-        if (filters.hasQuestions !== hasQuestions) {
+        if (appliedFilters.hasQuestions !== hasQuestions) {
           return;
         }
       }
 
       // Check manual comments filter
-      if (filters.hasManualComments !== null) {
+      if (appliedFilters.hasManualComments !== null) {
         const hasComments =
           !!response.manual_comment && response.manual_comment.trim().length > 0;
-        if (filters.hasManualComments !== hasComments) {
+        if (appliedFilters.hasManualComments !== hasComments) {
           return;
         }
       }
@@ -151,7 +163,7 @@ export function Sidebar({
     });
 
     return matchingIds;
-  }, [responses, filters, isSingleSupplier]);
+  }, [responses, appliedFilters, isSingleSupplier]);
 
   // Count active filters for badge display
   const activeFilterCount = useMemo(() => {
@@ -289,6 +301,7 @@ export function Sidebar({
             <EvaluationFilters
               filters={filters}
               onFiltersChange={setFilters}
+              onApplyFilters={handleApplyFilters}
               activeFilterCount={activeFilterCount}
             />
           )}
