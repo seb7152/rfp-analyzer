@@ -71,6 +71,8 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
     );
   }, [allResponses, supplierId, isSingleSupplierView]);
 
+  console.log("EvaluatePage - supplierId:", supplierId, "isSingleSupplierView:", isSingleSupplierView, "allResponses count:", allResponses.length, "filteredResponses count:", filteredResponses.length);
+
   // Fetch RFP data and responses count
   useEffect(() => {
     const fetchRFPData = async () => {
