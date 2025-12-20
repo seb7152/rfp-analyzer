@@ -2,7 +2,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { rfpId: string } }
 ) {
   try {
