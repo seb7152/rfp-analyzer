@@ -9,7 +9,6 @@ import { useAllResponses } from "@/hooks/use-all-responses";
 import { Sidebar } from "@/components/Sidebar";
 import { ComparisonView } from "@/components/ComparisonView";
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
-import { VersionSelector } from "@/components/VersionSelector";
 import { AIAnalysisButton } from "@/components/AIAnalysisButton";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { Button } from "@/components/ui/button";
@@ -187,7 +186,6 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
               {/* Offline Indicator - desktop version */}
               <OfflineIndicator />
 
-              <VersionSelector />
               {/* Upload Documents Button */}
               <Button
                 onClick={() => setIsUploadModalOpen(true)}

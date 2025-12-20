@@ -528,10 +528,7 @@ export default function RFPSummaryPage() {
                   {/* Suppliers Table with Expand/Collapse */}
                   <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
                     <div className="p-6 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                          Fournisseurs
-                        </h2>
+                      <div className="flex items-center justify-end">
                         <Button
                           variant="ghost"
                           size="sm"

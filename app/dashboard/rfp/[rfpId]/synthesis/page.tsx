@@ -329,10 +329,7 @@ export default function RFPSynthesisPage() {
           {/* Section Fournisseurs */}
           {selectedCategory === "suppliers" || selectedCategory === null ? (
             <Card>
-              <CardHeader>
-                <CardTitle>Analyse Comparative des Fournisseurs</CardTitle>
-              </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <p>
                   Fournisseurs analysés:{" "}
                   {suppliersAnalysis.comparisonTable.length}
