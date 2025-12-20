@@ -27,7 +27,7 @@ interface Analysis {
   created_at: string;
   analysis_data: {
     summary?: string;
-    keyPoints?: string[];
+    report?: string; // Markdown formatted
     suggestions?: Array<{
       requirementId: string;
       suggestedResponse?: string;
@@ -227,28 +227,14 @@ export function PresentationReport({
                       </div>
                     )}
 
-                    {/* Key Points */}
-                    {currentAnalysis.analysis_data?.keyPoints &&
-                      currentAnalysis.analysis_data.keyPoints.length > 0 && (
-                        <div className="mt-4 space-y-2">
-                          <h3 className="font-medium text-slate-900 dark:text-white">
-                            Points clés
-                          </h3>
-                          <ul className="space-y-1">
-                            {currentAnalysis.analysis_data.keyPoints.map(
-                              (point, i) => (
-                                <li
-                                  key={i}
-                                  className="text-sm text-slate-600 dark:text-slate-300 flex gap-2"
-                                >
-                                  <span className="text-slate-400">•</span>
-                                  {point}
-                                </li>
-                              )
-                            )}
-                          </ul>
+                    {/* Report */}
+                    {currentAnalysis.analysis_data?.report && (
+                      <div className="mt-4 space-y-2">
+                        <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">
+                          {currentAnalysis.analysis_data.report}
                         </div>
-                      )}
+                      </div>
+                    )}
                   </Card>
 
                   {/* Suggestions Summary */}

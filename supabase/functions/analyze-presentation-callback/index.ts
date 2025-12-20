@@ -6,7 +6,7 @@ interface PresentationCallbackRequest {
   status: "completed" | "failed";
   result?: {
     summary: string;
-    keyPoints: string[];
+    report: string; // Markdown formatted report
     suggestions?: Array<{
       requirementId: string;
       suggestedResponse?: string;
@@ -132,7 +132,7 @@ serve(async (req) => {
       // Store complete analysis results
       updateData.analysis_data = {
         summary: result?.summary || "",
-        keyPoints: result?.keyPoints || [],
+        report: result?.report || "",
         suggestions: result?.suggestions || [],
       };
     } else if (status === "failed") {
