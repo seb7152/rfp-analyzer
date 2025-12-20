@@ -101,7 +101,7 @@ export async function POST(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": process.env.PRESENTATION_ANALYSIS_API_KEY || "",
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
           analysisId: analysis.id,

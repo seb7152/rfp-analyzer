@@ -22,12 +22,35 @@ serve(async (req) => {
     });
   }
 
-  // Verify API key
-  const apiKey = req.headers.get("x-api-key");
-  const expectedApiKey = Deno.env.get("PRESENTATION_ANALYSIS_API_KEY");
+  // Get Supabase client
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-  if (!apiKey || apiKey !== expectedApiKey) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+  if (!supabaseUrl || !supabaseKey) {
+    return new Response(JSON.stringify({ error: "Missing Supabase configuration" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  // Verify JWT Bearer token
+  const authHeader = req.headers.get("Authorization");
+  const token = authHeader?.replace("Bearer ", "");
+
+  if (!token) {
+    return new Response(JSON.stringify({ error: "Unauthorized: Missing token" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  // Verify token by checking if we can get the user
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: "Unauthorized: Invalid token" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
@@ -62,15 +85,6 @@ serve(async (req) => {
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Missing Supabase environment variables");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     console.log(
       `[analyze-presentation] Starting analysis ${analysisId} for RFP ${rfpId}, supplier ${supplierId}`
