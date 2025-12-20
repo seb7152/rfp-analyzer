@@ -68,6 +68,38 @@ CREATE POLICY "Users can view presentation_analyses for accessible RFPs"
     )
   );
 
+-- Users can insert analyses for RFPs they have access to
+CREATE POLICY "Users can insert presentation_analyses for accessible RFPs"
+  ON presentation_analyses FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM rfps r
+      JOIN user_organizations uo ON uo.organization_id = r.organization_id
+      WHERE r.id = presentation_analyses.rfp_id
+        AND uo.user_id = auth.uid()
+    )
+  );
+
+-- Users can update their own analyses
+CREATE POLICY "Users can update presentation_analyses for accessible RFPs"
+  ON presentation_analyses FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM rfps r
+      JOIN user_organizations uo ON uo.organization_id = r.organization_id
+      WHERE r.id = presentation_analyses.rfp_id
+        AND uo.user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM rfps r
+      JOIN user_organizations uo ON uo.organization_id = r.organization_id
+      WHERE r.id = presentation_analyses.rfp_id
+        AND uo.user_id = auth.uid()
+    )
+  );
+
 -- Service role can manage analyses
 CREATE POLICY "Service can manage presentation_analyses"
   ON presentation_analyses FOR ALL
