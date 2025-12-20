@@ -31,6 +31,7 @@ interface PresentationImportModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  versionId?: string;
 }
 
 export function PresentationImportModal({
@@ -39,6 +40,7 @@ export function PresentationImportModal({
   isOpen,
   onOpenChange,
   onSuccess,
+  versionId,
 }: PresentationImportModalProps) {
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>(
     suppliers[0]?.id || ""
@@ -71,6 +73,7 @@ export function PresentationImportModal({
           body: JSON.stringify({
             supplierId: selectedSupplierId,
             transcript: transcript.trim(),
+            ...(versionId && { versionId }),
           }),
         }
       );

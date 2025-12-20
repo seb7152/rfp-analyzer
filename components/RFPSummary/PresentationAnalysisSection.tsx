@@ -16,11 +16,13 @@ interface Supplier {
 interface PresentationAnalysisSectionProps {
   rfpId: string;
   suppliers: Supplier[];
+  versionId?: string;
 }
 
 export function PresentationAnalysisSection({
   rfpId,
   suppliers,
+  versionId,
 }: PresentationAnalysisSectionProps) {
   const [activeTab, setActiveTab] = useState<"preparation" | "report">(
     "preparation"
@@ -125,6 +127,7 @@ export function PresentationAnalysisSection({
         isOpen={isImportModalOpen}
         onOpenChange={setIsImportModalOpen}
         onSuccess={handleImportSuccess}
+        versionId={versionId}
       />
     </div>
   );
