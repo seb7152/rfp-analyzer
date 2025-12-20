@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { ResponseWithSupplier, GetResponsesResponse } from "./use-responses";
 import { useOnlineStatus } from "./use-online-status";
 import { offlineQueue } from "@/lib/offline-queue";
+import { useVersion } from "@/contexts/VersionContext";
 
 export interface UpdateResponseInput {
   responseId: string;
@@ -34,15 +35,22 @@ export function useResponseMutation(): UseMutationResult<
 > {
   const queryClient = useQueryClient();
   const isOnline = useOnlineStatus();
+  const { activeVersion } = useVersion();
 
   return useMutation({
     mutationFn: async (input: UpdateResponseInput) => {
       const { responseId, ...updateData } = input;
 
+      // Build URL with versionId if available
+      let url = `/api/responses/${responseId}`;
+      if (activeVersion?.id) {
+        url += `?versionId=${activeVersion.id}`;
+      }
+
       // If offline, add to queue and simulate success
       if (!isOnline) {
         offlineQueue.add({
-          endpoint: `/api/responses/${responseId}`,
+          endpoint: url,
           method: "PUT",
           body: updateData,
           responseId: responseId,
@@ -54,12 +62,13 @@ export function useResponseMutation(): UseMutationResult<
           response: {
             id: responseId,
             ...updateData,
-          } as ResponseWithSupplier,
+            version_id: activeVersion?.id,
+          } as unknown as ResponseWithSupplier,
         };
       }
 
       // Online: normal behavior
-      const response = await fetch(`/api/responses/${responseId}`, {
+      const response = await fetch(url, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -106,6 +115,7 @@ export function useResponseMutation(): UseMutationResult<
               response: {
                 ...old.response,
                 ...variables,
+                version_id: activeVersion?.id || old.response.version_id,
                 updated_at: new Date().toISOString(),
               },
             };

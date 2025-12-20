@@ -9,15 +9,23 @@ import { useQuery } from "@tanstack/react-query";
  * Note: Automatically refetches when a response is updated via useResponseMutation
  * The mutation hook invalidates rfp-completion cache on every response change
  */
-export function useRFPCompletion(rfpId: string | null) {
+export function useRFPCompletion(
+  rfpId: string | null,
+  versionId?: string | null
+) {
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["rfp-completion", rfpId],
+    queryKey: ["rfp-completion", rfpId, versionId],
     queryFn: async () => {
       if (!rfpId) {
         return null;
       }
 
-      const response = await fetch(`/api/rfps/${rfpId}/completion`, {
+      let url = `/api/rfps/${rfpId}/completion`;
+      if (versionId) {
+        url += `?versionId=${versionId}`;
+      }
+
+      const response = await fetch(url, {
         credentials: "include",
       });
 

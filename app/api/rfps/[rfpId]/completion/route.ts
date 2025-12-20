@@ -16,11 +16,13 @@ import { getRFPCompletionPercentage } from "@/lib/supabase/queries";
  *   - 500: Server error
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
+    const { searchParams } = new URL(request.url);
+    const versionId = searchParams.get("versionId");
 
     if (!rfpId || typeof rfpId !== "string") {
       return NextResponse.json({ error: "Invalid RFP ID" }, { status: 400 });
@@ -44,7 +46,10 @@ export async function GET(
     }
 
     // Get completion percentage
-    const percentage = await getRFPCompletionPercentage(rfpId);
+    const percentage = await getRFPCompletionPercentage(
+      rfpId,
+      versionId || undefined
+    );
 
     return NextResponse.json({ percentage }, { status: 200 });
   } catch (error) {

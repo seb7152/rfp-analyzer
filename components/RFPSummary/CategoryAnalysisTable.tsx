@@ -18,17 +18,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import {
   ChevronDown,
   ChevronRight,
-  Copy,
   Check,
   Sparkles,
   RefreshCw,
   Maximize2,
   AlertTriangle,
+  Download,
+  FileText,
+  FileSpreadsheet,
+  FileDown,
 } from "lucide-react";
+import ExcelJS from "exceljs";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Supplier } from "@/types/supplier";
@@ -763,11 +774,20 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       const indent = "  ".repeat(category.level);
       const pointsList =
         attentionPoints.length > 0
-          ? attentionPoints.map((p) => `• ${p}`).join("\n")
+          ? attentionPoints.map((p) => `• ${p}`).join(" - ")
           : "";
       const detailList =
         childTitles.length > 0
-          ? childTitles.map((p) => `• ${p}`).join("\n")
+          ? childTitles.map((p) => `• ${p}`).join(" - ")
+          : "";
+
+      const forcesList =
+        category.analysis?.forces && category.analysis.forces.length > 0
+          ? category.analysis.forces.map((f) => `• ${f}`).join(" - ")
+          : "";
+      const faiblessesList =
+        category.analysis?.faiblesses && category.analysis.faiblesses.length > 0
+          ? category.analysis.faiblesses.map((f) => `• ${f}`).join(" - ")
           : "";
 
       const score =
@@ -780,7 +800,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
           ? `${formatScore(score)} / ${formatScore(averageScore)}`
           : "-";
 
-      markdown += `| ${indent}**${category.code}** - ${category.title} | ${detailList} | ${scoreStr} | | | ${pointsList} |\n`;
+      markdown += `| ${indent}**${category.code}** - ${category.title} | ${detailList} | ${scoreStr} | ${forcesList} | ${faiblessesList} | ${pointsList} |\n`;
     }
 
     return markdown;
@@ -840,6 +860,214 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       alert(`Error initiating analysis: ${error}`);
     } finally {
       setAnalysisLoading(false);
+    }
+  };
+
+  const exportToExcel = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Analyse par Catégorie");
+
+      // Define columns
+      worksheet.columns = [
+        { header: "Catégorie", key: "category", width: 50 },
+        { header: "Détail", key: "detail", width: 40 },
+        { header: "Note", key: "score", width: 20 },
+        { header: "Forces", key: "forces", width: 50 },
+        { header: "Faiblesses", key: "faiblesses", width: 50 },
+        { header: "Points d'attention", key: "attention", width: 60 },
+      ];
+
+      // Style header row
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.getRow(1).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFE2E8F0" },
+      };
+
+      // Add data rows
+      for (const category of flatCategories) {
+        const isExpanded = expandedCategories.has(category.id);
+        const attentionPoints = getAttentionPoints(
+          category.id,
+          selectedSupplierId || undefined,
+          isExpanded
+        );
+        const childTitles = getChildTitles(category.id);
+        const indent = "  ".repeat(category.level);
+
+        const score =
+          selectedSupplierId && selectedSupplierId !== ""
+            ? getCategoryScore(category.id, selectedSupplierId)
+            : null;
+        const averageScore = getAverageCategoryScore(category.id);
+        const scoreStr =
+          score !== null && averageScore !== null
+            ? `${formatScore(score)} / ${formatScore(averageScore)}`
+            : "-";
+
+        const detailBullets =
+          childTitles.length > 0
+            ? childTitles.map((t) => `• ${t}`).join("\n")
+            : "";
+        const forcesBullets =
+          category.analysis?.forces && category.analysis.forces.length > 0
+            ? category.analysis.forces.map((f) => `• ${f}`).join("\n")
+            : "";
+        const faiblessesBullets =
+          category.analysis?.faiblesses &&
+          category.analysis.faiblesses.length > 0
+            ? category.analysis.faiblesses.map((f) => `• ${f}`).join("\n")
+            : "";
+        const attentionBullets =
+          attentionPoints.length > 0
+            ? attentionPoints.map((p) => `• ${p}`).join("\n")
+            : "";
+
+        const row = worksheet.addRow({
+          category: `${indent}${category.code} - ${category.title}`,
+          detail: detailBullets,
+          score: scoreStr,
+          forces: forcesBullets,
+          faiblesses: faiblessesBullets,
+          attention: attentionBullets,
+        });
+
+        // Enable text wrapping for cells with bullet points
+        row.getCell("detail").alignment = { wrapText: true, vertical: "top" };
+        row.getCell("forces").alignment = { wrapText: true, vertical: "top" };
+        row.getCell("faiblesses").alignment = {
+          wrapText: true,
+          vertical: "top",
+        };
+        row.getCell("attention").alignment = {
+          wrapText: true,
+          vertical: "top",
+        };
+      }
+
+      // Enable text wrapping for header row
+      worksheet.getRow(1).alignment = { wrapText: true, vertical: "middle" };
+
+      // Generate buffer and download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+
+      const supplierName =
+        suppliers.find((s) => s.id === selectedSupplierId)?.name || "analyse";
+      const date = new Date().toISOString().split("T")[0];
+      link.download = `analyse-categories-${supplierName}-${date}.xlsx`;
+
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      alert("Erreur lors de l'export Excel");
+    }
+  };
+
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF({ orientation: "landscape" });
+
+      // Title
+      const supplierName =
+        suppliers.find((s) => s.id === selectedSupplierId)?.name || "Analyse";
+      doc.setFontSize(16);
+      doc.text(`Analyse par Catégorie - ${supplierName}`, 14, 15);
+
+      // Prepare table data
+      const tableData = flatCategories.map((category) => {
+        const isExpanded = expandedCategories.has(category.id);
+        const attentionPoints = getAttentionPoints(
+          category.id,
+          selectedSupplierId || undefined,
+          isExpanded
+        );
+        const childTitles = getChildTitles(category.id);
+        const indent = "  ".repeat(category.level);
+
+        const score =
+          selectedSupplierId && selectedSupplierId !== ""
+            ? getCategoryScore(category.id, selectedSupplierId)
+            : null;
+        const averageScore = getAverageCategoryScore(category.id);
+        const scoreStr =
+          score !== null && averageScore !== null
+            ? `${formatScore(score)} / ${formatScore(averageScore)}`
+            : "-";
+
+        const detailBullets =
+          childTitles.length > 0
+            ? childTitles.map((t) => `• ${t}`).join("\n")
+            : "";
+        const forcesBullets =
+          category.analysis?.forces && category.analysis.forces.length > 0
+            ? category.analysis.forces.map((f) => `• ${f}`).join("\n")
+            : "";
+        const faiblessesBullets =
+          category.analysis?.faiblesses &&
+          category.analysis.faiblesses.length > 0
+            ? category.analysis.faiblesses.map((f) => `• ${f}`).join("\n")
+            : "";
+        const attentionBullets =
+          attentionPoints.length > 0
+            ? attentionPoints.map((p) => `• ${p}`).join("\n")
+            : "";
+
+        return [
+          `${indent}${category.code} - ${category.title}`,
+          detailBullets,
+          scoreStr,
+          forcesBullets,
+          faiblessesBullets,
+          attentionBullets,
+        ];
+      });
+
+      // Generate table
+      autoTable(doc, {
+        head: [
+          [
+            "Catégorie",
+            "Détail",
+            "Note",
+            "Forces",
+            "Faiblesses",
+            "Points d'attention",
+          ],
+        ],
+        body: tableData,
+        startY: 25,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: {
+          fillColor: [226, 232, 240],
+          textColor: [0, 0, 0],
+          fontStyle: "bold",
+        },
+        columnStyles: {
+          0: { cellWidth: 50 },
+          1: { cellWidth: 40 },
+          2: { cellWidth: 25 },
+          3: { cellWidth: 50 },
+          4: { cellWidth: 50 },
+          5: { cellWidth: 60 },
+        },
+        margin: { left: 10, right: 10 },
+      });
+
+      // Download
+      const date = new Date().toISOString().split("T")[0];
+      doc.save(`analyse-categories-${supplierName}-${date}.pdf`);
+    } catch (error) {
+      console.error("Error exporting to PDF:", error);
+      alert("Erreur lors de l'export PDF");
     }
   };
 
@@ -971,24 +1199,54 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                   </>
                 )}
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={copyToClipboard}
-                className="gap-2"
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-4 w-4" />
-                    Copié!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4" />
-                    Copier en Markdown
-                  </>
-                )}
-              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Exporter
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56" align="end">
+                  <div className="space-y-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={copyToClipboard}
+                      className="w-full justify-start gap-2"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Copié!
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-4 w-4" />
+                          Copier Markdown
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={exportToExcel}
+                      className="w-full justify-start gap-2"
+                    >
+                      <FileSpreadsheet className="h-4 w-4" />
+                      Télécharger Excel
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={exportToPDF}
+                      className="w-full justify-start gap-2"
+                    >
+                      <FileDown className="h-4 w-4" />
+                      Télécharger PDF
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
           {/* Display supplier status and notes */}

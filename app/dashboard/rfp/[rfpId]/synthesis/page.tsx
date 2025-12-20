@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { WeightConfigurationTable } from "@/components/dashboard/WeightConfigurationTable";
+import { useVersion } from "@/contexts/VersionContext";
 
 interface DashboardData {
   rfp: { title: string };
@@ -92,6 +93,7 @@ export default function RFPSynthesisPage() {
   const params = useParams();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
+  const { activeVersion } = useVersion();
   const rfpId = params.rfpId as string;
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -111,7 +113,8 @@ export default function RFPSynthesisPage() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const response = await fetch(`/api/rfps/${rfpId}/dashboard`, {
+        const url = `/api/rfps/${rfpId}/dashboard${activeVersion?.id ? `?versionId=${activeVersion.id}` : ""}`;
+        const response = await fetch(url, {
           credentials: "include",
         });
 
@@ -129,7 +132,7 @@ export default function RFPSynthesisPage() {
     };
 
     fetchDashboardData();
-  }, [rfpId]);
+  }, [rfpId, activeVersion?.id]);
 
   const handleWeightsChange = (weights: {
     categories: Record<string, number>;

@@ -179,6 +179,7 @@ export interface Response {
   rfp_id: string;
   requirement_id: string;
   supplier_id: string;
+  version_id: string | null;
   response_text: string | null;
   ai_score: number | null; // Now supports decimal values (0.5 increments)
   ai_comment: string | null;

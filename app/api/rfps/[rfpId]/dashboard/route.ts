@@ -81,11 +81,13 @@ interface DashboardResponse {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
+    const { searchParams } = new URL(request.url);
+    const versionId = searchParams.get("versionId");
 
     if (!rfpId) {
       return NextResponse.json(
@@ -135,11 +137,16 @@ export async function GET(
     const categories = (await getCategories(rfpId)) as any;
 
     // Fetch all responses
-    const allResponses: ResponseWithSupplier[] =
-      await getResponsesForRFP(rfpId);
+    const allResponses: ResponseWithSupplier[] = await getResponsesForRFP(
+      rfpId,
+      versionId || undefined
+    );
 
     // Calculate global progress
-    const completionPercentage = await getRFPCompletionPercentage(rfpId);
+    const completionPercentage = await getRFPCompletionPercentage(
+      rfpId,
+      versionId || undefined
+    );
     const evaluatedRequirements = Math.round(
       (completionPercentage / 100) * totalRequirements
     );

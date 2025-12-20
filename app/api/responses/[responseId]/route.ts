@@ -68,6 +68,8 @@ export async function PUT(
 
   try {
     const { responseId } = params;
+    const { searchParams } = new URL(request.url);
+    const versionId = searchParams.get("versionId");
 
     // Verify user is authenticated
     const supabase = await createServerClient();
@@ -145,6 +147,11 @@ export async function PUT(
       last_modified_by: user.id,
       updated_at: new Date().toISOString(),
     };
+
+    // Add version_id if provided
+    if (versionId) {
+      updateData.version_id = versionId;
+    }
 
     if (manual_score !== undefined) updateData.manual_score = manual_score;
     if (status !== undefined) updateData.status = status;

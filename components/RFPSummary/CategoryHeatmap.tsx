@@ -61,15 +61,17 @@ export function CategoryHeatmap({
       try {
         setLoading(true);
 
-        // Build responses URL with versionId if available
+        // Build URLs with versionId if available
         let responsesUrl = `/api/rfps/${rfpId}/responses`;
+        let suppliersUrl = `/api/rfps/${rfpId}/suppliers`;
         if (activeVersion?.id) {
           responsesUrl += `?versionId=${activeVersion.id}`;
+          suppliersUrl += `?versionId=${activeVersion.id}`;
         }
 
         const [suppliersRes, treeRes, responsesRes, weightsRes] =
           await Promise.all([
-            fetch(`/api/rfps/${rfpId}/suppliers`),
+            fetch(suppliersUrl),
             fetch(`/api/rfps/${rfpId}/tree`),
             fetch(responsesUrl),
             fetch(`/api/rfps/${rfpId}/weights`),

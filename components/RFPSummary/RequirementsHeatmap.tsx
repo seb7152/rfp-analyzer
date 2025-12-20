@@ -90,8 +90,12 @@ export function RequirementsHeatmap({
       try {
         setLoading(true);
 
-        // Fetch suppliers
-        const suppliersRes = await fetch(`/api/rfps/${rfpId}/suppliers`);
+        // Fetch suppliers with versionId if available
+        let suppliersUrl = `/api/rfps/${rfpId}/suppliers`;
+        if (activeVersion?.id) {
+          suppliersUrl += `?versionId=${activeVersion.id}`;
+        }
+        const suppliersRes = await fetch(suppliersUrl);
         const suppliersData = await suppliersRes.json();
 
         // Fetch requirements tree
