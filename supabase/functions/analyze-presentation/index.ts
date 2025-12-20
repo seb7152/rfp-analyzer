@@ -22,6 +22,17 @@ serve(async (req) => {
     });
   }
 
+  // Verify API key
+  const apiKey = req.headers.get("x-api-key");
+  const expectedApiKey = Deno.env.get("PRESENTATION_ANALYSIS_API_KEY");
+
+  if (!apiKey || apiKey !== expectedApiKey) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const body = (await req.json()) as AnalyzePresentationRequest;
     const { analysisId, rfpId, supplierId, transcript, versionId, correlationId } =

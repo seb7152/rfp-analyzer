@@ -101,6 +101,7 @@ export async function POST(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-api-key": process.env.PRESENTATION_ANALYSIS_API_KEY || "",
         },
         body: JSON.stringify({
           analysisId: analysis.id,
