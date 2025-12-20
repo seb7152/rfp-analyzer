@@ -100,7 +100,6 @@ export async function POST(
       const response = await fetch(edgeFunctionUrl, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.SUPABASE_ANON_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
