@@ -198,7 +198,6 @@ serve(async (req) => {
             status: "failed",
             error_message: `N8N returned ${n8nResponse.status}`,
             completed_at: new Date().toISOString(),
-            last_updated_at: new Date().toISOString(),
           })
           .eq("id", analysisId);
 
@@ -218,7 +217,6 @@ serve(async (req) => {
           success: true,
           message: "Presentation analysis submitted to N8N",
           analysisId,
-          taskId: task?.id,
         }),
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
@@ -232,7 +230,6 @@ serve(async (req) => {
           status: "failed",
           error_message: `N8N call failed: ${String(n8nError)}`,
           completed_at: new Date().toISOString(),
-          last_updated_at: new Date().toISOString(),
         })
         .eq("id", analysisId);
 
