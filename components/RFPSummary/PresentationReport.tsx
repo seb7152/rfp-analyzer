@@ -8,11 +8,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
-  AlertCircle,
   CheckCircle2,
   Clock,
   Loader,
-  MessageSquare,
   RefreshCw,
   AlertTriangle,
 } from "lucide-react";
@@ -24,33 +22,19 @@ interface Supplier {
 
 interface Analysis {
   id: string;
-  analysis_id: string;
   supplier_id: string;
   status: string;
-  transcript: string;
+  created_at: string;
   analysis_data: {
     summary?: string;
     keyPoints?: string[];
-    suggestionsCount?: {
-      responses: number;
-      comments: number;
-      questions: number;
-    };
+    suggestions?: Array<{
+      requirementId: string;
+      suggestedResponse?: string;
+      suggestedComment?: string;
+      answeredQuestion?: string;
+    }>;
   };
-  suggestions_count: number;
-}
-
-interface Suggestion {
-  id: string;
-  analysis_id: string;
-  requirement_id: string;
-  original_response?: string;
-  suggested_response?: string;
-  original_comment?: string;
-  suggested_comment?: string;
-  original_question?: string;
-  answered_question?: string;
-  status: string;
 }
 
 export function PresentationReport({
@@ -61,22 +45,21 @@ export function PresentationReport({
   suppliers: Supplier[];
 }) {
   const [activeTab, setActiveTab] = useState<string>(suppliers[0]?.id || "");
-  const [analyses, setAnalyses] = useState<Analysis[]>([]);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [analyses, setAnalyses] = useState<Map<string, Analysis>>(new Map());
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedSuggestions, setExpandedSuggestions] = useState<Set<string>>(
     new Set()
   );
 
-  // Fetch analyses and suggestions
+  // Fetch analyses
   const fetchResults = async (suppressLoading = false) => {
     if (!suppressLoading) setLoading(true);
     setRefreshing(true);
 
     try {
       const response = await fetch(
-        `/api/rfps/${rfpId}/analyze-presentation/results/latest?supplierId=${activeTab}`
+        `/api/rfps/${rfpId}/analyze-presentation/results/latest`
       );
 
       if (!response.ok) {
@@ -84,8 +67,13 @@ export function PresentationReport({
       }
 
       const data = await response.json();
-      setAnalyses(data.analyses || []);
-      setSuggestions(data.suggestions || []);
+      const analysesMap = new Map<string, Analysis>();
+
+      (data.analyses || []).forEach((analysis: Analysis) => {
+        analysesMap.set(analysis.supplier_id, analysis);
+      });
+
+      setAnalyses(analysesMap);
     } catch (error) {
       console.error("Error fetching results:", error);
       toast.error("Erreur lors de la récupération des résultats");
@@ -95,18 +83,15 @@ export function PresentationReport({
     }
   };
 
-  // Fetch results when tab changes
+  // Fetch results when mounted
   useEffect(() => {
-    if (activeTab) {
-      fetchResults();
-    }
-  }, [activeTab, rfpId]);
+    fetchResults();
+  }, [rfpId]);
 
-  // Auto-refresh every 5 seconds when analyses are processing
+  // Auto-refresh every 5 seconds when processing
   useEffect(() => {
-    const hasProcessing = analyses.some((a) => a.status === "processing");
-
-    if (!hasProcessing) return;
+    const currentAnalysis = analyses.get(activeTab);
+    if (!currentAnalysis || currentAnalysis.status !== "processing") return;
 
     const interval = setInterval(() => {
       fetchResults(true);
@@ -115,11 +100,12 @@ export function PresentationReport({
     return () => clearInterval(interval);
   }, [analyses, activeTab, rfpId]);
 
-  const currentAnalysis = analyses[0];
+  const currentAnalysis = analyses.get(activeTab);
+  const suggestions = currentAnalysis?.analysis_data?.suggestions || [];
   const suggestionsByType = {
-    responses: suggestions.filter((s) => s.suggested_response),
-    comments: suggestions.filter((s) => s.suggested_comment),
-    questions: suggestions.filter((s) => s.answered_question),
+    responses: suggestions.filter((s) => s.suggestedResponse),
+    comments: suggestions.filter((s) => s.suggestedComment),
+    questions: suggestions.filter((s) => s.answeredQuestion),
   };
 
   const toggleSuggestion = (suggestionId: string) => {
@@ -140,10 +126,8 @@ export function PresentationReport({
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="flex w-full gap-2 border-b border-slate-200 bg-transparent p-0 dark:border-slate-800">
             {suppliers.map((supplier) => {
-              const supplierAnalyses = analyses.filter(
-                (a) => a.supplier_id === supplier.id
-              );
-              const status = supplierAnalyses[0]?.status;
+              const supplierAnalysis = analyses.get(supplier.id);
+              const status = supplierAnalysis?.status;
 
               return (
                 <TabsTrigger
@@ -253,7 +237,10 @@ export function PresentationReport({
                           <ul className="space-y-1">
                             {currentAnalysis.analysis_data.keyPoints.map(
                               (point, i) => (
-                                <li key={i} className="text-sm text-slate-600 dark:text-slate-300 flex gap-2">
+                                <li
+                                  key={i}
+                                  className="text-sm text-slate-600 dark:text-slate-300 flex gap-2"
+                                >
                                   <span className="text-slate-400">•</span>
                                   {point}
                                 </li>
@@ -268,7 +255,6 @@ export function PresentationReport({
                   {suggestions.length > 0 && (
                     <Card className="rounded-2xl border border-blue-200 bg-blue-50/50 p-6 dark:border-blue-900 dark:bg-blue-950/20">
                       <div className="flex items-start gap-3">
-                        <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                         <div className="space-y-3 flex-1">
                           <h3 className="font-medium text-slate-900 dark:text-white">
                             Suggestions de mise à jour
@@ -305,47 +291,38 @@ export function PresentationReport({
                             Réponses suggérées ({suggestionsByType.responses.length})
                           </h3>
                           <div className="space-y-3">
-                            {suggestionsByType.responses.map((sugg) => (
-                              <div
-                                key={sugg.id}
-                                className="border border-slate-200 rounded-lg p-4 dark:border-slate-700"
-                              >
-                                <button
-                                  onClick={() => toggleSuggestion(sugg.id)}
-                                  className="w-full text-left font-medium text-sm text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-between"
+                            {suggestionsByType.responses.map((sugg, idx) => {
+                              const suggId = `resp-${idx}`;
+                              return (
+                                <div
+                                  key={suggId}
+                                  className="border border-slate-200 rounded-lg p-4 dark:border-slate-700"
                                 >
-                                  <span>Exigence {sugg.requirement_id.substring(0, 8)}</span>
-                                  <span className="text-xs text-slate-500">
-                                    {expandedSuggestions.has(sugg.id) ? "−" : "+"}
-                                  </span>
-                                </button>
+                                  <button
+                                    onClick={() => toggleSuggestion(suggId)}
+                                    className="w-full text-left font-medium text-sm text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-between"
+                                  >
+                                    <span>Exigence {sugg.requirementId.substring(0, 8)}</span>
+                                    <span className="text-xs text-slate-500">
+                                      {expandedSuggestions.has(suggId) ? "−" : "+"}
+                                    </span>
+                                  </button>
 
-                                {expandedSuggestions.has(sugg.id) && (
-                                  <div className="mt-3 space-y-2 text-sm">
-                                    {sugg.original_response && (
-                                      <div>
-                                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">
-                                          Réponse actuelle
-                                        </p>
-                                        <p className="text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 p-2 rounded">
-                                          {sugg.original_response}
-                                        </p>
-                                      </div>
-                                    )}
-                                    {sugg.suggested_response && (
+                                  {expandedSuggestions.has(suggId) && (
+                                    <div className="mt-3 space-y-2 text-sm">
                                       <div>
                                         <p className="text-xs font-medium text-green-600 uppercase tracking-wider mb-1">
                                           Réponse suggérée
                                         </p>
                                         <p className="text-slate-700 dark:text-slate-300 bg-green-50 dark:bg-green-950/20 p-2 rounded">
-                                          {sugg.suggested_response}
+                                          {sugg.suggestedResponse}
                                         </p>
                                       </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </Card>
                       )}
@@ -357,47 +334,38 @@ export function PresentationReport({
                             Commentaires suggérés ({suggestionsByType.comments.length})
                           </h3>
                           <div className="space-y-3">
-                            {suggestionsByType.comments.map((sugg) => (
-                              <div
-                                key={sugg.id}
-                                className="border border-slate-200 rounded-lg p-4 dark:border-slate-700"
-                              >
-                                <button
-                                  onClick={() => toggleSuggestion(sugg.id)}
-                                  className="w-full text-left font-medium text-sm text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-between"
+                            {suggestionsByType.comments.map((sugg, idx) => {
+                              const suggId = `comment-${idx}`;
+                              return (
+                                <div
+                                  key={suggId}
+                                  className="border border-slate-200 rounded-lg p-4 dark:border-slate-700"
                                 >
-                                  <span>Exigence {sugg.requirement_id.substring(0, 8)}</span>
-                                  <span className="text-xs text-slate-500">
-                                    {expandedSuggestions.has(sugg.id) ? "−" : "+"}
-                                  </span>
-                                </button>
+                                  <button
+                                    onClick={() => toggleSuggestion(suggId)}
+                                    className="w-full text-left font-medium text-sm text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-between"
+                                  >
+                                    <span>Exigence {sugg.requirementId.substring(0, 8)}</span>
+                                    <span className="text-xs text-slate-500">
+                                      {expandedSuggestions.has(suggId) ? "−" : "+"}
+                                    </span>
+                                  </button>
 
-                                {expandedSuggestions.has(sugg.id) && (
-                                  <div className="mt-3 space-y-2 text-sm">
-                                    {sugg.original_comment && (
-                                      <div>
-                                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">
-                                          Commentaire actuel
-                                        </p>
-                                        <p className="text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 p-2 rounded">
-                                          {sugg.original_comment}
-                                        </p>
-                                      </div>
-                                    )}
-                                    {sugg.suggested_comment && (
+                                  {expandedSuggestions.has(suggId) && (
+                                    <div className="mt-3 space-y-2 text-sm">
                                       <div>
                                         <p className="text-xs font-medium text-green-600 uppercase tracking-wider mb-1">
                                           Commentaire suggéré
                                         </p>
                                         <p className="text-slate-700 dark:text-slate-300 bg-green-50 dark:bg-green-950/20 p-2 rounded">
-                                          {sugg.suggested_comment}
+                                          {sugg.suggestedComment}
                                         </p>
                                       </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </Card>
                       )}
@@ -409,47 +377,38 @@ export function PresentationReport({
                             Questions répondues ({suggestionsByType.questions.length})
                           </h3>
                           <div className="space-y-3">
-                            {suggestionsByType.questions.map((sugg) => (
-                              <div
-                                key={sugg.id}
-                                className="border border-slate-200 rounded-lg p-4 dark:border-slate-700"
-                              >
-                                <button
-                                  onClick={() => toggleSuggestion(sugg.id)}
-                                  className="w-full text-left font-medium text-sm text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-between"
+                            {suggestionsByType.questions.map((sugg, idx) => {
+                              const suggId = `question-${idx}`;
+                              return (
+                                <div
+                                  key={suggId}
+                                  className="border border-slate-200 rounded-lg p-4 dark:border-slate-700"
                                 >
-                                  <span>Exigence {sugg.requirement_id.substring(0, 8)}</span>
-                                  <span className="text-xs text-slate-500">
-                                    {expandedSuggestions.has(sugg.id) ? "−" : "+"}
-                                  </span>
-                                </button>
+                                  <button
+                                    onClick={() => toggleSuggestion(suggId)}
+                                    className="w-full text-left font-medium text-sm text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-between"
+                                  >
+                                    <span>Exigence {sugg.requirementId.substring(0, 8)}</span>
+                                    <span className="text-xs text-slate-500">
+                                      {expandedSuggestions.has(suggId) ? "−" : "+"}
+                                    </span>
+                                  </button>
 
-                                {expandedSuggestions.has(sugg.id) && (
-                                  <div className="mt-3 space-y-2 text-sm">
-                                    {sugg.original_question && (
-                                      <div>
-                                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">
-                                          Question
-                                        </p>
-                                        <p className="text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 p-2 rounded">
-                                          {sugg.original_question}
-                                        </p>
-                                      </div>
-                                    )}
-                                    {sugg.answered_question && (
+                                  {expandedSuggestions.has(suggId) && (
+                                    <div className="mt-3 space-y-2 text-sm">
                                       <div>
                                         <p className="text-xs font-medium text-green-600 uppercase tracking-wider mb-1">
                                           Réponse proposée
                                         </p>
                                         <p className="text-slate-700 dark:text-slate-300 bg-green-50 dark:bg-green-950/20 p-2 rounded">
-                                          {sugg.answered_question}
+                                          {sugg.answeredQuestion}
                                         </p>
                                       </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </Card>
                       )}

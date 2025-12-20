@@ -71,7 +71,6 @@ serve(async (req) => {
       .update({
         status: "processing",
         started_at: new Date().toISOString(),
-        last_updated_at: new Date().toISOString(),
       })
       .eq("id", analysisId);
 
@@ -83,7 +82,7 @@ serve(async (req) => {
     // Fetch RFP details
     const { data: rfpData, error: rfpError } = await supabase
       .from("rfps")
-      .select("id, organization_id, title")
+      .select("id, title")
       .eq("id", rfpId)
       .single();
 
@@ -105,7 +104,7 @@ serve(async (req) => {
     // Fetch all requirements for the RFP
     const { data: requirements, error: reqError } = await supabase
       .from("requirements")
-      .select("id, requirement_id_external, title, description, category_id")
+      .select("id, requirement_id_external, title, description")
       .eq("rfp_id", rfpId);
 
     if (reqError) {
@@ -117,7 +116,7 @@ serve(async (req) => {
     let responsesQuery = supabase
       .from("responses")
       .select(
-        "id, requirement_id, response_text, question, manual_comment, ai_comment, manual_score, ai_score"
+        "requirement_id, response_text, question, manual_comment, ai_comment, manual_score, ai_score"
       )
       .eq("supplier_id", supplierId);
 
@@ -136,17 +135,8 @@ serve(async (req) => {
       `[analyze-presentation] Found ${requirements?.length || 0} requirements and ${responses?.length || 0} responses`
     );
 
-    // Create a mapping of requirement ID to responses for easy lookup
-    const responsesByRequirement = new Map();
-    if (responses) {
-      responses.forEach((resp) => {
-        responsesByRequirement.set(resp.requirement_id, resp);
-      });
-    }
-
     // Build N8N payload
     const n8nPayload = {
-      taskId: analysisId,
       correlationId,
       rfpId,
       supplierId,
@@ -159,10 +149,8 @@ serve(async (req) => {
         code: req.requirement_id_external,
         title: req.title,
         description: req.description || "",
-        categoryId: req.category_id,
       })),
       responses: (responses || []).map((resp) => ({
-        id: resp.id,
         requirementId: resp.requirement_id,
         responseText: resp.response_text,
         question: resp.question,
@@ -178,23 +166,6 @@ serve(async (req) => {
         (requirements || []).length
       } requirements and ${(responses || []).length} responses`
     );
-
-    // Create task record for tracking
-    const { data: task, error: taskError } = await supabase
-      .from("presentation_analysis_tasks")
-      .insert({
-        analysis_id: analysisId,
-        category_id: rfpId, // Use rfp_id as category_id since we're analyzing the whole RFP
-        status: "processing",
-        attempted_at: new Date().toISOString(),
-      })
-      .select("id")
-      .single();
-
-    if (taskError) {
-      console.error("Error creating task record:", taskError);
-      throw taskError;
-    }
 
     // Send to N8N
     const n8nWebhookUrl =
