@@ -15,13 +15,11 @@ import { KPICard } from "@/components/RFPSummary/KPICard";
 import { SuppliersTab } from "@/components/RFPSummary/SuppliersTab";
 import { AnalystsTab } from "@/components/RFPSummary/AnalystsTab";
 import { AnalysisTab } from "@/components/RFPSummary/AnalysisTab";
-import { CategoryAnalysisTable } from "@/components/RFPSummary/CategoryAnalysisTable";
 import { WeightsTab } from "@/components/RFPSummary/WeightsTab";
 import { RequirementsTab } from "@/components/RFPSummary/RequirementsTab";
 import { ExportTab } from "@/components/RFPSummary/ExportTab";
 import { VersionsTab } from "@/components/RFPSummary/VersionsTab";
-import { PresentationTranscriptImport } from "@/components/RFPSummary/PresentationTranscriptImport";
-import { PresentationReport } from "@/components/RFPSummary/PresentationReport";
+import { PresentationAnalysisSection } from "@/components/RFPSummary/PresentationAnalysisSection";
 
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
 import { DocxImportModal } from "@/components/DocxImportModal";
@@ -89,7 +87,6 @@ export default function RFPSummaryPage() {
   const [isDocxImportModalOpen, setIsDocxImportModalOpen] = useState(false);
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
   const [suppliers, setSuppliers] = useState<Array<{ id: string; name: string }>>([]);
-  const [presentationTab, setPresentationTab] = useState<"import" | "report">("import");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -600,57 +597,10 @@ export default function RFPSummaryPage() {
               {loading ? (
                 <Skeleton className="h-64 rounded-2xl" />
               ) : (
-                <div className="space-y-6">
-                  {/* Presentation sub-tabs */}
-                  <Tabs
-                    value={presentationTab}
-                    onValueChange={(value) =>
-                      setPresentationTab(value as "import" | "report")
-                    }
-                    className="w-full"
-                  >
-                    <TabsList className="flex w-full gap-8 border-b border-slate-200 bg-transparent p-0 dark:border-slate-800">
-                      <TabsTrigger
-                        value="import"
-                        className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-                      >
-                        <FileUp className="h-4 w-4" />
-                        <span>Importer transcripts</span>
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="report"
-                        className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-                      >
-                        <FileText className="h-4 w-4" />
-                        <span>Compte rendu</span>
-                      </TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="import" className="space-y-6 mt-6">
-                      <PresentationTranscriptImport
-                        rfpId={rfpId}
-                        suppliers={suppliers}
-                      />
-                    </TabsContent>
-
-                    <TabsContent value="report" className="space-y-6 mt-6">
-                      <PresentationReport rfpId={rfpId} suppliers={suppliers} />
-                    </TabsContent>
-                  </Tabs>
-
-                  {/* Original CategoryAnalysisTable (Defense analysis) */}
-                  <div className="mt-12 pt-12 border-t border-slate-200 dark:border-slate-800">
-                    <div className="mb-6">
-                      <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-                        Analyse des défenses de catégorie
-                      </h2>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                        Résultats de l'analyse IA par catégorie
-                      </p>
-                    </div>
-                    <CategoryAnalysisTable rfpId={rfpId} />
-                  </div>
-                </div>
+                <PresentationAnalysisSection
+                  rfpId={rfpId}
+                  suppliers={suppliers}
+                />
               )}
             </TabsContent>
 
