@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FileUp, FileText } from "lucide-react";
+import { useVersion } from "@/contexts/VersionContext";
 import { PresentationImportModal } from "./PresentationImportModal";
 import { PresentationReport } from "./PresentationReport";
 import { CategoryAnalysisTable } from "./CategoryAnalysisTable";
@@ -22,13 +23,17 @@ interface PresentationAnalysisSectionProps {
 export function PresentationAnalysisSection({
   rfpId,
   suppliers,
-  versionId,
+  versionId: versionIdProp,
 }: PresentationAnalysisSectionProps) {
+  const { activeVersion } = useVersion();
   const [activeTab, setActiveTab] = useState<"preparation" | "report">(
     "preparation"
   );
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Use active version from context, fallback to prop
+  const activeVersionId = activeVersion?.id || versionIdProp;
 
   const handleImportSuccess = () => {
     // Trigger refresh of report data
@@ -127,7 +132,7 @@ export function PresentationAnalysisSection({
         isOpen={isImportModalOpen}
         onOpenChange={setIsImportModalOpen}
         onSuccess={handleImportSuccess}
-        versionId={versionId}
+        versionId={activeVersionId}
       />
     </div>
   );

@@ -87,7 +87,6 @@ export default function RFPSummaryPage() {
   const [isDocxImportModalOpen, setIsDocxImportModalOpen] = useState(false);
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
   const [suppliers, setSuppliers] = useState<Array<{ id: string; name: string }>>([]);
-  const [selectedVersionId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -601,7 +600,6 @@ export default function RFPSummaryPage() {
                 <PresentationAnalysisSection
                   rfpId={rfpId}
                   suppliers={suppliers}
-                  versionId={selectedVersionId}
                 />
               )}
             </TabsContent>
