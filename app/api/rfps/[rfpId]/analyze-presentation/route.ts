@@ -28,7 +28,11 @@ export async function POST(
       );
     }
 
-    if (!transcript || typeof transcript !== "string" || transcript.trim() === "") {
+    if (
+      !transcript ||
+      typeof transcript !== "string" ||
+      transcript.trim() === ""
+    ) {
       return NextResponse.json(
         { error: "Missing or empty required field: transcript" },
         { status: 400 }
@@ -87,7 +91,10 @@ export async function POST(
       .single();
 
     if (analysisError || !analysis) {
-      console.error("Error creating presentation_analyses record:", analysisError);
+      console.error(
+        "Error creating presentation_analyses record:",
+        analysisError
+      );
       return NextResponse.json(
         { error: "Failed to create analysis record" },
         { status: 500 }

@@ -9,10 +9,7 @@ export async function GET(
     const { rfpId } = params;
 
     if (!rfpId || typeof rfpId !== "string") {
-      return NextResponse.json(
-        { error: "Invalid RFP ID" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid RFP ID" }, { status: 400 });
     }
 
     const supabase = await createServerClient();

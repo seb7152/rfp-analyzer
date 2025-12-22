@@ -63,6 +63,7 @@ export function PresentationImportModal({
     setLoading(true);
 
     try {
+<<<<<<< Updated upstream
       const response = await fetch(
         `/api/rfps/${rfpId}/analyze-presentation`,
         {
@@ -77,6 +78,18 @@ export function PresentationImportModal({
           }),
         }
       );
+=======
+      const response = await fetch(`/api/rfps/${rfpId}/analyze-presentation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          supplierId: selectedSupplierId,
+          transcript: transcript.trim(),
+        }),
+      });
+>>>>>>> Stashed changes
 
       if (!response.ok) {
         throw new Error("Failed to start analysis");

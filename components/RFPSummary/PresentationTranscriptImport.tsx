@@ -36,9 +36,7 @@ export function PresentationTranscriptImport({
   suppliers: Supplier[];
 }) {
   const [transcripts, setTranscripts] = useState<TranscriptData>({});
-  const [activeTab, setActiveTab] = useState<string>(
-    suppliers[0]?.id || ""
-  );
+  const [activeTab, setActiveTab] = useState<string>(suppliers[0]?.id || "");
   const [copied, setCopied] = useState(false);
 
   // Initialize transcript data for all suppliers
@@ -81,19 +79,16 @@ export function PresentationTranscriptImport({
     }));
 
     try {
-      const response = await fetch(
-        `/api/rfps/${rfpId}/analyze-presentation`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            supplierId,
-            transcript: transcript.trim(),
-          }),
-        }
-      );
+      const response = await fetch(`/api/rfps/${rfpId}/analyze-presentation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          supplierId,
+          transcript: transcript.trim(),
+        }),
+      });
 
       if (!response.ok) {
         throw new Error("Failed to start analysis");
@@ -179,8 +174,9 @@ Prochaines étapes:
               Importer les transcripts de soutenance
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-300">
-              Collez le transcript brut de la soutenance de chaque fournisseur. N8N analysera le contenu
-              et proposera des mises à jour pour les commentaires et réponses en fonction des exigences du RFP.
+              Collez le transcript brut de la soutenance de chaque fournisseur.
+              N8N analysera le contenu et proposera des mises à jour pour les
+              commentaires et réponses en fonction des exigences du RFP.
             </p>
             <Button
               variant="outline"
@@ -204,15 +200,12 @@ Prochaines étapes:
 
       {/* Tabs for each supplier */}
       {suppliers.length > 0 && (
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className="w-full"
-        >
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="flex w-full gap-2 border-b border-slate-200 bg-transparent p-0 dark:border-slate-800">
             {suppliers.map((supplier) => {
               const data = transcripts[supplier.id];
-              const hasTranscript = data?.transcript && data.transcript.trim() !== "";
+              const hasTranscript =
+                data?.transcript && data.transcript.trim() !== "";
               const isSuccess = data?.status === "success";
 
               return (
@@ -277,8 +270,8 @@ Prochaines étapes:
                         data.status === "success"
                           ? "text-green-600 dark:text-green-400"
                           : data.status === "error"
-                          ? "text-red-600 dark:text-red-400"
-                          : "text-slate-600 dark:text-slate-400"
+                            ? "text-red-600 dark:text-red-400"
+                            : "text-slate-600 dark:text-slate-400"
                       }`}
                     >
                       {data.message}
@@ -289,8 +282,7 @@ Prochaines étapes:
                     <Button
                       onClick={() => handleAnalyzeTranscript(supplier.id)}
                       disabled={
-                        data.status === "loading" ||
-                        !data.transcript.trim()
+                        data.status === "loading" || !data.transcript.trim()
                       }
                       className="gap-2"
                     >

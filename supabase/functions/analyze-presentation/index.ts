@@ -34,8 +34,14 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body = (await req.json()) as AnalyzePresentationRequest;
-    const { analysisId, rfpId, supplierId, transcript, versionId, correlationId } =
-      body;
+    const {
+      analysisId,
+      rfpId,
+      supplierId,
+      transcript,
+      versionId,
+      correlationId,
+    } = body;
 
     console.log("[analyze-presentation] Request received:", {
       analysisId,
@@ -46,13 +52,7 @@ serve(async (req) => {
       correlationId,
     });
 
-    if (
-      !analysisId ||
-      !rfpId ||
-      !supplierId ||
-      !transcript ||
-      !correlationId
-    ) {
+    if (!analysisId || !rfpId || !supplierId || !transcript || !correlationId) {
       return new Response(
         JSON.stringify({
           error:
@@ -211,7 +211,9 @@ serve(async (req) => {
         );
       }
 
-      console.log(`[analyze-presentation] Analysis submitted to N8N successfully`);
+      console.log(
+        `[analyze-presentation] Analysis submitted to N8N successfully`
+      );
 
       return new Response(
         JSON.stringify({

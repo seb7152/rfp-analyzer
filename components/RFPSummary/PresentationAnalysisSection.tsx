@@ -75,54 +75,49 @@ export function PresentationAnalysisSection({
       {/* Tab Content */}
       <div>
         {activeTab === "preparation" && (
-          <Card className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                  Importer les transcripts de soutenance
-                </h2>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                  Collez le transcript brut de chaque soutenance. N8N analysera
-                  le contenu et proposera des mises à jour pour les commentaires
-                  et réponses en fonction des exigences du RFP.
-                </p>
-              </div>
+          <div className="space-y-6">
+            {/* Defense Analysis Table */}
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                Analyse des défenses par catégorie
+              </h2>
+              <CategoryAnalysisTable rfpId={rfpId} />
+            </div>
+          </div>
+        )}
 
-              <div className="pt-4">
+        {activeTab === "report" && (
+          <div className="space-y-6">
+            {/* Import Button */}
+            <Card className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-slate-900 dark:text-white">
+                    Importer un nouveau transcript
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                    Analysez une nouvelle transcription de soutenance
+                  </p>
+                </div>
                 <Button
                   onClick={() => setIsImportModalOpen(true)}
                   className="gap-2"
                 >
                   <FileUp className="h-4 w-4" />
-                  Importer un transcript
+                  Importer
                 </Button>
               </div>
-            </div>
-          </Card>
-        )}
+            </Card>
 
-        {activeTab === "report" && (
-          <div className="space-y-6">
+            {/* Report and Suggestions */}
             <PresentationReport
               rfpId={rfpId}
               suppliers={suppliers}
+              versionId={activeVersion?.id}
               key={refreshKey}
             />
           </div>
         )}
-      </div>
-
-      {/* Defense Analysis Section */}
-      <div className="mt-12 pt-12 border-t border-slate-200 dark:border-slate-800">
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-            Analyse des défenses de catégorie
-          </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            Résultats de l'analyse IA par catégorie
-          </p>
-        </div>
-        <CategoryAnalysisTable rfpId={rfpId} />
       </div>
 
       {/* Import Modal */}
