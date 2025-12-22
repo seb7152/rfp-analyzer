@@ -15,11 +15,11 @@ import { KPICard } from "@/components/RFPSummary/KPICard";
 import { SuppliersTab } from "@/components/RFPSummary/SuppliersTab";
 import { AnalystsTab } from "@/components/RFPSummary/AnalystsTab";
 import { AnalysisTab } from "@/components/RFPSummary/AnalysisTab";
-import { CategoryAnalysisTable } from "@/components/RFPSummary/CategoryAnalysisTable";
 import { WeightsTab } from "@/components/RFPSummary/WeightsTab";
 import { RequirementsTab } from "@/components/RFPSummary/RequirementsTab";
 import { ExportTab } from "@/components/RFPSummary/ExportTab";
 import { VersionsTab } from "@/components/RFPSummary/VersionsTab";
+import { PresentationAnalysisSection } from "@/components/RFPSummary/PresentationAnalysisSection";
 
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
 import { DocxImportModal } from "@/components/DocxImportModal";
@@ -86,6 +86,9 @@ export default function RFPSummaryPage() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isDocxImportModalOpen, setIsDocxImportModalOpen] = useState(false);
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
+  const [suppliers, setSuppliers] = useState<
+    Array<{ id: string; name: string }>
+  >([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -111,6 +114,17 @@ export default function RFPSummaryPage() {
           }
         } catch {
           // Documents fetch error, continue without it
+        }
+
+        // Fetch suppliers
+        try {
+          const suppliersResponse = await fetch(`/api/rfps/${rfpId}/suppliers`);
+          if (suppliersResponse.ok) {
+            const suppliersData = await suppliersResponse.json();
+            setSuppliers(suppliersData.suppliers || []);
+          }
+        } catch {
+          // Suppliers fetch error, continue without it
         }
       } catch (err) {
         setError(
@@ -585,7 +599,10 @@ export default function RFPSummaryPage() {
               {loading ? (
                 <Skeleton className="h-64 rounded-2xl" />
               ) : (
-                <CategoryAnalysisTable rfpId={rfpId} />
+                <PresentationAnalysisSection
+                  rfpId={rfpId}
+                  suppliers={suppliers}
+                />
               )}
             </TabsContent>
 
