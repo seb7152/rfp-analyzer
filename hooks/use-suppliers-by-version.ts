@@ -15,7 +15,7 @@ export function useSuppliersByVersion(rfpId: string, versionId?: string) {
       try {
         setLoading(true);
         const url = new URL(
-          `/api/rfps/${rfpId}/suppliers-by-version`,
+          `/api/rfps/${rfpId}/suppliers`,
           window.location.origin
         );
         if (versionId) {
