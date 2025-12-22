@@ -5,8 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   CheckCircle2,
   Clock,
@@ -14,6 +15,7 @@ import {
   RefreshCw,
   AlertTriangle,
 } from "lucide-react";
+import { SuggestionsPanel } from "./SuggestionsPanel";
 
 interface Supplier {
   id: string;
@@ -35,22 +37,22 @@ interface Analysis {
       answeredQuestion?: string;
     }>;
   };
+  suggestions_status?: Record<string, string>; // {requirementId: "inserted"|"pending"|"rejected"}
 }
 
 export function PresentationReport({
   rfpId,
   suppliers,
+  versionId,
 }: {
   rfpId: string;
   suppliers: Supplier[];
+  versionId?: string;
 }) {
   const [activeTab, setActiveTab] = useState<string>(suppliers[0]?.id || "");
   const [analyses, setAnalyses] = useState<Map<string, Analysis>>(new Map());
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [expandedSuggestions, setExpandedSuggestions] = useState<Set<string>>(
-    new Set()
-  );
 
   // Fetch analyses
   const fetchResults = async (suppressLoading = false) => {
@@ -58,9 +60,14 @@ export function PresentationReport({
     setRefreshing(true);
 
     try {
-      const response = await fetch(
-        `/api/rfps/${rfpId}/analyze-presentation/results/latest`
+      const url = new URL(
+        `/api/rfps/${rfpId}/analyze-presentation/results/latest`,
+        window.location.origin
       );
+      if (versionId) {
+        url.searchParams.append("versionId", versionId);
+      }
+      const response = await fetch(url.toString());
 
       if (!response.ok) {
         throw new Error("Failed to fetch results");
@@ -83,10 +90,10 @@ export function PresentationReport({
     }
   };
 
-  // Fetch results when mounted
+  // Fetch results when mounted or when versionId changes
   useEffect(() => {
     fetchResults();
-  }, [rfpId]);
+  }, [rfpId, versionId]);
 
   // Auto-refresh every 5 seconds when processing
   useEffect(() => {
@@ -102,23 +109,6 @@ export function PresentationReport({
 
   const currentAnalysis = analyses.get(activeTab);
   const suggestions = currentAnalysis?.analysis_data?.suggestions || [];
-  const suggestionsByType = {
-    responses: suggestions.filter((s) => s.suggestedResponse),
-    comments: suggestions.filter((s) => s.suggestedComment),
-    questions: suggestions.filter((s) => s.answeredQuestion),
-  };
-
-  const toggleSuggestion = (suggestionId: string) => {
-    setExpandedSuggestions((prev) => {
-      const next = new Set(prev);
-      if (next.has(suggestionId)) {
-        next.delete(suggestionId);
-      } else {
-        next.add(suggestionId);
-      }
-      return next;
-    });
-  };
 
   return (
     <div className="space-y-6">
@@ -169,7 +159,7 @@ export function PresentationReport({
                   </p>
                 </Card>
               ) : (
-                <>
+                <div className="space-y-6">
                   {/* Status Card */}
                   <Card className="rounded-2xl border border-slate-200 p-6 dark:border-slate-800">
                     <div className="flex items-center justify-between mb-4">
@@ -226,181 +216,117 @@ export function PresentationReport({
                         </p>
                       </div>
                     )}
-
-                    {/* Report */}
-                    {currentAnalysis.analysis_data?.report && (
-                      <div className="mt-4 space-y-2">
-                        <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">
-                          {currentAnalysis.analysis_data.report}
-                        </div>
-                      </div>
-                    )}
                   </Card>
 
-                  {/* Suggestions Summary */}
-                  {suggestions.length > 0 && (
-                    <Card className="rounded-2xl border border-blue-200 bg-blue-50/50 p-6 dark:border-blue-900 dark:bg-blue-950/20">
-                      <div className="flex items-start gap-3">
-                        <div className="space-y-3 flex-1">
-                          <h3 className="font-medium text-slate-900 dark:text-white">
-                            Suggestions de mise à jour
+                  {/* Two-column layout: Report (2/3) and Suggestions (1/3) */}
+                  <div
+                    className="grid grid-cols-3 gap-6"
+                    style={{ height: "600px" }}
+                  >
+                    {/* Report - Left (2 columns) */}
+                    <div className="col-span-2 overflow-hidden flex flex-col">
+                      {currentAnalysis.analysis_data?.report && (
+                        <Card className="rounded-2xl border border-slate-200 p-6 dark:border-slate-800 flex flex-col h-full overflow-hidden">
+                          <h3 className="font-medium text-slate-900 dark:text-white mb-4 flex-shrink-0">
+                            Compte rendu
                           </h3>
-                          <div className="flex flex-wrap gap-2">
-                            {suggestionsByType.responses.length > 0 && (
-                              <Badge variant="secondary">
-                                {suggestionsByType.responses.length} réponses
-                              </Badge>
-                            )}
-                            {suggestionsByType.comments.length > 0 && (
-                              <Badge variant="secondary">
-                                {suggestionsByType.comments.length} commentaires
-                              </Badge>
-                            )}
-                            {suggestionsByType.questions.length > 0 && (
-                              <Badge variant="secondary">
-                                {suggestionsByType.questions.length} questions
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  )}
-
-                  {/* Suggestions Details */}
-                  {suggestions.length > 0 && (
-                    <div className="space-y-4">
-                      {/* Response Suggestions */}
-                      {suggestionsByType.responses.length > 0 && (
-                        <Card className="rounded-2xl border border-slate-200 p-6 dark:border-slate-800">
-                          <h3 className="font-medium text-slate-900 dark:text-white mb-4">
-                            Réponses suggérées ({suggestionsByType.responses.length})
-                          </h3>
-                          <div className="space-y-3">
-                            {suggestionsByType.responses.map((sugg, idx) => {
-                              const suggId = `resp-${idx}`;
-                              return (
-                                <div
-                                  key={suggId}
-                                  className="border border-slate-200 rounded-lg p-4 dark:border-slate-700"
-                                >
-                                  <button
-                                    onClick={() => toggleSuggestion(suggId)}
-                                    className="w-full text-left font-medium text-sm text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-between"
-                                  >
-                                    <span>Exigence {sugg.requirementId.substring(0, 8)}</span>
-                                    <span className="text-xs text-slate-500">
-                                      {expandedSuggestions.has(suggId) ? "−" : "+"}
-                                    </span>
-                                  </button>
-
-                                  {expandedSuggestions.has(suggId) && (
-                                    <div className="mt-3 space-y-2 text-sm">
-                                      <div>
-                                        <p className="text-xs font-medium text-green-600 uppercase tracking-wider mb-1">
-                                          Réponse suggérée
-                                        </p>
-                                        <p className="text-slate-700 dark:text-slate-300 bg-green-50 dark:bg-green-950/20 p-2 rounded">
-                                          {sugg.suggestedResponse}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </Card>
-                      )}
-
-                      {/* Comment Suggestions */}
-                      {suggestionsByType.comments.length > 0 && (
-                        <Card className="rounded-2xl border border-slate-200 p-6 dark:border-slate-800">
-                          <h3 className="font-medium text-slate-900 dark:text-white mb-4">
-                            Commentaires suggérés ({suggestionsByType.comments.length})
-                          </h3>
-                          <div className="space-y-3">
-                            {suggestionsByType.comments.map((sugg, idx) => {
-                              const suggId = `comment-${idx}`;
-                              return (
-                                <div
-                                  key={suggId}
-                                  className="border border-slate-200 rounded-lg p-4 dark:border-slate-700"
-                                >
-                                  <button
-                                    onClick={() => toggleSuggestion(suggId)}
-                                    className="w-full text-left font-medium text-sm text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-between"
-                                  >
-                                    <span>Exigence {sugg.requirementId.substring(0, 8)}</span>
-                                    <span className="text-xs text-slate-500">
-                                      {expandedSuggestions.has(suggId) ? "−" : "+"}
-                                    </span>
-                                  </button>
-
-                                  {expandedSuggestions.has(suggId) && (
-                                    <div className="mt-3 space-y-2 text-sm">
-                                      <div>
-                                        <p className="text-xs font-medium text-green-600 uppercase tracking-wider mb-1">
-                                          Commentaire suggéré
-                                        </p>
-                                        <p className="text-slate-700 dark:text-slate-300 bg-green-50 dark:bg-green-950/20 p-2 rounded">
-                                          {sugg.suggestedComment}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </Card>
-                      )}
-
-                      {/* Question Suggestions */}
-                      {suggestionsByType.questions.length > 0 && (
-                        <Card className="rounded-2xl border border-slate-200 p-6 dark:border-slate-800">
-                          <h3 className="font-medium text-slate-900 dark:text-white mb-4">
-                            Questions répondues ({suggestionsByType.questions.length})
-                          </h3>
-                          <div className="space-y-3">
-                            {suggestionsByType.questions.map((sugg, idx) => {
-                              const suggId = `question-${idx}`;
-                              return (
-                                <div
-                                  key={suggId}
-                                  className="border border-slate-200 rounded-lg p-4 dark:border-slate-700"
-                                >
-                                  <button
-                                    onClick={() => toggleSuggestion(suggId)}
-                                    className="w-full text-left font-medium text-sm text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-between"
-                                  >
-                                    <span>Exigence {sugg.requirementId.substring(0, 8)}</span>
-                                    <span className="text-xs text-slate-500">
-                                      {expandedSuggestions.has(suggId) ? "−" : "+"}
-                                    </span>
-                                  </button>
-
-                                  {expandedSuggestions.has(suggId) && (
-                                    <div className="mt-3 space-y-2 text-sm">
-                                      <div>
-                                        <p className="text-xs font-medium text-green-600 uppercase tracking-wider mb-1">
-                                          Réponse proposée
-                                        </p>
-                                        <p className="text-slate-700 dark:text-slate-300 bg-green-50 dark:bg-green-950/20 p-2 rounded">
-                                          {sugg.answeredQuestion}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
+                          <div className="overflow-y-auto flex-1 prose prose-sm dark:prose-invert max-w-none text-sm text-slate-600 dark:text-slate-300">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                h1: ({ children }) => (
+                                  <h1 className="text-2xl font-bold mt-4 mb-2 first:mt-0">
+                                    {children}
+                                  </h1>
+                                ),
+                                h2: ({ children }) => (
+                                  <h2 className="text-xl font-bold mt-3 mb-2">
+                                    {children}
+                                  </h2>
+                                ),
+                                h3: ({ children }) => (
+                                  <h3 className="text-lg font-semibold mt-2 mb-1">
+                                    {children}
+                                  </h3>
+                                ),
+                                p: ({ children }) => (
+                                  <p className="mb-3">{children}</p>
+                                ),
+                                ul: ({ children }) => (
+                                  <ul className="list-disc list-inside mb-3 space-y-1">
+                                    {children}
+                                  </ul>
+                                ),
+                                ol: ({ children }) => (
+                                  <ol className="list-decimal list-inside mb-3 space-y-1">
+                                    {children}
+                                  </ol>
+                                ),
+                                li: ({ children }) => (
+                                  <li className="ml-2">{children}</li>
+                                ),
+                                blockquote: ({ children }) => (
+                                  <blockquote className="border-l-4 border-slate-300 dark:border-slate-600 pl-4 italic my-3">
+                                    {children}
+                                  </blockquote>
+                                ),
+                                code: ({ children, ...props }: any) => {
+                                  const inline =
+                                    !props.className?.includes("language-");
+                                  return inline ? (
+                                    <code className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-sm font-mono">
+                                      {children}
+                                    </code>
+                                  ) : (
+                                    <code
+                                      className="block bg-slate-100 dark:bg-slate-800 p-3 rounded mb-3 overflow-x-auto font-mono text-sm"
+                                      {...props}
+                                    >
+                                      {children}
+                                    </code>
+                                  );
+                                },
+                                table: ({ children }) => (
+                                  <table className="border-collapse border border-slate-300 dark:border-slate-600 w-full mb-3">
+                                    {children}
+                                  </table>
+                                ),
+                                th: ({ children }) => (
+                                  <th className="border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-3 py-2 text-left">
+                                    {children}
+                                  </th>
+                                ),
+                                td: ({ children }) => (
+                                  <td className="border border-slate-300 dark:border-slate-600 px-3 py-2">
+                                    {children}
+                                  </td>
+                                ),
+                              }}
+                            >
+                              {currentAnalysis.analysis_data.report}
+                            </ReactMarkdown>
                           </div>
                         </Card>
                       )}
                     </div>
-                  )}
-                </>
+
+                    {/* Suggestions - Right (1 column) */}
+                    <div className="col-span-1 overflow-hidden flex flex-col">
+                      <div className="overflow-y-auto flex-1">
+                        <SuggestionsPanel
+                          rfpId={rfpId}
+                          supplierId={activeTab}
+                          analysisId={currentAnalysis.id}
+                          suggestions={suggestions}
+                          suggestionsStatus={currentAnalysis.suggestions_status}
+                          versionId={versionId}
+                          onInsertSuggestion={() => fetchResults(true)}
+                          onDeleteSuggestion={() => fetchResults(true)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
             </TabsContent>
           ))}

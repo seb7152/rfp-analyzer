@@ -9,7 +9,12 @@ export async function GET(
     const { rfpId } = params;
     const supplierId = request.nextUrl.searchParams.get("supplierId");
 
-    console.log("[/presentation/latest] START - rfpId:", rfpId, "supplierId:", supplierId || "none");
+    console.log(
+      "[/presentation/latest] START - rfpId:",
+      rfpId,
+      "supplierId:",
+      supplierId || "none"
+    );
 
     // Get authenticated user
     const supabase = await createServerClient();
@@ -24,7 +29,9 @@ export async function GET(
     // Get latest presentation analyses for this RFP
     let query = supabase
       .from("presentation_analyses")
-      .select("id, analysis_data, status, created_at, supplier_id")
+      .select(
+        "id, analysis_data, status, created_at, supplier_id, suggestions_status"
+      )
       .eq("rfp_id", rfpId);
 
     if (supplierId) {
@@ -67,6 +74,7 @@ export async function GET(
         status: analysis.status,
         created_at: analysis.created_at,
         analysis_data: analysisData,
+        suggestions_status: analysis.suggestions_status,
       };
     });
 
@@ -78,9 +86,6 @@ export async function GET(
     });
   } catch (error) {
     console.error("[/presentation/latest] Error:", error);
-    return NextResponse.json(
-      { analyses: [], count: 0 },
-      { status: 200 }
-    );
+    return NextResponse.json({ analyses: [], count: 0 }, { status: 200 });
   }
 }
