@@ -5,24 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FileUp, FileText } from "lucide-react";
 import { useVersion } from "@/contexts/VersionContext";
+import { useSuppliersByVersion } from "@/hooks/use-suppliers-by-version";
 import { PresentationImportModal } from "./PresentationImportModal";
 import { PresentationReport } from "./PresentationReport";
 import { CategoryAnalysisTable } from "./CategoryAnalysisTable";
 
-interface Supplier {
-  id: string;
-  name: string;
-}
-
 interface PresentationAnalysisSectionProps {
   rfpId: string;
-  suppliers: Supplier[];
   versionId?: string;
 }
 
 export function PresentationAnalysisSection({
   rfpId,
-  suppliers,
   versionId: versionIdProp,
 }: PresentationAnalysisSectionProps) {
   const { activeVersion } = useVersion();
@@ -35,10 +29,26 @@ export function PresentationAnalysisSection({
   // Use active version from context, fallback to prop
   const activeVersionId = activeVersion?.id || versionIdProp;
 
+  // Fetch suppliers filtered by version (only active ones, not removed)
+  const { suppliers, loading: suppliersLoading } = useSuppliersByVersion(
+    rfpId,
+    activeVersionId
+  );
+
   const handleImportSuccess = () => {
     // Trigger refresh of report data
     setRefreshKey((prev) => prev + 1);
   };
+
+  // Show loading state while suppliers are being fetched
+  if (suppliersLoading) {
+    return (
+      <div className="animate-pulse space-y-6">
+        <div className="h-12 bg-slate-100 dark:bg-slate-800 rounded-full w-64" />
+        <div className="h-64 bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
