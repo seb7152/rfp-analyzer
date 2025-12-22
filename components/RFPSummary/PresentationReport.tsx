@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -14,6 +15,8 @@ import {
   Loader,
   RefreshCw,
   AlertTriangle,
+  Check,
+  FileText,
 } from "lucide-react";
 import { SuggestionsPanel } from "./SuggestionsPanel";
 
@@ -53,6 +56,9 @@ export function PresentationReport({
   const [analyses, setAnalyses] = useState<Map<string, Analysis>>(new Map());
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedReport, setEditedReport] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   // Fetch analyses
   const fetchResults = async (suppressLoading = false) => {
@@ -109,6 +115,58 @@ export function PresentationReport({
 
   const currentAnalysis = analyses.get(activeTab);
   const suggestions = currentAnalysis?.analysis_data?.suggestions || [];
+
+  useEffect(() => {
+    if (currentAnalysis?.analysis_data?.report) {
+      setEditedReport(currentAnalysis.analysis_data.report);
+    }
+  }, [currentAnalysis]);
+
+  const handleSaveReport = async () => {
+    if (!currentAnalysis || !rfpId) return;
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(
+        `/api/rfps/${rfpId}/analyze-presentation/${currentAnalysis.id}/report`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ report: editedReport }),
+        }
+      );
+
+      if (response.ok) {
+        setAnalyses((prev) => {
+          const newMap = new Map(prev);
+          const existing = newMap.get(activeTab);
+          if (existing) {
+            newMap.set(activeTab, {
+              ...existing,
+              analysis_data: {
+                ...existing.analysis_data,
+                report: editedReport,
+              },
+            });
+          }
+          return newMap;
+        });
+        setIsEditing(false);
+        toast.success("Compte rendu sauvegardé");
+      }
+    } catch (error) {
+      toast.error("Erreur lors de la sauvegarde");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (currentAnalysis?.analysis_data?.report) {
+      setEditedReport(currentAnalysis.analysis_data.report);
+    }
+    setIsEditing(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -227,84 +285,137 @@ export function PresentationReport({
                     <div className="col-span-2 overflow-hidden flex flex-col">
                       {currentAnalysis.analysis_data?.report && (
                         <Card className="rounded-2xl border border-slate-200 p-6 dark:border-slate-800 flex flex-col h-full overflow-hidden">
-                          <h3 className="font-medium text-slate-900 dark:text-white mb-4 flex-shrink-0">
-                            Compte rendu
-                          </h3>
+                          <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                            <h3 className="font-medium text-slate-900 dark:text-white">
+                              Compte rendu
+                            </h3>
+                            {currentAnalysis.status === "completed" &&
+                              !isEditing && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setIsEditing(true)}
+                                  className="gap-2"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                  Éditer
+                                </Button>
+                              )}
+                          </div>
                           <div className="overflow-y-auto flex-1 prose prose-sm dark:prose-invert max-w-none text-sm text-slate-600 dark:text-slate-300">
-                            <ReactMarkdown
-                              remarkPlugins={[remarkGfm]}
-                              components={{
-                                h1: ({ children }) => (
-                                  <h1 className="text-2xl font-bold mt-4 mb-2 first:mt-0">
-                                    {children}
-                                  </h1>
-                                ),
-                                h2: ({ children }) => (
-                                  <h2 className="text-xl font-bold mt-3 mb-2">
-                                    {children}
-                                  </h2>
-                                ),
-                                h3: ({ children }) => (
-                                  <h3 className="text-lg font-semibold mt-2 mb-1">
-                                    {children}
-                                  </h3>
-                                ),
-                                p: ({ children }) => (
-                                  <p className="mb-3">{children}</p>
-                                ),
-                                ul: ({ children }) => (
-                                  <ul className="list-disc list-inside mb-3 space-y-1">
-                                    {children}
-                                  </ul>
-                                ),
-                                ol: ({ children }) => (
-                                  <ol className="list-decimal list-inside mb-3 space-y-1">
-                                    {children}
-                                  </ol>
-                                ),
-                                li: ({ children }) => (
-                                  <li className="ml-2">{children}</li>
-                                ),
-                                blockquote: ({ children }) => (
-                                  <blockquote className="border-l-4 border-slate-300 dark:border-slate-600 pl-4 italic my-3">
-                                    {children}
-                                  </blockquote>
-                                ),
-                                code: ({ children, ...props }: any) => {
-                                  const inline =
-                                    !props.className?.includes("language-");
-                                  return inline ? (
-                                    <code className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-sm font-mono">
+                            {isEditing ? (
+                              <div className="flex flex-col h-full gap-2">
+                                <Textarea
+                                  value={editedReport}
+                                  onChange={(e) =>
+                                    setEditedReport(e.target.value)
+                                  }
+                                  className="flex-1 min-h-[400px] font-mono text-sm resize-none"
+                                  placeholder="Éditez le compte rendu ici..."
+                                />
+                                <div className="flex gap-2 justify-end flex-shrink-0">
+                                  <Button
+                                    variant="outline"
+                                    onClick={handleCancelEdit}
+                                    disabled={isSaving}
+                                  >
+                                    Annuler
+                                  </Button>
+                                  <Button
+                                    onClick={handleSaveReport}
+                                    disabled={isSaving || !editedReport.trim()}
+                                    className="gap-2"
+                                  >
+                                    {isSaving ? (
+                                      <>
+                                        <Loader className="h-4 w-4 animate-spin" />
+                                        Sauvegarde...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Check className="h-4 w-4" />
+                                        Sauvegarder
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  h1: ({ children }) => (
+                                    <h1 className="text-2xl font-bold mt-4 mb-2 first:mt-0">
                                       {children}
-                                    </code>
-                                  ) : (
-                                    <code
-                                      className="block bg-slate-100 dark:bg-slate-800 p-3 rounded mb-3 overflow-x-auto font-mono text-sm"
-                                      {...props}
-                                    >
+                                    </h1>
+                                  ),
+                                  h2: ({ children }) => (
+                                    <h2 className="text-xl font-bold mt-3 mb-2">
                                       {children}
-                                    </code>
-                                  );
-                                },
-                                table: ({ children }) => (
-                                  <table className="border-collapse border border-slate-300 dark:border-slate-600 w-full mb-3">
-                                    {children}
-                                  </table>
-                                ),
-                                th: ({ children }) => (
-                                  <th className="border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-3 py-2 text-left">
-                                    {children}
-                                  </th>
-                                ),
-                                td: ({ children }) => (
-                                  <td className="border border-slate-300 dark:border-slate-600 px-3 py-2">
-                                    {children}
-                                  </td>
-                                ),
-                              }}
-                            >
-                              {currentAnalysis.analysis_data.report}
-                            </ReactMarkdown>
+                                    </h2>
+                                  ),
+                                  h3: ({ children }) => (
+                                    <h3 className="text-lg font-semibold mt-2 mb-1">
+                                      {children}
+                                    </h3>
+                                  ),
+                                  p: ({ children }) => (
+                                    <p className="mb-3">{children}</p>
+                                  ),
+                                  ul: ({ children }) => (
+                                    <ul className="list-disc list-inside mb-3 space-y-1">
+                                      {children}
+                                    </ul>
+                                  ),
+                                  ol: ({ children }) => (
+                                    <ol className="list-decimal list-inside mb-3 space-y-1">
+                                      {children}
+                                    </ol>
+                                  ),
+                                  li: ({ children }) => (
+                                    <li className="ml-2">{children}</li>
+                                  ),
+                                  blockquote: ({ children }) => (
+                                    <blockquote className="border-l-4 border-slate-300 dark:border-slate-600 pl-4 italic my-3">
+                                      {children}
+                                    </blockquote>
+                                  ),
+                                  code: ({ children, ...props }: any) => {
+                                    const inline =
+                                      !props.className?.includes("language-");
+                                    return inline ? (
+                                      <code className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-sm font-mono">
+                                        {children}
+                                      </code>
+                                    ) : (
+                                      <code
+                                        className="block bg-slate-100 dark:bg-slate-800 p-3 rounded mb-3 overflow-x-auto font-mono text-sm"
+                                        {...props}
+                                      >
+                                        {children}
+                                      </code>
+                                    );
+                                  },
+                                  table: ({ children }) => (
+                                    <table className="border-collapse border border-slate-300 dark:border-slate-600 w-full mb-3">
+                                      {children}
+                                    </table>
+                                  ),
+                                  th: ({ children }) => (
+                                    <th className="border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-3 py-2 text-left">
+                                      {children}
+                                    </th>
+                                  ),
+                                  td: ({ children }) => (
+                                    <td className="border border-slate-300 dark:border-slate-600 px-3 py-2">
+                                      {children}
+                                    </td>
+                                  ),
+                                }}
+                              >
+                                {currentAnalysis.analysis_data.report}
+                              </ReactMarkdown>
+                            )}
                           </div>
                         </Card>
                       )}
