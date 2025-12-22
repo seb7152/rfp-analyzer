@@ -879,6 +879,7 @@ export async function getResponsesForRFP(
     rfp_id: string;
     requirement_id: string;
     supplier_id: string;
+    version_id: string | null;
     response_text: string | null;
     ai_score: number | null;
     ai_comment: string | null;
@@ -910,6 +911,7 @@ export async function getResponsesForRFP(
     rfp_id,
     requirement_id,
     supplier_id,
+    version_id,
     response_text,
     ai_score,
     ai_comment,

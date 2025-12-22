@@ -5,6 +5,7 @@ export interface ResponseWithSupplier {
   rfp_id: string;
   requirement_id: string;
   supplier_id: string;
+  version_id: string | null;
   response_text: string | null;
   ai_score: number | null;
   ai_comment: string | null;
