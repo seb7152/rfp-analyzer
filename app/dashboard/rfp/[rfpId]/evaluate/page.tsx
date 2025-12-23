@@ -55,16 +55,25 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
     useRFPCompletion(params.rfpId);
 
   // Load all responses for filter evaluation
-  const { data: allResponsesData } = useAllResponses(params.rfpId);
+  const { data: allResponsesData, isLoading: responsesLoading } = useAllResponses(params.rfpId);
   const allResponses = (allResponsesData as any)?.responses || [];
+
+  console.log("EvaluatePage - allResponsesData:", allResponsesData);
+  console.log("EvaluatePage - allResponses count:", allResponses.length);
+  console.log("EvaluatePage - responsesLoading:", responsesLoading);
 
   // Determine if this is a single supplier view: when supplierId is present in query params
   const isSingleSupplierView = !!supplierId;
 
+  console.log("EvaluatePage - supplierId:", supplierId);
+  console.log("EvaluatePage - isSingleSupplierView:", isSingleSupplierView);
+
   // Filter responses to the current supplier if in single supplier view
   const filteredResponses = useMemo(() => {
     if (!isSingleSupplierView) return allResponses;
-    return allResponses.filter((r: any) => r.supplier_id === supplierId);
+    const filtered = allResponses.filter((r: any) => r.supplier_id === supplierId);
+    console.log("EvaluatePage - filteredResponses count:", filtered.length);
+    return filtered;
   }, [allResponses, supplierId, isSingleSupplierView]);
 
   // Fetch RFP data and responses count
