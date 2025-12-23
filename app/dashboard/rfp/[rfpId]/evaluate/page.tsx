@@ -81,6 +81,12 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   // Filter responses to the current supplier if in single supplier view
   const filteredResponses = useMemo(() => {
     if (!isSingleSupplierView) return allResponses;
+
+    // Log available supplier IDs for debugging
+    const uniqueSupplierIds = [...new Set(allResponses.map((r: any) => r.supplier_id))];
+    console.log("EvaluatePage - Available supplier_ids:", uniqueSupplierIds);
+    console.log("EvaluatePage - Looking for supplierId:", supplierId);
+
     const filtered = allResponses.filter((r: any) => r.supplier_id === supplierId);
     console.log("EvaluatePage - filteredResponses count:", filtered.length);
     return filtered;
