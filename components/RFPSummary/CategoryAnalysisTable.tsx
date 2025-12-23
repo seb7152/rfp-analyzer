@@ -43,6 +43,8 @@ import autoTable from "jspdf-autotable";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Supplier } from "@/types/supplier";
+import { toast } from "sonner";
+import { EditableList } from "./EditableList";
 
 // Types
 interface TreeNode {
@@ -94,6 +96,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const [lastAnalysisId, setLastAnalysisId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [taskIdMap, setTaskIdMap] = useState<Record<string, string>>({});
 
   const refreshAnalysisResults = async () => {
     try {
@@ -116,6 +119,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       if (resultsData.analyses && resultsData.analyses.length > 0) {
         console.log("[REFRESH] Got", resultsData.analyses.length, "analyses");
 
+        // Build task ID map for editing
+        const newTaskIdMap: Record<string, string> = {};
+
         resultsData.analyses.forEach((task: any) => {
           if (task.category_id && task.result) {
             const supplierKey = task.supplier_id || "default";
@@ -128,8 +134,16 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
               forces: task.result.forces || [],
               faiblesses: task.result.faiblesses || [],
             };
+
+            // Store task ID for this category (use task_id or id)
+            const taskId = task.task_id || task.id;
+            if (taskId) {
+              newTaskIdMap[task.category_id] = taskId;
+            }
           }
         });
+
+        setTaskIdMap(newTaskIdMap);
 
         console.log(
           "[REFRESH] Built supplier map with keys:",
@@ -203,6 +217,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
             Record<string, { forces: string[]; faiblesses: string[] }>
           > = {};
 
+          // Build task ID map for editing
+          const newTaskIdMap: Record<string, string> = {};
+
           resultsData.analyses.forEach((task: any) => {
             if (task.category_id && task.result) {
               // Use supplier_id from response if available, otherwise use a default key
@@ -217,6 +234,12 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                 faiblesses: task.result.faiblesses || [],
               };
 
+              // Store task ID for this category (use task_id or id)
+              const taskId = task.task_id || task.id;
+              if (taskId) {
+                newTaskIdMap[task.category_id] = taskId;
+              }
+
               console.log(
                 `[ANALYSIS LOADER] Task for supplier ${supplierKey}, category ${task.category_id}:`,
                 {
@@ -226,6 +249,8 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
               );
             }
           });
+
+          setTaskIdMap(newTaskIdMap);
 
           console.log(
             "[ANALYSIS LOADER] Built supplier map with keys:",
@@ -509,6 +534,80 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     const interval = setInterval(pollForResults, 2000);
     return () => clearInterval(interval);
   }, [lastAnalysisId, rfpId]);
+
+  // Update analysis handler for inline editing
+  const updateTreeAnalysis = (
+    nodes: TreeNode[],
+    categoryId: string,
+    updates: { forces?: string[]; faiblesses?: string[] }
+  ): TreeNode[] => {
+    return nodes.map((node) => {
+      if (node.id === categoryId && node.type === "category") {
+        return {
+          ...node,
+          analysis: {
+            ...node.analysis,
+            forces: updates.forces ?? node.analysis?.forces ?? [],
+            faiblesses: updates.faiblesses ?? node.analysis?.faiblesses ?? [],
+          },
+        };
+      }
+      if (node.children) {
+        return {
+          ...node,
+          children: updateTreeAnalysis(node.children, categoryId, updates),
+        };
+      }
+      return node;
+    });
+  };
+
+  const handleUpdateAnalysis = async (
+    categoryId: string,
+    updates: { forces?: string[]; faiblesses?: string[] }
+  ) => {
+    const taskId = taskIdMap[categoryId];
+    if (!taskId) {
+      toast.error("ID de tâche introuvable pour cette catégorie");
+      return;
+    }
+
+    try {
+      // Optimistic UI update
+      setTree((prevTree) => updateTreeAnalysis(prevTree, categoryId, updates));
+
+      // API call
+      const response = await fetch(
+        `/api/rfps/${rfpId}/analyze-defense/tasks/${taskId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update analysis");
+      }
+
+      const data = await response.json();
+
+      // Confirm with server response
+      setTree((prevTree) =>
+        updateTreeAnalysis(prevTree, categoryId, {
+          forces: data.result.forces,
+          faiblesses: data.result.faiblesses,
+        })
+      );
+
+      toast.success("Analyse mise à jour avec succès");
+    } catch (error) {
+      // Rollback on error
+      await refreshAnalysisResults();
+      toast.error("Erreur lors de la mise à jour de l'analyse");
+      console.error("Update failed:", error);
+    }
+  };
 
   // Flatten categories for display
   const flatCategories = useMemo(() => {
@@ -1403,60 +1502,26 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                       </div>
                     </td>
                     <td className="px-6 py-4 border-r text-slate-600">
-                      {(() => {
-                        console.log(
-                          `[NEW RENDER] ${category.code} (${category.id}):`,
-                          {
-                            has_analysis: !!category.analysis,
-                            forces_count:
-                              category.analysis?.forces?.length || 0,
-                            forces_sample:
-                              category.analysis?.forces?.[0]?.substring(0, 30),
-                          }
-                        );
-                        return category.analysis?.forces &&
-                          category.analysis.forces.length > 0 ? (
-                          <ul className="space-y-1 text-xs">
-                            {category.analysis.forces.map(
-                              (force: string, idx: number) => (
-                                <li
-                                  key={`${category.id}-force-${idx}`}
-                                  className="flex gap-2"
-                                >
-                                  <span className="flex-shrink-0">✓</span>
-                                  <span className="break-words">{force}</span>
-                                </li>
-                              )
-                            )}
-                          </ul>
-                        ) : (
-                          <span className="text-slate-400 italic">
-                            À compléter
-                          </span>
-                        );
-                      })()}
+                      <EditableList
+                        items={category.analysis?.forces || []}
+                        itemType="force"
+                        taskId={taskIdMap[category.id]}
+                        onUpdate={(forces) =>
+                          handleUpdateAnalysis(category.id, { forces })
+                        }
+                        readOnly={!taskIdMap[category.id]}
+                      />
                     </td>
                     <td className="px-6 py-4 border-r text-slate-600">
-                      {category.analysis?.faiblesses &&
-                      category.analysis.faiblesses.length > 0 ? (
-                        <ul className="space-y-1 text-xs">
-                          {category.analysis.faiblesses.map(
-                            (weakness: string, idx: number) => (
-                              <li
-                                key={`${category.id}-weakness-${idx}`}
-                                className="flex gap-2"
-                              >
-                                <span className="flex-shrink-0">✗</span>
-                                <span className="break-words">{weakness}</span>
-                              </li>
-                            )
-                          )}
-                        </ul>
-                      ) : (
-                        <span className="text-slate-400 italic">
-                          À compléter
-                        </span>
-                      )}
+                      <EditableList
+                        items={category.analysis?.faiblesses || []}
+                        itemType="faiblesse"
+                        taskId={taskIdMap[category.id]}
+                        onUpdate={(faiblesses) =>
+                          handleUpdateAnalysis(category.id, { faiblesses })
+                        }
+                        readOnly={!taskIdMap[category.id]}
+                      />
                     </td>
                     <td className="px-6 py-4 text-slate-600">
                       {attentionPoints.length > 0 ? (

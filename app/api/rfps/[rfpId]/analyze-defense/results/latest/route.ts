@@ -28,30 +28,46 @@ export async function GET(
 
     console.log("[/latest] Authenticated user:", user.id);
 
-    // Get latest analyses for this RFP (RLS will filter by user's organization)
+    // Query defense_analysis_tasks instead of defense_analyses.analysis_data
+    // This gives us real task IDs (not fake category IDs) for editing
     let query = supabase
-      .from("defense_analyses")
-      .select("id, analysis_data, generated_at, rfp_id, supplier_id")
-      .eq("rfp_id", rfpId);
+      .from("defense_analysis_tasks")
+      .select(
+        `
+        id,
+        category_id,
+        result,
+        status,
+        defense_analyses!inner (
+          id,
+          rfp_id,
+          supplier_id,
+          version_id,
+          generated_at
+        )
+      `
+      )
+      .eq("defense_analyses.rfp_id", rfpId)
+      .eq("status", "completed");
 
     // Filter by supplier_id if provided
     if (supplierId) {
-      query = query.eq("supplier_id", supplierId);
+      query = query.eq("defense_analyses.supplier_id", supplierId);
     }
 
     // Filter by version_id if provided
     if (versionId) {
-      query = query.eq("version_id", versionId);
+      query = query.eq("defense_analyses.version_id", versionId);
     }
 
-    const { data: analyses, error: analysisError } = await query.order(
-      "generated_at",
+    const { data: tasks, error: analysisError } = await query.order(
+      "defense_analyses.generated_at",
       { ascending: false }
     );
 
     console.log("[/latest] Filtered result:", {
       rfpId,
-      count: analyses?.length,
+      count: tasks?.length,
       error: analysisError?.message,
     });
 
@@ -60,109 +76,32 @@ export async function GET(
       return NextResponse.json({ analyses: [], count: 0 }, { status: 200 });
     }
 
-    if (!analyses || analyses.length === 0) {
-      console.log("[/latest] No analyses found for this rfpId");
+    if (!tasks || tasks.length === 0) {
+      console.log("[/latest] No tasks found for this rfpId");
       return NextResponse.json({ analyses: [], count: 0 }, { status: 200 });
     }
 
-    console.log("[/latest] Processing", analyses.length, "analyses");
+    console.log("[/latest] Processing", tasks.length, "tasks");
 
-    // If supplier_id was provided, take only the first (latest) analysis for that supplier
-    // If not provided, return all analyses (one per supplier) - group by supplier and take latest for each
-    let analysesToProcess: typeof analyses = [];
+    // Convert tasks to the expected format
+    // Now we return real task IDs instead of fake category IDs
+    const resultAnalyses = tasks.map((task: any) => {
+      return {
+        id: task.id, // ✅ Real task UUID from defense_analysis_tasks
+        task_id: task.id, // ✅ Make it explicit for frontend
+        category_id: task.category_id,
+        supplier_id: task.defense_analyses.supplier_id,
+        status: task.status,
+        result: task.result || { forces: [], faiblesses: [] },
+      };
+    });
 
-    if (supplierId) {
-      // Single supplier: take the latest
-      analysesToProcess = [analyses[0]];
-      console.log(
-        "[/latest] Single supplier mode, using latest analysis for supplier",
-        supplierId
-      );
-    } else {
-      // Multi-supplier mode: group by supplier_id and take latest for each
-      const bySupplier = new Map<string, (typeof analyses)[0]>();
-      for (const analysis of analyses) {
-        const key = analysis.supplier_id || "default";
-        if (!bySupplier.has(key)) {
-          bySupplier.set(key, analysis);
-          console.log(
-            "[/latest] Found latest analysis for supplier",
-            key,
-            "with id",
-            analysis.id
-          );
-        }
-      }
-      analysesToProcess = Array.from(bySupplier.values());
-      console.log(
-        "[/latest] Multi-supplier mode, using latest for each of",
-        analysesToProcess.length,
-        "suppliers"
-      );
-    }
+    console.log("[/latest] Final resultAnalyses count:", resultAnalyses.length);
 
-    // Parse all analysis_data and convert to task-like format
-    try {
-      const allResultAnalyses: any[] = [];
-
-      for (const analysis of analysesToProcess) {
-        if (!analysis.analysis_data) {
-          console.log(
-            "[/latest] Skipping analysis",
-            analysis.id,
-            "- no analysis_data"
-          );
-          continue;
-        }
-
-        // Supabase returns JSONB as an object, not a string
-        const analysisData =
-          typeof analysis.analysis_data === "string"
-            ? JSON.parse(analysis.analysis_data)
-            : analysis.analysis_data;
-
-        console.log(
-          "[/latest] Analysis",
-          analysis.id,
-          "for supplier",
-          analysis.supplier_id || "default",
-          "has",
-          Object.keys(analysisData).length,
-          "categories"
-        );
-
-        const resultAnalyses = Object.entries(analysisData).map(
-          ([categoryId, data]: [string, any]) => {
-            return {
-              id: categoryId,
-              category_id: categoryId,
-              supplier_id: analysis.supplier_id,
-              status: "completed",
-              result: {
-                forces: data.forces || [],
-                faiblesses: data.faiblesses || [],
-              },
-            };
-          }
-        );
-
-        allResultAnalyses.push(...resultAnalyses);
-      }
-
-      console.log(
-        "[/latest] Final resultAnalyses count:",
-        allResultAnalyses.length
-      );
-
-      return NextResponse.json({
-        analyses: allResultAnalyses,
-        count: allResultAnalyses.length,
-        analysisId: analysesToProcess[0]?.id,
-      });
-    } catch (parseError) {
-      console.error("[/latest] Error parsing analysis_data:", parseError);
-      return NextResponse.json({ analyses: [], count: 0 }, { status: 200 });
-    }
+    return NextResponse.json({
+      analyses: resultAnalyses,
+      count: resultAnalyses.length,
+    });
   } catch (error) {
     console.error(
       "[/latest] Error in latest analysis results endpoint:",
