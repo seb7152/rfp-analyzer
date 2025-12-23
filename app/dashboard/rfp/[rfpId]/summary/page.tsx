@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useVersion } from "@/contexts/VersionContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Popover,
@@ -77,6 +78,7 @@ interface RFPSummaryData {
 
 export default function RFPSummaryPage() {
   const params = useParams();
+  const { activeVersion } = useVersion();
   const rfpId = params.rfpId as string;
   const [data, setData] = useState<RFPSummaryData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,7 +93,8 @@ export default function RFPSummaryPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/rfps/${rfpId}/dashboard`);
+        const url = `/api/rfps/${rfpId}/dashboard${activeVersion?.id ? `?versionId=${activeVersion.id}` : ""}`;
+        const response = await fetch(url);
         if (!response.ok) throw new Error("Failed to fetch RFP summary");
 
         const summaryData = await response.json();
@@ -124,7 +127,7 @@ export default function RFPSummaryPage() {
     if (rfpId) {
       fetchData();
     }
-  }, [rfpId]);
+  }, [rfpId, activeVersion?.id]);
 
   if (error) {
     return (
