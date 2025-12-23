@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Trash2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,18 +25,22 @@ export function EditableList({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setLocalItems(items);
   }, [items]);
 
   useEffect(() => {
-    if (editingIndex !== null && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
+    if (editingIndex !== null && textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.select();
+      // Auto-resize
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height =
+        textareaRef.current.scrollHeight + "px";
     }
-  }, [editingIndex]);
+  }, [editingIndex, editValue]);
 
   const icon = itemType === "force" ? "✓" : "✗";
   const hoverBgClass =
@@ -138,26 +142,27 @@ export function EditableList({
       {localItems.map((item, idx) => (
         <div key={idx} className="group relative">
           {editingIndex === idx ? (
-            <div className="flex gap-2 items-center p-1 rounded bg-white border border-blue-300 shadow-sm">
-              <span className={cn("flex-shrink-0", textColorClass)}>
+            <div className="flex gap-2 items-start p-1 rounded bg-white border border-blue-300 shadow-sm">
+              <span className={cn("flex-shrink-0 mt-0.5", textColorClass)}>
                 {icon}
               </span>
-              <Input
-                ref={inputRef}
+              <Textarea
+                ref={textareaRef}
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 onBlur={() => handleSave(idx)}
                 onKeyDown={(e) => handleKeyDown(e, idx)}
-                className="text-xs border-0 shadow-none focus-visible:ring-0 px-1 py-0 h-auto"
+                className="text-xs border-0 shadow-none focus-visible:ring-0 px-1 py-0 h-auto min-h-0 resize-none overflow-hidden leading-relaxed"
                 disabled={isSaving}
                 placeholder={
                   itemType === "force"
                     ? "Entrez une force..."
                     : "Entrez une faiblesse..."
                 }
+                rows={1}
               />
               {isSaving && (
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 mt-0.5">
                   <div className="animate-spin h-3 w-3 border-2 border-slate-300 border-t-slate-600 rounded-full" />
                 </div>
               )}
