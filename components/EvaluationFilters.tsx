@@ -26,15 +26,22 @@ export interface EvaluationFilterState {
 interface EvaluationFiltersProps {
   filters: EvaluationFilterState;
   onFiltersChange: (filters: EvaluationFilterState) => void;
+  onApplyFilters: () => void;
   activeFilterCount?: number;
 }
 
 export function EvaluationFilters({
   filters,
   onFiltersChange,
+  onApplyFilters,
   activeFilterCount = 0,
 }: EvaluationFiltersProps) {
   const [isOpen, setIsOpen] = useState(false);
+
+  const handleApplyFilters = () => {
+    onApplyFilters();
+    setIsOpen(false);
+  };
 
   const handleStatusChange = (status: string, checked: boolean) => {
     const newStatus = checked
@@ -250,6 +257,15 @@ export function EvaluationFilters({
               </Button>
             </div>
           </div>
+
+          {/* Apply Filters Button */}
+          <Button
+            onClick={handleApplyFilters}
+            className="w-full"
+            size="sm"
+          >
+            Filtrer
+          </Button>
         </div>
       </PopoverContent>
     </Popover>
