@@ -623,12 +623,13 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         setAllAnalysesBySupplier((prev) => {
           const supplierKey = selectedSupplierId;
           const newData = { ...prev };
-          if (newData[supplierKey]) {
-            newData[supplierKey][categoryId] = {
-              forces: data.result.forces,
-              faiblesses: data.result.faiblesses,
-            };
+          if (!newData[supplierKey]) {
+            newData[supplierKey] = {};
           }
+          newData[supplierKey][categoryId] = {
+            forces: data.result.forces || [],
+            faiblesses: data.result.faiblesses || [],
+          };
           return newData;
         });
       }

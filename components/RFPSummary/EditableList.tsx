@@ -34,13 +34,12 @@ export function EditableList({
   useEffect(() => {
     if (editingIndex !== null && textareaRef.current) {
       textareaRef.current.focus();
-      textareaRef.current.select();
       // Auto-resize
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height =
         textareaRef.current.scrollHeight + "px";
     }
-  }, [editingIndex, editValue]);
+  }, [editingIndex]);
 
   const icon = itemType === "force" ? "✓" : "✗";
   const hoverBgClass =
@@ -65,16 +64,21 @@ export function EditableList({
     }
 
     setIsSaving(true);
-    const newItems = [...localItems];
-    newItems[index] = trimmedValue;
 
     try {
+      // Create new items array
+      const newItems = [...localItems];
+      newItems[index] = trimmedValue;
+
+      // Call API first
       await onUpdate(newItems);
+
+      // Only update local state if API succeeded
       setEditingIndex(null);
       setEditValue("");
     } catch (error) {
       console.error("Failed to save:", error);
-      // Error is handled by parent component
+      // Don't update local state on error - keep editing
     } finally {
       setIsSaving(false);
     }
@@ -89,15 +93,20 @@ export function EditableList({
     if (isSaving) return;
 
     setIsSaving(true);
+
+    // Create new items array
     const newItems = localItems.filter((_, i) => i !== index);
 
     try {
+      // Call API first
       await onUpdate(newItems);
+
+      // Only update local state if API succeeded
       setEditingIndex(null);
       setEditValue("");
     } catch (error) {
       console.error("Failed to delete:", error);
-      // Error is handled by parent component
+      // Don't update local state on error - keep original item
     } finally {
       setIsSaving(false);
     }

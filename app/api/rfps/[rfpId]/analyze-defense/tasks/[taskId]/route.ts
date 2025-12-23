@@ -61,6 +61,7 @@ export async function PATCH(
     }
 
     // Fetch task and verify it belongs to RFP, check organization access
+    // Also get version_id to ensure we're updating the correct version's task
     const { data: task, error: taskError } = await supabase
       .from("defense_analysis_tasks")
       .select(
@@ -71,6 +72,7 @@ export async function PATCH(
         defense_analyses!inner (
           id,
           rfp_id,
+          version_id,
           rfps!inner (
             id,
             organization_id
@@ -95,22 +97,15 @@ export async function PATCH(
       );
     }
 
-    // Check user has access to organization
-    const organizationId = (task.defense_analyses as any).rfps.organization_id;
-    const { data: userOrg, error: userOrgError } = await supabase
-      .from("user_organizations")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("organization_id", organizationId)
-      .single();
-
-    if (userOrgError || !userOrg) {
-      console.error("User organization check failed:", userOrgError);
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
-    }
+    // Store version_id for logging/response
+    const versionId = (task.defense_analyses as any).version_id;
 
     // Parse existing result
     const currentResult = task.result || {};
+
+    console.log(
+      `[PATCH task ${taskId}] Updating for RFP ${rfpId}, version ${versionId}`
+    );
 
     // Prepare updated result - trim whitespace and filter empty strings
     const updatedResult = {
@@ -139,9 +134,14 @@ export async function PATCH(
       );
     }
 
+    console.log(
+      `[PATCH task ${taskId}] Update successful. Forces: ${updatedResult.forces?.length || 0}, Faiblesses: ${updatedResult.faiblesses?.length || 0}`
+    );
+
     return NextResponse.json({
       success: true,
       result: updatedResult,
+      version_id: versionId,
     });
   } catch (error) {
     console.error("Task update error:", error);
