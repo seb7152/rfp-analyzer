@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/card";
 import { ChevronLeft, Loader2, CheckCircle2, FileUp } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useVersion } from "@/contexts/VersionContext";
 import type { RFP } from "@/lib/supabase/types";
 
 interface EvaluatePageProps {
@@ -38,9 +39,6 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   const searchParams = useSearchParams();
   const supplierId = searchParams.get("supplierId");
   const requirementId = searchParams.get("requirementId");
-
-  console.log("EvaluatePage - params.rfpId:", params.rfpId);
-
   const { user, isLoading: authLoading } = useAuth();
   const [selectedRequirementId, setSelectedRequirementId] = useState<
     string | null
@@ -57,39 +55,20 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   const { percentage: completionPercentage, isLoading: completionLoading } =
     useRFPCompletion(params.rfpId);
 
-  // Load all responses for filter evaluation
-  const responsesQuery = useAllResponses(params.rfpId);
-  const allResponsesData = responsesQuery.data;
-  const allResponses = (allResponsesData as any)?.responses || [];
+  // Get active version for filtering responses
+  const { activeVersion } = useVersion();
 
-  console.log("EvaluatePage - responsesQuery:", {
-    data: responsesQuery.data,
-    isLoading: responsesQuery.isLoading,
-    isError: responsesQuery.isError,
-    error: responsesQuery.error,
-    isFetched: responsesQuery.isFetched,
-    status: responsesQuery.status,
-  });
-  console.log("EvaluatePage - allResponses count:", allResponses.length);
+  // Load all responses for filter evaluation (filtered by active version)
+  const responsesQuery = useAllResponses(params.rfpId, activeVersion?.id);
+  const allResponses = (responsesQuery.data as any)?.responses || [];
 
   // Determine if this is a single supplier view: when supplierId is present in query params
   const isSingleSupplierView = !!supplierId;
 
-  console.log("EvaluatePage - supplierId:", supplierId);
-  console.log("EvaluatePage - isSingleSupplierView:", isSingleSupplierView);
-
   // Filter responses to the current supplier if in single supplier view
   const filteredResponses = useMemo(() => {
     if (!isSingleSupplierView) return allResponses;
-
-    // Log available supplier IDs for debugging
-    const uniqueSupplierIds = [...new Set(allResponses.map((r: any) => r.supplier_id))];
-    console.log("EvaluatePage - Available supplier_ids:", uniqueSupplierIds);
-    console.log("EvaluatePage - Looking for supplierId:", supplierId);
-
-    const filtered = allResponses.filter((r: any) => r.supplier_id === supplierId);
-    console.log("EvaluatePage - filteredResponses count:", filtered.length);
-    return filtered;
+    return allResponses.filter((r: any) => r.supplier_id === supplierId);
   }, [allResponses, supplierId, isSingleSupplierView]);
 
   // Fetch RFP data and responses count

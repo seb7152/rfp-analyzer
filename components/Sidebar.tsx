@@ -92,10 +92,6 @@ export function Sidebar({
 
   // Apply filters when user clicks the "Filtrer" button
   const handleApplyFilters = () => {
-    console.log("handleApplyFilters called");
-    console.log("Current filters:", filters);
-    console.log("isSingleSupplier:", isSingleSupplier);
-    console.log("responses count:", responses.length);
     setAppliedFilters({ ...filters });
   };
 
@@ -112,14 +108,7 @@ export function Sidebar({
 
   // Build a set of requirement IDs that match the applied filters
   const filteredRequirementIds = useMemo(() => {
-    console.log("filteredRequirementIds recalculating...");
-    console.log("- isSingleSupplier:", isSingleSupplier);
-    console.log("- responses.length:", responses.length);
-    console.log("- hasActiveAppliedFilters:", hasActiveAppliedFilters);
-    console.log("- appliedFilters:", appliedFilters);
-
     if (!isSingleSupplier || responses.length === 0 || !hasActiveAppliedFilters) {
-      console.log("Early return - empty set");
       return new Set<string>();
     }
 
@@ -180,10 +169,6 @@ export function Sidebar({
       matchingIds.add(response.requirement_id);
     });
 
-    console.log("Matching IDs count:", matchingIds.size);
-    if (responses.length > 0) {
-      console.log("Sample response:", responses[0]);
-    }
     return matchingIds;
   }, [responses, appliedFilters, isSingleSupplier, hasActiveAppliedFilters]);
 
