@@ -576,6 +576,24 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       // Optimistic UI update
       setTree((prevTree) => updateTreeAnalysis(prevTree, categoryId, updates));
 
+      // Also update allAnalysesBySupplier for consistency
+      if (selectedSupplierId) {
+        setAllAnalysesBySupplier((prev) => {
+          const supplierKey = selectedSupplierId;
+          const newData = { ...prev };
+          if (newData[supplierKey] && newData[supplierKey][categoryId]) {
+            newData[supplierKey][categoryId] = {
+              ...newData[supplierKey][categoryId],
+              forces: updates.forces ?? newData[supplierKey][categoryId].forces,
+              faiblesses:
+                updates.faiblesses ??
+                newData[supplierKey][categoryId].faiblesses,
+            };
+          }
+          return newData;
+        });
+      }
+
       // API call
       const response = await fetch(
         `/api/rfps/${rfpId}/analyze-defense/tasks/${taskId}`,
@@ -599,6 +617,21 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
           faiblesses: data.result.faiblesses,
         })
       );
+
+      // Also update allAnalysesBySupplier with server data
+      if (selectedSupplierId) {
+        setAllAnalysesBySupplier((prev) => {
+          const supplierKey = selectedSupplierId;
+          const newData = { ...prev };
+          if (newData[supplierKey]) {
+            newData[supplierKey][categoryId] = {
+              forces: data.result.forces,
+              faiblesses: data.result.faiblesses,
+            };
+          }
+          return newData;
+        });
+      }
 
       toast.success("Analyse mise à jour avec succès");
     } catch (error) {
