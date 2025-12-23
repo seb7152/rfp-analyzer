@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Trash2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,15 +25,16 @@ export function EditableList({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setLocalItems(items);
   }, [items]);
 
   useEffect(() => {
-    if (editingIndex !== null && textareaRef.current) {
-      textareaRef.current.focus();
+    if (editingIndex !== null && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
     }
   }, [editingIndex]);
 
@@ -106,7 +107,7 @@ export function EditableList({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleSave(index);
     } else if (e.key === "Escape") {
@@ -137,14 +138,17 @@ export function EditableList({
       {localItems.map((item, idx) => (
         <div key={idx} className="group relative">
           {editingIndex === idx ? (
-            <div className="relative">
-              <Textarea
-                ref={textareaRef}
+            <div className="flex gap-2 items-center p-1 rounded bg-white border border-blue-300 shadow-sm">
+              <span className={cn("flex-shrink-0", textColorClass)}>
+                {icon}
+              </span>
+              <Input
+                ref={inputRef}
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 onBlur={() => handleSave(idx)}
                 onKeyDown={(e) => handleKeyDown(e, idx)}
-                className="text-xs min-h-[60px] pr-8"
+                className="text-xs border-0 shadow-none focus-visible:ring-0 px-1 py-0 h-auto"
                 disabled={isSaving}
                 placeholder={
                   itemType === "force"
@@ -153,23 +157,23 @@ export function EditableList({
                 }
               />
               {isSaving && (
-                <div className="absolute top-2 right-2">
-                  <div className="animate-spin h-4 w-4 border-2 border-slate-300 border-t-slate-600 rounded-full" />
+                <div className="flex-shrink-0">
+                  <div className="animate-spin h-3 w-3 border-2 border-slate-300 border-t-slate-600 rounded-full" />
                 </div>
               )}
             </div>
           ) : (
             <div
               className={cn(
-                "flex gap-2 items-start p-2 rounded cursor-pointer transition-colors",
+                "flex gap-2 items-center px-2 py-1 rounded cursor-pointer transition-colors",
                 hoverBgClass
               )}
             >
-              <span className={cn("flex-shrink-0 mt-0.5", textColorClass)}>
+              <span className={cn("flex-shrink-0", textColorClass)}>
                 {icon}
               </span>
               <span
-                className="flex-1 break-words text-xs"
+                className="flex-1 break-words text-xs leading-relaxed"
                 onClick={() => handleEdit(idx, item)}
               >
                 {item}
