@@ -38,6 +38,9 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   const searchParams = useSearchParams();
   const supplierId = searchParams.get("supplierId");
   const requirementId = searchParams.get("requirementId");
+
+  console.log("EvaluatePage - params.rfpId:", params.rfpId);
+
   const { user, isLoading: authLoading } = useAuth();
   const [selectedRequirementId, setSelectedRequirementId] = useState<
     string | null
@@ -55,12 +58,19 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
     useRFPCompletion(params.rfpId);
 
   // Load all responses for filter evaluation
-  const { data: allResponsesData, isLoading: responsesLoading } = useAllResponses(params.rfpId);
+  const responsesQuery = useAllResponses(params.rfpId);
+  const allResponsesData = responsesQuery.data;
   const allResponses = (allResponsesData as any)?.responses || [];
 
-  console.log("EvaluatePage - allResponsesData:", allResponsesData);
+  console.log("EvaluatePage - responsesQuery:", {
+    data: responsesQuery.data,
+    isLoading: responsesQuery.isLoading,
+    isError: responsesQuery.isError,
+    error: responsesQuery.error,
+    isFetched: responsesQuery.isFetched,
+    status: responsesQuery.status,
+  });
   console.log("EvaluatePage - allResponses count:", allResponses.length);
-  console.log("EvaluatePage - responsesLoading:", responsesLoading);
 
   // Determine if this is a single supplier view: when supplierId is present in query params
   const isSingleSupplierView = !!supplierId;
