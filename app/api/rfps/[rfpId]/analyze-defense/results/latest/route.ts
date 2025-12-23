@@ -61,8 +61,8 @@ export async function GET(
     }
 
     const { data: tasks, error: analysisError } = await query.order(
-      "defense_analyses.generated_at",
-      { ascending: false }
+      "completed_at",
+      { ascending: false, nullsFirst: false }
     );
 
     console.log("[/latest] Filtered result:", {
