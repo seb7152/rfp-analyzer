@@ -80,7 +80,6 @@ export function Sidebar({
         path.slice(0, -1).forEach((id) => newExpanded.add(id));
         return newExpanded;
       });
-      setExpandAll(false);
     }
   }, [selectedRequirementId, tree]);
 
