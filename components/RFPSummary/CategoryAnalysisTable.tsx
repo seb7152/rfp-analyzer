@@ -97,6 +97,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [taskIdMap, setTaskIdMap] = useState<Record<string, string>>({});
+  const [analysisIdMap, setAnalysisIdMap] = useState<Record<string, string>>(
+    {}
+  );
 
   const refreshAnalysisResults = async () => {
     try {
@@ -105,8 +108,15 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
 
       // Reload all analyses from the server
       let resultsUrl = `/api/rfps/${rfpId}/analyze-defense/results/latest`;
+      const params = new URLSearchParams();
       if (selectedVersionId) {
-        resultsUrl += `?versionId=${selectedVersionId}`;
+        params.append("versionId", selectedVersionId);
+      }
+      if (selectedSupplierId) {
+        params.append("supplierId", selectedSupplierId);
+      }
+      if (params.toString()) {
+        resultsUrl += `?${params.toString()}`;
       }
       const resultsRes = await fetch(resultsUrl);
       const resultsData = await resultsRes.json();
@@ -119,8 +129,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       if (resultsData.analyses && resultsData.analyses.length > 0) {
         console.log("[REFRESH] Got", resultsData.analyses.length, "analyses");
 
-        // Build task ID map for editing
+        // Build task ID and analysis ID maps for editing
         const newTaskIdMap: Record<string, string> = {};
+        const newAnalysisIdMap: Record<string, string> = {};
 
         resultsData.analyses.forEach((task: any) => {
           if (task.category_id && task.result) {
@@ -140,43 +151,55 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
             if (taskId) {
               newTaskIdMap[task.category_id] = taskId;
             }
+
+            // Store analysis ID for syncing with defense_analyses table
+            const analysisId = task.defense_analyses?.id;
+            if (analysisId) {
+              newAnalysisIdMap[task.category_id] = analysisId;
+            }
           }
         });
 
         setTaskIdMap(newTaskIdMap);
+        setAnalysisIdMap(newAnalysisIdMap);
 
         console.log(
           "[REFRESH] Built supplier map with keys:",
           Object.keys(bySupplier)
         );
         setAllAnalysesBySupplier(bySupplier);
+      } else {
+        console.log("[ANALYSIS LOADER] No analyses found");
+        setAllAnalysesBySupplier({});
+        setTaskIdMap({});
+        setAnalysisIdMap({});
+      }
 
-        // Apply for current supplier
-        const analysisMap =
-          selectedSupplierId && bySupplier[selectedSupplierId]
-            ? bySupplier[selectedSupplierId]
-            : {};
+      // Apply for current supplier
+      const analysisMap =
+        selectedSupplierId && bySupplier[selectedSupplierId]
+          ? bySupplier[selectedSupplierId]
+          : {};
 
-        const enrichTree = (nodes: TreeNode[]): TreeNode[] => {
-          return nodes.map((node) => {
-            if (node.type === "category" && analysisMap[node.id]) {
-              return {
-                ...node,
-                analysis: analysisMap[node.id],
-                children: node.children ? enrichTree(node.children) : undefined,
-              };
-            }
+      const enrichTree = (nodes: TreeNode[]): TreeNode[] => {
+        return nodes.map((node) => {
+          if (node.type === "category" && analysisMap[node.id]) {
             return {
               ...node,
-              analysis: node.type === "category" ? undefined : node.analysis,
+              analysis: analysisMap[node.id],
               children: node.children ? enrichTree(node.children) : undefined,
             };
-          });
-        };
+          }
+          return {
+            ...node,
+            analysis: node.type === "category" ? undefined : node.analysis,
+            children: node.children ? enrichTree(node.children) : undefined,
+          };
+        });
+      };
 
-        const enrichedTree = enrichTree(tree || []);
-        setTree(enrichedTree);
-      }
+      const enrichedTree = enrichTree(tree || []);
+      setTree(enrichedTree);
     } catch (error) {
       console.error("Error refreshing analysis results:", error);
     } finally {
@@ -199,8 +222,15 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       if (Object.keys(allAnalysesBySupplier).length === 0) {
         console.log("[ANALYSIS LOADER] Loading all analyses for RFP");
         let resultsUrl = `/api/rfps/${rfpId}/analyze-defense/results/latest`;
+        const params = new URLSearchParams();
         if (versionId) {
-          resultsUrl += `?versionId=${versionId}`;
+          params.append("versionId", versionId);
+        }
+        if (supplierId) {
+          params.append("supplierId", supplierId);
+        }
+        if (params.toString()) {
+          resultsUrl += `?${params.toString()}`;
         }
         const resultsRes = await fetch(resultsUrl);
         const resultsData = await resultsRes.json();
@@ -217,8 +247,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
             Record<string, { forces: string[]; faiblesses: string[] }>
           > = {};
 
-          // Build task ID map for editing
+          // Build task ID and analysis ID maps for editing
           const newTaskIdMap: Record<string, string> = {};
+          const newAnalysisIdMap: Record<string, string> = {};
 
           resultsData.analyses.forEach((task: any) => {
             if (task.category_id && task.result) {
@@ -240,6 +271,12 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                 newTaskIdMap[task.category_id] = taskId;
               }
 
+              // Store analysis ID for syncing with defense_analyses table
+              const analysisId = task.defense_analyses?.id;
+              if (analysisId) {
+                newAnalysisIdMap[task.category_id] = analysisId;
+              }
+
               console.log(
                 `[ANALYSIS LOADER] Task for supplier ${supplierKey}, category ${task.category_id}:`,
                 {
@@ -251,12 +288,18 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
           });
 
           setTaskIdMap(newTaskIdMap);
+          setAnalysisIdMap(newAnalysisIdMap);
 
           console.log(
             "[ANALYSIS LOADER] Built supplier map with keys:",
             Object.keys(bySupplier)
           );
           setAllAnalysesBySupplier(bySupplier);
+        } else {
+          console.log("[ANALYSIS LOADER] No analyses found");
+          setAllAnalysesBySupplier({});
+          setTaskIdMap({});
+          setAnalysisIdMap({});
         }
       }
 
@@ -567,6 +610,8 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     updates: { forces?: string[]; faiblesses?: string[] }
   ) => {
     const taskId = taskIdMap[categoryId];
+    const analysisId = analysisIdMap[categoryId];
+
     if (!taskId) {
       toast.error("ID de tâche introuvable pour cette catégorie");
       return;
@@ -594,7 +639,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         });
       }
 
-      // API call
+      // Step 1: Update defense_analysis_tasks via PATCH
       const response = await fetch(
         `/api/rfps/${rfpId}/analyze-defense/tasks/${taskId}`,
         {
@@ -632,6 +677,29 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
           };
           return newData;
         });
+      }
+
+      // Step 2: Sync to defense_analyses.analysis_data if we have analysisId
+      if (analysisId) {
+        console.log(`[EDIT] Syncing analysis ${analysisId} after task update`);
+        const syncResponse = await fetch(
+          `/api/rfps/${rfpId}/analyze-defense/sync`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ analysisId }),
+          }
+        );
+
+        if (!syncResponse.ok) {
+          console.warn(
+            "Warning: Sync to defense_analyses failed, but task was updated:",
+            syncResponse.status
+          );
+          // Don't fail the entire operation, just warn
+        } else {
+          console.log(`[EDIT] Successfully synced analysis ${analysisId}`);
+        }
       }
 
       toast.success("Analyse mise à jour avec succès");
