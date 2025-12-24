@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 import { Supplier } from "@/types/supplier";
 import { Response } from "@/types/response";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { CategoryCard } from "./CategoryCard";
+import { CategoryRequirementsModal } from "./CategoryRequirementsModal";
 
 // Types
 interface TreeNode {
@@ -47,6 +50,7 @@ export function CategoryHeatmap({
   selectedCategoryId,
 }: CategoryHeatmapProps) {
   const { activeVersion } = useVersion();
+  const isMobile = useIsMobile();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [responses, setResponses] = useState<Response[]>([]);
@@ -55,6 +59,10 @@ export function CategoryHeatmap({
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set()
   );
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedModalCategoryId, setSelectedModalCategoryId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -290,16 +298,55 @@ export function CategoryHeatmap({
     );
   }
 
+  // Handle modal opening
+  const handleOpenModal = (categoryId: string) => {
+    setSelectedModalCategoryId(categoryId);
+    setIsModalOpen(true);
+  };
+
+  // Get selected category details for modal
+  const selectedModalCategory = useMemo(() => {
+    if (!selectedModalCategoryId) return null;
+    const findCategory = (nodes: TreeNode[]): TreeNode | null => {
+      for (const node of nodes) {
+        if (node.id === selectedModalCategoryId) return node;
+        if (node.children) {
+          const found = findCategory(node.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return findCategory(tree);
+  }, [selectedModalCategoryId, tree]);
+
   return (
-    <Card className="w-full overflow-hidden mb-8">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg font-medium">
-          Synthèse par Catégorie
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="relative w-full overflow-auto max-h-[600px] border rounded-md">
-          <table className="w-full text-sm text-left border-collapse">
+    <>
+      <Card className="w-full overflow-hidden mb-8">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-medium">
+            Synthèse par Catégorie
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isMobile ? (
+            /* Mobile: Cards layout */
+            <div className="space-y-3">
+              {flatCategories.map((category) => (
+                <CategoryCard
+                  key={category.id}
+                  categoryCode={category.code}
+                  categoryTitle={category.title}
+                  suppliers={suppliers}
+                  scores={categoryScores[category.id] || {}}
+                  onClick={() => handleOpenModal(category.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            /* Desktop: Table layout */
+            <div className="relative w-full overflow-auto max-h-[600px] border rounded-md">
+              <table className="w-full text-sm text-left border-collapse">
             <thead className="text-xs text-slate-700 uppercase bg-slate-50 sticky top-0 z-20 shadow-sm">
               <tr>
                 <th className="px-4 py-3 font-medium sticky left-0 bg-slate-50 z-30 border-b border-r min-w-[300px]">
@@ -438,9 +485,26 @@ export function CategoryHeatmap({
                 })}
               </tr>
             </tfoot>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Modal for mobile - requires requirementsHeatmap to show filtered requirements */}
+      {isMobile && selectedModalCategory && (
+        <CategoryRequirementsModal
+          isOpen={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          categoryId={selectedModalCategory.id}
+          categoryCode={selectedModalCategory.code}
+          categoryTitle={selectedModalCategory.title}
+          tree={tree}
+          suppliers={suppliers}
+          responses={responses}
+          weights={weights}
+        />
+      )}
+    </>
   );
 }
