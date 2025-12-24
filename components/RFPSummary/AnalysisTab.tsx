@@ -1,18 +1,20 @@
 import React, { useState } from "react";
 import { RequirementsHeatmap } from "@/components/RFPSummary/RequirementsHeatmap";
 import { CategoryHeatmap } from "@/components/RFPSummary/CategoryHeatmap";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AnalysisTabProps {
   rfpId: string;
 }
 
 export function AnalysisTab({ rfpId }: AnalysisTabProps) {
+  const isMobile = useIsMobile();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null
   );
 
   return (
-    <div className="space-y-8">
+    <div className={isMobile ? "space-y-4" : "space-y-8"}>
       <CategoryHeatmap
         rfpId={rfpId}
         onCategorySelect={setSelectedCategoryId}
