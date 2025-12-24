@@ -17,5 +17,7 @@ export function useIsMobile() {
     return () => mql.removeEventListener("change", onChange);
   }, []);
 
-  return !!isMobile;
+  // Return undefined on server/initial render to avoid hydration mismatch
+  // Components should handle undefined as a fallback to desktop layout
+  return isMobile;
 }

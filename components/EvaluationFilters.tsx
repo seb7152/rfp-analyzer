@@ -11,6 +11,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export interface EvaluationFilterState {
   status: string[]; // "pass", "partial", "fail", "pending"
@@ -37,6 +39,7 @@ export function EvaluationFilters({
   activeFilterCount = 0,
 }: EvaluationFiltersProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const handleApplyFilters = () => {
     onApplyFilters();
@@ -109,7 +112,10 @@ export function EvaluationFilters({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-4">
+      <PopoverContent className={cn(
+        "p-4",
+        isMobile ? "w-[calc(100vw-2rem)] max-w-sm" : "w-80"
+      )}>
         <div className="space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between gap-2">
@@ -156,31 +162,40 @@ export function EvaluationFilters({
           {/* Score Range Filter (1-5 stars) */}
           <div className="space-y-3">
             <Label className="text-xs font-semibold">Score</Label>
-            <div className="flex gap-2 items-center">
-              <select
-                value={filters.scoreRange.min}
-                onChange={(e) => handleScoreRangeChange("min", e.target.value)}
-                className="flex-1 px-2 py-1 text-sm border rounded dark:bg-slate-800 dark:border-slate-700"
-              >
-                <option value="0">Min</option>
-                <option value="1">1 ⭐</option>
-                <option value="2">2 ⭐</option>
-                <option value="3">3 ⭐</option>
-                <option value="4">4 ⭐</option>
-                <option value="5">5 ⭐</option>
-              </select>
-              <span className="text-xs text-slate-500 flex-shrink-0">à</span>
-              <select
-                value={filters.scoreRange.max}
-                onChange={(e) => handleScoreRangeChange("max", e.target.value)}
-                className="flex-1 px-2 py-1 text-sm border rounded dark:bg-slate-800 dark:border-slate-700"
-              >
-                <option value="1">1 ⭐</option>
-                <option value="2">2 ⭐</option>
-                <option value="3">3 ⭐</option>
-                <option value="4">4 ⭐</option>
-                <option value="5">5 ⭐</option>
-              </select>
+            <div className={cn(
+              "items-center",
+              isMobile ? "space-y-2" : "flex gap-2"
+            )}>
+              <div className={isMobile ? "w-full" : "flex-1"}>
+                <label className="text-xs text-slate-600 dark:text-slate-400">Min</label>
+                <select
+                  value={filters.scoreRange.min}
+                  onChange={(e) => handleScoreRangeChange("min", e.target.value)}
+                  className="w-full px-2 py-1 text-sm border rounded dark:bg-slate-800 dark:border-slate-700"
+                >
+                  <option value="0">Min</option>
+                  <option value="1">1 ⭐</option>
+                  <option value="2">2 ⭐</option>
+                  <option value="3">3 ⭐</option>
+                  <option value="4">4 ⭐</option>
+                  <option value="5">5 ⭐</option>
+                </select>
+              </div>
+              {!isMobile && <span className="text-xs text-slate-500 flex-shrink-0">à</span>}
+              <div className={isMobile ? "w-full" : "flex-1"}>
+                <label className="text-xs text-slate-600 dark:text-slate-400">Max</label>
+                <select
+                  value={filters.scoreRange.max}
+                  onChange={(e) => handleScoreRangeChange("max", e.target.value)}
+                  className="w-full px-2 py-1 text-sm border rounded dark:bg-slate-800 dark:border-slate-700"
+                >
+                  <option value="1">1 ⭐</option>
+                  <option value="2">2 ⭐</option>
+                  <option value="3">3 ⭐</option>
+                  <option value="4">4 ⭐</option>
+                  <option value="5">5 ⭐</option>
+                </select>
+              </div>
             </div>
           </div>
 

@@ -11,6 +11,8 @@ import {
   type EvaluationFilterState,
 } from "./EvaluationFilters";
 import { useRequirementsTree } from "@/hooks/use-requirements";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import type { TreeNode } from "@/hooks/use-requirements";
 import type { ResponseWithSupplier } from "@/hooks/use-responses";
 
@@ -31,6 +33,7 @@ export function Sidebar({
   responses = [],
   isSingleSupplier = false,
 }: SidebarProps) {
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
     new Set()
@@ -302,24 +305,39 @@ export function Sidebar({
         </div>
 
         {/* Expand/Collapse Buttons + Filters */}
-        <div className="flex gap-2">
+        <div className={cn(
+          "flex",
+          isMobile ? "gap-1" : "gap-2"
+        )}>
           <Button
             variant="secondary"
             size="sm"
             onClick={handleExpandAll}
-            className="flex-1"
+            className={cn(
+              "flex-1",
+              isMobile && "px-1"
+            )}
+            title="Expand all requirements"
           >
-            <ChevronDown className="w-4 h-4 mr-1" />
-            Expand All
+            <ChevronDown className="w-4 h-4" />
+            <span className={isMobile ? "hidden sm:inline ml-1" : "ml-1"}>
+              Expand All
+            </span>
           </Button>
           <Button
             variant="secondary"
             size="sm"
             onClick={handleCollapseAll}
-            className="flex-1"
+            className={cn(
+              "flex-1",
+              isMobile && "px-1"
+            )}
+            title="Collapse all requirements"
           >
-            <ChevronUp className="w-4 h-4 mr-1" />
-            Collapse All
+            <ChevronUp className="w-4 h-4" />
+            <span className={isMobile ? "hidden sm:inline ml-1" : "ml-1"}>
+              Collapse All
+            </span>
           </Button>
           {isSingleSupplier && (
             <EvaluationFilters
