@@ -108,7 +108,11 @@ export function Sidebar({
 
   // Build a set of requirement IDs that match the applied filters
   const filteredRequirementIds = useMemo(() => {
-    if (!isSingleSupplier || responses.length === 0 || !hasActiveAppliedFilters) {
+    if (
+      !isSingleSupplier ||
+      responses.length === 0 ||
+      !hasActiveAppliedFilters
+    ) {
       return new Set<string>();
     }
 
@@ -133,7 +137,10 @@ export function Sidebar({
 
       // Check score range filter
       // Only apply if score range is not the default (0-5)
-      if (appliedFilters.scoreRange.min > 0 || appliedFilters.scoreRange.max < 5) {
+      if (
+        appliedFilters.scoreRange.min > 0 ||
+        appliedFilters.scoreRange.max < 5
+      ) {
         // Calculate score: manual score if available, otherwise AI score
         const score = response.manual_score ?? response.ai_score ?? null;
 
@@ -142,7 +149,10 @@ export function Sidebar({
           return;
         }
 
-        if (score < appliedFilters.scoreRange.min || score > appliedFilters.scoreRange.max) {
+        if (
+          score < appliedFilters.scoreRange.min ||
+          score > appliedFilters.scoreRange.max
+        ) {
           return;
         }
       }
@@ -202,7 +212,9 @@ export function Sidebar({
         const matchesEvaluation =
           node.type === "category" ||
           !hasActiveAppliedFilters ||
-          (hasActiveAppliedFilters && hasMatchingFilters && filteredRequirementIds.has(node.id));
+          (hasActiveAppliedFilters &&
+            hasMatchingFilters &&
+            filteredRequirementIds.has(node.id));
 
         // Filter children
         const filteredChildren = node.children
@@ -216,8 +228,7 @@ export function Sidebar({
         ) {
           acc.push({
             ...node,
-            children:
-              filteredChildren.length > 0 ? filteredChildren : node.children,
+            children: filteredChildren,
           });
         }
 
@@ -336,8 +347,8 @@ export function Sidebar({
             {searchQuery
               ? "No items matching your search"
               : hasActiveAppliedFilters
-              ? "No requirements matching the applied filters"
-              : "No categories or requirements found"}
+                ? "No requirements matching the applied filters"
+                : "No categories or requirements found"}
           </div>
         ) : (
           <ScrollArea className="h-full">
