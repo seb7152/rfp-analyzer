@@ -4,10 +4,15 @@ import { PresentationReport } from "./PresentationReport";
 
 export function PresentationReportWrapper({ rfpId }: { rfpId: string }) {
   const { activeVersion } = useVersion();
-  const { suppliers, loading } = useSuppliersByVersion(rfpId, activeVersion?.id);
+  const { suppliers, loading } = useSuppliersByVersion(
+    rfpId,
+    activeVersion?.id
+  );
 
   if (loading) {
-    return <div className="h-64 animate-pulse bg-slate-100 dark:bg-slate-800 rounded-2xl" />;
+    return (
+      <div className="h-64 animate-pulse bg-slate-100 dark:bg-slate-800 rounded-2xl" />
+    );
   }
 
   return (
