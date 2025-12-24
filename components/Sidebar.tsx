@@ -43,6 +43,13 @@ export function Sidebar({
     hasManualComments: null,
     hasManualScore: null,
   });
+  const [appliedFilters, setAppliedFilters] = useState<EvaluationFilterState>({
+    status: [],
+    scoreRange: { min: 0, max: 5 },
+    hasQuestions: null,
+    hasManualComments: null,
+    hasManualScore: null,
+  });
 
   // Use the new tree hook that includes categories + requirements
   const { tree, isLoading, error } = useRequirementsTree(rfpId);
@@ -83,21 +90,29 @@ export function Sidebar({
     }
   }, [selectedRequirementId, tree]);
 
-  // Build a set of requirement IDs that match the current filters
+  // Apply filters when user clicks the "Filtrer" button
+  const handleApplyFilters = () => {
+    setAppliedFilters({ ...filters });
+  };
+
+  // Check if any applied filters are active
+  const hasActiveAppliedFilters = useMemo(() => {
+    return (
+      appliedFilters.status.length > 0 ||
+      appliedFilters.scoreRange.min > 0 ||
+      appliedFilters.scoreRange.max < 5 ||
+      appliedFilters.hasQuestions !== null ||
+      appliedFilters.hasManualComments !== null
+    );
+  }, [appliedFilters]);
+
+  // Build a set of requirement IDs that match the applied filters
   const filteredRequirementIds = useMemo(() => {
-    if (!isSingleSupplier || responses.length === 0) {
-      return new Set<string>();
-    }
-
-    // Check if any filters are active
-    const hasActiveFilters =
-      filters.status.length > 0 ||
-      filters.scoreRange.min > 0 ||
-      filters.scoreRange.max < 5 ||
-      filters.hasQuestions !== null ||
-      filters.hasManualComments !== null;
-
-    if (!hasActiveFilters) {
+    if (
+      !isSingleSupplier ||
+      responses.length === 0 ||
+      !hasActiveAppliedFilters
+    ) {
       return new Set<string>();
     }
 
@@ -111,42 +126,52 @@ export function Sidebar({
 
     // For each requirement that has a response, check if it matches the filters
     responsesByRequirementId.forEach((response) => {
-      // Calculate score: manual score if available, otherwise AI score
-      let score = 0;
-      if (response.manual_score !== null) {
-        score = response.manual_score;
-      } else if (response.ai_score !== null) {
-        score = response.ai_score;
-      }
-
-      // Check status filter
-      if (filters.status.length > 0) {
-        // Only include if status matches one of the selected statuses
-        if (!filters.status.includes(response.status)) {
+      // Check status filter first
+      if (appliedFilters.status.length > 0) {
+        // Normalize status - treat null/undefined as "pending"
+        const responseStatus = response.status || "pending";
+        if (!appliedFilters.status.includes(responseStatus)) {
           return;
         }
       }
 
       // Check score range filter
-      if (score < filters.scoreRange.min || score > filters.scoreRange.max) {
-        return;
+      // Only apply if score range is not the default (0-5)
+      if (
+        appliedFilters.scoreRange.min > 0 ||
+        appliedFilters.scoreRange.max < 5
+      ) {
+        // Calculate score: manual score if available, otherwise AI score
+        const score = response.manual_score ?? response.ai_score ?? null;
+
+        // If no score and we're filtering by score, exclude this response
+        if (score === null) {
+          return;
+        }
+
+        if (
+          score < appliedFilters.scoreRange.min ||
+          score > appliedFilters.scoreRange.max
+        ) {
+          return;
+        }
       }
 
       // Check questions filter
-      if (filters.hasQuestions !== null) {
+      if (appliedFilters.hasQuestions !== null) {
         const hasQuestions =
           !!response.question && response.question.trim().length > 0;
-        if (filters.hasQuestions !== hasQuestions) {
+        if (appliedFilters.hasQuestions !== hasQuestions) {
           return;
         }
       }
 
       // Check manual comments filter
-      if (filters.hasManualComments !== null) {
+      if (appliedFilters.hasManualComments !== null) {
         const hasComments =
           !!response.manual_comment &&
           response.manual_comment.trim().length > 0;
-        if (filters.hasManualComments !== hasComments) {
+        if (appliedFilters.hasManualComments !== hasComments) {
           return;
         }
       }
@@ -155,7 +180,7 @@ export function Sidebar({
     });
 
     return matchingIds;
-  }, [responses, filters, isSingleSupplier]);
+  }, [responses, appliedFilters, isSingleSupplier, hasActiveAppliedFilters]);
 
   // Count active filters for badge display
   const activeFilterCount = useMemo(() => {
@@ -171,7 +196,8 @@ export function Sidebar({
   const filteredTree = useMemo(() => {
     const lowerQuery = searchQuery.toLowerCase();
     const hasSearchQuery = searchQuery && searchQuery.trim().length > 0;
-    const hasEvaluationFilters = filteredRequirementIds.size > 0;
+    // Distinguish between "no filters active" and "filters active but no matches"
+    const hasMatchingFilters = filteredRequirementIds.size > 0;
 
     function filterNodes(nodes: TreeNode[]): TreeNode[] {
       return nodes.reduce<TreeNode[]>((acc, node) => {
@@ -182,10 +208,13 @@ export function Sidebar({
           node.title.toLowerCase().includes(lowerQuery);
 
         // Check evaluation filter match (only for requirements, not categories)
+        // If filters are active but no requirements match, requirements should be excluded
         const matchesEvaluation =
           node.type === "category" ||
-          !hasEvaluationFilters ||
-          filteredRequirementIds.has(node.id);
+          !hasActiveAppliedFilters ||
+          (hasActiveAppliedFilters &&
+            hasMatchingFilters &&
+            filteredRequirementIds.has(node.id));
 
         // Filter children
         const filteredChildren = node.children
@@ -199,8 +228,7 @@ export function Sidebar({
         ) {
           acc.push({
             ...node,
-            children:
-              filteredChildren.length > 0 ? filteredChildren : node.children,
+            children: filteredChildren,
           });
         }
 
@@ -209,7 +237,7 @@ export function Sidebar({
     }
 
     return filterNodes(tree);
-  }, [tree, searchQuery, filteredRequirementIds]);
+  }, [tree, searchQuery, filteredRequirementIds, hasActiveAppliedFilters]);
 
   // Auto-expand all nodes when searching
   const displayedExpandedNodeIds = useMemo(() => {
@@ -297,6 +325,7 @@ export function Sidebar({
             <EvaluationFilters
               filters={filters}
               onFiltersChange={setFilters}
+              onApplyFilters={handleApplyFilters}
               activeFilterCount={activeFilterCount}
             />
           )}
@@ -317,7 +346,9 @@ export function Sidebar({
           <div className="p-4 text-slate-500 dark:text-slate-400">
             {searchQuery
               ? "No items matching your search"
-              : "No categories or requirements found"}
+              : hasActiveAppliedFilters
+                ? "No requirements matching the applied filters"
+                : "No categories or requirements found"}
           </div>
         ) : (
           <ScrollArea className="h-full">

@@ -9,11 +9,16 @@ export interface GetAllResponsesResponse {
  * Hook to fetch all responses for a specific RFP
  * Note: Supplier filtering should be done in-memory after fetching
  */
-export function useAllResponses(rfpId: string) {
+export function useAllResponses(rfpId: string, versionId?: string) {
   return useQuery<GetAllResponsesResponse>({
-    queryKey: ["all-responses", rfpId] as const,
+    queryKey: ["all-responses", rfpId, versionId] as const,
     queryFn: async () => {
-      const response = await fetch(`/api/rfps/${rfpId}/responses`);
+      const params = new URLSearchParams();
+      if (versionId) {
+        params.append("versionId", versionId);
+      }
+      const url = `/api/rfps/${rfpId}/responses${params.toString() ? `?${params.toString()}` : ""}`;
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error("Failed to fetch all responses");

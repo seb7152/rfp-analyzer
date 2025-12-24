@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/card";
 import { ChevronLeft, Loader2, CheckCircle2, FileUp } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useVersion } from "@/contexts/VersionContext";
 import type { RFP } from "@/lib/supabase/types";
 
 interface EvaluatePageProps {
@@ -54,9 +55,12 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   const { percentage: completionPercentage, isLoading: completionLoading } =
     useRFPCompletion(params.rfpId);
 
-  // Load all responses for filter evaluation
-  const { data: allResponsesData } = useAllResponses(params.rfpId);
-  const allResponses = (allResponsesData as any)?.responses || [];
+  // Get active version for filtering responses
+  const { activeVersion } = useVersion();
+
+  // Load all responses for filter evaluation (filtered by active version)
+  const responsesQuery = useAllResponses(params.rfpId, activeVersion?.id);
+  const allResponses = (responsesQuery.data as any)?.responses || [];
 
   // Determine if this is a single supplier view: when supplierId is present in query params
   const isSingleSupplierView = !!supplierId;
