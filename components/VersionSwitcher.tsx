@@ -19,10 +19,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function VersionSwitcher() {
   const versionContext = useContext(VersionContext);
   const [open, setOpen] = React.useState(false);
+  const isMobile = useIsMobile();
 
   // If no VersionProvider, don't render anything
   if (!versionContext) {
@@ -60,18 +62,26 @@ export function VersionSwitcher() {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[160px] justify-between"
+          className={cn(
+            "justify-between",
+            isMobile ? "w-16" : "w-[160px]"
+          )}
         >
           <span className="truncate">
             {activeVersion
-              ? activeVersion.version_name ||
-                `Version ${activeVersion.version_number}`
-              : "Select version..."}
+              ? isMobile
+                ? `V${activeVersion.version_number}`
+                : activeVersion.version_name ||
+                  `Version ${activeVersion.version_number}`
+              : isMobile ? "V" : "Select version..."}
           </span>
           <ChevronsUpDown className="opacity-50 h-4 w-4 ml-2 flex-shrink-0" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[160px] p-0">
+      <PopoverContent className={cn(
+        "p-0",
+        isMobile ? "w-48" : "w-[160px]"
+      )}>
         <Command>
           <CommandInput placeholder="Search versions..." className="h-9" />
           <CommandList>
