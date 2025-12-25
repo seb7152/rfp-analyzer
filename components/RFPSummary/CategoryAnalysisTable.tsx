@@ -47,6 +47,7 @@ import { toast } from "sonner";
 import { EditableList } from "./EditableList";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CategoryAnalysisTableMobile } from "./CategoryAnalysisTableMobile";
+import { ClientOnly } from "../ClientOnly";
 
 // Types
 interface TreeNode {
@@ -1652,21 +1653,23 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
 
   if (isMobile) {
     return (
-      <CategoryAnalysisTableMobile
-        flatCategories={flatCategories}
-        suppliers={suppliers}
-        supplierStatuses={supplierStatuses}
-        selectedSupplierId={selectedSupplierId}
-        onSupplierChange={setSelectedSupplierId}
-        onRefresh={refreshAnalysisResults}
-        onAnalyze={triggerAnalysis}
-        isRefreshing={isRefreshing}
-        analysisLoading={analysisLoading}
-        getCategoryScore={getCategoryScore}
-        getAverageCategoryScore={getAverageCategoryScore}
-        getChildTitles={getChildTitles}
-        getAttentionPoints={getAttentionPoints}
-      />
+      <ClientOnly>
+        <CategoryAnalysisTableMobile
+          flatCategories={flatCategories}
+          suppliers={suppliers}
+          supplierStatuses={supplierStatuses}
+          selectedSupplierId={selectedSupplierId}
+          onSupplierChange={setSelectedSupplierId}
+          onRefresh={refreshAnalysisResults}
+          onAnalyze={triggerAnalysis}
+          isRefreshing={isRefreshing}
+          analysisLoading={analysisLoading}
+          getCategoryScore={getCategoryScore}
+          getAverageCategoryScore={getAverageCategoryScore}
+          getChildTitles={getChildTitles}
+          getAttentionPoints={getAttentionPoints}
+        />
+      </ClientOnly>
     );
   }
 
