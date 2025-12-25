@@ -3,27 +3,25 @@ import * as React from "react";
 const MOBILE_BREAKPOINT = 768;
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
-    undefined
-  );
-  const [isHydrated, setIsHydrated] = React.useState(false);
+  // Use a ref to track if we've hydrated to avoid double rendering
+  const isHydratedRef = React.useRef(false);
+  const [isMobile, setIsMobile] = React.useState(false);
 
-  React.useEffect(() => {
-    setIsHydrated(true);
+  React.useLayoutEffect(() => {
+    // Detect mobile on first mount
+    const value = window.innerWidth < MOBILE_BREAKPOINT;
+    isHydratedRef.current = true;
+    setIsMobile(value);
+
+    // Setup listener for window resize
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
     const onChange = () => {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     };
     mql.addEventListener("change", onChange);
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+
     return () => mql.removeEventListener("change", onChange);
   }, []);
 
-  // Return false initially (desktop layout) to avoid hydration mismatch
-  // After hydration, return actual mobile state
-  if (!isHydrated) {
-    return false;
-  }
-
-  return isMobile ?? false;
+  return isMobile;
 }
