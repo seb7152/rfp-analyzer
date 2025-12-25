@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ClientOnly } from "@/components/ClientOnly";
 
 export interface EvaluationFilterState {
   status: string[]; // "pass", "partial", "fail", "pending"
@@ -96,8 +97,9 @@ export function EvaluationFilters({
     filters.hasManualComments !== null;
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
+    <ClientOnly>
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverTrigger asChild>
         <Button
           variant="outline"
           size="sm"
@@ -279,6 +281,7 @@ export function EvaluationFilters({
           </Button>
         </div>
       </PopoverContent>
-    </Popover>
+      </Popover>
+    </ClientOnly>
   );
 }

@@ -17,6 +17,7 @@ import { ChevronLeft, Loader2, CheckCircle2, FileUp } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useVersion } from "@/contexts/VersionContext";
+import { ClientOnly } from "@/components/ClientOnly";
 import type { RFP } from "@/lib/supabase/types";
 
 interface EvaluatePageProps {
@@ -118,9 +119,10 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
-      {/* Header */}
-      <div className="border-b border-slate-200 bg-white/80 px-4 sm:px-6 py-3 sm:py-4 dark:border-slate-800 dark:bg-slate-900/60">
+    <ClientOnly>
+      <div className="flex h-screen flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
+        {/* Header */}
+        <div className="border-b border-slate-200 bg-white/80 px-4 sm:px-6 py-3 sm:py-4 dark:border-slate-800 dark:bg-slate-900/60">
         {isMobile ? (
           // Mobile header - simplified
           <div className="flex items-center justify-between gap-2">
@@ -339,6 +341,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
         isOpen={isUploadModalOpen}
         onOpenChange={setIsUploadModalOpen}
       />
-    </div>
+      </div>
+    </ClientOnly>
   );
 }

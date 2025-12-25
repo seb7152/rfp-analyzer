@@ -6,6 +6,7 @@ import { RFPSwitcher } from "./RFPSwitcher";
 import { VersionSwitcher } from "./VersionSwitcher";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { ClientOnly } from "@/components/ClientOnly";
 
 export function DashboardSwitcher() {
   const pathname = usePathname();
@@ -19,13 +20,15 @@ export function DashboardSwitcher() {
   // Show RFP switcher with Version switcher if we're viewing an RFP
   if (isRFPPage && rfpId) {
     return (
-      <div className={cn(
-        "flex items-center",
-        isMobile ? "gap-1" : "gap-3"
-      )}>
-        <RFPSwitcher />
-        <VersionSwitcher />
-      </div>
+      <ClientOnly>
+        <div className={cn(
+          "flex items-center",
+          isMobile ? "gap-1" : "gap-3"
+        )}>
+          <RFPSwitcher />
+          <VersionSwitcher />
+        </div>
+      </ClientOnly>
     );
   }
 
