@@ -6,8 +6,10 @@ export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
     undefined
   );
+  const [isHydrated, setIsHydrated] = React.useState(false);
 
   React.useEffect(() => {
+    setIsHydrated(true);
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
     const onChange = () => {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
@@ -17,7 +19,11 @@ export function useIsMobile() {
     return () => mql.removeEventListener("change", onChange);
   }, []);
 
-  // Return undefined on server/initial render to avoid hydration mismatch
-  // Components should handle undefined as a fallback to desktop layout
-  return isMobile;
+  // Return false initially (desktop layout) to avoid hydration mismatch
+  // After hydration, return actual mobile state
+  if (!isHydrated) {
+    return false;
+  }
+
+  return isMobile ?? false;
 }
