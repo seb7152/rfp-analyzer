@@ -502,7 +502,6 @@ export function CategoryHeatmap({
           tree={tree}
           suppliers={suppliers}
           responses={responses}
-          weights={weights}
         />
       )}
     </>
