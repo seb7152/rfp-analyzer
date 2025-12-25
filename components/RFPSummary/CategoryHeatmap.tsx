@@ -10,6 +10,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CategoryCard } from "./CategoryCard";
 import { CategoryRequirementsModal } from "./CategoryRequirementsModal";
+import { ClientOnly } from "../ClientOnly";
 
 // Types
 interface TreeNode {
@@ -328,24 +329,25 @@ export function CategoryHeatmap({
             Synthèse par Catégorie
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          {isMobile ? (
-            /* Mobile: Cards layout */
-            <div className="space-y-3">
-              {flatCategories.map((category) => (
-                <CategoryCard
-                  key={category.id}
-                  categoryCode={category.code}
-                  categoryTitle={category.title}
-                  suppliers={suppliers}
-                  scores={categoryScores[category.id] || {}}
-                  onClick={() => handleOpenModal(category.id)}
-                />
-              ))}
-            </div>
-          ) : (
-            /* Desktop: Table layout */
-            <div className="relative w-full overflow-auto max-h-[600px] border rounded-md">
+        <ClientOnly>
+          <CardContent>
+            {isMobile ? (
+              /* Mobile: Cards layout */
+              <div className="space-y-3">
+                {flatCategories.map((category) => (
+                  <CategoryCard
+                    key={category.id}
+                    categoryCode={category.code}
+                    categoryTitle={category.title}
+                    suppliers={suppliers}
+                    scores={categoryScores[category.id] || {}}
+                    onClick={() => handleOpenModal(category.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              /* Desktop: Table layout */
+              <div className="relative w-full overflow-auto max-h-[600px] border rounded-md">
               <table className="w-full text-sm text-left border-collapse">
             <thead className="text-xs text-slate-700 uppercase bg-slate-50 sticky top-0 z-20 shadow-sm">
               <tr>
@@ -488,7 +490,8 @@ export function CategoryHeatmap({
               </table>
             </div>
           )}
-        </CardContent>
+          </CardContent>
+        </ClientOnly>
       </Card>
 
       {/* Modal for mobile - requires requirementsHeatmap to show filtered requirements */}
