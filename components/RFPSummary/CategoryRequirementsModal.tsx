@@ -29,7 +29,6 @@ interface CategoryRequirementsModalProps {
   tree: TreeNode[];
   suppliers: Supplier[];
   responses: Response[];
-  weights?: Record<string, number>;
 }
 
 const getScoreColor = (score: number | null) => {
@@ -82,7 +81,6 @@ export function CategoryRequirementsModal({
   tree,
   suppliers,
   responses,
-  weights,
 }: CategoryRequirementsModalProps) {
   // Find all requirements that belong to this category
   const categoryRequirements = useMemo(() => {
