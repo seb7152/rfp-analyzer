@@ -22,6 +22,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ClientOnly } from "@/components/ClientOnly";
 
 export function RFPSwitcher() {
   const params = useParams();
@@ -51,7 +52,8 @@ export function RFPSwitcher() {
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <ClientOnly>
+      <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -105,6 +107,7 @@ export function RFPSwitcher() {
           </CommandList>
         </Command>
       </PopoverContent>
-    </Popover>
+      </Popover>
+    </ClientOnly>
   );
 }

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ClientOnly } from "@/components/ClientOnly";
 
 export function VersionSwitcher() {
   const versionContext = useContext(VersionContext);
@@ -56,7 +57,8 @@ export function VersionSwitcher() {
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <ClientOnly>
+      <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -118,6 +120,7 @@ export function VersionSwitcher() {
           </CommandList>
         </Command>
       </PopoverContent>
-    </Popover>
+      </Popover>
+    </ClientOnly>
   );
 }

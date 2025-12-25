@@ -13,6 +13,7 @@ import {
 import { useRequirementsTree } from "@/hooks/use-requirements";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { ClientOnly } from "@/components/ClientOnly";
 import type { TreeNode } from "@/hooks/use-requirements";
 import type { ResponseWithSupplier } from "@/hooks/use-responses";
 
@@ -284,9 +285,10 @@ export function Sidebar({
   };
 
   return (
-    <div
-      className={`flex flex-col h-full bg-white/50 text-slate-900 border-r border-slate-200 dark:bg-slate-900/40 dark:text-slate-50 dark:border-slate-800 ${className}`}
-    >
+    <ClientOnly>
+      <div
+        className={`flex flex-col h-full bg-white/50 text-slate-900 border-r border-slate-200 dark:bg-slate-900/40 dark:text-slate-50 dark:border-slate-800 ${className}`}
+      >
       {/* Header */}
       <div className="flex-shrink-0 border-b border-slate-200 dark:border-slate-800 p-4 space-y-3">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -382,6 +384,7 @@ export function Sidebar({
           </ScrollArea>
         )}
       </div>
-    </div>
+      </div>
+    </ClientOnly>
   );
 }
