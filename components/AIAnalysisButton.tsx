@@ -13,7 +13,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Bot, CheckCircle2, AlertCircle, Lock } from "lucide-react";
+import { Loader2, Bot, CheckCircle2, AlertCircle } from "lucide-react";
 import type { RFP } from "@/lib/supabase/types";
 import type { RFPAccessLevel } from "@/types/user";
 import { canUseAIFeatures } from "@/lib/permissions/ai-permissions";
