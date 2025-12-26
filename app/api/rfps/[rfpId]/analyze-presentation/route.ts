@@ -41,6 +41,15 @@ export async function POST(
 
     const supabase = await createServerClient();
 
+    // Get current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { data: rfp, error: rfpError } = await supabase
       .from("rfps")
       .select("id, organization_id")
@@ -49,6 +58,21 @@ export async function POST(
 
     if (rfpError || !rfp) {
       return NextResponse.json({ error: "RFP not found" }, { status: 404 });
+    }
+
+    // Verify user is the RFP owner (only owners can use AI features)
+    const { data: assignment, error: assignmentError } = await supabase
+      .from("rfp_user_assignments")
+      .select("access_level")
+      .eq("rfp_id", rfpId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (assignmentError || !assignment || assignment.access_level !== "owner") {
+      return NextResponse.json(
+        { error: "Only RFP owners can use AI analysis features" },
+        { status: 403 }
+      );
     }
 
     const { data: supplier, error: supplierError } = await supabase
@@ -63,14 +87,6 @@ export async function POST(
         { error: "Supplier not found" },
         { status: 404 }
       );
-    }
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const correlationId = `presentation-${rfpId}-${supplierId}-${Date.now()}`;

@@ -13,13 +13,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Bot, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, Bot, CheckCircle2, AlertCircle, Lock } from "lucide-react";
 import type { RFP } from "@/lib/supabase/types";
+import type { RFPAccessLevel } from "@/types/user";
+import { canUseAIFeatures } from "@/lib/permissions/ai-permissions";
 
 interface AIAnalysisButtonProps {
   rfp: RFP;
   responsesCount?: number;
   hasUnanalyzedResponses?: boolean;
+  userAccessLevel?: RFPAccessLevel;
   onAnalysisStarted?: () => void;
 }
 
@@ -37,6 +40,7 @@ export function AIAnalysisButton({
   rfp,
   responsesCount = 0,
   hasUnanalyzedResponses = false,
+  userAccessLevel,
   onAnalysisStarted,
 }: AIAnalysisButtonProps) {
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -60,8 +64,11 @@ export function AIAnalysisButton({
   const { mutate: triggerAnalysis, isPending: isAnalyzing } = useAnalyzeRFP();
   const { status: analysisStatus } = useAnalyzeStatus(rfp.id);
 
-  // T140: Hide button if no unanalyzed responses
-  if (!hasUnanalyzedResponses) {
+  // Check if user can use AI features
+  const hasAIAccess = canUseAIFeatures(userAccessLevel);
+
+  // Hide if no AI access or no unanalyzed responses
+  if (!hasAIAccess || !hasUnanalyzedResponses) {
     return null;
   }
 

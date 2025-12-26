@@ -45,6 +45,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Supplier } from "@/types/supplier";
 import { toast } from "sonner";
 import { EditableList } from "./EditableList";
+import type { RFPAccessLevel } from "@/types/user";
+import { canUseAIFeatures } from "@/lib/permissions/ai-permissions";
 
 // Types
 interface TreeNode {
@@ -63,6 +65,7 @@ interface TreeNode {
 
 interface CategoryAnalysisTableProps {
   rfpId: string;
+  userAccessLevel?: RFPAccessLevel;
 }
 
 interface SupplierStatus {
@@ -71,7 +74,7 @@ interface SupplierStatus {
   removal_reason?: string | null;
 }
 
-export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
+export function CategoryAnalysisTable({ rfpId, userAccessLevel }: CategoryAnalysisTableProps) {
   const { activeVersion, versions } = useVersion();
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
@@ -100,6 +103,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const [analysisIdMap, setAnalysisIdMap] = useState<Record<string, string>>(
     {}
   );
+  const hasAIAccess = canUseAIFeatures(userAccessLevel);
 
   const refreshAnalysisResults = async () => {
     try {
@@ -1381,25 +1385,27 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                   className={cn("h-4 w-4", isRefreshing && "animate-spin")}
                 />
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={triggerAnalysis}
-                disabled={analysisLoading || !selectedSupplierId}
-                className="gap-2"
-              >
-                {analysisLoading ? (
-                  <>
-                    <span className="animate-spin">✨</span>
-                    Analyse...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4" />
-                    Analyser
-                  </>
-                )}
-              </Button>
+              {hasAIAccess && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={triggerAnalysis}
+                  disabled={analysisLoading || !selectedSupplierId}
+                  className="gap-2"
+                >
+                  {analysisLoading ? (
+                    <>
+                      <span className="animate-spin">✨</span>
+                      Analyse...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Analyser
+                    </>
+                  )}
+                </Button>
+              )}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
