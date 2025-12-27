@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Copy, Check, Plus, Building2, AlertCircle } from "lucide-react";
+import { Copy, Check, Plus, Building2, AlertCircle, Users } from "lucide-react";
 import {
   Field,
   FieldContent,
@@ -25,6 +25,7 @@ import {
   FieldLegend,
   FieldSet,
 } from "@/components/ui/field";
+import Link from "next/link";
 
 interface Organization {
   id: string;
@@ -288,6 +289,9 @@ export default function OrganizationsPage() {
                       <TableHead className="font-medium text-[11px] text-muted-foreground uppercase tracking-[0.3em]">
                         Role
                       </TableHead>
+                      <TableHead className="font-medium text-[11px] text-muted-foreground uppercase tracking-[0.3em] text-right">
+                        Actions
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -335,6 +339,16 @@ export default function OrganizationsPage() {
                         </TableCell>
                         <TableCell className="py-4">
                           {getRoleBadge(org.role)}
+                        </TableCell>
+                        <TableCell className="py-4 text-right">
+                          {org.role === "admin" && (
+                            <Link href={`/dashboard/organizations/${org.id}/members`}>
+                              <Button size="sm" variant="outline" className="gap-2">
+                                <Users className="w-4 h-4" />
+                                Gérer
+                              </Button>
+                            </Link>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
