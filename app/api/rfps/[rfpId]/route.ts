@@ -124,3 +124,141 @@ export async function DELETE(
     );
   }
 }
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { rfpId: string } }
+) {
+  try {
+    const supabase = await createServerClient();
+
+    // Get authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { rfpId } = params;
+    const { organization_id: newOrganizationId } = await request.json();
+
+    if (!rfpId) {
+      return NextResponse.json(
+        { error: "RFP ID is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!newOrganizationId) {
+      return NextResponse.json(
+        { error: "organization_id is required" },
+        { status: 400 }
+      );
+    }
+
+    // Get the RFP to check current organization
+    const { data: rfp, error: rfpFetchError } = await supabase
+      .from("rfps")
+      .select("id, organization_id, created_by")
+      .eq("id", rfpId)
+      .single();
+
+    if (rfpFetchError || !rfp) {
+      return NextResponse.json({ error: "RFP not found" }, { status: 404 });
+    }
+
+    // Verify user is admin in CURRENT organization
+    const { data: currentUserOrg, error: currentOrgError } = await supabase
+      .from("user_organizations")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("organization_id", rfp.organization_id)
+      .single();
+
+    if (
+      currentOrgError ||
+      !currentUserOrg ||
+      currentUserOrg.role !== "admin"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Access denied. Only admins can change RFP organizations.",
+        },
+        { status: 403 }
+      );
+    }
+
+    // Verify target organization exists and user is admin there
+    const { data: targetOrg, error: targetOrgError } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("id", newOrganizationId)
+      .single();
+
+    if (targetOrgError || !targetOrg) {
+      return NextResponse.json(
+        { error: "Target organization not found" },
+        { status: 404 }
+      );
+    }
+
+    const { data: targetUserOrg, error: targetUserOrgError } = await supabase
+      .from("user_organizations")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("organization_id", newOrganizationId)
+      .single();
+
+    if (
+      targetUserOrgError ||
+      !targetUserOrg ||
+      targetUserOrg.role !== "admin"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Access denied. You must be an admin in the target organization.",
+        },
+        { status: 403 }
+      );
+    }
+
+    // Update the RFP's organization
+    const { data: updatedRfp, error: updateError } = await supabase
+      .from("rfps")
+      .update({ organization_id: newOrganizationId, updated_at: new Date() })
+      .eq("id", rfpId)
+      .select(
+        "id, title, description, organization_id, created_by, created_at, updated_at"
+      )
+      .single();
+
+    if (updateError) {
+      return NextResponse.json(
+        { error: `Failed to update RFP organization: ${updateError.message}` },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "RFP organization updated successfully",
+        rfp: updatedRfp,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("RFP organization update error:", error);
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
+      { status: 500 }
+    );
+  }
+}
