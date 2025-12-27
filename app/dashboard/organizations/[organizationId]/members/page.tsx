@@ -80,7 +80,6 @@ export default function MembersPage() {
   );
   const [inviting, setInviting] = useState(false);
   const [openInviteDialog, setOpenInviteDialog] = useState(false);
-  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editingRole, setEditingRole] = useState<"admin" | "evaluator" | "viewer">(
     "evaluator"
@@ -213,7 +212,6 @@ export default function MembersPage() {
       }
 
       setMembers(members.filter((m) => m.user_id !== userId));
-      setDeleteUserId(null);
       toast.success("Membre supprimé");
     } catch (error) {
       console.error("Failed to delete member:", error);
@@ -467,9 +465,6 @@ export default function MembersPage() {
                                     size="sm"
                                     variant="ghost"
                                     className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                                    onClick={() =>
-                                      setDeleteUserId(member.user_id)
-                                    }
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
