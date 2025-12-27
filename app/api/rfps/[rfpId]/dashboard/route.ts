@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
 import {
   getRequirements,
   getResponsesForRFP,
@@ -117,16 +118,10 @@ export async function GET(
       return NextResponse.json({ error: "RFP not found" }, { status: 404 });
     }
 
-    // Verify user access to organization
-    const { data: userOrg, error: userOrgError } = await supabase
-      .from("user_organizations")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("organization_id", rfp.organization_id)
-      .single();
-
-    if (userOrgError || !userOrg) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    // Verify user access to RFP
+    const accessCheckResponse = await verifyRFPAccess(rfpId, user.id);
+    if (accessCheckResponse) {
+      return accessCheckResponse;
     }
 
     // Fetch requirements

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
 
 export async function GET(
   _request: NextRequest,
@@ -16,6 +17,22 @@ export async function GET(
     }
 
     const supabase = await createServerClient();
+
+    // Get authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify user has access to this RFP
+    const accessCheckResponse = await verifyRFPAccess(rfpId, user.id);
+    if (accessCheckResponse) {
+      return accessCheckResponse;
+    }
 
     // Get the RFP details
     const { data: rfp, error: rfpError } = await supabase
@@ -79,7 +96,8 @@ export async function DELETE(
       return NextResponse.json({ error: "RFP not found" }, { status: 404 });
     }
 
-    // Verify user is part of the organization and is admin
+    // Verify user has access and check if they're organization admin
+    // Only organization admins can delete RFPs
     const { data: userOrg, error: userOrgError } = await supabase
       .from("user_organizations")
       .select("role")
@@ -87,9 +105,16 @@ export async function DELETE(
       .eq("organization_id", rfp.organization_id)
       .single();
 
-    if (userOrgError || !userOrg || userOrg.role !== "admin") {
+    if (userOrgError || !userOrg) {
       return NextResponse.json(
-        { error: "Access denied. Only admins can delete RFPs." },
+        { error: "Access denied. User not in RFP organization." },
+        { status: 403 }
+      );
+    }
+
+    if (userOrg.role !== "admin") {
+      return NextResponse.json(
+        { error: "Access denied. Only organization admins can delete RFPs." },
         { status: 403 }
       );
     }
@@ -143,7 +168,6 @@ export async function PATCH(
     }
 
     const { rfpId } = params;
-    const { organization_id: newOrganizationId } = await request.json();
 
     if (!rfpId) {
       return NextResponse.json(
@@ -151,6 +175,9 @@ export async function PATCH(
         { status: 400 }
       );
     }
+
+    const requestBody = await request.json();
+    const { organization_id: newOrganizationId } = requestBody;
 
     if (!newOrganizationId) {
       return NextResponse.json(
