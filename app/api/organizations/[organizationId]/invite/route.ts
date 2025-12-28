@@ -1,11 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-type Params = Promise<{ organizationId: string }>;
-
-export async function POST(request: Request, { params }: { params: Params }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { organizationId: string } }
+) {
   try {
-    const { organizationId } = await params;
+    const { organizationId } = params;
     const { email, role } = await request.json();
 
     if (!email || !role) {
