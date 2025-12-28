@@ -57,38 +57,46 @@ export async function GET(
       rfps = result.data;
       rfpsError = result.error;
     } else {
-      // Non-admin: fetch RFPs where user is assigned, filter by organization
-      // Step 1: Get user's RFP assignments
+      // Non-admin: fetch only RFPs where user is assigned AND in this organization
+      // Step 1: Get user's RFP assignments for this organization
       const assignmentsResult = await supabase
         .from("rfp_user_assignments")
-        .select(
-          `
-          rfp_id,
-          rfps!inner (
-            id,
-            title,
-            description,
-            status,
-            created_at,
-            updated_at,
-            created_by,
-            organization_id
-          )
-        `
-        )
-        .eq("user_id", user.id)
-        .eq("rfps.organization_id", params.organizationId)
-        .order("rfps(created_at)", { ascending: false });
+        .select("rfp_id")
+        .eq("user_id", user.id);
 
       if (assignmentsResult.error) {
         rfpsError = assignmentsResult.error;
         rfps = [];
       } else {
-        // Extract the RFPs from the nested response
-        rfps =
-          assignmentsResult.data
-            ?.map((item: any) => item.rfps)
-            .filter(Boolean) || [];
+        const rfpIds =
+          assignmentsResult.data?.map((a: any) => a.rfp_id) || [];
+
+        if (rfpIds.length === 0) {
+          // User has no assignments
+          rfps = [];
+        } else {
+          // Step 2: Get the actual RFP data for assigned RFPs in this organization
+          const rfpsResult = await supabase
+            .from("rfps")
+            .select(
+              `
+              id,
+              title,
+              description,
+              status,
+              created_at,
+              updated_at,
+              created_by,
+              organization_id
+            `
+            )
+            .in("id", rfpIds)
+            .eq("organization_id", params.organizationId)
+            .order("created_at", { ascending: false });
+
+          rfps = rfpsResult.data;
+          rfpsError = rfpsResult.error;
+        }
       }
     }
 
