@@ -30,25 +30,65 @@ export async function GET(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    // Fetch RFPs for this organization
-    const { data: rfps, error: rfpsError } = await supabase
-      .from("rfps")
-      .select(
-        `
-        id,
-        title,
-        description,
-        status,
-        created_at,
-        updated_at,
-        created_by,
-        organization_id
-      `
-      )
-      .eq("organization_id", params.organizationId)
-      .order("created_at", { ascending: false });
+    let rfps;
+    let rfpsError;
 
-    if (rfpsError) {
+    // If user is admin, show all RFPs in organization
+    // If not admin, only show RFPs where user is assigned
+    if (userOrg.role === "admin") {
+      // Admin: fetch all RFPs for this organization
+      const result = await supabase
+        .from("rfps")
+        .select(
+          `
+          id,
+          title,
+          description,
+          status,
+          created_at,
+          updated_at,
+          created_by,
+          organization_id
+        `
+        )
+        .eq("organization_id", params.organizationId)
+        .order("created_at", { ascending: false });
+
+      rfps = result.data;
+      rfpsError = result.error;
+    } else {
+      // Non-admin: fetch only RFPs where user is assigned
+      const result = await supabase
+        .from("rfp_user_assignments")
+        .select(
+          `
+          rfp_id,
+          rfps(
+            id,
+            title,
+            description,
+            status,
+            created_at,
+            updated_at,
+            created_by,
+            organization_id
+          )
+        `
+        )
+        .eq("user_id", user.id)
+        .eq("rfps.organization_id", params.organizationId)
+        .order("rfps(created_at)", { ascending: false });
+
+      // Extract the RFPs from the nested response
+      if (result.error) {
+        rfpsError = result.error;
+        rfps = [];
+      } else {
+        rfps = result.data?.map((item: any) => item.rfps).filter(Boolean) || [];
+      }
+    }
+
+    if (rfpsError && userOrg.role === "admin") {
       return NextResponse.json(
         { error: `Failed to fetch RFPs: ${rfpsError.message}` },
         { status: 400 }
