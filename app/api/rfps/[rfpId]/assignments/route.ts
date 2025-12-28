@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
 import type { GetRFPAssignmentsResponse } from "@/lib/supabase/types";
 
 /**
@@ -28,18 +29,20 @@ export async function GET(
 
     const supabase = await createServerClient();
 
-    // Verify RFP exists and user has access
-    const { data: rfp, error: rfpError } = await supabase
-      .from("rfps")
-      .select("id, organization_id")
-      .eq("id", rfpId)
-      .single();
+    // Get authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-    if (rfpError || !rfp) {
-      return NextResponse.json(
-        { error: "RFP not found or access denied" },
-        { status: 404 }
-      );
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify user has access to this RFP
+    const accessCheckResponse = await verifyRFPAccess(rfpId, user.id);
+    if (accessCheckResponse) {
+      return accessCheckResponse;
     }
 
     // Get all assignments for this RFP
@@ -171,6 +174,12 @@ export async function POST(
         { error: "Invalid access_level" },
         { status: 400 }
       );
+    }
+
+    // Verify user has access to this RFP
+    const accessCheckResponse = await verifyRFPAccess(rfpId, currentUser.id);
+    if (accessCheckResponse) {
+      return accessCheckResponse;
     }
 
     // Verify RFP exists and get organization_id
