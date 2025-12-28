@@ -88,7 +88,9 @@ export async function GET(
       }
     }
 
-    if (rfpsError && userOrg.role === "admin") {
+    // Check for errors
+    if (rfpsError) {
+      console.error("Error fetching RFPs:", rfpsError);
       return NextResponse.json(
         { error: `Failed to fetch RFPs: ${rfpsError.message}` },
         { status: 400 }
