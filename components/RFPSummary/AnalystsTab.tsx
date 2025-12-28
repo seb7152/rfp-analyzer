@@ -203,11 +203,11 @@ export function AnalystsTab({ rfpId }: AnalystsTabProps) {
     }
   };
 
-  // Filter out analysts already assigned
+  // Filter out analysts already assigned to avoid duplicates
+  // But allow changing their role if needed
   const assignedUserIds = new Set(analysts.map((a) => a.id));
-  const availableMembers = organizationMembers.filter(
-    (m) => !assignedUserIds.has(m.id)
-  );
+  // Show all members, even if already assigned (to allow role changes)
+  const availableMembers = organizationMembers;
 
   if (loading) {
     return (
