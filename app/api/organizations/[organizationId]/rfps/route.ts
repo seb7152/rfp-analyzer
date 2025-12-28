@@ -57,13 +57,14 @@ export async function GET(
       rfps = result.data;
       rfpsError = result.error;
     } else {
-      // Non-admin: fetch only RFPs where user is assigned
-      const result = await supabase
+      // Non-admin: fetch RFPs where user is assigned, filter by organization
+      // Step 1: Get user's RFP assignments
+      const assignmentsResult = await supabase
         .from("rfp_user_assignments")
         .select(
           `
           rfp_id,
-          rfps(
+          rfps!inner (
             id,
             title,
             description,
@@ -79,12 +80,15 @@ export async function GET(
         .eq("rfps.organization_id", params.organizationId)
         .order("rfps(created_at)", { ascending: false });
 
-      // Extract the RFPs from the nested response
-      if (result.error) {
-        rfpsError = result.error;
+      if (assignmentsResult.error) {
+        rfpsError = assignmentsResult.error;
         rfps = [];
       } else {
-        rfps = result.data?.map((item: any) => item.rfps).filter(Boolean) || [];
+        // Extract the RFPs from the nested response
+        rfps =
+          assignmentsResult.data
+            ?.map((item: any) => item.rfps)
+            .filter(Boolean) || [];
       }
     }
 
