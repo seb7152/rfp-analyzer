@@ -203,9 +203,6 @@ export function AnalystsTab({ rfpId }: AnalystsTabProps) {
     }
   };
 
-  // Filter out analysts already assigned to avoid duplicates
-  // But allow changing their role if needed
-  const assignedUserIds = new Set(analysts.map((a) => a.id));
   // Show all members, even if already assigned (to allow role changes)
   const availableMembers = organizationMembers;
 
