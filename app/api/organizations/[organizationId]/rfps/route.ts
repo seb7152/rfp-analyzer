@@ -54,6 +54,10 @@ export async function GET(
         .eq("organization_id", params.organizationId)
         .order("created_at", { ascending: false });
 
+      console.log("Admin RFP query result:", {
+        data: result.data,
+        error: result.error,
+      });
       rfps = result.data;
       rfpsError = result.error;
     } else {
@@ -64,12 +68,19 @@ export async function GET(
         .select("rfp_id")
         .eq("user_id", user.id);
 
+      console.log("Assignments query result:", {
+        data: assignmentsResult.data,
+        error: assignmentsResult.error,
+      });
+
       if (assignmentsResult.error) {
         rfpsError = assignmentsResult.error;
         rfps = [];
       } else {
         const rfpIds =
           assignmentsResult.data?.map((a: any) => a.rfp_id) || [];
+
+        console.log("RFP IDs extracted:", rfpIds);
 
         if (rfpIds.length === 0) {
           // User has no assignments
@@ -93,6 +104,11 @@ export async function GET(
             .in("id", rfpIds)
             .eq("organization_id", params.organizationId)
             .order("created_at", { ascending: false });
+
+          console.log("Non-admin RFP query result:", {
+            data: rfpsResult.data,
+            error: rfpsResult.error,
+          });
 
           rfps = rfpsResult.data;
           rfpsError = rfpsResult.error;
