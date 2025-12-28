@@ -64,7 +64,7 @@ export function SettingsTab({
         setOrganizations(adminOrgs);
 
         // Find current organization
-        const current = adminOrgs.find((org) => org.id === currentOrganizationId);
+        const current = adminOrgs.find((org: Organization) => org.id === currentOrganizationId);
         setCurrentOrg(current || null);
       } catch (err) {
         setError(
