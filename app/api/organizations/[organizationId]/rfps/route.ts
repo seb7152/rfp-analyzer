@@ -62,14 +62,16 @@ export async function GET(
       rfpsError = result.error;
     } else {
       // Non-admin: fetch only RFPs where user is assigned AND in this organization
-      // Step 1: Get user's RFP assignments for this organization
+      // Step 1: Get user's RFP assignments for this organization ONLY
       const assignmentsResult = await supabase
         .from("rfp_user_assignments")
         .select("rfp_id")
         .eq("user_id", user.id);
 
-      console.log("Assignments query result:", {
-        data: assignmentsResult.data,
+      console.log("[Non-Admin] Step 1 - Assignments query for user:", {
+        userId: user.id,
+        organizationId: params.organizationId,
+        assignmentsCount: assignmentsResult.data?.length || 0,
         error: assignmentsResult.error,
       });
 
@@ -80,13 +82,18 @@ export async function GET(
         const rfpIds =
           assignmentsResult.data?.map((a: any) => a.rfp_id) || [];
 
-        console.log("RFP IDs extracted:", rfpIds);
+        console.log("[Non-Admin] Step 1 - RFP IDs extracted:", {
+          count: rfpIds.length,
+          ids: rfpIds.slice(0, 5), // Log first 5 for debugging
+        });
 
         if (rfpIds.length === 0) {
           // User has no assignments
+          console.log("[Non-Admin] User has no RFP assignments");
           rfps = [];
         } else {
           // Step 2: Get the actual RFP data for assigned RFPs in this organization
+          // CRITICAL: Both filters (in + eq) must pass - defense in depth
           const rfpsResult = await supabase
             .from("rfps")
             .select(
@@ -105,13 +112,42 @@ export async function GET(
             .eq("organization_id", params.organizationId)
             .order("created_at", { ascending: false });
 
-          console.log("Non-admin RFP query result:", {
-            data: rfpsResult.data,
+          console.log("[Non-Admin] Step 2 - RFP data query result:", {
+            organizationId: params.organizationId,
+            rfpsCount: rfpsResult.data?.length || 0,
             error: rfpsResult.error,
+            // Log RFP details for debugging cross-organization leaks
+            rfps: rfpsResult.data?.map((r: any) => ({
+              id: r.id,
+              org_id: r.organization_id,
+              title: r.title,
+            })) || [],
           });
 
-          rfps = rfpsResult.data;
-          rfpsError = rfpsResult.error;
+          // SECURITY CHECK: Verify all returned RFPs belong to this organization
+          if (rfpsResult.data) {
+            const leakedRfps = rfpsResult.data.filter(
+              (r: any) => r.organization_id !== params.organizationId
+            );
+            if (leakedRfps.length > 0) {
+              console.error("[SECURITY] Cross-organization RFP leak detected:", {
+                userId: user.id,
+                requestedOrganization: params.organizationId,
+                leakedRfps: leakedRfps.map((r: any) => ({
+                  id: r.id,
+                  org_id: r.organization_id,
+                })),
+              });
+              // Do not return leaked RFPs
+              rfps = rfpsResult.data.filter(
+                (r: any) => r.organization_id === params.organizationId
+              );
+              rfpsError = null;
+            } else {
+              rfps = rfpsResult.data;
+              rfpsError = rfpsResult.error;
+            }
+          }
         }
       }
     }
