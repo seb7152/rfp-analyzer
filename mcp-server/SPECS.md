@@ -173,6 +173,7 @@ Toutes les exigences d'un domaine spécifique.
 **Paramètres:**
 - `domain_name`: Nom du domaine (ex: "Sécurité", "Infrastructure")
 - `include_responses`: `true|false` (défaut: false)
+- `include_details`: `true|false` (défaut: false) - Décomposition AI/Manuel dans les réponses
 - `supplier_ids[]`: Liste de fournisseurs à inclure (optionnel)
 
 **Réponse (sans responses):**
@@ -230,14 +231,19 @@ Toutes les exigences d'un domaine spécifique.
             "name": "Acme Corp"
           },
           "response_text": "Notre solution supporte SAML 2.0 et OAuth 2.0...",
-          "ai_score": 5,
-          "ai_comment": "Excellente couverture avec support multi-protocoles",
-          "manual_score": 5,
-          "manual_comment": "Validé en démo",
-          "final_score": 5,
+          "score": 5,
+          "comment": "Validé en démo",
           "status": "pass",
           "evaluated_by": "jean.dupont@example.com",
-          "evaluated_at": "2025-01-20T10:30:00Z"
+          "evaluated_at": "2025-01-20T10:30:00Z",
+
+          // Détails (optionnel)
+          "details": {
+            "ai_score": 5,
+            "ai_comment": "Excellente couverture avec support multi-protocoles",
+            "manual_score": 5,
+            "manual_comment": "Validé en démo"
+          }
         },
         {
           "supplier": {
@@ -245,11 +251,17 @@ Toutes les exigences d'un domaine spécifique.
             "name": "Beta Inc"
           },
           "response_text": "SAML 2.0 supporté via module optionnel...",
-          "ai_score": 3,
-          "ai_comment": "Support disponible mais nécessite module additionnel",
-          "manual_score": null,
-          "final_score": 3,
-          "status": "pending"
+          "score": 3,
+          "comment": "Support disponible mais nécessite module additionnel",
+          "status": "pending",
+
+          // Détails (optionnel)
+          "details": {
+            "ai_score": 3,
+            "ai_comment": "Support disponible mais nécessite module additionnel",
+            "manual_score": null,
+            "manual_comment": null
+          }
         }
       ]
     }
@@ -315,15 +327,20 @@ Détails d'une exigence spécifique avec toutes ses réponses.
         "name": "Acme Corp"
       },
       "response_text": "...",
-      "ai_score": 5,
-      "ai_comment": "...",
-      "manual_score": 5,
-      "manual_comment": "...",
-      "final_score": 5,
+      "score": 5,
+      "comment": "Validé en démo",
       "status": "pass",
       "evaluated_by": "jean.dupont@example.com",
       "evaluated_at": "2025-01-20T10:30:00Z",
-      "rank": 1  // Rang pour cette exigence
+      "rank": 1,  // Rang pour cette exigence
+
+      // Détails complets (optionnel avec ?include_details=true)
+      "details": {
+        "ai_score": 5,
+        "ai_comment": "Excellente couverture",
+        "manual_score": 5,
+        "manual_comment": "Validé en démo"
+      }
     },
     {
       "id": "uuid-response-2",
@@ -332,13 +349,19 @@ Détails d'une exigence spécifique avec toutes ses réponses.
         "name": "Beta Inc"
       },
       "response_text": "...",
-      "ai_score": 4,
-      "ai_comment": "...",
-      "manual_score": 4,
-      "manual_comment": "...",
-      "final_score": 4,
+      "score": 4,
+      "comment": "Bonne couverture",
       "status": "pass",
-      "rank": 2
+      "evaluated_by": "jean.dupont@example.com",
+      "evaluated_at": "2025-01-20T10:30:00Z",
+      "rank": 2,
+
+      "details": {
+        "ai_score": 4,
+        "ai_comment": "Bonne couverture",
+        "manual_score": 4,
+        "manual_comment": "Bonne couverture"
+      }
     }
   ]
 }
@@ -792,9 +815,14 @@ Récupère les notes de tous les fournisseurs pour une liste d'exigences.
   };
   include_responses?: boolean;  // Défaut: false
   include_stats?: boolean;       // Défaut: true
+  include_details?: boolean;     // Défaut: false - Inclure décomposition AI/Manuel
   sort_by?: "code" | "avg_score" | "variance";  // Défaut: "code"
 }
 ```
+
+**Note sur `include_details`** :
+- `false` (défaut) : Retourne uniquement les champs consolidés (`score`, `comment`)
+- `true` : Ajoute l'objet `details` avec la décomposition complète (ai_score, manual_score, etc.)
 
 **Réponse:**
 ```json
@@ -818,34 +846,55 @@ Récupère les notes de tous les fournisseurs pour une liste d'exigences.
             "id": "uuid-1",
             "name": "Acme Corp"
           },
-          "ai_score": 5,
-          "manual_score": 5,
-          "final_score": 5,
+          "score": 5,
+          "comment": "Validé en démo",
           "status": "pass",
-          "has_comment": true,
-          "evaluated_at": "2025-01-20T10:30:00Z"
+          "evaluated_by": "jean.dupont@example.com",
+          "evaluated_at": "2025-01-20T10:30:00Z",
+
+          // Détails IA/Manuel (optionnel)
+          "details": {
+            "ai_score": 5,
+            "ai_comment": "Excellente couverture",
+            "manual_score": 5,
+            "manual_comment": "Validé en démo"
+          }
         },
         {
           "supplier": {
             "id": "uuid-2",
             "name": "Beta Inc"
           },
-          "ai_score": 4,
-          "manual_score": null,
-          "final_score": 4,
+          "score": 4,
+          "comment": "Bonne solution avec quelques limitations",
           "status": "pass",
-          "has_comment": false
+          "evaluated_by": null,
+          "evaluated_at": null,
+
+          "details": {
+            "ai_score": 4,
+            "ai_comment": "Bonne solution avec quelques limitations",
+            "manual_score": null,
+            "manual_comment": null
+          }
         },
         {
           "supplier": {
             "id": "uuid-3",
             "name": "TechCo"
           },
-          "ai_score": 2,
-          "manual_score": 3,
-          "final_score": 3,
+          "score": 3,
+          "comment": "Solution acceptable après discussion",
           "status": "partial",
-          "has_comment": true
+          "evaluated_by": "marie.martin@example.com",
+          "evaluated_at": "2025-01-21T14:00:00Z",
+
+          "details": {
+            "ai_score": 2,
+            "ai_comment": "Solution limitée",
+            "manual_score": 3,
+            "manual_comment": "Solution acceptable après discussion"
+          }
         }
       ],
 
@@ -1174,12 +1223,30 @@ INSERT INTO mcp_audit_logs (
 - **Sous-catégories**: `SUB-1.1.1`, etc.
 - **Exigences**: `REQ-001`, `REQ-002`, etc.
 
-### 4.2 Scores
+### 4.2 Scores et Commentaires (Consolidés)
 
-- **ai_score**: 0-5 (entier)
-- **manual_score**: 0-5 (entier) ou null
-- **ai_confidence**: 0.0-1.0 (décimal)
-- **final_score**: manual_score ?? ai_score
+**Champs consolidés (recommandés)** :
+- **score**: 0-5 (entier) = `manual_score ?? ai_score`
+- **comment**: string = `manual_comment ?? ai_comment`
+- **evaluated_by**: user email (si manual_score existe)
+- **evaluated_at**: timestamp (si manual_score existe)
+
+**Champs détaillés (optionnels pour traçabilité)** :
+- **ai_score**: 0-5 (score initial IA)
+- **ai_comment**: string (commentaire IA)
+- **ai_confidence**: 0.0-1.0 (confiance IA)
+- **manual_score**: 0-5 ou null (score ajusté humain)
+- **manual_comment**: string ou null (commentaire humain)
+
+**Logique de consolidation** :
+```typescript
+{
+  score: response.manual_score ?? response.ai_score,
+  comment: response.manual_comment ?? response.ai_comment,
+  evaluated_by: response.manual_score ? response.evaluated_by : null,
+  evaluated_at: response.manual_score ? response.evaluated_at : null
+}
+```
 
 ### 4.3 Status
 

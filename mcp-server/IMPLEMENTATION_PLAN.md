@@ -236,17 +236,41 @@ export interface ScoreStatistics {
   };
 }
 
+export interface ResponseConsolidated {
+  score: number;          // = manual_score ?? ai_score
+  comment: string;        // = manual_comment ?? ai_comment
+  status: string;
+  supplier_name: string;
+  evaluated_by?: string;  // Si manual_score existe
+  evaluated_at?: string;  // Si manual_score existe
+
+  // Optionnel (si include_details=true)
+  details?: {
+    ai_score: number;
+    ai_comment: string;
+    manual_score: number | null;
+    manual_comment: string | null;
+  };
+}
+
+export function consolidateResponse(response: any): ResponseConsolidated {
+  return {
+    score: response.manual_score ?? response.ai_score,
+    comment: response.manual_comment ?? response.ai_comment,
+    status: response.status,
+    supplier_name: response.supplier_name,
+    evaluated_by: response.manual_score ? response.evaluated_by : null,
+    evaluated_at: response.manual_score ? response.evaluated_at : null
+  };
+}
+
 export function calculateScoreStats(
-  responses: Array<{
-    final_score: number;
-    status: string;
-    supplier_name: string;
-  }>
+  responses: Array<ResponseConsolidated>
 ): ScoreStatistics {
   // Implémenter tous les calculs statistiques
 
   // Moyenne
-  const scores = responses.map(r => r.final_score);
+  const scores = responses.map(r => r.score);
   const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
 
   // Médiane

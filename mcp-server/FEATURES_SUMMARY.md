@@ -63,12 +63,16 @@ Le serveur MCP permet à Claude d'accéder aux données RFP de manière structur
 - Obtenir une matrice de scores (tableau)
 
 **Données disponibles par exigence :**
-- Score IA initial (ai_score)
-- Score manuel ajusté (manual_score)
-- Score final (final_score = manual_score ?? ai_score)
-- Statistiques : moyenne, médiane, écart-type, min, max
-- Meilleur/pire fournisseur
-- Taux de complétion
+- **Score consolidé** : `score` = score manuel si existe, sinon score IA
+- **Commentaire consolidé** : `comment` = commentaire manuel si existe, sinon commentaire IA
+- **Évaluateur** : qui a évalué et quand (si évaluation manuelle)
+- **Statistiques** : moyenne, médiane, écart-type, min, max
+- **Meilleur/pire fournisseur** par exigence
+- **Taux de complétion**
+
+**Traçabilité optionnelle** :
+- Avec `?include_details=true` : accès aux champs séparés (ai_score, manual_score, ai_comment, manual_comment)
+- Par défaut : uniquement les champs consolidés pour simplifier
 
 **Formats de visualisation :**
 
@@ -77,9 +81,23 @@ Le serveur MCP permet à Claude d'accéder aux données RFP de manière structur
 {
   "requirement": "REQ-001: SSO SAML 2.0",
   "scores_by_supplier": [
-    {"supplier": "Acme Corp", "final_score": 5},
-    {"supplier": "Beta Inc", "final_score": 4},
-    {"supplier": "TechCo", "final_score": 3}
+    {
+      "supplier": "Acme Corp",
+      "score": 5,
+      "comment": "Validé en démo",
+      "evaluated_by": "jean.dupont@example.com"
+    },
+    {
+      "supplier": "Beta Inc",
+      "score": 4,
+      "comment": "Bonne couverture avec quelques limitations"
+    },
+    {
+      "supplier": "TechCo",
+      "score": 3,
+      "comment": "Solution acceptable après discussion",
+      "evaluated_by": "marie.martin@example.com"
+    }
   ],
   "statistics": {
     "avg_score": 4.0,
