@@ -147,6 +147,10 @@ export async function GET(
               rfps = rfpsResult.data;
               rfpsError = rfpsResult.error;
             }
+          } else {
+            // No RFP data returned
+            rfps = [];
+            rfpsError = rfpsResult.error;
           }
         }
       }
