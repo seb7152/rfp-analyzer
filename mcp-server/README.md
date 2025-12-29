@@ -1,6 +1,15 @@
 # RFP Analyzer MCP Server
 
-Serveur MCP (Model Context Protocol) pour la gestion collaborative des RFP.
+Serveur MCP (Model Context Protocol) pour la **consultation et analyse** des données RFP.
+
+**Focus**: Permettre à Claude d'accéder aux RFPs, exigences, réponses, scores et générer des analyses comparatives.
+
+## 📚 Documentation
+
+- **[FEATURES_SUMMARY.md](./FEATURES_SUMMARY.md)** - Vue d'ensemble des fonctionnalités et cas d'usage
+- **[SPECS.md](./SPECS.md)** - Spécifications techniques détaillées (Resources, Tools, formats)
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Diagrammes d'architecture et flux de données
+- **[IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)** - Plan d'implémentation avec estimations
 
 ## 🚀 Démarrage Rapide
 
@@ -55,55 +64,43 @@ npx @modelcontextprotocol/inspector http://localhost:3000/api/mcp
 - **Personal Access Tokens** pour la sécurité
 - **TypeScript** pour la type safety
 
-## 📋 Outils Disponibles
+## 📋 Fonctionnalités
 
-### Authentification & Tokens
+### ✅ Implémenté
 
+#### Authentification
 - `test_connection` - Test de connexion
 - `create_personal_access_token` - Créer un PAT
 - `list_my_tokens` - Lister ses tokens
 - `revoke_token` - Révoquer un token
 
-### TODO: Outils RFP à implémenter
+### 🔄 En Développement (Phase 1 & 2)
 
-#### Requirements Management
+#### Resources (Accès Données)
+- `rfp://list` - Liste des RFPs
+- `rfp://{id}` - Détails d'un RFP
+- `requirements://{rfp_id}/domain/{domain}` - Exigences par domaine
+- `requirements://{requirement_id}` - Détails d'une exigence avec réponses
+- `suppliers://{rfp_id}/list` - Liste des fournisseurs
+- `responses://{rfp_id}/by-domain` - Réponses organisées par domaine
 
-- `create_requirement` - Créer une exigence
-- `update_requirement` - Modifier une exigence
-- `delete_requirement` - Supprimer une exigence
-- `list_requirements` - Lister les exigences
+#### Tools (Analyse & Scores)
+- `get_requirements_scores` - Notes et moyennes par exigence ⭐
+- `get_scores_matrix` - Matrice de scores (tableau) ⭐
+- `get_rfp_with_responses` - Consultation complète avec filtres
+- `compare_suppliers` - Comparaison multi-fournisseurs
+- `get_domain_analysis` - Analyse approfondie d'un domaine
 
-#### Suppliers Management
+#### Export
+- `export_domain_responses` - Export JSON/Markdown/CSV
+- `generate_comparison_report` - Rapports de comparaison
 
-- `add_supplier` - Ajouter un fournisseur
-- `update_supplier` - Modifier un fournisseur
-- `remove_supplier` - Supprimer un fournisseur
-- `list_suppliers` - Lister les fournisseurs
+### 📋 Roadmap Future
 
-#### Responses Management
-
-- `create_response` - Créer une réponse fournisseur
-- `update_response` - Modifier une réponse
-- `delete_response` - Supprimer une réponse
-- `get_supplier_responses` - Voir les réponses d'un fournisseur
-
-#### Comments & Notes
-
-- `add_requirement_comment` - Commenter une exigence
-- `add_rfp_note` - Ajouter une note RFP
-- `get_comments` - Voir les commentaires
-
-#### Scoring
-
-- `score_requirement` - Noter une exigence
-- `get_scores_summary` - Résumé des scores
-- `calculate_supplier_scores` - Calculer scores finaux
-
-#### Versions
-
-- `create_version` - Créer une version
-- `compare_versions` - Comparer des versions
-- `switch_active_version` - Changer version active
+- Recherche full-text avancée
+- Analyse IA prédictive
+- Webhooks temps réel
+- API REST publique
 
 ## 🔐 Sécurité
 
@@ -180,6 +177,76 @@ mcp-server/
 2. Implémenter la fonction avec `server.tool()`
 3. Importer et enregistrer dans `route.ts`
 4. Ajouter les permissions requises
+
+---
+
+## 💡 Exemples d'Utilisation
+
+### Consulter les exigences d'un domaine
+
+```typescript
+// Via Resource
+GET requirements://uuid-rfp/domain/Sécurité?include_responses=true
+
+// Résultat: Toutes les exigences du domaine Sécurité avec les réponses de tous les fournisseurs
+```
+
+### Voir les notes de tous les fournisseurs
+
+```typescript
+// Via Tool
+CALL get_requirements_scores({
+  rfp_id: "uuid-rfp",
+  filters: {
+    domain_names: ["Sécurité"]
+  },
+  include_stats: true
+})
+
+// Résultat: Notes par fournisseur pour chaque exigence + moyennes, min, max, écart-type
+```
+
+### Obtenir une matrice de scores
+
+```typescript
+// Via Tool
+CALL get_scores_matrix({
+  rfp_id: "uuid-rfp",
+  domain_name: "Infrastructure",
+  score_type: "final"
+})
+
+// Résultat: Tableau [Requirements × Suppliers] avec totaux et classement
+```
+
+### Comparer des fournisseurs
+
+```typescript
+// Via Tool
+CALL compare_suppliers({
+  rfp_id: "uuid-rfp",
+  supplier_ids: ["uuid-1", "uuid-2", "uuid-3"],
+  scope: {
+    type: "domain",
+    domain_name: "Sécurité"
+  },
+  comparison_mode: "side_by_side"
+})
+
+// Résultat: Comparaison détaillée avec réponses côte à côte et analyse
+```
+
+Pour plus d'exemples et de cas d'usage, consultez **[FEATURES_SUMMARY.md](./FEATURES_SUMMARY.md)**.
+
+---
+
+## 🤝 Contribution
+
+1. Consulter [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) pour les priorités
+2. Lire [SPECS.md](./SPECS.md) pour les spécifications
+3. Créer une branche feature
+4. Ajouter des tests
+5. Soumettre une PR
 
 ## 📝 License
 
