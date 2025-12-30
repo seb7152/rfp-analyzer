@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useVersion } from "@/contexts/VersionContext";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   Popover,
   PopoverContent,
@@ -91,6 +91,7 @@ export default function RFPSummaryPage() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isDocxImportModalOpen, setIsDocxImportModalOpen] = useState(false);
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -433,72 +434,114 @@ export default function RFPSummaryPage() {
 
         {/* Tabs */}
         <section className="space-y-6">
-          <Tabs defaultValue="dashboard" className="w-full">
-            <TabsList className="flex w-full gap-8 border-b border-slate-200 bg-transparent p-0 dark:border-slate-800">
-              <TabsTrigger
-                value="dashboard"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
+            <div className="flex w-full gap-6 border-b border-slate-200 dark:border-slate-800">
+              <button
+                onClick={() => setActiveTab("dashboard")}
+                className={`flex items-center gap-2 rounded-none border-b-2 px-0 py-3 text-sm font-medium transition ${
+                  activeTab === "dashboard"
+                    ? "border-b-slate-900 text-slate-900 dark:border-b-white dark:text-white"
+                    : "border-b-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                }`}
               >
                 <LayoutDashboard className="h-4 w-4" />
                 <span className="hidden sm:inline">Tableau de bord</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="weights"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+              </button>
+              <button
+                onClick={() => setActiveTab("weights")}
+                className={`flex items-center gap-2 rounded-none border-b-2 px-0 py-3 text-sm font-medium transition ${
+                  activeTab === "weights"
+                    ? "border-b-slate-900 text-slate-900 dark:border-b-white dark:text-white"
+                    : "border-b-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                }`}
               >
                 <Sliders className="h-4 w-4" />
                 <span className="hidden sm:inline">Pondérations</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="analysts"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-              >
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Analystes</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="requirements"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+              </button>
+              <button
+                onClick={() => setActiveTab("requirements")}
+                className={`flex items-center gap-2 rounded-none border-b-2 px-0 py-3 text-sm font-medium transition ${
+                  activeTab === "requirements"
+                    ? "border-b-slate-900 text-slate-900 dark:border-b-white dark:text-white"
+                    : "border-b-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                }`}
               >
                 <ListChecks className="h-4 w-4" />
                 <span className="hidden sm:inline">Exigences</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="analysis"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+              </button>
+              <button
+                onClick={() => setActiveTab("analysis")}
+                className={`flex items-center gap-2 rounded-none border-b-2 px-0 py-3 text-sm font-medium transition ${
+                  activeTab === "analysis"
+                    ? "border-b-slate-900 text-slate-900 dark:border-b-white dark:text-white"
+                    : "border-b-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                }`}
               >
                 <Activity className="h-4 w-4" />
                 <span className="hidden sm:inline">Analyse</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="soutenances"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+              </button>
+              <button
+                onClick={() => setActiveTab("soutenances")}
+                className={`flex items-center gap-2 rounded-none border-b-2 px-0 py-3 text-sm font-medium transition ${
+                  activeTab === "soutenances"
+                    ? "border-b-slate-900 text-slate-900 dark:border-b-white dark:text-white"
+                    : "border-b-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                }`}
               >
                 <Presentation className="h-4 w-4" />
                 <span className="hidden sm:inline">Soutenances</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="export"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+              </button>
+              <button
+                onClick={() => setActiveTab("export")}
+                className={`flex items-center gap-2 rounded-none border-b-2 px-0 py-3 text-sm font-medium transition ${
+                  activeTab === "export"
+                    ? "border-b-slate-900 text-slate-900 dark:border-b-white dark:text-white"
+                    : "border-b-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                }`}
               >
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline">Export</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="versions"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-              >
-                <GitBranch className="h-4 w-4" />
-                <span className="hidden sm:inline">Versions</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="settings"
-                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
-              >
-                <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline">Paramètres</span>
-              </TabsTrigger>
-            </TabsList>
+              </button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="flex items-center gap-1 rounded-none border-b-2 border-b-transparent px-3 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+                    <span className="hidden sm:inline">Plus</span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-48" align="start">
+                  <div className="grid gap-1">
+                    <Button
+                      variant="ghost"
+                      className="justify-start gap-2 font-normal"
+                      onClick={() => setActiveTab("analysts")}
+                    >
+                      <Users className="h-4 w-4" />
+                      Analystes
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="justify-start gap-2 font-normal"
+                      onClick={() => setActiveTab("versions")}
+                    >
+                      <GitBranch className="h-4 w-4" />
+                      Versions
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="justify-start gap-2 font-normal"
+                      onClick={() => setActiveTab("settings")}
+                    >
+                      <Settings className="h-4 w-4" />
+                      Paramètres
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
 
             <TabsContent value="dashboard" className="space-y-6">
               {loading ? (
