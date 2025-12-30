@@ -102,6 +102,23 @@ USING (
   )
 );
 
+CREATE POLICY "Admins can update RFPs"
+ON public.rfps
+FOR UPDATE
+TO public
+USING (
+  created_by = auth.uid()
+  OR organization_id IN (SELECT get_user_admin_orgs())
+)
+WITH CHECK (
+  created_by = auth.uid()
+  OR organization_id IN (
+    (SELECT organization_id FROM rfps WHERE id = rfps.id)
+    UNION
+    SELECT organization_id FROM get_user_admin_orgs()
+  )
+);
+
 -- DROP old policies on rfp_user_assignments
 DROP POLICY IF EXISTS "User can view own assignments" ON public.rfp_user_assignments;
 
