@@ -1,10 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const audioFile = formData.get("audio") as File | null;
     const mode = (formData.get("mode") as string) || "transcript";
+
+    // For text enhancement mode (AI feature), verify user is authenticated
+    if (mode === "enhance") {
+      const supabase = await createServerClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    }
 
     // Get N8N webhook URL from environment
     const webhookUrl = process.env.N8N_TRANSCRIPTION_WEBHOOK_URL;

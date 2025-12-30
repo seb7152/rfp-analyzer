@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
 
 /**
  * DELETE /api/rfps/[rfpId]/assignments/[userId]
@@ -39,6 +40,12 @@ export async function DELETE(
 
     if (authError || !currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify user has access to this RFP
+    const accessCheckResponse = await verifyRFPAccess(rfpId, currentUser.id);
+    if (accessCheckResponse) {
+      return accessCheckResponse;
     }
 
     // Get RFP details

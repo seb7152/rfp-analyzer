@@ -74,13 +74,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Link user to organization with member role (not admin)
+    // 3. Link user to organization with evaluator role (not admin)
     const { error: linkError } = await supabase
       .from("user_organizations")
       .insert({
         user_id: userId,
         organization_id: organization.id,
-        role: "member", // New users join as members, not admins
+        role: "evaluator", // New users join as evaluators, not admins
       });
 
     if (linkError) {

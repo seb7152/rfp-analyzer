@@ -134,6 +134,7 @@ export const RFP_ACCESS_PERMISSIONS = {
     manage_assignments: true,
     evaluate_responses: true,
     export_results: true,
+    use_ai: true,
   },
   evaluator: {
     view_rfp: true,
@@ -142,6 +143,7 @@ export const RFP_ACCESS_PERMISSIONS = {
     manage_assignments: false,
     evaluate_responses: true,
     export_results: false,
+    use_ai: false,
   },
   viewer: {
     view_rfp: true,
@@ -150,5 +152,6 @@ export const RFP_ACCESS_PERMISSIONS = {
     manage_assignments: false,
     evaluate_responses: false,
     export_results: false,
+    use_ai: false,
   },
 } as const;

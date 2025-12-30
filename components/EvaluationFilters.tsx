@@ -259,11 +259,7 @@ export function EvaluationFilters({
           </div>
 
           {/* Apply Filters Button */}
-          <Button
-            onClick={handleApplyFilters}
-            className="w-full"
-            size="sm"
-          >
+          <Button onClick={handleApplyFilters} className="w-full" size="sm">
             Filtrer
           </Button>
         </div>

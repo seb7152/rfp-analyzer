@@ -21,6 +21,8 @@ import { StarRating } from "@/components/ui/star-rating";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAnalyzeResponse } from "@/hooks/use-analyze-response";
+import type { RFPAccessLevel } from "@/types/user";
+import { canUseAIFeatures } from "@/lib/permissions/ai-permissions";
 
 export interface MobileSupplierCardProps {
   supplierId?: string;
@@ -36,6 +38,7 @@ export interface MobileSupplierCardProps {
   questionText?: string;
   isSaving?: boolean;
   showSaved?: boolean;
+  userAccessLevel?: RFPAccessLevel;
   requirementTitle?: string;
   requirementDescription?: string;
   supplierNames?: string[];
@@ -65,6 +68,7 @@ export function MobileSupplierCard({
   questionText = "",
   isSaving = false,
   showSaved = false,
+  userAccessLevel,
   requirementTitle = "",
   requirementDescription = "",
   supplierNames = [],
@@ -88,6 +92,7 @@ export function MobileSupplierCard({
   const currentScore = manualScore ?? localAIScore;
   const pollingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const originalCommentRef = React.useRef<string | null>(null);
+  const hasAIAccess = canUseAIFeatures(userAccessLevel);
 
   // Update local state when props change
   React.useEffect(() => {
@@ -348,6 +353,7 @@ export function MobileSupplierCard({
                       requirementText={`${requirementTitle}\n\n${requirementDescription}`}
                       supplierName={supplierName}
                       supplierNames={supplierNames}
+                      userAccessLevel={userAccessLevel}
                       onEnhancementComplete={(enhancedText) => {
                         onCommentChange?.(enhancedText);
                         setTimeout(() => {
@@ -389,6 +395,7 @@ export function MobileSupplierCard({
                       requirementText={`${requirementTitle}\n\n${requirementDescription}`}
                       supplierName={supplierName}
                       supplierNames={supplierNames}
+                      userAccessLevel={userAccessLevel}
                       onEnhancementComplete={(enhancedText) => {
                         onQuestionChange?.(enhancedText);
                         setTimeout(() => {
@@ -417,22 +424,24 @@ export function MobileSupplierCard({
                 >
                   <Copy className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                 </button>
-                <button
-                  onClick={handleReanalyzeResponse}
-                  disabled={analyzeResponse.isPending}
-                  className={`p-1.5 rounded transition-colors ${
-                    analyzeResponse.isPending
-                      ? "opacity-50 cursor-not-allowed"
-                      : "hover:bg-slate-200 dark:hover:bg-slate-800"
-                  }`}
-                  title="Relancer l'analyse IA"
-                >
-                  {analyzeResponse.isPending ? (
-                    <Loader2 className="w-4 h-4 text-slate-600 dark:text-slate-400 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                  )}
-                </button>
+                {hasAIAccess && (
+                  <button
+                    onClick={handleReanalyzeResponse}
+                    disabled={analyzeResponse.isPending}
+                    className={`p-1.5 rounded transition-colors ${
+                      analyzeResponse.isPending
+                        ? "opacity-50 cursor-not-allowed"
+                        : "hover:bg-slate-200 dark:hover:bg-slate-800"
+                    }`}
+                    title="Relancer l'analyse IA"
+                  >
+                    {analyzeResponse.isPending ? (
+                      <Loader2 className="w-4 h-4 text-slate-600 dark:text-slate-400 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                    )}
+                  </button>
+                )}
               </div>
             </div>
             <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 max-h-64 overflow-y-auto">

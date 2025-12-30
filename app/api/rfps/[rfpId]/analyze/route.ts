@@ -30,6 +30,15 @@ export async function POST(
     // Use server client with RLS
     const supabase = await createServerClient();
 
+    // Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     // Verify RFP exists and user has access (RLS)
     const { data: rfp, error: rfpError } = await supabase
       .from("rfps")
@@ -41,6 +50,21 @@ export async function POST(
       return NextResponse.json(
         { error: "RFP not found or access denied" },
         { status: 404 }
+      );
+    }
+
+    // Verify user is the RFP owner (only owners can use AI features)
+    const { data: assignment, error: assignmentError } = await supabase
+      .from("rfp_user_assignments")
+      .select("access_level")
+      .eq("rfp_id", rfpId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (assignmentError || !assignment || assignment.access_level !== "owner") {
+      return NextResponse.json(
+        { error: "Only RFP owners can use AI analysis features" },
+        { status: 403 }
       );
     }
 

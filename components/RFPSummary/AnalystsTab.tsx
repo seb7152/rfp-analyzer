@@ -97,21 +97,29 @@ export function AnalystsTab({ rfpId }: AnalystsTabProps) {
         // Fetch organization members to get the list of available users
         // First, we need to get the organization_id from the RFP
         const rfpResponse = await fetch(`/api/rfps/${rfpId}`);
-        if (rfpResponse.ok) {
-          const rfpData = await rfpResponse.json();
-          const orgId = rfpData.organization_id;
+        if (!rfpResponse.ok) {
+          throw new Error("Failed to fetch RFP details");
+        }
 
-          if (orgId) {
-            const membersResponse = await fetch(
-              `/api/organizations/${orgId}/members`
+        const rfpData = await rfpResponse.json();
+        const orgId = rfpData.organization_id;
+
+        if (orgId) {
+          const membersResponse = await fetch(
+            `/api/organizations/${orgId}/members`
+          );
+          if (!membersResponse.ok) {
+            throw new Error(
+              `Failed to fetch organization members: ${membersResponse.status}`
             );
-            if (membersResponse.ok) {
-              const membersData = await membersResponse.json();
-              setOrganizationMembers(membersData.members || []);
-            }
           }
+
+          const membersData = await membersResponse.json();
+          console.log("Organization members fetched:", membersData);
+          setOrganizationMembers(membersData.members || []);
         }
       } catch (err) {
+        console.error("AnalystsTab error:", err);
         setError(
           err instanceof Error ? err.message : "Une erreur est survenue"
         );
@@ -197,11 +205,8 @@ export function AnalystsTab({ rfpId }: AnalystsTabProps) {
     }
   };
 
-  // Filter out analysts already assigned
-  const assignedUserIds = new Set(analysts.map((a) => a.id));
-  const availableMembers = organizationMembers.filter(
-    (m) => !assignedUserIds.has(m.id)
-  );
+  // Show all members, even if already assigned (to allow role changes)
+  const availableMembers = organizationMembers;
 
   if (loading) {
     return (

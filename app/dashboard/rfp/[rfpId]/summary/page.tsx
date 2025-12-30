@@ -21,6 +21,7 @@ import { RequirementsTab } from "@/components/RFPSummary/RequirementsTab";
 import { ExportTab } from "@/components/RFPSummary/ExportTab";
 import { VersionsTab } from "@/components/RFPSummary/VersionsTab";
 import { PresentationAnalysisSection } from "@/components/RFPSummary/PresentationAnalysisSection";
+import { SettingsTab } from "@/components/RFPSummary/SettingsTab";
 
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
 import { DocxImportModal } from "@/components/DocxImportModal";
@@ -43,6 +44,7 @@ import {
   GitBranch,
   FileJson,
   Presentation,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AIAnalysisButton } from "@/components/AIAnalysisButton";
@@ -52,6 +54,7 @@ interface RFPSummaryData {
     id: string;
     title: string;
     description: string | null;
+    organization_id: string;
     created_at: string;
     updated_at: string;
     analysis_settings?: Record<string, unknown> | null;
@@ -488,6 +491,13 @@ export default function RFPSummaryPage() {
                 <GitBranch className="h-4 w-4" />
                 <span className="hidden sm:inline">Versions</span>
               </TabsTrigger>
+              <TabsTrigger
+                value="settings"
+                className="flex items-center gap-2 rounded-none border-b-2 border-b-transparent px-0 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 data-[state=active]:border-b-slate-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 dark:data-[state=active]:border-b-white dark:data-[state=active]:text-white"
+              >
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Paramètres</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="dashboard" className="space-y-6">
@@ -601,6 +611,16 @@ export default function RFPSummaryPage() {
             </TabsContent>
             <TabsContent value="versions" className="space-y-6">
               <VersionsTab rfpId={rfpId} />
+            </TabsContent>
+            <TabsContent value="settings" className="space-y-6">
+              {loading ? (
+                <Skeleton className="h-64 rounded-2xl" />
+              ) : data?.rfp ? (
+                <SettingsTab
+                  rfpId={rfpId}
+                  currentOrganizationId={data.rfp.organization_id}
+                />
+              ) : null}
             </TabsContent>
           </Tabs>
         </section>
