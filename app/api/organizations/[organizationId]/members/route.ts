@@ -31,7 +31,8 @@ export async function GET(
     }
 
     // Get organization members
-    const { data: members, error: membersError } = await supabase
+    // Admins see all members, non-admins only see their own membership
+    let query = supabase
       .from("user_organizations")
       .select(
         `
@@ -48,6 +49,13 @@ export async function GET(
       )
       .eq("organization_id", organizationId)
       .order("joined_at", { ascending: false });
+
+    // Non-admins can only see their own membership
+    if (membership.role !== "admin") {
+      query = query.eq("user_id", user.id);
+    }
+
+    const { data: members, error: membersError } = await query;
 
     if (membersError) {
       return NextResponse.json(
