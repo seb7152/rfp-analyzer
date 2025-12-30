@@ -158,3 +158,77 @@ TO public
 USING (
   user_can_access_rfp(rfp_id)
 );
+
+-- Fix evaluation_versions RLS policy to use user_organizations instead of JWT claim
+DROP POLICY IF EXISTS "Users can view versions of their RFPs" ON public.evaluation_versions;
+
+CREATE POLICY "Users can view versions of their RFPs"
+ON public.evaluation_versions
+FOR SELECT
+TO public
+USING (
+  rfp_id IN (
+      SELECT r.id 
+      FROM rfps r
+      WHERE r.organization_id IN (SELECT get_user_admin_orgs())
+    )
+  OR rfp_id IN (SELECT rfp_id FROM get_user_rfp_assignments())
+);
+
+-- Fix version_supplier_status RLS policies to use helper functions
+DROP POLICY IF EXISTS "Users can view supplier status for their organization" ON public.version_supplier_status;
+DROP POLICY IF EXISTS "Evaluators can update supplier status for their organization" ON public.version_supplier_status;
+DROP POLICY IF EXISTS "System can create supplier status records" ON public.version_supplier_status;
+
+CREATE POLICY "Users can view supplier status for their organization"
+ON public.version_supplier_status
+FOR SELECT
+TO public
+USING (
+  version_id IN (
+      SELECT ev.id 
+      FROM evaluation_versions ev
+      WHERE ev.rfp_id IN (
+        SELECT r.id 
+        FROM rfps r
+        WHERE r.organization_id IN (SELECT get_user_admin_orgs())
+      )
+    )
+  OR version_id IN (
+      SELECT ev.id 
+      FROM evaluation_versions ev
+      WHERE ev.rfp_id IN (SELECT rfp_id FROM get_user_rfp_assignments())
+    )
+);
+
+CREATE POLICY "Evaluators can update supplier status for their organization"
+ON public.version_supplier_status
+FOR UPDATE
+TO public
+USING (
+  version_id IN (
+      SELECT ev.id 
+      FROM evaluation_versions ev
+      WHERE ev.rfp_id IN (
+        SELECT r.id 
+        FROM rfps r
+        WHERE r.organization_id IN (SELECT get_user_admin_orgs())
+      )
+    )
+);
+
+CREATE POLICY "System can create supplier status records"
+ON public.version_supplier_status
+FOR INSERT
+TO public
+WITH CHECK (
+  version_id IN (
+      SELECT ev.id 
+      FROM evaluation_versions ev
+      WHERE ev.rfp_id IN (
+        SELECT r.id 
+        FROM rfps r
+        WHERE r.organization_id IN (SELECT get_user_admin_orgs())
+      )
+    )
+);
