@@ -33,6 +33,15 @@ export async function GET(
     let rfps;
     let rfpsError;
 
+    // Log user role for debugging
+    console.log("[RFP-List] User access check:", {
+      userId: user.id,
+      userEmail: user.email,
+      organizationId: params.organizationId,
+      userRole: userOrg.role,
+      isAdmin: userOrg.role === "admin",
+    });
+
     // If user is admin, show all RFPs in organization
     // If not admin, only show RFPs where user is assigned
     if (userOrg.role === "admin") {
@@ -62,6 +71,8 @@ export async function GET(
       rfpsError = result.error;
     } else {
       // Non-admin: fetch only RFPs where user is assigned AND in this organization
+      console.log("[RFP-List] Non-admin user detected, fetching assignments only");
+
       // Step 1: Get user's RFP assignments for this organization ONLY
       const assignmentsResult = await supabase
         .from("rfp_user_assignments")
@@ -70,8 +81,10 @@ export async function GET(
 
       console.log("[Non-Admin] Step 1 - Assignments query for user:", {
         userId: user.id,
+        userEmail: user.email,
         organizationId: params.organizationId,
         assignmentsCount: assignmentsResult.data?.length || 0,
+        assignmentIds: assignmentsResult.data?.map((a: any) => a.rfp_id) || [],
         error: assignmentsResult.error,
       });
 
@@ -79,8 +92,7 @@ export async function GET(
         rfpsError = assignmentsResult.error;
         rfps = [];
       } else {
-        const rfpIds =
-          assignmentsResult.data?.map((a: any) => a.rfp_id) || [];
+        const rfpIds = assignmentsResult.data?.map((a: any) => a.rfp_id) || [];
 
         console.log("[Non-Admin] Step 1 - RFP IDs extracted:", {
           count: rfpIds.length,
@@ -117,11 +129,12 @@ export async function GET(
             rfpsCount: rfpsResult.data?.length || 0,
             error: rfpsResult.error,
             // Log RFP details for debugging cross-organization leaks
-            rfps: rfpsResult.data?.map((r: any) => ({
-              id: r.id,
-              org_id: r.organization_id,
-              title: r.title,
-            })) || [],
+            rfps:
+              rfpsResult.data?.map((r: any) => ({
+                id: r.id,
+                org_id: r.organization_id,
+                title: r.title,
+              })) || [],
           });
 
           // SECURITY CHECK: Verify all returned RFPs belong to this organization
@@ -130,14 +143,17 @@ export async function GET(
               (r: any) => r.organization_id !== params.organizationId
             );
             if (leakedRfps.length > 0) {
-              console.error("[SECURITY] Cross-organization RFP leak detected:", {
-                userId: user.id,
-                requestedOrganization: params.organizationId,
-                leakedRfps: leakedRfps.map((r: any) => ({
-                  id: r.id,
-                  org_id: r.organization_id,
-                })),
-              });
+              console.error(
+                "[SECURITY] Cross-organization RFP leak detected:",
+                {
+                  userId: user.id,
+                  requestedOrganization: params.organizationId,
+                  leakedRfps: leakedRfps.map((r: any) => ({
+                    id: r.id,
+                    org_id: r.organization_id,
+                  })),
+                }
+              );
               // Do not return leaked RFPs
               rfps = rfpsResult.data.filter(
                 (r: any) => r.organization_id === params.organizationId
