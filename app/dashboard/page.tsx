@@ -35,7 +35,6 @@ export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
   const {
     currentOrg,
-    currentOrgId,
     isAdmin,
     isMember,
     isLoading: orgLoading,
