@@ -60,6 +60,26 @@ AS $$
     );
 $$;
 
+-- Function to check if user can update an RFP
+CREATE OR REPLACE FUNCTION can_update_rfp(p_rfp_id uuid, p_new_org_id uuid DEFAULT NULL)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM rfps 
+    WHERE id = p_rfp_id AND created_by = auth.uid()
+  ) OR EXISTS (
+    SELECT 1 FROM rfps r
+    WHERE r.id = p_rfp_id
+    AND r.organization_id IN (SELECT get_user_admin_orgs())
+  ) OR (
+    p_new_org_id IS NOT NULL
+    AND p_new_org_id IN (SELECT get_user_admin_orgs())
+  );
+$$;
+
 -- DROP old policies on user_organizations
 DROP POLICY IF EXISTS "user_orgs_select" ON public.user_organizations;
 
@@ -106,18 +126,8 @@ CREATE POLICY "Admins can update RFPs"
 ON public.rfps
 FOR UPDATE
 TO public
-USING (
-  created_by = auth.uid()
-  OR organization_id IN (SELECT get_user_admin_orgs())
-)
-WITH CHECK (
-  created_by = auth.uid()
-  OR organization_id IN (
-    (SELECT organization_id FROM rfps WHERE id = rfps.id)
-    UNION
-    SELECT organization_id FROM get_user_admin_orgs()
-  )
-);
+USING (can_update_rfp(rfps.id))
+WITH CHECK (can_update_rfp(rfps.id, organization_id));
 
 -- DROP old policies on rfp_user_assignments
 DROP POLICY IF EXISTS "User can view own assignments" ON public.rfp_user_assignments;
