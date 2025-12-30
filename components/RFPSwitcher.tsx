@@ -27,7 +27,7 @@ export function RFPSwitcher() {
   const rfpId = params.rfpId as string;
   const router = useRouter();
   const { currentOrg } = useOrganization();
-  const { rfps, isLoading } = useRFPs(currentOrg?.id || null);
+  const { rfps, isLoading } = useRFPs();
   const [open, setOpen] = React.useState(false);
 
   const currentRfp = rfps.find((rfp) => rfp.id === rfpId);
