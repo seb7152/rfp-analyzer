@@ -205,15 +205,10 @@ export async function PATCH(
       .eq("organization_id", rfp.organization_id)
       .single();
 
-    if (
-      currentOrgError ||
-      !currentUserOrg ||
-      currentUserOrg.role !== "admin"
-    ) {
+    if (currentOrgError || !currentUserOrg || currentUserOrg.role !== "admin") {
       return NextResponse.json(
         {
-          error:
-            "Access denied. Only admins can change RFP organizations.",
+          error: "Access denied. Only admins can change RFP organizations.",
         },
         { status: 403 }
       );

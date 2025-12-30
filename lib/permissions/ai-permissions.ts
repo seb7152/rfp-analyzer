@@ -7,7 +7,9 @@
 
 import type { RFPAccessLevel } from "@/types/user";
 
-export function canUseAIFeatures(accessLevel: RFPAccessLevel | null | undefined): boolean {
+export function canUseAIFeatures(
+  accessLevel: RFPAccessLevel | null | undefined
+): boolean {
   return accessLevel === "owner";
 }
 

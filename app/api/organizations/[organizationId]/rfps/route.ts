@@ -71,7 +71,9 @@ export async function GET(
       rfpsError = result.error;
     } else {
       // Non-admin: fetch only RFPs where user is assigned AND in this organization
-      console.log("[RFP-List] Non-admin user detected, fetching assignments only");
+      console.log(
+        "[RFP-List] Non-admin user detected, fetching assignments only"
+      );
 
       // Step 1: Get user's RFP assignments for this organization ONLY
       const assignmentsResult = await supabase

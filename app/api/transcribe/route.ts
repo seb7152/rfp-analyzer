@@ -10,13 +10,12 @@ export async function POST(request: NextRequest) {
     // For text enhancement mode (AI feature), verify user is authenticated
     if (mode === "enhance") {
       const supabase = await createServerClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
       if (!user) {
-        return NextResponse.json(
-          { error: "Unauthorized" },
-          { status: 401 }
-        );
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
     }
 

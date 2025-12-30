@@ -87,15 +87,9 @@ export async function verifyRFPAccess(
 
   if (!hasAccess) {
     if (error?.includes("not found")) {
-      return NextResponse.json(
-        { error: "RFP not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "RFP not found" }, { status: 404 });
     }
-    return NextResponse.json(
-      { error: "Access denied" },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: "Access denied" }, { status: 403 });
   }
 
   // Check if access level meets requirement (if specified)

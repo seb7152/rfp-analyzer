@@ -616,7 +616,10 @@ export default function RFPSummaryPage() {
               {loading ? (
                 <Skeleton className="h-64 rounded-2xl" />
               ) : data?.rfp ? (
-                <SettingsTab rfpId={rfpId} currentOrganizationId={data.rfp.organization_id} />
+                <SettingsTab
+                  rfpId={rfpId}
+                  currentOrganizationId={data.rfp.organization_id}
+                />
               ) : null}
             </TabsContent>
           </Tabs>

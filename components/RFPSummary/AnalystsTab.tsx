@@ -109,7 +109,9 @@ export function AnalystsTab({ rfpId }: AnalystsTabProps) {
             `/api/organizations/${orgId}/members`
           );
           if (!membersResponse.ok) {
-            throw new Error(`Failed to fetch organization members: ${membersResponse.status}`);
+            throw new Error(
+              `Failed to fetch organization members: ${membersResponse.status}`
+            );
           }
 
           const membersData = await membersResponse.json();

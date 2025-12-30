@@ -82,9 +82,9 @@ export default function MembersPage() {
   const [inviting, setInviting] = useState(false);
   const [openInviteDialog, setOpenInviteDialog] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [editingRole, setEditingRole] = useState<"admin" | "evaluator" | "viewer">(
-    "evaluator"
-  );
+  const [editingRole, setEditingRole] = useState<
+    "admin" | "evaluator" | "viewer"
+  >("evaluator");
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
 
   // Fetch members
@@ -293,7 +293,10 @@ export default function MembersPage() {
               </p>
             </div>
             {canManageMembers && (
-              <Dialog open={openInviteDialog} onOpenChange={setOpenInviteDialog}>
+              <Dialog
+                open={openInviteDialog}
+                onOpenChange={setOpenInviteDialog}
+              >
                 <DialogTrigger asChild>
                   <Button className="gap-2">
                     <UserPlus className="w-4 h-4" />
@@ -342,8 +345,8 @@ export default function MembersPage() {
                           </SelectContent>
                         </Select>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                          Les évaluateurs peuvent créer et évaluer les RFP.
-                          Les lecteurs ont accès en lecture seule.
+                          Les évaluateurs peuvent créer et évaluer les RFP. Les
+                          lecteurs ont accès en lecture seule.
                         </p>
                       </div>
                     </div>
@@ -398,7 +401,9 @@ export default function MembersPage() {
                       <TableHead>Email</TableHead>
                       <TableHead>Rôle</TableHead>
                       <TableHead>Membre depuis</TableHead>
-                      {canManageMembers && <TableHead className="text-right">Actions</TableHead>}
+                      {canManageMembers && (
+                        <TableHead className="text-right">Actions</TableHead>
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -414,7 +419,8 @@ export default function MembersPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {editingUserId === member.user_id && canManageMembers ? (
+                          {editingUserId === member.user_id &&
+                          canManageMembers ? (
                             <Select
                               value={editingRole}
                               onValueChange={(newRole) => {
@@ -485,9 +491,7 @@ export default function MembersPage() {
                                   <AlertDialogCancel>Annuler</AlertDialogCancel>
                                   <AlertDialogAction
                                     className="bg-red-600 hover:bg-red-700"
-                                    onClick={() =>
-                                      handleDelete(member.user_id)
-                                    }
+                                    onClick={() => handleDelete(member.user_id)}
                                   >
                                     Supprimer
                                   </AlertDialogAction>

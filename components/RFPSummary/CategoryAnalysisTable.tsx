@@ -74,7 +74,10 @@ interface SupplierStatus {
   removal_reason?: string | null;
 }
 
-export function CategoryAnalysisTable({ rfpId, userAccessLevel }: CategoryAnalysisTableProps) {
+export function CategoryAnalysisTable({
+  rfpId,
+  userAccessLevel,
+}: CategoryAnalysisTableProps) {
   const { activeVersion, versions } = useVersion();
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [responses, setResponses] = useState<any[]>([]);

@@ -342,8 +342,14 @@ export default function OrganizationsPage() {
                         </TableCell>
                         <TableCell className="py-4 text-right">
                           {org.role === "admin" && (
-                            <Link href={`/dashboard/organizations/${org.id}/members`}>
-                              <Button size="sm" variant="outline" className="gap-2">
+                            <Link
+                              href={`/dashboard/organizations/${org.id}/members`}
+                            >
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-2"
+                              >
                                 <Users className="w-4 h-4" />
                                 Gérer
                               </Button>

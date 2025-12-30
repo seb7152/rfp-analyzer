@@ -64,7 +64,9 @@ export function SettingsTab({
         setOrganizations(adminOrgs);
 
         // Find current organization
-        const current = adminOrgs.find((org: Organization) => org.id === currentOrganizationId);
+        const current = adminOrgs.find(
+          (org: Organization) => org.id === currentOrganizationId
+        );
         setCurrentOrg(current || null);
       } catch (err) {
         setError(
@@ -220,7 +222,9 @@ export function SettingsTab({
       <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer le changement d'organisation</AlertDialogTitle>
+            <AlertDialogTitle>
+              Confirmer le changement d'organisation
+            </AlertDialogTitle>
             <AlertDialogDescription>
               Êtes-vous sûr de vouloir déplacer ce RFP de{" "}
               <strong>{currentOrg?.name}</strong> vers{" "}
