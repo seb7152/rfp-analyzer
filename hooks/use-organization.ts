@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "./use-auth";
+import { useQueryClient } from "@tanstack/react-query";
 
 const CURRENT_ORG_KEY = "current_organization_id";
 
 export function useOrganization() {
   const { user, isLoading: userLoading } = useAuth();
+  const queryClient = useQueryClient();
   const [currentOrgId, setCurrentOrgId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -41,6 +43,13 @@ export function useOrganization() {
 
     if (!org) {
       throw new Error("Organization not found");
+    }
+
+    // Invalidate RFP cache for the current organization before switching
+    if (currentOrgId) {
+      queryClient.invalidateQueries({
+        queryKey: ["rfps", currentOrgId],
+      });
     }
 
     setCurrentOrgId(organizationId);
