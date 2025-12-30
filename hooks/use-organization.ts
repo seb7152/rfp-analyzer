@@ -77,6 +77,7 @@ export function useOrganization() {
 
   return {
     currentOrg,
+    currentOrgId,
     organizations: user?.organizations || [],
     switchOrganization,
     hasPermission,
