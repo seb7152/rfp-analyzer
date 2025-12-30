@@ -45,10 +45,8 @@ export function useOrganization() {
       throw new Error("Organization not found");
     }
 
-    // Invalidate all RFP and organization queries to trigger refetch on dashboard
-    queryClient.invalidateQueries({
-      queryKey: ["rfps", "organizations"],
-    });
+    // Invalidate all queries and force a refetch
+    queryClient.clear();
 
     setCurrentOrgId(organizationId);
     localStorage.setItem(CURRENT_ORG_KEY, organizationId);
