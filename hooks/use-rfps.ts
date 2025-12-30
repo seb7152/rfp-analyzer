@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { RFP } from "@/lib/supabase/types";
 import { useOrganization } from "./use-organization";
 
-export function useRFPs(organizationId: string | null) {
+export function useRFPs() {
   const { currentOrgId } = useOrganization();
 
   const { data, isLoading, error, refetch } = useQuery({
