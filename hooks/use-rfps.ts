@@ -2,8 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type { RFP } from "@/lib/supabase/types";
+import { useOrganization } from "./use-organization";
 
 export function useRFPs(organizationId: string | null) {
+  const { currentOrgId } = useOrganization();
+
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["rfps", organizationId],
     queryFn: async () => {

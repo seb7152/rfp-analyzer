@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
   const {
     currentOrg,
+    currentOrgId,
     isAdmin,
     isMember,
     isLoading: orgLoading,
@@ -45,7 +46,7 @@ export default function DashboardPage() {
     rfps,
     isLoading: rfpsLoading,
     refetch: refetchRFPs,
-  } = useRFPs(currentOrg?.id || null);
+  } = useRFPs(currentOrgId);
 
   // Find the most recent RFP in progress, or the most recent RFP overall
   const activeRFP =
