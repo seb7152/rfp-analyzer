@@ -60,6 +60,26 @@ AS $$
     );
 $$;
 
+-- Function to check if user can update an RFP
+CREATE OR REPLACE FUNCTION can_update_rfp(p_rfp_id uuid, p_new_org_id uuid DEFAULT NULL)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM rfps 
+    WHERE id = p_rfp_id AND created_by = auth.uid()
+  ) OR EXISTS (
+    SELECT 1 FROM rfps r
+    WHERE r.id = p_rfp_id
+    AND r.organization_id IN (SELECT get_user_admin_orgs())
+  ) OR (
+    p_new_org_id IS NOT NULL
+    AND p_new_org_id IN (SELECT get_user_admin_orgs())
+  );
+$$;
+
 -- DROP old policies on user_organizations
 DROP POLICY IF EXISTS "user_orgs_select" ON public.user_organizations;
 
@@ -102,6 +122,13 @@ USING (
   )
 );
 
+CREATE POLICY "Admins can update RFPs"
+ON public.rfps
+FOR UPDATE
+TO public
+USING (can_update_rfp(rfps.id))
+WITH CHECK (can_update_rfp(rfps.id, organization_id));
+
 -- DROP old policies on rfp_user_assignments
 DROP POLICY IF EXISTS "User can view own assignments" ON public.rfp_user_assignments;
 
@@ -130,4 +157,78 @@ FOR DELETE
 TO public
 USING (
   user_can_access_rfp(rfp_id)
+);
+
+-- Fix evaluation_versions RLS policy to use user_organizations instead of JWT claim
+DROP POLICY IF EXISTS "Users can view versions of their RFPs" ON public.evaluation_versions;
+
+CREATE POLICY "Users can view versions of their RFPs"
+ON public.evaluation_versions
+FOR SELECT
+TO public
+USING (
+  rfp_id IN (
+      SELECT r.id 
+      FROM rfps r
+      WHERE r.organization_id IN (SELECT get_user_admin_orgs())
+    )
+  OR rfp_id IN (SELECT rfp_id FROM get_user_rfp_assignments())
+);
+
+-- Fix version_supplier_status RLS policies to use helper functions
+DROP POLICY IF EXISTS "Users can view supplier status for their organization" ON public.version_supplier_status;
+DROP POLICY IF EXISTS "Evaluators can update supplier status for their organization" ON public.version_supplier_status;
+DROP POLICY IF EXISTS "System can create supplier status records" ON public.version_supplier_status;
+
+CREATE POLICY "Users can view supplier status for their organization"
+ON public.version_supplier_status
+FOR SELECT
+TO public
+USING (
+  version_id IN (
+      SELECT ev.id 
+      FROM evaluation_versions ev
+      WHERE ev.rfp_id IN (
+        SELECT r.id 
+        FROM rfps r
+        WHERE r.organization_id IN (SELECT get_user_admin_orgs())
+      )
+    )
+  OR version_id IN (
+      SELECT ev.id 
+      FROM evaluation_versions ev
+      WHERE ev.rfp_id IN (SELECT rfp_id FROM get_user_rfp_assignments())
+    )
+);
+
+CREATE POLICY "Evaluators can update supplier status for their organization"
+ON public.version_supplier_status
+FOR UPDATE
+TO public
+USING (
+  version_id IN (
+      SELECT ev.id 
+      FROM evaluation_versions ev
+      WHERE ev.rfp_id IN (
+        SELECT r.id 
+        FROM rfps r
+        WHERE r.organization_id IN (SELECT get_user_admin_orgs())
+      )
+    )
+);
+
+CREATE POLICY "System can create supplier status records"
+ON public.version_supplier_status
+FOR INSERT
+TO public
+WITH CHECK (
+  version_id IN (
+      SELECT ev.id 
+      FROM evaluation_versions ev
+      WHERE ev.rfp_id IN (
+        SELECT r.id 
+        FROM rfps r
+        WHERE r.organization_id IN (SELECT get_user_admin_orgs())
+      )
+    )
 );
