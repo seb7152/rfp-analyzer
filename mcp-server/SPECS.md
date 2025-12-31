@@ -1,14 +1,35 @@
 # Spécifications Serveur MCP - RFP Analyzer
 
-**Version**: 1.0
-**Date**: 2025-12-29
+**Version**: 1.1
+**Date**: 2025-12-31
 **Focus**: Consultation et analyse des données RFP
+**MCP Protocol Version**: 2025-11-25
+
+---
+
+## 📚 Références MCP
+
+Cette spécification suit les meilleures pratiques MCP officielles :
+
+- [MCP Specification](https://modelcontextprotocol.io/specification/2025-11-25)
+- [Build Server Guide](https://modelcontextprotocol.io/docs/develop/build-server)
+- [Server Concepts](https://modelcontextprotocol.io/docs/learn/server-concepts)
+
+### Principes MCP appliqués
+
+1. **Séparations des responsabilités** : Tools vs Resources vs Prompts
+2. **Validation avec JSON Schema** : Utilisation de Zod pour tous les inputs/outputs
+3. **Logging sécurisé** : Pas de console.log, uniquement stderr pour STDIO
+4. **Gestion d'erreurs robuste** : Messages d'erreur structurés
+5. **Contextualisation** : Support complet de MCPContext pour isolation multi-tenant
+6. **Parameter completion** : Support de l'autocomplétion pour les paramètres dynamiques
 
 ---
 
 ## 🎯 Objectifs Principaux
 
 Le serveur MCP doit permettre à Claude (et autres clients MCP) de :
+
 1. **Consulter les RFPs** de l'organisation
 2. **Explorer les exigences** par domaine/catégorie
 3. **Analyser les réponses fournisseurs** avec contexte complet
@@ -26,14 +47,49 @@ UC5: "Exporte toutes les réponses avec les exigences pour le domaine Conformit�
 
 ---
 
+## 🏗️ Architecture MCP
+
+### Transport Supporté
+
+Le serveur supporte **deux transports** MCP :
+
+1. **HTTP/REST Transport** (Production)
+   - Endpoint : `https://votre-domaine.com/api/mcp`
+   - Headers : `Authorization: Bearer {PAT}`, `X-Organization-Id: {orgId}`
+   - Avantages : Scalable, stateless, compatible avec Vercel/Cloudflare
+
+2. **STDIO Transport** (Local/Development)
+   - Processus : Node.js avec stdin/stdout
+   - Usage : Claude Desktop, développement local
+   - **Logging** : OBLIGATOIREMENT sur stderr (pas de console.log)
+
+### Server Capabilities
+
+```typescript
+{
+  capabilities: {
+    tools: { listChanged: true },
+    resources: {
+      subscribe: true,
+      listChanged: true
+    },
+    prompts: { listChanged: true }
+  }
+}
+```
+
+---
+
 ## 📦 1. Resources (Accès Données)
 
 ### 1.1 RFPs
 
 #### `rfp://list`
+
 Liste tous les RFPs accessibles à l'organisation.
 
 **Réponse:**
+
 ```json
 {
   "rfps": [
@@ -52,9 +108,11 @@ Liste tous les RFPs accessibles à l'organisation.
 ```
 
 #### `rfp://{rfp_id}`
+
 Détails complets d'un RFP.
 
 **Réponse:**
+
 ```json
 {
   "id": "uuid",
@@ -77,7 +135,7 @@ Détails complets d'un RFP.
     {
       "name": "Sécurité",
       "requirements_count": 35,
-      "weight": 0.30
+      "weight": 0.3
     },
     {
       "name": "Infrastructure",
@@ -98,9 +156,11 @@ Détails complets d'un RFP.
 ```
 
 #### `rfp://{rfp_id}/summary`
+
 Résumé exécutif optimisé pour l'analyse.
 
 **Réponse:**
+
 ```json
 {
   "rfp": {
@@ -114,8 +174,8 @@ Résumé exécutif optimisé pour l'analyse.
     "evaluation_status": "78% complete"
   },
   "top_suppliers": [
-    {"name": "Acme Corp", "avg_score": 4.2},
-    {"name": "Beta Inc", "avg_score": 3.9}
+    { "name": "Acme Corp", "avg_score": 4.2 },
+    { "name": "Beta Inc", "avg_score": 3.9 }
   ],
   "critical_gaps": [
     "2 exigences sécurité non couvertes par TechCo",
@@ -129,9 +189,11 @@ Résumé exécutif optimisé pour l'analyse.
 ### 1.2 Requirements (Exigences)
 
 #### `requirements://{rfp_id}/tree`
+
 Hiérarchie complète des exigences (4 niveaux).
 
 **Réponse:**
+
 ```json
 {
   "rfp_id": "uuid",
@@ -141,14 +203,14 @@ Hiérarchie complète des exigences (4 niveaux).
       "level": 1,
       "code": "DOM-1",
       "title": "Sécurité",
-      "weight": 0.30,
+      "weight": 0.3,
       "children": [
         {
           "id": "uuid-cat-1-1",
           "level": 2,
           "code": "CAT-1.1",
           "title": "Authentification",
-          "weight": 0.40,
+          "weight": 0.4,
           "children": [
             {
               "id": "uuid-req-1",
@@ -168,21 +230,24 @@ Hiérarchie complète des exigences (4 niveaux).
 ```
 
 #### `requirements://{rfp_id}/domain/{domain_name}`
+
 Toutes les exigences d'un domaine spécifique.
 
 **Paramètres:**
+
 - `domain_name`: Nom du domaine (ex: "Sécurité", "Infrastructure")
 - `include_responses`: `true|false` (défaut: false)
 - `include_details`: `true|false` (défaut: false) - Décomposition AI/Manuel dans les réponses
 - `supplier_ids[]`: Liste de fournisseurs à inclure (optionnel)
 
 **Réponse (sans responses):**
+
 ```json
 {
   "domain": {
     "name": "Sécurité",
     "code": "DOM-1",
-    "weight": 0.30,
+    "weight": 0.3,
     "requirements_count": 35
   },
   "requirements": [
@@ -201,12 +266,13 @@ Toutes les exigences d'un domaine spécifique.
 ```
 
 **Réponse (avec responses pour 2 fournisseurs):**
+
 ```json
 {
   "domain": {
     "name": "Sécurité",
     "code": "DOM-1",
-    "weight": 0.30,
+    "weight": 0.3,
     "requirements_count": 35
   },
   "requirements": [
@@ -270,14 +336,17 @@ Toutes les exigences d'un domaine spécifique.
 ```
 
 #### `requirements://{requirement_id}`
+
 Détails d'une exigence spécifique avec toutes ses réponses.
 
 **Paramètres:**
+
 - `include_responses`: `true|false` (défaut: true)
 - `include_scores_stats`: `true|false` (défaut: true)
 - `supplier_ids[]`: Filtrer les réponses par fournisseur
 
 **Réponse:**
+
 ```json
 {
   "requirement": {
@@ -304,8 +373,8 @@ Détails d'une exigence spécifique avec toutes ses réponses.
     "min_score": 2,
     "max_score": 5,
     "scores_distribution": {
-      "5": 2,  // 2 fournisseurs ont 5/5
-      "4": 2,  // 2 fournisseurs ont 4/5
+      "5": 2, // 2 fournisseurs ont 5/5
+      "4": 2, // 2 fournisseurs ont 4/5
       "3": 0,
       "2": 1,
       "1": 0,
@@ -332,7 +401,7 @@ Détails d'une exigence spécifique avec toutes ses réponses.
       "status": "pass",
       "evaluated_by": "jean.dupont@example.com",
       "evaluated_at": "2025-01-20T10:30:00Z",
-      "rank": 1,  // Rang pour cette exigence
+      "rank": 1, // Rang pour cette exigence
 
       // Détails complets (optionnel avec ?include_details=true)
       "details": {
@@ -372,9 +441,11 @@ Détails d'une exigence spécifique avec toutes ses réponses.
 ### 1.3 Suppliers (Fournisseurs)
 
 #### `suppliers://{rfp_id}/list`
+
 Liste des fournisseurs avec statistiques.
 
 **Réponse:**
+
 ```json
 {
   "rfp_id": "uuid",
@@ -412,9 +483,11 @@ Liste des fournisseurs avec statistiques.
 ```
 
 #### `suppliers://{supplier_id}`
+
 Détails complets d'un fournisseur.
 
 **Réponse:**
+
 ```json
 {
   "id": "uuid",
@@ -452,14 +525,17 @@ Détails complets d'un fournisseur.
 ### 1.4 Responses (Réponses)
 
 #### `responses://{rfp_id}/by-domain`
+
 Toutes les réponses organisées par domaine.
 
 **Paramètres:**
+
 - `supplier_ids[]`: Filtrer par fournisseur (optionnel)
 - `domain_names[]`: Filtrer par domaine (optionnel)
 - `include_requirements`: `true|false` (défaut: true)
 
 **Réponse:**
+
 ```json
 {
   "rfp_id": "uuid",
@@ -476,14 +552,14 @@ Toutes les réponses organisées par domaine.
 
           "responses": [
             {
-              "supplier": {"id": "uuid-1", "name": "Acme Corp"},
+              "supplier": { "id": "uuid-1", "name": "Acme Corp" },
               "response_text": "...",
               "ai_score": 5,
               "manual_score": 5,
               "status": "pass"
             },
             {
-              "supplier": {"id": "uuid-2", "name": "Beta Inc"},
+              "supplier": { "id": "uuid-2", "name": "Beta Inc" },
               "response_text": "...",
               "ai_score": 3,
               "manual_score": null,
@@ -498,13 +574,16 @@ Toutes les réponses organisées par domaine.
 ```
 
 #### `responses://{supplier_id}/all`
+
 Toutes les réponses d'un fournisseur spécifique.
 
 **Paramètres:**
+
 - `group_by`: `domain|category|requirement` (défaut: domain)
 - `include_requirements`: `true|false` (défaut: true)
 
 **Réponse (groupé par domain):**
+
 ```json
 {
   "supplier": {
@@ -544,12 +623,100 @@ Toutes les réponses d'un fournisseur spécifique.
 
 ## 🔧 2. Tools (Outils)
 
+### Convention de nommage et structuration
+
+Tous les tools MCP doivent suivre ces conventions :
+
+```typescript
+interface MCPToolDefinition {
+  name: string; // snake_case, verbe + objet
+  description: string; // Clair, concis, action-oriented
+  inputSchema: ZodSchema; // Validation stricte via Zod
+
+  // Handler signature
+  handler: (params: ValidatedParams, context: MCPContext) => MCPToolResult;
+}
+
+interface MCPToolResult {
+  content: Array<{
+    type: "text" | "image" | "resource";
+    data: any;
+  }>;
+  isError?: boolean; // Facultatif, pour les erreurs
+  _meta?: {
+    // Métadonnées pour debugging
+    timing?: number;
+    requestId?: string;
+  };
+}
+```
+
+### Logging et Error Handling
+
+```typescript
+// ✅ CORRECT (utilise logging structuré)
+import { createLogger } from "./lib/logger";
+
+const logger = createLogger("tools:rfp");
+
+server.tool(
+  "get_rfp_with_responses",
+  /* ... */,
+  async (params, context) => {
+    const startTime = Date.now();
+    logger.info("Executing get_rfp_with_responses", { rfpId: params.rfp_id });
+
+    try {
+      const result = await fetchRFP(params.rfp_id, context);
+      const duration = Date.now() - startTime;
+
+      logger.info("Tool completed", {
+        duration,
+        rfpId: params.rfp_id,
+        userId: context.user?.id
+      });
+
+      return {
+        content: [{ type: "text", text: formatResult(result) }],
+        _meta: { timing: duration }
+      };
+    } catch (error) {
+      logger.error("Tool failed", {
+        error: error.message,
+        rfpId: params.rfp_id,
+        userId: context.user?.id
+      });
+
+      return {
+        content: [{
+          type: "text",
+          text: `Erreur lors de la récupération du RFP : ${error.message}`
+        }],
+        isError: true
+      };
+    }
+  }
+);
+
+// ❌ INCORRECT (ne JAMAIS utiliser console.log)
+server.tool(
+  "get_rfp_with_responses",
+  /* ... */,
+  async (params) => {
+    console.log("Fetching RFP...");  // Corrrompt JSON-RPC !
+    // ...
+  }
+);
+```
+
 ### 2.1 Consultation Avancée
 
 #### `get_rfp_with_responses`
+
 Récupère un RFP complet avec toutes les exigences et réponses.
 
 **Paramètres:**
+
 ```typescript
 {
   rfp_id: string;
@@ -572,6 +739,7 @@ Récupère un RFP complet avec toutes les exigences et réponses.
 ```
 
 **Réponse:**
+
 ```json
 {
   "rfp": {
@@ -597,9 +765,11 @@ Récupère un RFP complet avec toutes les exigences et réponses.
 ---
 
 #### `compare_suppliers`
+
 Compare plusieurs fournisseurs sur un domaine ou l'ensemble du RFP.
 
 **Paramètres:**
+
 ```typescript
 {
   rfp_id: string;
@@ -614,6 +784,7 @@ Compare plusieurs fournisseurs sur un domaine ou l'ensemble du RFP.
 ```
 
 **Réponse (side_by_side):**
+
 ```json
 {
   "comparison_scope": {
@@ -623,8 +794,8 @@ Compare plusieurs fournisseurs sur un domaine ou l'ensemble du RFP.
   },
 
   "suppliers": [
-    {"id": "uuid-1", "name": "Acme Corp"},
-    {"id": "uuid-2", "name": "Beta Inc"}
+    { "id": "uuid-1", "name": "Acme Corp" },
+    { "id": "uuid-2", "name": "Beta Inc" }
   ],
 
   "requirements_comparison": [
@@ -655,14 +826,15 @@ Compare plusieurs fournisseurs sur un domaine ou l'ensemble du RFP.
   "summary": {
     "best_supplier": "Acme Corp",
     "avg_scores": [
-      {"supplier": "Acme Corp", "avg": 4.5},
-      {"supplier": "Beta Inc", "avg": 3.8}
+      { "supplier": "Acme Corp", "avg": 4.5 },
+      { "supplier": "Beta Inc", "avg": 3.8 }
     ]
   }
 }
 ```
 
 **Réponse (matrix):**
+
 ```json
 {
   "matrix": [
@@ -693,9 +865,11 @@ Compare plusieurs fournisseurs sur un domaine ou l'ensemble du RFP.
 ---
 
 #### `search_responses`
+
 Recherche textuelle dans les réponses fournisseurs.
 
 **Paramètres:**
+
 ```typescript
 {
   rfp_id: string;
@@ -710,6 +884,7 @@ Recherche textuelle dans les réponses fournisseurs.
 ```
 
 **Réponse:**
+
 ```json
 {
   "query": "SSO SAML",
@@ -736,9 +911,11 @@ Recherche textuelle dans les réponses fournisseurs.
 ---
 
 #### `get_domain_analysis`
+
 Analyse approfondie d'un domaine spécifique.
 
 **Paramètres:**
+
 ```typescript
 {
   rfp_id: string;
@@ -748,12 +925,13 @@ Analyse approfondie d'un domaine spécifique.
 ```
 
 **Réponse:**
+
 ```json
 {
   "domain": {
     "name": "Sécurité",
     "code": "DOM-1",
-    "weight": 0.30,
+    "weight": 0.3,
     "requirements_count": 35
   },
 
@@ -802,9 +980,11 @@ Analyse approfondie d'un domaine spécifique.
 ---
 
 #### `get_requirements_scores`
+
 Récupère les notes de tous les fournisseurs pour une liste d'exigences.
 
 **Paramètres:**
+
 ```typescript
 {
   rfp_id: string;
@@ -821,10 +1001,12 @@ Récupère les notes de tous les fournisseurs pour une liste d'exigences.
 ```
 
 **Note sur `include_details`** :
+
 - `false` (défaut) : Retourne uniquement les champs consolidés (`score`, `comment`)
 - `true` : Ajoute l'objet `details` avec la décomposition complète (ai_score, manual_score, etc.)
 
 **Réponse:**
+
 ```json
 {
   "rfp_id": "uuid",
@@ -947,9 +1129,11 @@ Récupère les notes de tous les fournisseurs pour une liste d'exigences.
 ---
 
 #### `get_scores_matrix`
+
 Récupère une matrice de scores pour visualisation (requirements × suppliers).
 
 **Paramètres:**
+
 ```typescript
 {
   rfp_id: string;
@@ -960,6 +1144,7 @@ Récupère une matrice de scores pour visualisation (requirements × suppliers).
 ```
 
 **Réponse:**
+
 ```json
 {
   "rfp_id": "uuid",
@@ -967,9 +1152,9 @@ Récupère une matrice de scores pour visualisation (requirements × suppliers).
   "score_type": "final",
 
   "suppliers": [
-    {"id": "uuid-1", "name": "Acme Corp"},
-    {"id": "uuid-2", "name": "Beta Inc"},
-    {"id": "uuid-3", "name": "TechCo"}
+    { "id": "uuid-1", "name": "Acme Corp" },
+    { "id": "uuid-2", "name": "Beta Inc" },
+    { "id": "uuid-3", "name": "TechCo" }
   ],
 
   "matrix": [
@@ -980,9 +1165,9 @@ Récupère une matrice de scores pour visualisation (requirements × suppliers).
         "domain": "Sécurité"
       },
       "scores": {
-        "uuid-1": 5,  // Acme Corp
-        "uuid-2": 4,  // Beta Inc
-        "uuid-3": 3   // TechCo
+        "uuid-1": 5, // Acme Corp
+        "uuid-2": 4, // Beta Inc
+        "uuid-3": 3 // TechCo
       },
       "avg": 4.0,
       "best": "uuid-1",
@@ -1000,7 +1185,7 @@ Récupère une matrice de scores pour visualisation (requirements × suppliers).
         "uuid-3": 3
       },
       "avg": 4.3,
-      "best": ["uuid-1", "uuid-2"],  // Ex-aequo
+      "best": ["uuid-1", "uuid-2"], // Ex-aequo
       "worst": "uuid-3"
     }
   ],
@@ -1026,6 +1211,7 @@ Récupère une matrice de scores pour visualisation (requirements × suppliers).
 ```
 
 **Réponse alternative (format tableau):**
+
 ```json
 {
   "headers": ["Requirement", "Acme Corp", "Beta Inc", "TechCo", "Moyenne"],
@@ -1045,9 +1231,11 @@ Récupère une matrice de scores pour visualisation (requirements × suppliers).
 ### 2.2 Export & Rapports
 
 #### `export_domain_responses`
+
 Exporte toutes les réponses d'un domaine.
 
 **Paramètres:**
+
 ```typescript
 {
   rfp_id: string;
@@ -1061,6 +1249,7 @@ Exporte toutes les réponses d'un domaine.
 ```
 
 **Réponse (JSON):**
+
 ```json
 {
   "export_metadata": {
@@ -1079,6 +1268,7 @@ Exporte toutes les réponses d'un domaine.
 ```
 
 **Réponse (Markdown):**
+
 ```markdown
 # Export RFP - Domaine Sécurité
 
@@ -1095,12 +1285,14 @@ Exporte toutes les réponses d'un domaine.
 ### Réponses Fournisseurs
 
 #### Acme Corp (Score: 5/5)
+
 Notre solution supporte SSO via SAML 2.0...
 
 **Évaluation**: ✅ Pass
 **Commentaire**: Validé en démo
 
 #### Beta Inc (Score: 3/5)
+
 SAML 2.0 supporté via module optionnel...
 
 **Évaluation**: ⚠️ Partial
@@ -1114,9 +1306,11 @@ SAML 2.0 supporté via module optionnel...
 ---
 
 #### `generate_comparison_report`
+
 Génère un rapport de comparaison complet.
 
 **Paramètres:**
+
 ```typescript
 {
   rfp_id: string;
@@ -1128,6 +1322,7 @@ Génère un rapport de comparaison complet.
 ```
 
 **Réponse (Markdown):**
+
 ```markdown
 # Rapport de Comparaison - Plateforme CRM 2025
 
@@ -1150,11 +1345,13 @@ Génère un rapport de comparaison complet.
 ### Points Forts par Fournisseur
 
 #### Acme Corp
+
 - ✅ Excellente couverture authentification (5/5)
 - ✅ Conformité RGPD complète
 - ✅ Support 24/7 inclus
 
 #### Beta Inc
+
 - ✅ Chiffrement avancé (AES-256 + HSM)
 - ⚠️ SSO limité à SAML (pas OAuth)
 - ⚠️ 2 exigences non répondues
@@ -1171,6 +1368,7 @@ Génère un rapport de comparaison complet.
 Toutes les requêtes requièrent un Personal Access Token valide.
 
 **Headers requis:**
+
 ```http
 Authorization: Bearer pat_xxxxxxxxxxxxx
 X-Organization-Id: uuid-organization
@@ -1180,15 +1378,15 @@ X-Organization-Id: uuid-organization
 
 Les permissions sont vérifiées par catégorie :
 
-| Resource/Tool | Permission Requise |
-|--------------|-------------------|
-| `rfp://...` | `requirements:read` |
-| `requirements://...` | `requirements:read` |
-| `suppliers://...` | `suppliers:read` |
-| `responses://...` | `responses:read` |
-| `get_rfp_with_responses` | `requirements:read` + `responses:read` |
-| `compare_suppliers` | `suppliers:read` + `responses:read` |
-| `export_*` | Permission correspondante + `export` flag |
+| Resource/Tool            | Permission Requise                        |
+| ------------------------ | ----------------------------------------- |
+| `rfp://...`              | `requirements:read`                       |
+| `requirements://...`     | `requirements:read`                       |
+| `suppliers://...`        | `suppliers:read`                          |
+| `responses://...`        | `responses:read`                          |
+| `get_rfp_with_responses` | `requirements:read` + `responses:read`    |
+| `compare_suppliers`      | `suppliers:read` + `responses:read`       |
+| `export_*`               | Permission correspondante + `export` flag |
 
 ### 3.3 Rate Limiting
 
@@ -1226,12 +1424,14 @@ INSERT INTO mcp_audit_logs (
 ### 4.2 Scores et Commentaires (Consolidés)
 
 **Champs consolidés (recommandés)** :
+
 - **score**: 0-5 (entier) = `manual_score ?? ai_score`
 - **comment**: string = `manual_comment ?? ai_comment`
 - **evaluated_by**: user email (si manual_score existe)
 - **evaluated_at**: timestamp (si manual_score existe)
 
 **Champs détaillés (optionnels pour traçabilité)** :
+
 - **ai_score**: 0-5 (score initial IA)
 - **ai_comment**: string (commentaire IA)
 - **ai_confidence**: 0.0-1.0 (confiance IA)
@@ -1239,6 +1439,7 @@ INSERT INTO mcp_audit_logs (
 - **manual_comment**: string ou null (commentaire humain)
 
 **Logique de consolidation** :
+
 ```typescript
 {
   score: response.manual_score ?? response.ai_score,
@@ -1260,17 +1461,20 @@ INSERT INTO mcp_audit_logs (
 ## 🚀 5. Roadmap
 
 ### Phase 1 (MVP) ✅
+
 - Resources de base (RFP, Requirements, Suppliers)
 - Tool `get_rfp_with_responses`
 - Authentification PAT
 
 ### Phase 2 (En cours) 🔄
+
 - Resource `responses://` complète
 - Tool `compare_suppliers`
 - Tool `get_domain_analysis`
 - Exports Markdown/JSON
 
 ### Phase 3 (Futur) 📋
+
 - Exports CSV/Excel
 - Recherche full-text avancée
 - Analyse IA prédictive
@@ -1281,25 +1485,30 @@ INSERT INTO mcp_audit_logs (
 ## 📝 Notes d'Implémentation
 
 ### Priority 1: Resources Essentielles ⭐
+
 1. `rfp://list` et `rfp://{id}`
 2. `requirements://{rfp_id}/domain/{domain}` (avec et sans responses)
 3. `requirements://{requirement_id}` (avec scores_summary)
 4. `suppliers://{rfp_id}/list`
 
 ### Priority 2: Scores & Moyennes ⭐⭐
+
 1. `get_requirements_scores` - Notes par fournisseur avec statistiques
 2. `get_scores_matrix` - Vue matricielle des scores
 3. Enrichissement de toutes les réponses avec `final_score` et `scores_summary`
 
 ### Priority 3: Tool Principal de Consultation
+
 1. `get_rfp_with_responses` avec tous les filtres
 2. `responses://{rfp_id}/by-domain`
 
 ### Priority 4: Comparaison & Analyse
+
 1. `compare_suppliers` (mode side_by_side)
 2. `get_domain_analysis`
 
 ### Priority 5: Export
+
 1. Export JSON
 2. Export Markdown
 3. Export scores matrix (CSV-ready format)
@@ -1406,6 +1615,7 @@ CALL export_domain_responses({
 ## 📞 Support
 
 Pour toute question sur les specs :
+
 - Créer une issue dans le repo
 - Contacter l'équipe technique
 
