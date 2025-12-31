@@ -8,9 +8,9 @@
 import type { RFPAccessLevel } from "@/types/user";
 
 export function canUseAIFeatures(
-  accessLevel: RFPAccessLevel | null | undefined
+  accessLevel: RFPAccessLevel | "admin" | null | undefined
 ): boolean {
-  return accessLevel === "owner";
+  return accessLevel === "owner" || accessLevel === "admin";
 }
 
 export function requiresAIPermission(): string {

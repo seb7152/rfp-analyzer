@@ -50,6 +50,7 @@ import { Button } from "@/components/ui/button";
 import { AIAnalysisButton } from "@/components/AIAnalysisButton";
 
 interface RFPSummaryData {
+  userAccessLevel: "owner" | "evaluator" | "viewer" | "admin";
   rfp: {
     id: string;
     title: string;
@@ -394,6 +395,7 @@ export default function RFPSummaryPage() {
                 hasUnanalyzedResponses={
                   (data.globalProgress.statusDistribution.pending || 0) > 0
                 }
+                userAccessLevel={data.userAccessLevel}
                 onAnalysisStarted={() => {
                   // Optional: refresh data or show toast
                 }}
@@ -641,7 +643,10 @@ export default function RFPSummaryPage() {
               {loading ? (
                 <Skeleton className="h-64 rounded-2xl" />
               ) : (
-                <PresentationAnalysisSection rfpId={rfpId} />
+                <PresentationAnalysisSection
+                  rfpId={rfpId}
+                  userAccessLevel={data?.userAccessLevel}
+                />
               )}
             </TabsContent>
 

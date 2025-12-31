@@ -47,6 +47,9 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
   const [rfpData, setRfpData] = useState<RFP | null>(null);
   const [responsesCount, setResponsesCount] = useState(0);
+  const [userAccessLevel, setUserAccessLevel] = useState<
+    "owner" | "evaluator" | "viewer" | "admin"
+  >("viewer");
   const isMobile = useIsMobile();
 
   const { requirements: allRequirements, isLoading: requirementsLoading } =
@@ -80,6 +83,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
           const data = await response.json();
           setRfpData(data.rfp);
           setRfpTitle(data.rfp?.title || `RFP ${params.rfpId.slice(0, 8)}`);
+          setUserAccessLevel(data.userAccessLevel || "viewer");
           // Count total responses
           const total =
             (data.globalProgress?.statusDistribution?.pass || 0) +
@@ -145,6 +149,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   rfp={rfpData}
                   responsesCount={responsesCount}
                   hasUnanalyzedResponses={completionPercentage < 100}
+                  userAccessLevel={userAccessLevel}
                   onAnalysisStarted={() => {
                     // Optional: refresh data or show toast
                   }}
@@ -208,6 +213,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   rfp={rfpData}
                   responsesCount={responsesCount}
                   hasUnanalyzedResponses={completionPercentage < 100}
+                  userAccessLevel={userAccessLevel}
                   onAnalysisStarted={() => {
                     // Optional: refresh data or show toast
                   }}
@@ -288,6 +294,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                 rfpId={params.rfpId}
                 supplierId={supplierId || undefined}
                 isMobile={false}
+                userAccessLevel={userAccessLevel}
               />
             )}
           </div>
@@ -318,6 +325,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                 rfpId={params.rfpId}
                 supplierId={supplierId || undefined}
                 isMobile={true}
+                userAccessLevel={userAccessLevel}
               />
             ) : null}
           </SheetContent>

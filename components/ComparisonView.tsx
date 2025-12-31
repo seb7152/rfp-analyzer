@@ -61,6 +61,7 @@ interface ComparisonViewProps {
   rfpId?: string;
   supplierId?: string;
   isMobile?: boolean;
+  userAccessLevel?: "owner" | "evaluator" | "viewer" | "admin";
 }
 
 interface ResponseState {
@@ -85,6 +86,7 @@ export function ComparisonView({
   rfpId,
   supplierId,
   isMobile = false,
+  userAccessLevel,
 }: ComparisonViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1249,6 +1251,7 @@ export function ComparisonView({
                             selectedRequirement?.description || ""
                           }
                           supplierNames={supplierNames}
+                          userAccessLevel={userAccessLevel}
                           onStatusChange={(status) =>
                             updateResponseState(response.id, { status })
                           }
@@ -1362,10 +1365,11 @@ export function ComparisonView({
                         requirementTitle={requirement?.title || ""}
                         requirementDescription={requirement?.description || ""}
                         supplierNames={supplierNames}
+                        userAccessLevel={userAccessLevel}
                         onOpenBookmark={handleOpenBookmark}
                         rfpId={rfpId}
                         onAICommentUpdate={() => {
-                          // Refetch to ensure we have the latest data
+                          // Refetch to ensure we have latest data
                           refetchResponses();
                         }}
                       />

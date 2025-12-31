@@ -9,15 +9,18 @@ import { useSuppliersByVersion } from "@/hooks/use-suppliers-by-version";
 import { PresentationImportModal } from "./PresentationImportModal";
 import { PresentationReport } from "./PresentationReport";
 import { CategoryAnalysisTable } from "./CategoryAnalysisTable";
+import type { RFPAccessLevel } from "@/types/user";
 
 interface PresentationAnalysisSectionProps {
   rfpId: string;
   versionId?: string;
+  userAccessLevel?: RFPAccessLevel;
 }
 
 export function PresentationAnalysisSection({
   rfpId,
   versionId: versionIdProp,
+  userAccessLevel,
 }: PresentationAnalysisSectionProps) {
   const { activeVersion } = useVersion();
   const [activeTab, setActiveTab] = useState<"preparation" | "report">(
@@ -91,7 +94,10 @@ export function PresentationAnalysisSection({
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
                 Analyse des défenses par catégorie
               </h2>
-              <CategoryAnalysisTable rfpId={rfpId} />
+              <CategoryAnalysisTable
+                rfpId={rfpId}
+                userAccessLevel={userAccessLevel}
+              />
             </div>
           </div>
         )}
@@ -138,6 +144,7 @@ export function PresentationAnalysisSection({
         onOpenChange={setIsImportModalOpen}
         onSuccess={handleImportSuccess}
         versionId={activeVersionId}
+        userAccessLevel={userAccessLevel}
       />
     </div>
   );

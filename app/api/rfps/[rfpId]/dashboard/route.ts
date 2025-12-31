@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
 import {
   getRequirements,
   getResponsesForRFP,
@@ -11,6 +10,7 @@ import type { RFP, ResponseWithSupplier } from "@/lib/supabase/types";
 
 interface DashboardResponse {
   rfp: RFP;
+  userAccessLevel: "owner" | "evaluator" | "viewer" | "admin";
   globalProgress: {
     completionPercentage: number;
     totalRequirements: number;
@@ -118,10 +118,18 @@ export async function GET(
       return NextResponse.json({ error: "RFP not found" }, { status: 404 });
     }
 
-    // Verify user access to RFP
-    const accessCheckResponse = await verifyRFPAccess(rfpId, user.id);
-    if (accessCheckResponse) {
-      return accessCheckResponse;
+    // Verify user access to RFP and get access level
+    const { checkRFPAccess } = await import("@/lib/permissions/rfp-access");
+    const { hasAccess, accessLevel, error } = await checkRFPAccess(
+      rfpId,
+      user.id
+    );
+
+    if (!hasAccess) {
+      if (error?.includes("not found")) {
+        return NextResponse.json({ error: "RFP not found" }, { status: 404 });
+      }
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Fetch requirements
@@ -337,6 +345,11 @@ export async function GET(
 
     const response: DashboardResponse = {
       rfp,
+      userAccessLevel: (accessLevel || "viewer") as
+        | "owner"
+        | "evaluator"
+        | "viewer"
+        | "admin",
       globalProgress: {
         completionPercentage,
         totalRequirements,

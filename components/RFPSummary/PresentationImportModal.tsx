@@ -19,6 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Send, Copy, Loader } from "lucide-react";
+import type { RFPAccessLevel } from "@/types/user";
+import { canUseAIFeatures } from "@/lib/permissions/ai-permissions";
 
 interface Supplier {
   id: string;
@@ -32,6 +34,7 @@ interface PresentationImportModalProps {
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
   versionId?: string;
+  userAccessLevel?: RFPAccessLevel;
 }
 
 export function PresentationImportModal({
@@ -41,6 +44,7 @@ export function PresentationImportModal({
   onOpenChange,
   onSuccess,
   versionId,
+  userAccessLevel,
 }: PresentationImportModalProps) {
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>(
     suppliers[0]?.id || ""
@@ -48,6 +52,12 @@ export function PresentationImportModal({
   const [transcript, setTranscript] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const hasAIAccess = canUseAIFeatures(userAccessLevel);
+
+  // Hide modal if user doesn't have AI access
+  if (!hasAIAccess) {
+    return null;
+  }
 
   const handleAnalyzeTranscript = async () => {
     if (!transcript.trim()) {
