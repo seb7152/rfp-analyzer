@@ -66,6 +66,7 @@ interface TreeNode {
 
 interface CategoryAnalysisTableProps {
   rfpId: string;
+  userAccessLevel?: any;
 }
 
 interface SupplierStatus {
