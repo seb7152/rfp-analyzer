@@ -8,14 +8,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { Supplier } from "@/types/supplier";
 import { Response } from "@/types/response";
+import { Info, ExternalLink } from "lucide-react";
+import Link from "next/link";
 
 interface TreeNode {
   id: string;
   code: string;
   title: string;
+  description?: string | null;
   type: "category" | "requirement";
   children?: TreeNode[];
 }
@@ -23,6 +32,7 @@ interface TreeNode {
 interface CategoryRequirementsModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  rfpId: string;
   categoryId: string;
   categoryCode: string;
   categoryTitle: string;
@@ -75,6 +85,7 @@ const getStatusLabel = (status: string | null) => {
 export function CategoryRequirementsModal({
   isOpen,
   onOpenChange,
+  rfpId,
   categoryId,
   categoryCode,
   categoryTitle,
@@ -157,12 +168,56 @@ export function CategoryRequirementsModal({
                 >
                   {/* Requirement header */}
                   <div className="flex items-start gap-2 mb-3">
-                    <Badge variant="outline" className="text-xs font-mono flex-shrink-0">
+                    <Badge
+                      variant="outline"
+                      className="text-xs font-mono flex-shrink-0"
+                    >
                       {requirement.code}
                     </Badge>
-                    <p className="text-sm font-medium line-clamp-2">
+                    <p className="text-sm font-medium line-clamp-2 flex-1">
                       {requirement.title}
                     </p>
+                    {requirement.description && (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 rounded-full p-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Info className="h-3.5 w-3.5" />
+                            <span className="sr-only">Description</span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 p-4" align="start">
+                          <div className="space-y-3">
+                            <div>
+                              <h4 className="font-medium leading-none">
+                                Description
+                              </h4>
+                              <p className="text-sm text-muted-foreground">
+                                {requirement.description}
+                              </p>
+                            </div>
+                            <div className="pt-2 border-t">
+                              <Link
+                                href={`/dashboard/rfp/${rfpId}/evaluate?requirementId=${requirement.id}`}
+                              >
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full gap-2"
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                  Voir dans l'évaluation
+                                </Button>
+                              </Link>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    )}
                   </div>
 
                   {/* Supplier scores */}
@@ -170,7 +225,7 @@ export function CategoryRequirementsModal({
                     {suppliers.map((supplier) => {
                       const response = requirementResponses?.get(supplier.id);
                       const score = response
-                        ? response.manual_score ?? response.ai_score ?? null
+                        ? (response.manual_score ?? response.ai_score ?? null)
                         : null;
                       const status = response?.status || null;
 
@@ -187,11 +242,11 @@ export function CategoryRequirementsModal({
                             {score !== null ? (
                               <div
                                 className={cn(
-                                  "px-2 py-1 rounded text-center min-w-10 font-semibold",
+                                  "w-16 h-8 rounded flex items-center justify-center text-xs font-bold shadow-sm",
                                   getScoreColor(score)
                                 )}
                               >
-                                {formatScore(score)}/4
+                                {formatScore(score)}
                               </div>
                             ) : status ? (
                               <div
@@ -203,7 +258,7 @@ export function CategoryRequirementsModal({
                                 {getStatusLabel(status)}
                               </div>
                             ) : (
-                              <div className="px-2 py-1 rounded min-w-10 text-center text-slate-500">
+                              <div className="w-16 h-8 rounded flex items-center justify-center text-xs font-bold bg-slate-200 text-slate-600 shadow-sm">
                                 -
                               </div>
                             )}

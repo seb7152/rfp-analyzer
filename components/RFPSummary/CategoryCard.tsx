@@ -16,19 +16,13 @@ interface CategoryCardProps {
 }
 
 const getScoreColor = (score: number | null) => {
-  if (score === null) return "bg-slate-200";
-  if (score >= 3.5) return "bg-emerald-600";
-  if (score >= 3.0) return "bg-emerald-500";
-  if (score >= 2.5) return "bg-emerald-400";
-  if (score >= 2.0) return "bg-yellow-400";
-  if (score >= 1.0) return "bg-orange-400";
-  return "bg-red-500";
-};
-
-const getScoreTextColor = (score: number | null) => {
-  if (score === null) return "text-slate-600";
-  if (score >= 2.0) return "text-white";
-  return "text-white";
+  if (score === null) return "bg-slate-200 text-slate-600";
+  if (score >= 3.5) return "bg-emerald-600 text-white";
+  if (score >= 3.0) return "bg-emerald-500 text-white";
+  if (score >= 2.5) return "bg-emerald-400 text-white";
+  if (score >= 2.0) return "bg-yellow-400 text-slate-900";
+  if (score >= 1.0) return "bg-orange-400 text-white";
+  return "bg-red-500 text-white";
 };
 
 export function CategoryCard({
@@ -44,12 +38,12 @@ export function CategoryCard({
       onClick={onClick}
     >
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <Badge variant="secondary" className="text-xs mb-2 font-mono">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <Badge variant="secondary" className="text-xs font-mono">
               {categoryCode}
             </Badge>
-            <CardTitle className="text-sm line-clamp-2">
+            <CardTitle className="text-sm line-clamp-1">
               {categoryTitle}
             </CardTitle>
           </div>
@@ -59,9 +53,6 @@ export function CategoryCard({
       <CardContent className="space-y-2">
         {suppliers.map((supplier) => {
           const score = scores[supplier.id];
-          const percentage = score ? (score / 4) * 100 : 0;
-          const bgColor = getScoreColor(score);
-          const textColor = getScoreTextColor(score);
 
           return (
             <div
@@ -72,36 +63,19 @@ export function CategoryCard({
                 {supplier.name}
               </span>
               <div className="flex items-center gap-2 flex-shrink-0">
-                {/* Progress bar */}
-                <div className="w-16 h-4 bg-slate-200 dark:bg-slate-700 rounded overflow-hidden flex items-center">
-                  <div
-                    className={cn("h-full transition-all", bgColor)}
-                    style={{ width: `${Math.max(percentage, 5)}%` }}
-                  />
-                </div>
-                {/* Score - position based on bar width */}
+                {/* Score badge */}
                 {score !== null ? (
-                  <div className="w-12 text-right">
-                    {percentage > 40 ? (
-                      /* Inside bar if enough space */
-                      <span
-                        className={cn(
-                          "text-xs font-semibold",
-                          percentage > 35 ? textColor : "text-slate-700 dark:text-slate-300"
-                        )}
-                      >
-                        {score.toFixed(1)}
-                      </span>
-                    ) : (
-                      /* Outside bar */
-                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        {score.toFixed(1)}
-                      </span>
+                  <div
+                    className={cn(
+                      "w-16 h-8 rounded flex items-center justify-center text-xs font-bold shadow-sm",
+                      getScoreColor(score)
                     )}
+                  >
+                    {score.toFixed(1)}
                   </div>
                 ) : (
-                  <div className="w-12 text-right">
-                    <span className="text-xs text-slate-500">-</span>
+                  <div className="w-16 h-8 rounded flex items-center justify-center text-xs font-bold bg-slate-200 text-slate-600 shadow-sm">
+                    -
                   </div>
                 )}
               </div>
