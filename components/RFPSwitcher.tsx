@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useOrganization } from "@/hooks/use-organization";
 import { useRFPs } from "@/hooks/use-rfps";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -21,6 +22,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ClientOnly } from "@/components/ClientOnly";
 
 export function RFPSwitcher() {
   const params = useParams();
@@ -29,6 +31,7 @@ export function RFPSwitcher() {
   const { currentOrg } = useOrganization();
   const { rfps, isLoading } = useRFPs();
   const [open, setOpen] = React.useState(false);
+  const isMobile = useIsMobile();
 
   const currentRfp = rfps.find((rfp) => rfp.id === rfpId);
 
@@ -49,13 +52,18 @@ export function RFPSwitcher() {
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <ClientOnly>
+      <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between"
+          className={cn(
+            "justify-between",
+            isMobile ? "w-auto max-w-[100px]" : "w-[200px]"
+          )}
+          title={currentRfp?.title || "Select RFP..."}
         >
           <span className="truncate">
             {currentRfp?.title || "Select RFP..."}
@@ -63,7 +71,10 @@ export function RFPSwitcher() {
           <ChevronsUpDown className="opacity-50 h-4 w-4 ml-2 flex-shrink-0" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
+      <PopoverContent className={cn(
+        "p-0",
+        isMobile ? "w-64" : "w-[200px]"
+      )}>
         <Command>
           <CommandInput placeholder="Search RFPs..." className="h-9" />
           <CommandList>
@@ -96,6 +107,7 @@ export function RFPSwitcher() {
           </CommandList>
         </Command>
       </PopoverContent>
-    </Popover>
+      </Popover>
+    </ClientOnly>
   );
 }

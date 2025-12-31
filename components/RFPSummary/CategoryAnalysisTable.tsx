@@ -45,8 +45,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Supplier } from "@/types/supplier";
 import { toast } from "sonner";
 import { EditableList } from "./EditableList";
-import type { RFPAccessLevel } from "@/types/user";
-import { canUseAIFeatures } from "@/lib/permissions/ai-permissions";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { CategoryAnalysisTableMobile } from "./CategoryAnalysisTableMobile";
+import { ClientOnly } from "../ClientOnly";
 
 // Types
 interface TreeNode {
@@ -65,7 +66,7 @@ interface TreeNode {
 
 interface CategoryAnalysisTableProps {
   rfpId: string;
-  userAccessLevel?: RFPAccessLevel;
+  userAccessLevel?: any;
 }
 
 interface SupplierStatus {
@@ -74,11 +75,9 @@ interface SupplierStatus {
   removal_reason?: string | null;
 }
 
-export function CategoryAnalysisTable({
-  rfpId,
-  userAccessLevel,
-}: CategoryAnalysisTableProps) {
+export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const { activeVersion, versions } = useVersion();
+  const isMobile = useIsMobile();
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -106,7 +105,6 @@ export function CategoryAnalysisTable({
   const [analysisIdMap, setAnalysisIdMap] = useState<Record<string, string>>(
     {}
   );
-  const hasAIAccess = canUseAIFeatures(userAccessLevel);
 
   const refreshAnalysisResults = async () => {
     try {
@@ -1388,27 +1386,25 @@ export function CategoryAnalysisTable({
                   className={cn("h-4 w-4", isRefreshing && "animate-spin")}
                 />
               </Button>
-              {hasAIAccess && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={triggerAnalysis}
-                  disabled={analysisLoading || !selectedSupplierId}
-                  className="gap-2"
-                >
-                  {analysisLoading ? (
-                    <>
-                      <span className="animate-spin">✨</span>
-                      Analyse...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4" />
-                      Analyser
-                    </>
-                  )}
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={triggerAnalysis}
+                disabled={analysisLoading || !selectedSupplierId}
+                className="gap-2"
+              >
+                {analysisLoading ? (
+                  <>
+                    <span className="animate-spin">✨</span>
+                    Analyse...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Analyser
+                  </>
+                )}
+              </Button>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
@@ -1655,6 +1651,28 @@ export function CategoryAnalysisTable({
       </CardContent>
     </>
   );
+
+  if (isMobile) {
+    return (
+      <ClientOnly>
+        <CategoryAnalysisTableMobile
+          flatCategories={flatCategories}
+          suppliers={suppliers}
+          supplierStatuses={supplierStatuses}
+          selectedSupplierId={selectedSupplierId}
+          onSupplierChange={setSelectedSupplierId}
+          onRefresh={refreshAnalysisResults}
+          onAnalyze={triggerAnalysis}
+          isRefreshing={isRefreshing}
+          analysisLoading={analysisLoading}
+          getCategoryScore={getCategoryScore}
+          getAverageCategoryScore={getAverageCategoryScore}
+          getChildTitles={getChildTitles}
+          getAttentionPoints={getAttentionPoints}
+        />
+      </ClientOnly>
+    );
+  }
 
   return (
     <>
