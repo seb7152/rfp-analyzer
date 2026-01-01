@@ -137,7 +137,6 @@ const TRANSPORT_CONFIG = {
    ✅ /supabase/migrations/               (unique source)
       ├── ...
       ├── 011_create_pat_tokens.sql       # MCP PAT
-      ├── 012_add_question_to_responses.sql  # MCP Questions
       └── 013_add_embeddings.sql          # RAG (Phase 5)
    ```
 
@@ -223,52 +222,7 @@ export function createPaginationMeta(
 
 **Estimation** : 1 jour
 
-#### 1.2 Champ Question/Clarifications 🆕
-
-**Objectif** : Capturer question/clarifications dans les réponses fournisseurs
-
-**Migration** : `/supabase/migrations/012_add_question_to_responses.sql`
-
-```sql
--- Ajouter colonne question
-ALTER TABLE responses
-ADD COLUMN question TEXT NULL;
-
-COMMENT ON COLUMN responses.question IS
-'Question ou clarifications soulevées par le fournisseur dans sa réponse';
-
--- Index pour recherche full-text (optionnel)
-CREATE INDEX responses_question_fts_idx
-ON responses
-USING gin(to_tsvector('french', coalesce(question, '')));
-```
-
-**Format dans réponses** :
-
-```json
-{
-  "response_text": "Notre solution supporte SAML 2.0...",
-  "question": "Quel est le coût de la licence enterprise ?",
-  "score": 5,
-  "comment": "Validé en démo"
-}
-```
-
-**Exemples valeurs** :
-
-- `"Clarifier le volume de données attendu"`
-- `"Besoin de précisions sur le SLA"`
-- `null` (si pas de question)
-
-**Tests** :
-
-- [ ] Champ question nullable
-- [ ] Retourné dans toutes les responses
-- [ ] Full-text search fonctionne
-
-**Estimation** : 0.5 jour
-
-#### 1.3 Resources RFP
+#### 1.2 Resources RFP
 
 **Fichier**: `lib/mcp/resources/rfps.ts`
 
@@ -322,7 +276,7 @@ GROUP BY d.id
 
 ---
 
-#### 1.2 Resources Requirements
+#### 1.3 Resources Requirements
 
 **Fichier**: `lib/mcp/resources/requirements.ts`
 
@@ -399,7 +353,7 @@ ORDER BY r.display_order
 
 ---
 
-#### 1.3 Resources Suppliers
+#### 1.4 Resources Suppliers
 
 **Fichier**: `lib/mcp/resources/suppliers.ts`
 
@@ -732,10 +686,7 @@ server.tool(
     ai_comment: z.string().max(5000).optional(),
     ai_confidence: z.number().min(0).max(1).optional(),
   },
-  async (
-    { response_id, ai_score, ai_comment, ai_confidence },
-    { context }
-  ) => {
+  async ({ response_id, ai_score, ai_comment, ai_confidence }, { context }) => {
     // 1. Vérifier permissions
     await checkPermissions(context, ["responses:write"]);
 
@@ -743,7 +694,8 @@ server.tool(
     if (!ai_score && !ai_comment && !ai_confidence) {
       return {
         success: false,
-        error: "Au moins un champ (ai_score, ai_comment, ai_confidence) doit être fourni",
+        error:
+          "Au moins un champ (ai_score, ai_comment, ai_confidence) doit être fourni",
       };
     }
 
@@ -772,7 +724,7 @@ server.tool(
       manual_comment: currentResponse.manual_comment,
       ai_score: updatedResponse.ai_score,
       ai_comment: updatedResponse.ai_comment,
-      final_consolidated_score: 
+      final_consolidated_score:
         currentResponse.manual_score ?? updatedResponse.ai_score,
       final_consolidated_comment:
         currentResponse.manual_comment ?? updatedResponse.ai_comment,
@@ -820,9 +772,11 @@ server.tool(
 - [ ] Pas d'erreur si aucun champ fourni mais permission OK (noop)
 
 **Permissions requises**:
+
 - `responses:write` - Modifier les réponses
 
 **Erreurs possibles**:
+
 - `response_not_found` - response_id invalide (404)
 - `forbidden` - Pas la permission responses:write (403)
 - `invalid_score` - ai_score non entre 0-5 (400)
@@ -831,13 +785,13 @@ server.tool(
 
 **Estimation**: 1.5 jours
 
-**Dépendances**: 
+**Dépendances**:
+
 - Nécessite `responses:write` permission dans PAT system
 - Dépend des utilities de consolidation de Phase 2.1
 - Dépend de la base de données migrations existantes
 
 ---
-
 
 ### Phase 3: Consultation Avancée (Priorité 3)
 
@@ -1396,11 +1350,10 @@ Légende:
 **Migrations MCP** (centralisées dans projet principal) :
 
 ```
-/supabase/migrations/          # ⬅️ Racine du projet
-├── ...                        # Migrations existantes (001-010)
-├── 011_create_pat_tokens.sql          # ✅ MCP PAT
-├── 012_add_question_to_responses.sql # 🆕 MCP Questions (Phase 1.2)
-└── 013_add_embeddings.sql             # 📋 MCP RAG (Phase 6.1)
+    /supabase/migrations/          # ⬅️ Racine du projet
+    ├── ...                        # Migrations existantes (001-010)
+    ├── 011_create_pat_tokens.sql          # ✅ MCP PAT
+    └── 013_add_embeddings.sql             # 📋 MCP RAG (Phase 6.1)
 ```
 
 ---
