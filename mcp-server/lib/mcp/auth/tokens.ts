@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { getSupabaseClient } from "@/lib/supabase/client";
+import { createServiceClient } from "@/lib/supabase/service";
 import type { PATPermissions } from "@/types/mcp";
 
 export class TokenManager {
@@ -16,7 +16,7 @@ export class TokenManager {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
-    const supabase = getSupabaseClient();
+    const supabase = createServiceClient();
     const { error } = await supabase.from("personal_access_tokens").insert({
       user_id: userId,
       organization_id: organizationId,
@@ -42,7 +42,7 @@ export class TokenManager {
     permissions?: PATPermissions;
   }> {
     const tokenHash = this.hashToken(token);
-    const supabase = getSupabaseClient();
+    const supabase = createServiceClient();
 
     const { data: pat, error } = await supabase
       .from("personal_access_tokens")
@@ -101,7 +101,7 @@ export class TokenManager {
 
   // Révoquer un token
   static async revokePAT(tokenId: string): Promise<void> {
-    const supabase = getSupabaseClient();
+    const supabase = createServiceClient();
     await supabase
       .from("personal_access_tokens")
       .update({ is_active: false })
@@ -110,7 +110,7 @@ export class TokenManager {
 
   // Lister les tokens d'un utilisateur
   static async listUserTokens(userId: string): Promise<any[]> {
-    const supabase = getSupabaseClient();
+    const supabase = createServiceClient();
     const { data } = await supabase
       .from("personal_access_tokens")
       .select(

@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { getSupabaseClient } from "@/lib/supabase/client";
+import { createServiceClient } from "@/lib/supabase/service";
 import { TokenManager } from "@/lib/mcp/auth/tokens";
 import type { MCPContext } from "@/types/mcp";
 
@@ -43,7 +43,7 @@ export class SecurityMiddleware {
     }
 
     // 4. Vérifier l'appartenance à l'organisation
-    const supabase = getSupabaseClient();
+    const supabase = createServiceClient();
     const { data: userOrg } = await supabase
       .from("user_organizations")
       .select("role, organization_id")
