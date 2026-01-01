@@ -128,7 +128,7 @@ Détails complets d'un RFP.
     "total_suppliers": 5,
     "domains_count": 4,
     "completion_rate": "78%",
-    "avg_ai_score": 3.8
+    "avg_score": 3.8
   },
 
   "domains": [
@@ -239,6 +239,8 @@ Toutes les exigences d'un domaine spécifique.
 - `include_responses`: `true|false` (défaut: false)
 - `include_details`: `true|false` (défaut: false) - Décomposition AI/Manuel dans les réponses
 - `supplier_ids[]`: Liste de fournisseurs à inclure (optionnel)
+- `limit`: Nombre max de requirements par page (défaut: 50, max: 100)
+- `offset`: Offset pour la pagination (défaut: 0)
 
 **Réponse (sans responses):**
 
@@ -249,6 +251,12 @@ Toutes les exigences d'un domaine spécifique.
     "code": "DOM-1",
     "weight": 0.3,
     "requirements_count": 35
+  },
+  "pagination": {
+    "limit": 50,
+    "offset": 0,
+    "total": 35,
+    "has_more": false
   },
   "requirements": [
     {
@@ -275,6 +283,12 @@ Toutes les exigences d'un domaine spécifique.
     "weight": 0.3,
     "requirements_count": 35
   },
+  "pagination": {
+    "limit": 50,
+    "offset": 0,
+    "total": 35,
+    "has_more": false
+  },
   "requirements": [
     {
       "id": "uuid-req-001",
@@ -297,6 +311,7 @@ Toutes les exigences d'un domaine spécifique.
             "name": "Acme Corp"
           },
           "response_text": "Notre solution supporte SAML 2.0 et OAuth 2.0...",
+          "questions": "Quel est le coût de la licence enterprise ?",
           "score": 5,
           "comment": "Validé en démo",
           "status": "pass",
@@ -317,6 +332,7 @@ Toutes les exigences d'un domaine spécifique.
             "name": "Beta Inc"
           },
           "response_text": "SAML 2.0 supporté via module optionnel...",
+          "questions": null,
           "score": 3,
           "comment": "Support disponible mais nécessite module additionnel",
           "status": "pending",
@@ -366,26 +382,10 @@ Détails d'une exigence spécifique avec toutes ses réponses.
 
   "scores_summary": {
     "responses_count": 5,
-    "avg_ai_score": 3.8,
-    "avg_manual_score": 4.2,
-    "avg_final_score": 4.2,
+    "avg_score": 4.2,
     "median_score": 4.0,
     "min_score": 2,
-    "max_score": 5,
-    "scores_distribution": {
-      "5": 2, // 2 fournisseurs ont 5/5
-      "4": 2, // 2 fournisseurs ont 4/5
-      "3": 0,
-      "2": 1,
-      "1": 0,
-      "0": 0
-    },
-    "status_breakdown": {
-      "pass": 4,
-      "partial": 0,
-      "fail": 1,
-      "pending": 0
-    }
+    "max_score": 5
   },
 
   "responses": [
@@ -396,6 +396,7 @@ Détails d'une exigence spécifique avec toutes ses réponses.
         "name": "Acme Corp"
       },
       "response_text": "...",
+      "questions": "Coût de la licence ?",
       "score": 5,
       "comment": "Validé en démo",
       "status": "pass",
@@ -418,6 +419,7 @@ Détails d'une exigence spécifique avec toutes ses réponses.
         "name": "Beta Inc"
       },
       "response_text": "...",
+      "questions": null,
       "score": 4,
       "comment": "Bonne couverture",
       "status": "pass",
@@ -460,8 +462,7 @@ Liste des fournisseurs avec statistiques.
       "statistics": {
         "total_responses": 118,
         "responses_rate": "98%",
-        "avg_ai_score": 4.2,
-        "avg_manual_score": 4.0,
+        "avg_score": 4.2,
         "pass_rate": "85%",
         "pending_evaluations": 5
       },
@@ -533,12 +534,21 @@ Toutes les réponses organisées par domaine.
 - `supplier_ids[]`: Filtrer par fournisseur (optionnel)
 - `domain_names[]`: Filtrer par domaine (optionnel)
 - `include_requirements`: `true|false` (défaut: true)
+- `include_details`: `true|false` (défaut: false) - Décomposition AI/Manuel
+- `limit`: Nombre max de requirements par domaine (défaut: 50, max: 100)
+- `offset`: Offset pour la pagination (défaut: 0)
 
 **Réponse:**
 
 ```json
 {
   "rfp_id": "uuid",
+  "pagination": {
+    "limit": 50,
+    "offset": 0,
+    "total": 35,
+    "has_more": false
+  },
   "domains": [
     {
       "domain_name": "Sécurité",
@@ -554,16 +564,22 @@ Toutes les réponses organisées par domaine.
             {
               "supplier": { "id": "uuid-1", "name": "Acme Corp" },
               "response_text": "...",
-              "ai_score": 5,
-              "manual_score": 5,
-              "status": "pass"
+              "questions": "Pricing details?",
+              "score": 5,
+              "comment": "Validé en démo",
+              "status": "pass",
+              "evaluated_by": "jean.dupont@example.com",
+              "evaluated_at": "2025-01-20T10:30:00Z"
             },
             {
               "supplier": { "id": "uuid-2", "name": "Beta Inc" },
               "response_text": "...",
-              "ai_score": 3,
-              "manual_score": null,
-              "status": "pending"
+              "questions": null,
+              "score": 3,
+              "comment": "Solution acceptable",
+              "status": "pending",
+              "evaluated_by": null,
+              "evaluated_at": null
             }
           ]
         }
@@ -608,10 +624,12 @@ Toutes les réponses d'un fournisseur spécifique.
             "description": "..."
           },
           "response_text": "Notre solution supporte...",
-          "ai_score": 5,
-          "ai_comment": "...",
-          "manual_score": 5,
-          "status": "pass"
+          "questions": null,
+          "score": 5,
+          "comment": "Excellente solution",
+          "status": "pass",
+          "evaluated_by": "jean.dupont@example.com",
+          "evaluated_at": "2025-01-20T10:30:00Z"
         }
       ]
     }
@@ -808,13 +826,17 @@ Compare plusieurs fournisseurs sur un domaine ou l'ensemble du RFP.
         {
           "supplier_id": "uuid-1",
           "response_text": "...",
+          "questions": null,
           "score": 5,
+          "comment": "Validé",
           "status": "pass"
         },
         {
           "supplier_id": "uuid-2",
           "response_text": "...",
+          "questions": "Coût du module ?",
           "score": 3,
+          "comment": "Module additionnel requis",
           "status": "partial"
         }
       ],
@@ -901,6 +923,10 @@ Recherche textuelle dans les réponses fournisseurs.
         "name": "Acme Corp"
       },
       "response_text": "Notre solution supporte SSO via SAML 2.0...",
+      "questions": null,
+      "score": 5,
+      "comment": "Excellente couverture",
+      "status": "pass",
       "match_score": 0.95,
       "highlighted_text": "...SSO via <mark>SAML</mark> 2.0..."
     }
@@ -997,6 +1023,8 @@ Récupère les notes de tous les fournisseurs pour une liste d'exigences.
   include_stats?: boolean;       // Défaut: true
   include_details?: boolean;     // Défaut: false - Inclure décomposition AI/Manuel
   sort_by?: "code" | "avg_score" | "variance";  // Défaut: "code"
+  limit?: number;                // Défaut: 50, Max: 100
+  offset?: number;               // Défaut: 0
 }
 ```
 
@@ -1011,6 +1039,13 @@ Récupère les notes de tous les fournisseurs pour une liste d'exigences.
 {
   "rfp_id": "uuid",
   "requirements_count": 35,
+
+  "pagination": {
+    "limit": 50,
+    "offset": 0,
+    "total": 35,
+    "has_more": false
+  },
 
   "requirements": [
     {
@@ -1139,9 +1174,15 @@ Récupère une matrice de scores pour visualisation (requirements × suppliers).
   rfp_id: string;
   domain_name?: string;      // Optionnel, sinon tous les domaines
   supplier_ids?: string[];   // Optionnel, sinon tous les fournisseurs
-  score_type?: "ai" | "manual" | "final";  // Défaut: "final"
+  limit?: number;            // Défaut: 50, Max: 100
+  offset?: number;           // Défaut: 0
 }
 ```
+
+**Note sur la pagination** :
+- Les scores sont calculés sur le score consolidé (`score` = manual_score ?? ai_score)
+- Pagination appliquée sur les requirements (pas sur les suppliers)
+- Total toujours calculé sur l'ensemble des données (pas juste la page)
 
 **Réponse:**
 
@@ -1149,7 +1190,13 @@ Récupère une matrice de scores pour visualisation (requirements × suppliers).
 {
   "rfp_id": "uuid",
   "domain": "Sécurité",
-  "score_type": "final",
+
+  "pagination": {
+    "limit": 50,
+    "offset": 0,
+    "total": 35,
+    "has_more": false
+  },
 
   "suppliers": [
     { "id": "uuid-1", "name": "Acme Corp" },
@@ -1449,7 +1496,19 @@ INSERT INTO mcp_audit_logs (
 }
 ```
 
-### 4.3 Status
+### 4.3 Questions et Clarifications
+
+**Champ `questions`** :
+
+- **Type**: `string | null`
+- **Description**: Questions ou clarifications soulevées par le fournisseur dans sa réponse
+- **Exemples**:
+  - "Quel est le coût de la licence enterprise ?"
+  - "Clarifier le volume de données attendu"
+  - "Besoin de précisions sur le SLA"
+- **Usage**: Permet de capturer les points nécessitant des éclaircissements ou des informations complémentaires
+
+### 4.4 Status
 
 - `pending`: Non évalué
 - `pass`: Conforme (score >= 4)
@@ -1495,7 +1554,7 @@ INSERT INTO mcp_audit_logs (
 
 1. `get_requirements_scores` - Notes par fournisseur avec statistiques
 2. `get_scores_matrix` - Vue matricielle des scores
-3. Enrichissement de toutes les réponses avec `final_score` et `scores_summary`
+3. Enrichissement de toutes les réponses avec `score` consolidé et `scores_summary`
 
 ### Priority 3: Tool Principal de Consultation
 
@@ -1512,6 +1571,52 @@ INSERT INTO mcp_audit_logs (
 1. Export JSON
 2. Export Markdown
 3. Export scores matrix (CSV-ready format)
+
+---
+
+## ⚙️ Contraintes de Déploiement
+
+### Vercel Serverless (Hobby Plan)
+
+**Limites importantes** :
+
+- **Timeout d'exécution** : 10 secondes maximum par requête
+- **Taille de réponse** : 4.5 MB maximum
+- **Mémoire** : 1024 MB par fonction
+
+**Implications pour l'API** :
+
+1. **Pagination obligatoire** :
+   - Limite par défaut : 50 items
+   - Maximum : 100 items par requête
+   - Évite les timeouts sur les RFPs avec nombreuses exigences
+
+2. **Optimisations nécessaires** :
+   - Requêtes SQL optimisées avec indexes
+   - Eager loading sélectif (pas de N+1 queries)
+   - Mise en cache des calculs de statistiques
+
+3. **Endpoints à risque** :
+   - `get_requirements_scores` avec tous les domaines
+   - `get_scores_matrix` sans filtrage
+   - `compare_suppliers` avec > 5 fournisseurs
+
+**Bonnes pratiques** :
+
+```typescript
+// ❌ Risque de timeout
+GET requirements://uuid-rfp/domain/Sécurité?include_responses=true
+// (35 requirements × 10 suppliers = 350 responses)
+
+// ✅ Avec pagination
+GET requirements://uuid-rfp/domain/Sécurité?include_responses=true&limit=50&offset=0
+```
+
+**Plan d'upgrade** :
+
+Si besoin de dépasser ces limites, envisager :
+- Vercel Pro : 60s timeout, 50 MB response
+- Vercel Enterprise : Custom limits
 
 ---
 
@@ -1573,7 +1678,7 @@ CALL get_requirements_scores({
 CALL get_scores_matrix({
   rfp_id: "uuid-rfp",
   domain_name: "Sécurité",
-  score_type: "final"
+  limit: 50
 })
 ```
 
