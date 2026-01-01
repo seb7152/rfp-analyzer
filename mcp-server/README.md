@@ -213,7 +213,7 @@ CALL get_requirements_scores({
 CALL get_scores_matrix({
   rfp_id: "uuid-rfp",
   domain_name: "Infrastructure",
-  score_type: "final"
+  limit: 50
 })
 
 // Résultat: Tableau [Requirements × Suppliers] avec totaux et classement

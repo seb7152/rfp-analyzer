@@ -51,17 +51,46 @@ UC5: "Exporte toutes les réponses avec les exigences pour le domaine Conformit�
 
 ### Transport Supporté
 
-Le serveur supporte **deux transports** MCP :
+Le serveur implémente le **MCP Streamable HTTP Transport** (standard depuis mars 2025, remplace SSE).
 
-1. **HTTP/REST Transport** (Production)
-   - Endpoint : `https://votre-domaine.com/api/mcp`
-   - Headers : `Authorization: Bearer {PAT}`, `X-Organization-Id: {orgId}`
-   - Avantages : Scalable, stateless, compatible avec Vercel/Cloudflare
+#### 1. **HTTP Transport** (Production & Claude Code)
 
-2. **STDIO Transport** (Local/Development)
-   - Processus : Node.js avec stdin/stdout
-   - Usage : Claude Desktop, développement local
-   - **Logging** : OBLIGATOIREMENT sur stderr (pas de console.log)
+**Endpoint** : `https://votre-domaine.vercel.app/api/mcp`
+
+**Configuration Claude Code** :
+
+```bash
+# Ajouter le serveur MCP
+claude mcp add --transport http rfp-analyzer https://votre-app.vercel.app/api/mcp \
+  --header "x-pat-token: votre_token_pat" \
+  --header "x-organization-id: votre_org_id" \
+  --scope user
+```
+
+**Headers requis** :
+- `x-pat-token`: Personal Access Token (créé via UI ou tool `create_personal_access_token`)
+- `x-organization-id`: UUID de votre organisation Supabase
+
+**Avantages** :
+- ✅ Compatible Claude Code, Claude Desktop, Claude Web
+- ✅ Serverless-friendly (Vercel, Cloudflare Workers)
+- ✅ Stateless, scalable horizontalement
+- ✅ Pas de connexion persistente (vs SSE deprecated)
+
+**Note** : SSE (Server-Sent Events) transport est déprécié depuis MCP 2025-03-26. Utiliser HTTP simple.
+
+#### 2. **STDIO Transport** (Développement Local)
+
+**Usage** : Tests locaux avec Claude Desktop ou MCP Inspector
+
+```bash
+# Avec MCP Inspector
+npx @modelcontextprotocol/inspector http://localhost:3000/api/mcp
+```
+
+**Important** :
+- Logs sur `stderr` uniquement (pas `console.log`)
+- Pour debug local, pas pour production
 
 ### Server Capabilities
 
@@ -1534,8 +1563,12 @@ INSERT INTO mcp_audit_logs (
 
 ### Phase 3 (Futur) 📋
 
+- **Recherche sémantique RAG hybride** 🧠
+  - Embeddings vectoriels (pgvector Supabase)
+  - Recherche par similarité sémantique + keyword
+  - Tool `semantic_search_requirements`
+  - Coût: ~$0.003 par RFP (embedding OpenAI text-embedding-3-small)
 - Exports CSV/Excel
-- Recherche full-text avancée
 - Analyse IA prédictive
 - Webhooks pour mise à jour temps réel
 
@@ -1571,6 +1604,98 @@ INSERT INTO mcp_audit_logs (
 1. Export JSON
 2. Export Markdown
 3. Export scores matrix (CSV-ready format)
+
+### Priority 6: Recherche Sémantique (Phase 3) 🧠
+
+**Objectif** : Permettre une recherche naturelle et intelligente dans les requirements via RAG hybride.
+
+**Tool** : `semantic_search_requirements`
+
+**Paramètres** :
+
+```typescript
+{
+  query: string;                    // "sécurité des données RGPD"
+  rfp_id: string;                   // Scope à un RFP spécifique
+  search_mode?: "semantic" | "keyword" | "hybrid";  // Défaut: "hybrid"
+  top_k?: number;                   // Nombre de résultats, défaut: 10
+  filters?: {
+    domain_names?: string[];        // Filtrer par domaines
+    min_similarity?: number;        // 0.0-1.0, défaut: 0.7
+  };
+  include_responses?: boolean;      // Inclure les réponses fournisseurs, défaut: false
+}
+```
+
+**Réponse** :
+
+```json
+{
+  "query": "sécurité des données personnelles",
+  "search_mode": "hybrid",
+  "results_count": 8,
+  "results": [
+    {
+      "requirement": {
+        "id": "uuid-req-042",
+        "code": "REQ-042",
+        "title": "Conformité RGPD",
+        "domain": "Sécurité",
+        "description": "Le système doit assurer la protection des données personnelles..."
+      },
+      "similarity_score": 0.92,      // Cosine similarity (embedding)
+      "keyword_score": 0.65,          // BM25 full-text score
+      "combined_score": 0.84,         // 0.7 × semantic + 0.3 × keyword
+      "matched_terms": ["sécurité", "données", "personnelles"],
+      "context_snippet": "...protection des <mark>données personnelles</mark> selon RGPD..."
+    }
+  ]
+}
+```
+
+**Architecture technique** :
+
+1. **Embeddings** :
+   - Modèle : OpenAI `text-embedding-3-small` (1536 dimensions)
+   - Stockage : Colonne `embedding vector(1536)` dans table `requirements`
+   - Index : `ivfflat` (pgvector Supabase) pour recherche rapide
+
+2. **Indexation** :
+   - Lors de l'import N8N : générer embedding automatiquement
+   - Trigger PostgreSQL pour re-indexer si requirement modifié
+   - Cache des embeddings queries fréquentes (Redis/Upstash)
+
+3. **Recherche hybride** :
+   ```sql
+   -- Combinaison semantic + keyword
+   SELECT
+     r.*,
+     (r.embedding <=> query_embedding) AS semantic_score,
+     ts_rank(r.search_vector, query_tsquery) AS keyword_score,
+     (0.7 * semantic_score + 0.3 * keyword_score) AS combined_score
+   FROM requirements r
+   WHERE rfp_id = $1
+   ORDER BY combined_score DESC
+   LIMIT 10;
+   ```
+
+4. **Coûts estimés** :
+   - Embedding : $0.00002 / 1K tokens (OpenAI)
+   - 200 requirements × 100 mots × 1.3 = 26K tokens = **$0.0005 par RFP**
+   - Stockage : pgvector inclus dans Supabase (pas de coût additionnel)
+
+**Use cases** :
+
+- "Quelles exigences concernent la haute disponibilité ?" → Trouve REQ-089, REQ-103, REQ-127
+- "Conformité réglementaire financière" → Trouve SOC2, PCI-DSS, RGPD requirements
+- "Intégration API REST" → Trouve toutes les exigences d'intégration même sans mention exacte de "REST"
+
+**Avantages vs recherche keyword** :
+
+- ✅ Comprend les synonymes et concepts (HA = haute disponibilité)
+- ✅ Recherche multilingue possible (français ↔ anglais)
+- ✅ Découvre des requirements similaires sémantiquement
+- ✅ Score de pertinence plus intelligent
 
 ---
 
