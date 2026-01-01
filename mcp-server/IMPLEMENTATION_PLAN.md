@@ -107,6 +107,7 @@ const TRANSPORT_CONFIG = {
 **Fichiers à réutiliser** :
 
 1. **Client Supabase** : `@/lib/supabase/service.ts`
+
    ```typescript
    // ❌ NE PAS créer mcp-server/lib/supabase/client.ts
    // ✅ Réutiliser :
@@ -114,15 +115,17 @@ const TRANSPORT_CONFIG = {
    ```
 
 2. **Queries Supabase** : `@/lib/supabase/queries.ts`
+
    ```typescript
    import {
      getRFPById,
      getRequirementsByDomain,
-     getSuppliersForRFP
+     getSuppliersForRFP,
    } from "@/lib/supabase/queries";
    ```
 
 3. **Types Database** : `@/types/supabase-schema.ts`
+
    ```bash
    # Générer depuis schema Supabase
    npx supabase gen types typescript --local > types/supabase-schema.ts
@@ -134,11 +137,12 @@ const TRANSPORT_CONFIG = {
    ✅ /supabase/migrations/               (unique source)
       ├── ...
       ├── 011_create_pat_tokens.sql       # MCP PAT
-      ├── 012_add_questions_to_responses.sql  # MCP Questions
+      ├── 012_add_question_to_responses.sql  # MCP Questions
       └── 013_add_embeddings.sql          # RAG (Phase 5)
    ```
 
 **Actions** :
+
 - [ ] Supprimer `mcp-server/lib/supabase/client.ts`
 - [ ] Supprimer `mcp-server/supabase/` entier
 - [ ] Déplacer migration PAT vers `/supabase/migrations/011_create_pat_tokens.sql`
@@ -151,6 +155,7 @@ const TRANSPORT_CONFIG = {
 **Fichier**: `lib/mcp/utils/pagination.ts`
 
 **Spécifications** :
+
 - Limite par défaut : **50 items**
 - Maximum : **100 items**
 - Offset-based pagination
@@ -160,7 +165,7 @@ const TRANSPORT_CONFIG = {
 
 ```typescript
 export interface PaginationParams {
-  limit?: number;  // default: 50, max: 100
+  limit?: number; // default: 50, max: 100
   offset?: number; // default: 0
 }
 
@@ -171,10 +176,12 @@ export interface PaginationMeta {
   has_more: boolean;
 }
 
-export function validatePagination(params: PaginationParams): Required<PaginationParams> {
+export function validatePagination(
+  params: PaginationParams
+): Required<PaginationParams> {
   return {
     limit: Math.min(params.limit || 50, 100),
-    offset: Math.max(params.offset || 0, 0)
+    offset: Math.max(params.offset || 0, 0),
   };
 }
 
@@ -187,7 +194,7 @@ export function createPaginationMeta(
     limit,
     offset,
     total,
-    has_more: offset + limit < total
+    has_more: offset + limit < total,
   };
 }
 ```
@@ -208,6 +215,7 @@ export function createPaginationMeta(
 ```
 
 **Tests** :
+
 - [ ] Validation limit max 100
 - [ ] Offset négatif devient 0
 - [ ] has_more correct quand offset + limit >= total
@@ -215,24 +223,24 @@ export function createPaginationMeta(
 
 **Estimation** : 1 jour
 
-#### 1.2 Champ Questions/Clarifications 🆕
+#### 1.2 Champ Question/Clarifications 🆕
 
-**Objectif** : Capturer questions/clarifications dans les réponses fournisseurs
+**Objectif** : Capturer question/clarifications dans les réponses fournisseurs
 
-**Migration** : `/supabase/migrations/012_add_questions_to_responses.sql`
+**Migration** : `/supabase/migrations/012_add_question_to_responses.sql`
 
 ```sql
--- Ajouter colonne questions
-ALTER TABLE supplier_responses
-ADD COLUMN questions TEXT NULL;
+-- Ajouter colonne question
+ALTER TABLE responses
+ADD COLUMN question TEXT NULL;
 
-COMMENT ON COLUMN supplier_responses.questions IS
-'Questions ou clarifications soulevées par le fournisseur dans sa réponse';
+COMMENT ON COLUMN responses.question IS
+'Question ou clarifications soulevées par le fournisseur dans sa réponse';
 
 -- Index pour recherche full-text (optionnel)
-CREATE INDEX supplier_responses_questions_fts_idx
-ON supplier_responses
-USING gin(to_tsvector('french', coalesce(questions, '')));
+CREATE INDEX responses_question_fts_idx
+ON responses
+USING gin(to_tsvector('french', coalesce(question, '')));
 ```
 
 **Format dans réponses** :
@@ -240,19 +248,21 @@ USING gin(to_tsvector('french', coalesce(questions, '')));
 ```json
 {
   "response_text": "Notre solution supporte SAML 2.0...",
-  "questions": "Quel est le coût de la licence enterprise ?",
+  "question": "Quel est le coût de la licence enterprise ?",
   "score": 5,
   "comment": "Validé en démo"
 }
 ```
 
 **Exemples valeurs** :
+
 - `"Clarifier le volume de données attendu"`
 - `"Besoin de précisions sur le SLA"`
-- `null` (si pas de questions)
+- `null` (si pas de question)
 
 **Tests** :
-- [ ] Champ questions nullable
+
+- [ ] Champ question nullable
 - [ ] Retourné dans toutes les responses
 - [ ] Full-text search fonctionne
 
@@ -287,7 +297,7 @@ GROUP BY rfps.id
 // Détails RFP avec domaines
 SELECT
   d.title as domain_name,
-  d.code as domain_code,
+  d.requirement_id_external as domain_code,
   COUNT(r.id) as requirements_count,
   d.weight
 FROM requirements d
@@ -354,7 +364,7 @@ export async function getRequirementWithResponses(
 // Tree complet
 SELECT * FROM requirements
 WHERE rfp_id = $1
-ORDER BY level, sort_order
+ORDER BY level, display_order
 
 // Par domaine avec réponses (optionnel)
 SELECT
@@ -375,7 +385,7 @@ WHERE r.rfp_id = $1
   AND domain.title = $2
   AND (r.level = 4)  -- Seulement les exigences finales
   AND ($3::uuid[] IS NULL OR s.id = ANY($3))
-ORDER BY r.code
+ORDER BY r.display_order
 ```
 
 **Tests à créer:**
@@ -477,11 +487,11 @@ export interface ScoreStatistics {
 
 export interface ResponseConsolidated {
   score: number; // = manual_score ?? ai_score
-  comment: string; // = manual_comment ?? ai_comment
+  comment: string | null; // = manual_comment uniquement (pas de fallback IA)
   status: string;
   supplier_name: string;
-  evaluated_by?: string; // Si manual_score existe
-  evaluated_at?: string; // Si manual_score existe
+  last_modified_by?: string; // Si manual_score existe
+  updated_at?: string; // Si manual_score existe
 
   // Optionnel (si include_details=true)
   details?: {
@@ -495,11 +505,11 @@ export interface ResponseConsolidated {
 export function consolidateResponse(response: any): ResponseConsolidated {
   return {
     score: response.manual_score ?? response.ai_score,
-    comment: response.manual_comment ?? response.ai_comment,
+    comment: response.manual_comment ?? null, // Uniquement manuel, pas de fallback
     status: response.status,
     supplier_name: response.supplier_name,
-    evaluated_by: response.manual_score ? response.evaluated_by : null,
-    evaluated_at: response.manual_score ? response.evaluated_at : null,
+    last_modified_by: response.manual_score ? response.last_modified_by : null,
+    updated_at: response.manual_score ? response.updated_at : null,
   };
 }
 
@@ -605,7 +615,7 @@ server.tool(
         return {
           requirement: {
             id: req.id,
-            code: req.code,
+            requirement_id_external: req.requirement_id_external,
             title: req.title,
             domain: req.domain,
             weight: req.weight,
@@ -617,7 +627,7 @@ server.tool(
             final_score: r.final_score,
             status: r.status,
             has_comment: !!r.manual_comment,
-            evaluated_at: r.evaluated_at,
+            updated_at: r.updated_at,
           })),
           statistics: include_stats ? stats : undefined,
         };
@@ -706,6 +716,128 @@ server.tool(
 **Estimation**: 1-2 jours
 
 ---
+
+#### 2.5 Tool: update_response_ai_scores
+
+**Objectif**: Permettre à MCP et N8N de mettre à jour les scores IA et commentaires (sans modifier les scores/commentaires manuels)
+
+**Fichier**: `lib/mcp/tools/scoring/update-response-ai-scores.ts`
+
+```typescript
+server.tool(
+  "update_response_ai_scores",
+  {
+    response_id: z.string().uuid(),
+    ai_score: z.number().min(0).max(5).optional(),
+    ai_comment: z.string().max(5000).optional(),
+    ai_confidence: z.number().min(0).max(1).optional(),
+  },
+  async (
+    { response_id, ai_score, ai_comment, ai_confidence },
+    { context }
+  ) => {
+    // 1. Vérifier permissions
+    await checkPermissions(context, ["responses:write"]);
+
+    // 2. Valider qu'au moins un champ est fourni
+    if (!ai_score && !ai_comment && !ai_confidence) {
+      return {
+        success: false,
+        error: "Au moins un champ (ai_score, ai_comment, ai_confidence) doit être fourni",
+      };
+    }
+
+    // 3. Récupérer la réponse actuelle
+    const currentResponse = await getResponse(response_id);
+    if (!currentResponse) {
+      return {
+        success: false,
+        error: "response_not_found",
+        error_code: 404,
+      };
+    }
+
+    // 4. Préparer les données à mettre à jour
+    const updateData: any = {};
+    if (ai_score !== undefined) updateData.ai_score = ai_score;
+    if (ai_comment !== undefined) updateData.ai_comment = ai_comment;
+    if (ai_confidence !== undefined) updateData.ai_confidence = ai_confidence;
+
+    // 5. Mettre à jour en base
+    const updatedResponse = await updateResponse(response_id, updateData);
+
+    // 6. Retourner consolidation avec scores avant/après
+    const consolidation = {
+      manual_score: currentResponse.manual_score,
+      manual_comment: currentResponse.manual_comment,
+      ai_score: updatedResponse.ai_score,
+      ai_comment: updatedResponse.ai_comment,
+      final_consolidated_score: 
+        currentResponse.manual_score ?? updatedResponse.ai_score,
+      final_consolidated_comment:
+        currentResponse.manual_comment ?? updatedResponse.ai_comment,
+    };
+
+    return {
+      success: true,
+      response_id,
+      previous_ai_score: currentResponse.ai_score,
+      previous_ai_comment: currentResponse.ai_comment,
+      new_ai_score: updatedResponse.ai_score,
+      new_ai_comment: updatedResponse.ai_comment,
+      consolidation,
+      updated_at: new Date().toISOString(),
+    };
+  }
+);
+```
+
+**Notes Importantes**:
+
+- ❌ **Ne peut pas modifier**: `manual_score`, `manual_comment`, `questions`, `status`
+- ✅ **Peut modifier**: `ai_score`, `ai_comment`, `ai_confidence` uniquement
+- Le score consolidé `score = manual_score ?? ai_score` est calculé automatiquement
+- Seuls les tokens MCP avec permission `responses:write` peuvent appeler cet outil
+- Utilisé par les workflows N8N pour les analyses IA automatiques
+
+**Cas d'usage**:
+
+1. **Corrections IA**: Corriger un score IA incorrect après révision
+2. **Imports depuis N8N**: Mettre à jour les scores lors d'analyses batch
+3. **Réévaluations automatiques**: Relancer des analyses IA périodiquement
+
+**Tests à créer**:
+
+- [ ] Mise à jour du score IA fonctionne
+- [ ] Mise à jour du commentaire IA fonctionne
+- [ ] Mise à jour de la confiance fonctionne
+- [ ] Consolidation correcte avec manual_score existant
+- [ ] Impossible de modifier manual_score/manual_comment
+- [ ] Erreur si response_id invalide
+- [ ] Erreur si pas de permission `responses:write`
+- [ ] Erreur si score en dehors de [0-5]
+- [ ] Erreur si confiance en dehors de [0.0-1.0]
+- [ ] Pas d'erreur si aucun champ fourni mais permission OK (noop)
+
+**Permissions requises**:
+- `responses:write` - Modifier les réponses
+
+**Erreurs possibles**:
+- `response_not_found` - response_id invalide (404)
+- `forbidden` - Pas la permission responses:write (403)
+- `invalid_score` - ai_score non entre 0-5 (400)
+- `invalid_confidence` - ai_confidence non entre 0.0-1.0 (400)
+- `invalid_input` - Aucun champ de mise à jour fourni (400)
+
+**Estimation**: 1.5 jours
+
+**Dépendances**: 
+- Nécessite `responses:write` permission dans PAT system
+- Dépend des utilities de consolidation de Phase 2.1
+- Dépend de la base de données migrations existantes
+
+---
+
 
 ### Phase 3: Consultation Avancée (Priorité 3)
 
@@ -805,6 +937,7 @@ COMMENT ON COLUMN requirements.embedding IS
 ```
 
 **Tests** :
+
 - [ ] Extension vector installée
 - [ ] Colonne embedding créée
 - [ ] Index ivfflat performant (< 50ms pour top 10)
@@ -831,7 +964,7 @@ export class EmbeddingService {
     const response = await openai.embeddings.create({
       model: "text-embedding-3-small",
       input: text,
-      encoding_format: "float"
+      encoding_format: "float",
     });
 
     return response.data[0].embedding;
@@ -844,17 +977,17 @@ export class EmbeddingService {
     const response = await openai.embeddings.create({
       model: "text-embedding-3-small",
       input: texts,
-      encoding_format: "float"
+      encoding_format: "float",
     });
 
-    return response.data.map(d => d.embedding);
+    return response.data.map((d) => d.embedding);
   }
 
   /**
    * Préparer texte requirement pour embedding
    */
   prepareRequirementText(req: Requirement): string {
-    return `${req.title}\n${req.description || ''}\n${req.context || ''}`;
+    return `${req.title}\n${req.description || ""}\n${req.context || ""}`;
   }
 }
 ```
@@ -864,18 +997,24 @@ export class EmbeddingService {
 ```typescript
 export class EmbeddingCache {
   async getCachedEmbedding(text: string): Promise<number[] | null> {
-    const hash = createHash('sha256').update(text).digest('hex');
+    const hash = createHash("sha256").update(text).digest("hex");
     return redis.get(`embedding:${hash}`);
   }
 
   async setCachedEmbedding(text: string, embedding: number[]): Promise<void> {
-    const hash = createHash('sha256').update(text).digest('hex');
-    await redis.set(`embedding:${hash}`, JSON.stringify(embedding), 'EX', 86400);
+    const hash = createHash("sha256").update(text).digest("hex");
+    await redis.set(
+      `embedding:${hash}`,
+      JSON.stringify(embedding),
+      "EX",
+      86400
+    );
   }
 }
 ```
 
 **Tests** :
+
 - [ ] Génération embedding simple
 - [ ] Batch embeddings (10 requirements)
 - [ ] Cache hit/miss
@@ -914,17 +1053,17 @@ CREATE OR REPLACE FUNCTION hybrid_search_requirements(
   top_k_param int DEFAULT 10,
   domain_filter text[] DEFAULT NULL,
   min_similarity float DEFAULT 0.7
-)
-RETURNS TABLE (
-  requirement_id uuid,
-  code text,
-  title text,
-  domain text,
-  similarity_score float,
-  keyword_score float,
-  combined_score float,
-  matched_terms text[]
-) AS $$
+ )
+ RETURNS TABLE (
+   requirement_id uuid,
+   requirement_id_external text,
+   title text,
+   domain text,
+   similarity_score float,
+   keyword_score float,
+   combined_score float,
+   matched_terms text[]
+ ) AS $$
 BEGIN
   RETURN QUERY
   WITH semantic AS (
@@ -952,7 +1091,7 @@ BEGIN
   )
   SELECT
     r.id,
-    r.code,
+    r.requirement_id_external,
     r.title,
     r.domain,
     COALESCE(s.similarity, 0.0) AS similarity_score,
@@ -981,7 +1120,7 @@ $$ LANGUAGE plpgsql;
     {
       "requirement": {
         "id": "uuid-req-042",
-        "code": "REQ-042",
+        "requirement_id_external": "REQ-042",
         "title": "Conformité RGPD",
         "domain": "Sécurité",
         "description": "..."
@@ -997,6 +1136,7 @@ $$ LANGUAGE plpgsql;
 ```
 
 **Tests** :
+
 - [ ] Recherche semantic seule
 - [ ] Recherche keyword seule
 - [ ] Recherche hybrid avec pondération
@@ -1062,6 +1202,7 @@ EXECUTE FUNCTION invalidate_requirement_embedding();
 ```
 
 **Tests** :
+
 - [ ] Import RFP génère embeddings automatiquement
 - [ ] Modification requirement invalide embedding
 - [ ] Batch import performant (< 2s pour 100 requirements)
@@ -1094,7 +1235,7 @@ async function backfillEmbeddings() {
   const BATCH_SIZE = 20;
   for (let i = 0; i < requirements.length; i += BATCH_SIZE) {
     const batch = requirements.slice(i, i + BATCH_SIZE);
-    const texts = batch.map(r => embeddingService.prepareRequirementText(r));
+    const texts = batch.map((r) => embeddingService.prepareRequirementText(r));
 
     const embeddings = await embeddingService.generateBatchEmbeddings(texts);
 
@@ -1106,7 +1247,9 @@ async function backfillEmbeddings() {
         .eq("id", batch[j].id);
     }
 
-    console.log(`Progress: ${Math.min(i + BATCH_SIZE, requirements.length)}/${requirements.length}`);
+    console.log(
+      `Progress: ${Math.min(i + BATCH_SIZE, requirements.length)}/${requirements.length}`
+    );
   }
 
   console.log("Backfill complete!");
@@ -1122,6 +1265,7 @@ backfillEmbeddings();
 **Total Phase 6** : 8-12 jours
 
 **Bénéfices** :
+
 - ✅ Recherche naturelle intelligente
 - ✅ Comprend synonymes et concepts
 - ✅ Découverte requirements similaires
@@ -1132,6 +1276,7 @@ backfillEmbeddings();
 ## 📁 Structure de Fichiers Cible (MCP Best Practices)
 
 **Note** : Le serveur MCP capitalise sur l'infrastructure existante du projet principal :
+
 - ✅ **Supabase clients** → Réutilise `/lib/supabase/service.ts`, `/lib/supabase/queries.ts`
 - ✅ **Migrations** → Centralisées dans `/supabase/migrations/` (migrations 011+)
 - ✅ **Types DB** → Génère depuis `/types/supabase-schema.ts`
@@ -1254,7 +1399,7 @@ Légende:
 /supabase/migrations/          # ⬅️ Racine du projet
 ├── ...                        # Migrations existantes (001-010)
 ├── 011_create_pat_tokens.sql          # ✅ MCP PAT
-├── 012_add_questions_to_responses.sql # 🆕 MCP Questions (Phase 1.2)
+├── 012_add_question_to_responses.sql # 🆕 MCP Questions (Phase 1.2)
 └── 013_add_embeddings.sql             # 📋 MCP RAG (Phase 6.1)
 ```
 
@@ -1371,7 +1516,9 @@ export const GetRequirementsScoresSchema = z.object({
     .optional(),
   include_responses: z.boolean().default(false),
   include_stats: z.boolean().default(true),
-  sort_by: z.enum(["code", "avg_score", "variance"]).default("code"),
+  sort_by: z
+    .enum(["requirement_id_external", "avg_score", "variance"])
+    .default("requirement_id_external"),
 });
 
 export const CompareSuppliersSchema = z.object({

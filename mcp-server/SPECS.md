@@ -68,10 +68,12 @@ claude mcp add --transport http rfp-analyzer https://votre-app.vercel.app/api/mc
 ```
 
 **Headers requis** :
+
 - `x-pat-token`: Personal Access Token (créé via UI ou tool `create_personal_access_token`)
 - `x-organization-id`: UUID de votre organisation Supabase
 
 **Avantages** :
+
 - ✅ Compatible Claude Code, Claude Desktop, Claude Web
 - ✅ Serverless-friendly (Vercel, Cloudflare Workers)
 - ✅ Stateless, scalable horizontalement
@@ -89,6 +91,7 @@ npx @modelcontextprotocol/inspector http://localhost:3000/api/mcp
 ```
 
 **Important** :
+
 - Logs sur `stderr` uniquement (pas `console.log`)
 - Pour debug local, pas pour production
 
@@ -1209,6 +1212,7 @@ Récupère une matrice de scores pour visualisation (requirements × suppliers).
 ```
 
 **Note sur la pagination** :
+
 - Les scores sont calculés sur le score consolidé (`score` = manual_score ?? ai_score)
 - Pagination appliquée sur les requirements (pas sur les suppliers)
 - Total toujours calculé sur l'ensemble des données (pas juste la page)
@@ -1305,6 +1309,87 @@ Récupère une matrice de scores pour visualisation (requirements × suppliers).
 ---
 
 ### 2.2 Export & Rapports
+
+---
+
+### 2.1 Modification des Réponses 🔄
+
+#### `update_response_ai_scores`
+
+Met à jour les scores et commentaires IA pour une réponse fournisseur. **Seul MCP peut modifier les scores IA** (les scores manuels sont mis à jour via l'UI).
+
+**Paramètres:**
+
+```typescript
+{
+  response_id: string;            // UUID de la réponse à mettre à jour
+  ai_score?: number;              // 0-5 (optionnel, si omis = ne pas modifier)
+  ai_comment?: string;            // Texte du commentaire IA (optionnel)
+  ai_confidence?: number;         // 0.0-1.0, confiance du score IA (optionnel)
+}
+```
+
+**Notes importantes** :
+
+- ❌ **Ne peut pas modifier** : `manual_score`, `manual_comment`, `questions`, `status`
+- ✅ **Peut modifier** : `ai_score`, `ai_comment`, `ai_confidence` uniquement
+- La réponse consolidée (`score`, `comment`) est calculée automatiquement : `score = manual_score ?? ai_score`
+- Seuls les tokens MCP avec permission `responses:write` peuvent appeler cet outil
+- Utilisé par les workflows N8N pour les analyses IA automatiques
+
+**Réponse:**
+
+```json
+{
+  "success": true,
+  "response_id": "uuid-response-123",
+  "previous_ai_score": 3,
+  "previous_ai_comment": "Support limité",
+  "new_ai_score": 4,
+  "new_ai_comment": "Support amélioré avec module complémentaire",
+  "consolidation": {
+    "manual_score": 5,
+    "manual_comment": "Validé en démo",
+    "ai_score": 4,
+    "ai_comment": "Support amélioré avec module complémentaire",
+    "final_consolidated_score": 5,
+    "final_consolidated_comment": "Validé en démo"
+  },
+  "updated_at": "2025-01-01T10:30:00Z"
+}
+```
+
+**Cas d'usage** :
+
+1. **Corrections IA** : Corriger un score IA incorrect après révision
+   ```
+   update_response_ai_scores({
+     response_id: "uuid-123",
+     ai_score: 4,
+     ai_comment: "Support SAML confirmé avec version 2.0"
+   })
+   ```
+
+2. **Imports depuis N8N** : Mettre à jour les scores lors d'analyses batch
+   ```
+   for each response:
+     update_response_ai_scores({
+       response_id: response.id,
+       ai_score: nlp_model.predict(response.text),
+       ai_comment: nlp_model.explanation(),
+       ai_confidence: nlp_model.confidence()
+     })
+   ```
+
+**Permissions requises** :
+- `responses:write` - Modifier les réponses
+
+**Erreurs possibles** :
+- `response_not_found` : response_id invalide
+- `forbidden` : Pas la permission responses:write
+- `invalid_score` : ai_score non entre 0-5
+- `invalid_confidence` : ai_confidence non entre 0.0-1.0
+
 
 #### `export_domain_responses`
 
@@ -1643,9 +1728,9 @@ INSERT INTO mcp_audit_logs (
         "domain": "Sécurité",
         "description": "Le système doit assurer la protection des données personnelles..."
       },
-      "similarity_score": 0.92,      // Cosine similarity (embedding)
-      "keyword_score": 0.65,          // BM25 full-text score
-      "combined_score": 0.84,         // 0.7 × semantic + 0.3 × keyword
+      "similarity_score": 0.92, // Cosine similarity (embedding)
+      "keyword_score": 0.65, // BM25 full-text score
+      "combined_score": 0.84, // 0.7 × semantic + 0.3 × keyword
       "matched_terms": ["sécurité", "données", "personnelles"],
       "context_snippet": "...protection des <mark>données personnelles</mark> selon RGPD..."
     }
@@ -1666,6 +1751,7 @@ INSERT INTO mcp_audit_logs (
    - Cache des embeddings queries fréquentes (Redis/Upstash)
 
 3. **Recherche hybride** :
+
    ```sql
    -- Combinaison semantic + keyword
    SELECT
@@ -1740,6 +1826,7 @@ GET requirements://uuid-rfp/domain/Sécurité?include_responses=true&limit=50&of
 **Plan d'upgrade** :
 
 Si besoin de dépasser ces limites, envisager :
+
 - Vercel Pro : 60s timeout, 50 MB response
 - Vercel Enterprise : Custom limits
 
