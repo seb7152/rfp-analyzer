@@ -100,7 +100,165 @@ const TRANSPORT_CONFIG = {
 
 **Objectif**: Permettre la consultation de base des RFPs et exigences
 
-#### 1.1 Resources RFP
+#### 1.0 Infrastructure Partagée ⚡
+
+**Objectif** : Capitaliser sur l'existant du projet principal, éviter duplications
+
+**Fichiers à réutiliser** :
+
+1. **Client Supabase** : `@/lib/supabase/service.ts`
+   ```typescript
+   // ❌ NE PAS créer mcp-server/lib/supabase/client.ts
+   // ✅ Réutiliser :
+   import { createServiceClient } from "@/lib/supabase/service";
+   ```
+
+2. **Queries Supabase** : `@/lib/supabase/queries.ts`
+   ```typescript
+   import {
+     getRFPById,
+     getRequirementsByDomain,
+     getSuppliersForRFP
+   } from "@/lib/supabase/queries";
+   ```
+
+3. **Types Database** : `@/types/supabase-schema.ts`
+   ```bash
+   # Générer depuis schema Supabase
+   npx supabase gen types typescript --local > types/supabase-schema.ts
+   ```
+
+4. **Migrations** : Centraliser dans `/supabase/migrations/`
+   ```
+   ❌ mcp-server/supabase/migrations/    (à supprimer)
+   ✅ /supabase/migrations/               (unique source)
+      ├── ...
+      ├── 011_create_pat_tokens.sql       # MCP PAT
+      ├── 012_add_questions_to_responses.sql  # MCP Questions
+      └── 013_add_embeddings.sql          # RAG (Phase 5)
+   ```
+
+**Actions** :
+- [ ] Supprimer `mcp-server/lib/supabase/client.ts`
+- [ ] Supprimer `mcp-server/supabase/` entier
+- [ ] Déplacer migration PAT vers `/supabase/migrations/011_create_pat_tokens.sql`
+- [ ] Mettre à jour imports pour utiliser `@/lib/supabase/*`
+
+**Estimation** : 0.5 jour (refactoring)
+
+#### 1.1 Système de Pagination 🆕
+
+**Fichier**: `lib/mcp/utils/pagination.ts`
+
+**Spécifications** :
+- Limite par défaut : **50 items**
+- Maximum : **100 items**
+- Offset-based pagination
+- Métadonnées dans toutes les réponses liste
+
+**Interface** :
+
+```typescript
+export interface PaginationParams {
+  limit?: number;  // default: 50, max: 100
+  offset?: number; // default: 0
+}
+
+export interface PaginationMeta {
+  limit: number;
+  offset: number;
+  total: number;
+  has_more: boolean;
+}
+
+export function validatePagination(params: PaginationParams): Required<PaginationParams> {
+  return {
+    limit: Math.min(params.limit || 50, 100),
+    offset: Math.max(params.offset || 0, 0)
+  };
+}
+
+export function createPaginationMeta(
+  limit: number,
+  offset: number,
+  total: number
+): PaginationMeta {
+  return {
+    limit,
+    offset,
+    total,
+    has_more: offset + limit < total
+  };
+}
+```
+
+**Utilisation dans responses** :
+
+```json
+{
+  "rfp_id": "uuid",
+  "pagination": {
+    "limit": 50,
+    "offset": 0,
+    "total": 235,
+    "has_more": true
+  },
+  "requirements": [...]
+}
+```
+
+**Tests** :
+- [ ] Validation limit max 100
+- [ ] Offset négatif devient 0
+- [ ] has_more correct quand offset + limit >= total
+- [ ] has_more correct quand offset + limit < total
+
+**Estimation** : 1 jour
+
+#### 1.2 Champ Questions/Clarifications 🆕
+
+**Objectif** : Capturer questions/clarifications dans les réponses fournisseurs
+
+**Migration** : `/supabase/migrations/012_add_questions_to_responses.sql`
+
+```sql
+-- Ajouter colonne questions
+ALTER TABLE supplier_responses
+ADD COLUMN questions TEXT NULL;
+
+COMMENT ON COLUMN supplier_responses.questions IS
+'Questions ou clarifications soulevées par le fournisseur dans sa réponse';
+
+-- Index pour recherche full-text (optionnel)
+CREATE INDEX supplier_responses_questions_fts_idx
+ON supplier_responses
+USING gin(to_tsvector('french', coalesce(questions, '')));
+```
+
+**Format dans réponses** :
+
+```json
+{
+  "response_text": "Notre solution supporte SAML 2.0...",
+  "questions": "Quel est le coût de la licence enterprise ?",
+  "score": 5,
+  "comment": "Validé en démo"
+}
+```
+
+**Exemples valeurs** :
+- `"Clarifier le volume de données attendu"`
+- `"Besoin de précisions sur le SLA"`
+- `null` (si pas de questions)
+
+**Tests** :
+- [ ] Champ questions nullable
+- [ ] Retourné dans toutes les responses
+- [ ] Full-text search fonctionne
+
+**Estimation** : 0.5 jour
+
+#### 1.3 Resources RFP
 
 **Fichier**: `lib/mcp/resources/rfps.ts`
 
@@ -611,7 +769,372 @@ server.tool(
 
 ---
 
+### Phase 6: Recherche Sémantique RAG Hybride (Futur) 🧠
+
+**Objectif** : Recherche intelligente par similarité sémantique + keyword
+
+**Coût opérationnel** : ~$0.0005 par RFP (négligeable)
+
+#### 6.1 Infrastructure pgvector
+
+**Fichier**: `/supabase/migrations/013_add_embeddings_to_requirements.sql`
+
+**Schema** :
+
+```sql
+-- Extension pgvector (si pas déjà activée)
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Ajouter colonne embedding
+ALTER TABLE requirements
+ADD COLUMN embedding vector(1536);  -- OpenAI text-embedding-3-small
+
+-- Index ivfflat pour similarity search rapide
+CREATE INDEX requirements_embedding_idx
+ON requirements
+USING ivfflat (embedding vector_cosine_ops)
+WITH (lists = 100);  -- Ajuster selon volumétrie
+
+-- Index full-text existant (combiner avec semantic)
+CREATE INDEX IF NOT EXISTS requirements_fts_idx
+ON requirements
+USING gin(to_tsvector('french', title || ' ' || coalesce(description, '')));
+
+COMMENT ON COLUMN requirements.embedding IS
+'Vector embedding (OpenAI text-embedding-3-small) pour recherche sémantique';
+```
+
+**Tests** :
+- [ ] Extension vector installée
+- [ ] Colonne embedding créée
+- [ ] Index ivfflat performant (< 50ms pour top 10)
+- [ ] Recherche cosine similarity fonctionne
+
+**Estimation** : 1 jour
+
+#### 6.2 Service d'Embedding
+
+**Fichier**: `lib/mcp/services/embedding.ts`
+
+**Responsabilités** :
+
+```typescript
+import OpenAI from "openai";
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+export class EmbeddingService {
+  /**
+   * Générer embedding pour un texte
+   */
+  async generateEmbedding(text: string): Promise<number[]> {
+    const response = await openai.embeddings.create({
+      model: "text-embedding-3-small",
+      input: text,
+      encoding_format: "float"
+    });
+
+    return response.data[0].embedding;
+  }
+
+  /**
+   * Batch embeddings (pour import massif)
+   */
+  async generateBatchEmbeddings(texts: string[]): Promise<number[][]> {
+    const response = await openai.embeddings.create({
+      model: "text-embedding-3-small",
+      input: texts,
+      encoding_format: "float"
+    });
+
+    return response.data.map(d => d.embedding);
+  }
+
+  /**
+   * Préparer texte requirement pour embedding
+   */
+  prepareRequirementText(req: Requirement): string {
+    return `${req.title}\n${req.description || ''}\n${req.context || ''}`;
+  }
+}
+```
+
+**Cache** (optionnel, via Redis/Upstash) :
+
+```typescript
+export class EmbeddingCache {
+  async getCachedEmbedding(text: string): Promise<number[] | null> {
+    const hash = createHash('sha256').update(text).digest('hex');
+    return redis.get(`embedding:${hash}`);
+  }
+
+  async setCachedEmbedding(text: string, embedding: number[]): Promise<void> {
+    const hash = createHash('sha256').update(text).digest('hex');
+    await redis.set(`embedding:${hash}`, JSON.stringify(embedding), 'EX', 86400);
+  }
+}
+```
+
+**Tests** :
+- [ ] Génération embedding simple
+- [ ] Batch embeddings (10 requirements)
+- [ ] Cache hit/miss
+- [ ] Gestion erreurs OpenAI API
+
+**Estimation** : 2-3 jours
+
+#### 6.3 Tool semantic_search_requirements
+
+**Fichier**: `lib/mcp/tools/search/semantic-search.ts`
+
+**Interface** :
+
+```typescript
+{
+  query: string;                    // "sécurité des données RGPD"
+  rfp_id: string;                   // Scope à un RFP spécifique
+  search_mode?: "semantic" | "keyword" | "hybrid";  // Défaut: "hybrid"
+  top_k?: number;                   // Nombre de résultats, défaut: 10
+  filters?: {
+    domain_names?: string[];        // Filtrer par domaines
+    min_similarity?: number;        // 0.0-1.0, défaut: 0.7
+  };
+  include_responses?: boolean;      // Inclure les réponses, défaut: false
+}
+```
+
+**Algorithme Hybride** :
+
+```sql
+-- Fonction PostgreSQL pour recherche hybride
+CREATE OR REPLACE FUNCTION hybrid_search_requirements(
+  query_embedding vector(1536),
+  query_text text,
+  rfp_id_param uuid,
+  top_k_param int DEFAULT 10,
+  domain_filter text[] DEFAULT NULL,
+  min_similarity float DEFAULT 0.7
+)
+RETURNS TABLE (
+  requirement_id uuid,
+  code text,
+  title text,
+  domain text,
+  similarity_score float,
+  keyword_score float,
+  combined_score float,
+  matched_terms text[]
+) AS $$
+BEGIN
+  RETURN QUERY
+  WITH semantic AS (
+    SELECT
+      r.id,
+      1 - (r.embedding <=> query_embedding) AS similarity
+    FROM requirements r
+    WHERE r.rfp_id = rfp_id_param
+      AND (domain_filter IS NULL OR r.domain = ANY(domain_filter))
+      AND r.embedding IS NOT NULL
+      AND 1 - (r.embedding <=> query_embedding) >= min_similarity
+  ),
+  keyword AS (
+    SELECT
+      r.id,
+      ts_rank(
+        to_tsvector('french', r.title || ' ' || coalesce(r.description, '')),
+        plainto_tsquery('french', query_text)
+      ) AS rank
+    FROM requirements r
+    WHERE r.rfp_id = rfp_id_param
+      AND (domain_filter IS NULL OR r.domain = ANY(domain_filter))
+      AND to_tsvector('french', r.title || ' ' || coalesce(r.description, ''))
+          @@ plainto_tsquery('french', query_text)
+  )
+  SELECT
+    r.id,
+    r.code,
+    r.title,
+    r.domain,
+    COALESCE(s.similarity, 0.0) AS similarity_score,
+    COALESCE(k.rank, 0.0) AS keyword_score,
+    (0.7 * COALESCE(s.similarity, 0.0) + 0.3 * COALESCE(k.rank, 0.0)) AS combined_score,
+    ts_headline('french', r.description, plainto_tsquery('french', query_text)) AS matched_terms
+  FROM requirements r
+  LEFT JOIN semantic s ON s.id = r.id
+  LEFT JOIN keyword k ON k.id = r.id
+  WHERE r.rfp_id = rfp_id_param
+    AND (s.id IS NOT NULL OR k.id IS NOT NULL)
+  ORDER BY combined_score DESC
+  LIMIT top_k_param;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**Réponse** :
+
+```json
+{
+  "query": "sécurité des données personnelles",
+  "search_mode": "hybrid",
+  "results_count": 8,
+  "results": [
+    {
+      "requirement": {
+        "id": "uuid-req-042",
+        "code": "REQ-042",
+        "title": "Conformité RGPD",
+        "domain": "Sécurité",
+        "description": "..."
+      },
+      "similarity_score": 0.92,
+      "keyword_score": 0.65,
+      "combined_score": 0.84,
+      "matched_terms": ["sécurité", "données", "personnelles"],
+      "context_snippet": "...protection des <mark>données personnelles</mark>..."
+    }
+  ]
+}
+```
+
+**Tests** :
+- [ ] Recherche semantic seule
+- [ ] Recherche keyword seule
+- [ ] Recherche hybrid avec pondération
+- [ ] Filtrage par domaine
+- [ ] min_similarity threshold
+
+**Estimation** : 3-4 jours
+
+#### 6.4 Intégration N8N Workflow
+
+**Objectif** : Auto-générer embeddings lors de l'import PDF
+
+**Workflow modifié** :
+
+```
+PDF Upload → Parse → Extract Requirements
+  ↓
+  Pour chaque requirement:
+    1. Insérer dans DB (comme actuellement)
+    2. Générer embedding (nouveau)
+    3. UPDATE requirements SET embedding = [...] WHERE id = requirement_id
+  ↓
+Done
+```
+
+**Node N8N à ajouter** :
+
+```json
+{
+  "name": "Generate Embeddings",
+  "type": "HTTP Request",
+  "url": "https://api.openai.com/v1/embeddings",
+  "method": "POST",
+  "body": {
+    "model": "text-embedding-3-small",
+    "input": "{{ $json.title }}\n{{ $json.description }}"
+  },
+  "authentication": "headerAuth",
+  "headers": {
+    "Authorization": "Bearer {{ $credentials.openai_api_key }}"
+  }
+}
+```
+
+**Trigger re-indexation** (si requirement modifié) :
+
+```sql
+-- Trigger PostgreSQL
+CREATE OR REPLACE FUNCTION invalidate_requirement_embedding()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF (OLD.title != NEW.title OR OLD.description != NEW.description) THEN
+    NEW.embedding = NULL;  -- Forcer re-génération
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER requirements_embedding_invalidation
+BEFORE UPDATE ON requirements
+FOR EACH ROW
+EXECUTE FUNCTION invalidate_requirement_embedding();
+```
+
+**Tests** :
+- [ ] Import RFP génère embeddings automatiquement
+- [ ] Modification requirement invalide embedding
+- [ ] Batch import performant (< 2s pour 100 requirements)
+
+**Estimation** : 1-2 jours
+
+#### 6.5 Migration Existante (Backfill)
+
+**Script** : `scripts/backfill-embeddings.ts`
+
+Pour les requirements existants sans embeddings :
+
+```typescript
+import { createServiceClient } from "@/lib/supabase/service";
+import { EmbeddingService } from "@/lib/mcp/services/embedding";
+
+async function backfillEmbeddings() {
+  const supabase = createServiceClient();
+  const embeddingService = new EmbeddingService();
+
+  // Récupérer requirements sans embeddings
+  const { data: requirements } = await supabase
+    .from("requirements")
+    .select("id, title, description, context")
+    .is("embedding", null);
+
+  console.log(`Backfilling ${requirements.length} requirements...`);
+
+  // Process par batch de 20 (rate limit OpenAI)
+  const BATCH_SIZE = 20;
+  for (let i = 0; i < requirements.length; i += BATCH_SIZE) {
+    const batch = requirements.slice(i, i + BATCH_SIZE);
+    const texts = batch.map(r => embeddingService.prepareRequirementText(r));
+
+    const embeddings = await embeddingService.generateBatchEmbeddings(texts);
+
+    // Update DB
+    for (let j = 0; j < batch.length; j++) {
+      await supabase
+        .from("requirements")
+        .update({ embedding: embeddings[j] })
+        .eq("id", batch[j].id);
+    }
+
+    console.log(`Progress: ${Math.min(i + BATCH_SIZE, requirements.length)}/${requirements.length}`);
+  }
+
+  console.log("Backfill complete!");
+}
+
+backfillEmbeddings();
+```
+
+**Estimation** : 1 jour
+
+---
+
+**Total Phase 6** : 8-12 jours
+
+**Bénéfices** :
+- ✅ Recherche naturelle intelligente
+- ✅ Comprend synonymes et concepts
+- ✅ Découverte requirements similaires
+- ✅ Coût opérationnel négligeable ($0.0005/RFP)
+
+---
+
 ## 📁 Structure de Fichiers Cible (MCP Best Practices)
+
+**Note** : Le serveur MCP capitalise sur l'infrastructure existante du projet principal :
+- ✅ **Supabase clients** → Réutilise `/lib/supabase/service.ts`, `/lib/supabase/queries.ts`
+- ✅ **Migrations** → Centralisées dans `/supabase/migrations/` (migrations 011+)
+- ✅ **Types DB** → Génère depuis `/types/supabase-schema.ts`
 
 ```
 mcp-server/
@@ -622,9 +1145,6 @@ mcp-server/
 │               └── route.ts                 # ✅ Serveur MCP principal (HTTP+STDIO)
 │
 ├── lib/
-│   ├── supabase/
-│   │   └── client.ts                       # ✅ Client Supabase
-│   │
 │   ├── mcp/
 │   │   ├── auth/
 │   │   │   ├── middleware.ts               # ✅ Auth/permissions (MCP context)
@@ -649,7 +1169,10 @@ mcp-server/
 │   │   │   │
 │   │   │   ├── consultation/
 │   │   │   │   ├── get-rfp-with-responses.ts    # 📋 Consultation complète
-│   │   │   │   └── search-responses.ts          # 📋 Recherche
+│   │   │   │   └── search-responses.ts          # 📋 Recherche keyword
+│   │   │   │
+│   │   │   ├── search/
+│   │   │   │   └── semantic-search.ts           # 📋 Recherche RAG hybride (Phase 6.3)
 │   │   │   │
 │   │   │   ├── comparison/
 │   │   │   │   └── compare-suppliers.ts         # 📋 Comparaison
@@ -665,8 +1188,12 @@ mcp-server/
 │   │   │           ├── markdown.ts
 │   │   │           └── csv.ts
 │   │   │
+│   │   ├── services/
+│   │   │   └── embedding.ts                # 📋 Service embeddings (Phase 6.2)
+│   │   │
 │   │   └── utils/
 │   │       ├── logger.ts                     # ✅ Logging sécurisé (stderr only)
+│   │       ├── pagination.ts                 # 🆕 Pagination système (Phase 1.1)
 │   │       ├── requirements-tree.ts        # 🔄 Hiérarchie exigences
 │   │       ├── score-calculator.ts         # 🔄 Calculs statistiques
 │   │       ├── query-builder.ts            # 🔄 Construction requêtes
@@ -703,12 +1230,6 @@ mcp-server/
 │       │   └── supplier-comparison.test.ts
 │       └── mcp-inspector.config.ts
 │
-├── supabase/
-│   └── migrations/
-│       ├── 001_create_pat_tokens.sql       # ✅ Migration PAT
-│       ├── 002_create_mcp_audit_logs.sql # 📋 Audit logs
-│       └── 003_rls_policies.sql            # 📋 RLS policies
-│
 ├── SPECS.md                                # ✅ Spécifications complètes
 ├── FEATURES_SUMMARY.md                     # ✅ Résumé fonctionnalités
 ├── IMPLEMENTATION_PLAN.md                  # ✅ Ce fichier
@@ -725,6 +1246,16 @@ Légende:
 🔄 En cours / Priorité haute
 📋 À faire
 📋 Documentation/Best Practices
+```
+
+**Migrations MCP** (centralisées dans projet principal) :
+
+```
+/supabase/migrations/          # ⬅️ Racine du projet
+├── ...                        # Migrations existantes (001-010)
+├── 011_create_pat_tokens.sql          # ✅ MCP PAT
+├── 012_add_questions_to_responses.sql # 🆕 MCP Questions (Phase 1.2)
+└── 013_add_embeddings.sql             # 📋 MCP RAG (Phase 6.1)
 ```
 
 ---
