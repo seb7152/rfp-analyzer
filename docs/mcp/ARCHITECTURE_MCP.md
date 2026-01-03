@@ -106,6 +106,7 @@ sequenceDiagram
 ## 📦 Architecture des Resources
 
 ### Principe
+
 Les Resources exposent des données en lecture seule via URIs.
 
 ```mermaid
@@ -137,32 +138,31 @@ graph LR
 
 ```typescript
 // resources/rfps.ts
-server.resource(
-  "rfp://{rfp_id}",
-  async ({ rfp_id }, { context }) => {
-    // 1. Vérifier permissions
-    checkPermissions(context, ['requirements:read']);
+server.resource("rfp://{rfp_id}", async ({ rfp_id }, { context }) => {
+  // 1. Vérifier permissions
+  checkPermissions(context, ["requirements:read"]);
 
-    // 2. Query Supabase
-    const rfp = await supabase
-      .from('rfps')
-      .select(`
+  // 2. Query Supabase
+  const rfp = await supabase
+    .from("rfps")
+    .select(
+      `
         *,
         requirements(count),
         suppliers(count)
-      `)
-      .eq('id', rfp_id)
-      .eq('organization_id', context.organizationId)
-      .single();
+      `
+    )
+    .eq("id", rfp_id)
+    .eq("organization_id", context.organizationId)
+    .single();
 
-    // 3. Formater et retourner
-    return {
-      uri: `rfp://${rfp_id}`,
-      mimeType: 'application/json',
-      content: JSON.stringify(formatRFP(rfp))
-    };
-  }
-);
+  // 3. Formater et retourner
+  return {
+    uri: `rfp://${rfp_id}`,
+    mimeType: "application/json",
+    content: JSON.stringify(formatRFP(rfp)),
+  };
+});
 ```
 
 ---
@@ -170,6 +170,7 @@ server.resource(
 ## 🔧 Architecture des Tools
 
 ### Principe
+
 Les Tools exécutent des actions et retournent des résultats structurés.
 
 ```mermaid
@@ -214,28 +215,30 @@ server.tool(
   {
     // Schéma Zod
     rfp_id: z.string().uuid(),
-    filters: z.object({
-      domain_names: z.array(z.string()).optional()
-    }).optional()
+    filters: z
+      .object({
+        domain_names: z.array(z.string()).optional(),
+      })
+      .optional(),
   },
   async ({ rfp_id, filters }, { context }) => {
     // 1. Validate permissions
-    await checkPermissions(context, ['responses:read', 'requirements:read']);
+    await checkPermissions(context, ["responses:read", "requirements:read"]);
 
     // 2. Query data
     const requirements = await getRequirementsWithResponses(rfp_id, filters);
 
     // 3. Calculate scores
-    const withScores = requirements.map(req => ({
+    const withScores = requirements.map((req) => ({
       ...req,
-      statistics: calculateScoreStats(req.responses)
+      statistics: calculateScoreStats(req.responses),
     }));
 
     // 4. Return structured result
     return {
       rfp_id,
       requirements: withScores,
-      global_statistics: calculateGlobalStats(withScores)
+      global_statistics: calculateGlobalStats(withScores),
     };
   }
 );
@@ -289,10 +292,10 @@ graph TB
 
 ```typescript
 // Pour chaque réponse
-response.final_score = response.manual_score ?? response.ai_score
+response.final_score = response.manual_score ?? response.ai_score;
 
 // Statistiques sur un ensemble de réponses
-const scores = responses.map(r => r.final_score).filter(s => s !== null);
+const scores = responses.map((r) => r.final_score).filter((s) => s !== null);
 
 statistics = {
   avg_score: mean(scores),
@@ -301,9 +304,9 @@ statistics = {
   max_score: max(scores),
   std_deviation: stdDev(scores),
   scores_distribution: countBy(scores),
-  best_supplier: maxBy(responses, 'final_score').supplier_name,
-  worst_supplier: minBy(responses, 'final_score').supplier_name
-}
+  best_supplier: maxBy(responses, "final_score").supplier_name,
+  worst_supplier: minBy(responses, "final_score").supplier_name,
+};
 ```
 
 ---
@@ -341,16 +344,16 @@ graph TD
 ```typescript
 function buildRequirementsTree(requirements: Requirement[]): RequirementNode[] {
   // 1. Grouper par niveau
-  const byLevel = groupBy(requirements, 'level');
+  const byLevel = groupBy(requirements, "level");
 
   // 2. Créer un map pour accès rapide
   const nodeMap = new Map<string, RequirementNode>();
-  requirements.forEach(req => {
+  requirements.forEach((req) => {
     nodeMap.set(req.id, { ...req, children: [] });
   });
 
   // 3. Construire les relations parent-enfant
-  requirements.forEach(req => {
+  requirements.forEach((req) => {
     if (req.parent_id) {
       const parent = nodeMap.get(req.parent_id);
       const node = nodeMap.get(req.id);
@@ -361,7 +364,7 @@ function buildRequirementsTree(requirements: Requirement[]): RequirementNode[] {
   });
 
   // 4. Retourner les racines (level 1)
-  return byLevel[1].map(r => nodeMap.get(r.id)!);
+  return byLevel[1].map((r) => nodeMap.get(r.id)!);
 }
 ```
 
@@ -405,24 +408,24 @@ class QueryBuilder {
 
   filterByDomain(domainNames?: string[]) {
     if (domainNames?.length) {
-      this.query = this.query.in('domain_name', domainNames);
+      this.query = this.query.in("domain_name", domainNames);
     }
     return this;
   }
 
   filterBySuppliers(supplierIds?: string[]) {
     if (supplierIds?.length) {
-      this.query = this.query.in('supplier_id', supplierIds);
+      this.query = this.query.in("supplier_id", supplierIds);
     }
     return this;
   }
 
   filterByScoreRange(min?: number, max?: number) {
     if (min !== undefined) {
-      this.query = this.query.gte('final_score', min);
+      this.query = this.query.gte("final_score", min);
     }
     if (max !== undefined) {
-      this.query = this.query.lte('final_score', max);
+      this.query = this.query.lte("final_score", max);
     }
     return this;
   }
@@ -435,8 +438,8 @@ class QueryBuilder {
 }
 
 // Usage
-const results = await new QueryBuilder('responses')
-  .filterByDomain(['Sécurité'])
+const results = await new QueryBuilder("responses")
+  .filterByDomain(["Sécurité"])
   .filterBySuppliers([uuid1, uuid2])
   .filterByScoreRange(4, 5)
   .execute();
