@@ -40,7 +40,7 @@ export function handleGetRequirements(
   // Validate pagination parameters
   const pagination = validatePaginationParams(input.limit, input.offset);
 
-  // Filter requirements for the specific RFP
+  // Filter requirements for specific RFP
   const requirements: RequirementItem[] = MOCK_REQUIREMENTS.filter(
     (req) => req.rfpId === input.rfp_id
   ).map((req) => ({

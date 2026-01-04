@@ -38,7 +38,7 @@ export function handleListSuppliers(
   // Validate pagination parameters
   const pagination = validatePaginationParams(input.limit, input.offset);
 
-  // Filter suppliers for the specific RFP
+  // Filter suppliers for a specific RFP
   const suppliers: SupplierItem[] = MOCK_SUPPLIERS.filter(
     (sup) => sup.rfpId === input.rfp_id
   ).map((sup) => ({

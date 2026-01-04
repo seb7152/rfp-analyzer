@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Increase API payload size limit for file uploads (default is 4.5MB on Vercel)
-  api: {
-    bodyParser: {
-      sizeLimit: "50mb",
+  // Increase body size limit for file uploads
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "50mb",
     },
   },
   webpack: (config) => {
