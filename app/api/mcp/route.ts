@@ -430,7 +430,7 @@ export async function POST(req: NextRequest) {
         );
     }
   } catch (error) {
-    httpLogger.error("[MCP] Error processing request:", error);
+    httpLogger.error("[MCP] Error processing request:", error as any);
 
     const elapsedMs = Date.now() - startTime;
     httpLogger.info(`[MCP] Request failed in ${elapsedMs}ms`);
