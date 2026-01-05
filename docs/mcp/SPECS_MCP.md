@@ -1362,6 +1362,7 @@ Met à jour les scores et commentaires IA pour une réponse fournisseur. **Seul 
 **Cas d'usage** :
 
 1. **Corrections IA** : Corriger un score IA incorrect après révision
+
    ```
    update_response_ai_scores({
      response_id: "uuid-123",
@@ -1382,14 +1383,15 @@ Met à jour les scores et commentaires IA pour une réponse fournisseur. **Seul 
    ```
 
 **Permissions requises** :
+
 - `responses:write` - Modifier les réponses
 
 **Erreurs possibles** :
+
 - `response_not_found` : response_id invalide
 - `forbidden` : Pas la permission responses:write
 - `invalid_score` : ai_score non entre 0-5
 - `invalid_confidence` : ai_confidence non entre 0.0-1.0
-
 
 #### `export_domain_responses`
 

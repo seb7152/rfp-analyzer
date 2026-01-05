@@ -42,6 +42,7 @@ npm run dev
 ```
 
 Et c'est tout ! Les deux services démarrent:
+
 - **App principale** → http://localhost:3000
 - **MCP Server** → http://localhost:3000/api/mcp (automatiquement)
 
@@ -56,6 +57,7 @@ npx @modelcontextprotocol/inspector http://localhost:3000/api/mcp
 ```
 
 Tools disponibles:
+
 - `test_connection` - Vérifier la connexion
 - `get_rfps` - Lister les RFPs
 - `get_requirements` - Exigences d'un RFP
@@ -78,13 +80,13 @@ Tools disponibles:
 
 ## 📝 Fichiers Clés
 
-| Fichier | Rôle |
-|---------|------|
-| `app/api/mcp/route.ts` | MCP Server - Enregistre tous les tools |
-| `lib/mcp/utils/logger.ts` | Logger structurisé |
-| `lib/mcp/utils/pagination.ts` | Pagination système |
-| `lib/mcp/tools/` | Tools implémentation (à faire) |
-| `lib/mcp/services/` | Services MCP (à faire) |
+| Fichier                       | Rôle                                   |
+| ----------------------------- | -------------------------------------- |
+| `app/api/mcp/route.ts`        | MCP Server - Enregistre tous les tools |
+| `lib/mcp/utils/logger.ts`     | Logger structurisé                     |
+| `lib/mcp/utils/pagination.ts` | Pagination système                     |
+| `lib/mcp/tools/`              | Tools implémentation (à faire)         |
+| `lib/mcp/services/`           | Services MCP (à faire)                 |
 
 ---
 
