@@ -450,7 +450,7 @@ export function SupplierResponseCard({
                   </div>
                 </div>
                 <ScrollArea className="flex-1 rounded border border-slate-200 dark:border-slate-700">
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed p-3">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed p-3 whitespace-pre-wrap">
                     {localAIComment}
                   </p>
                 </ScrollArea>
