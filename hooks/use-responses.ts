@@ -50,7 +50,8 @@ export interface GetResponsesResponse {
 export function useResponses(
   rfpId: string,
   requirementId?: string,
-  versionId?: string
+  versionId?: string,
+  options?: { enabled?: boolean }
 ) {
   return useQuery<GetResponsesResponse>({
     queryKey: ["responses", rfpId, requirementId, versionId] as const,
@@ -73,7 +74,7 @@ export function useResponses(
 
       return await response.json();
     },
-    enabled: !!rfpId,
+    enabled: !!rfpId && (options?.enabled ?? true),
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
   } as any);
