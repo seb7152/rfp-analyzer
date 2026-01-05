@@ -62,12 +62,14 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   // Get active version for filtering responses
   const { activeVersion } = useVersion();
 
-  // Load all responses for filter evaluation (filtered by active version)
-  const responsesQuery = useAllResponses(params.rfpId, activeVersion?.id);
-  const allResponses = (responsesQuery.data as any)?.responses || [];
-
   // Determine if this is a single supplier view: when supplierId is present in query params
   const isSingleSupplierView = !!supplierId;
+
+  // Load all responses for filter evaluation (filtered by active version)
+  const responsesQuery = useAllResponses(params.rfpId, activeVersion?.id, {
+    enabled: isSingleSupplierView,
+  });
+  const allResponses = (responsesQuery.data as any)?.responses || [];
 
   // Filter responses to the current supplier if in single supplier view
   const filteredResponses = useMemo(() => {
@@ -295,6 +297,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                 onRequirementChange={setSelectedRequirementId}
                 rfpId={params.rfpId}
                 supplierId={supplierId || undefined}
+                responses={isSingleSupplierView ? filteredResponses : undefined}
                 isMobile={false}
                 userAccessLevel={userAccessLevel}
               />
@@ -326,6 +329,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                 onRequirementChange={setSelectedRequirementId}
                 rfpId={params.rfpId}
                 supplierId={supplierId || undefined}
+                responses={isSingleSupplierView ? filteredResponses : undefined}
                 isMobile={true}
                 userAccessLevel={userAccessLevel}
               />
