@@ -99,6 +99,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
       loadExistingSuppliers();
     } else if (currentStep === 4) {
       loadExistingRequirements();
+      loadExistingSuppliers(); // Also load suppliers at step 4 for responses import
     }
   }, [currentStep]);
 

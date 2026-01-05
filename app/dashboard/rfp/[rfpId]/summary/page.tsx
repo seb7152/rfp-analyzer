@@ -80,6 +80,12 @@ interface RFPSummaryData {
   };
 }
 
+interface SupplierForExport {
+  id: string;
+  name: string;
+  supplier_id_external: string;
+}
+
 export default function RFPSummaryPage() {
   const params = useParams();
   const { activeVersion } = useVersion();
@@ -93,6 +99,9 @@ export default function RFPSummaryPage() {
   const [isDocxImportModalOpen, setIsDocxImportModalOpen] = useState(false);
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [suppliersForExport, setSuppliersForExport] = useState<SupplierForExport[]>([]);
+  const [showResponsesSubmenu, setShowResponsesSubmenu] = useState(false);
+  const [exportingResponses, setExportingResponses] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -133,6 +142,91 @@ export default function RFPSummaryPage() {
       fetchData();
     }
   }, [rfpId, activeVersion?.id]);
+
+  // Load suppliers for export when needed
+  const loadSuppliersForExport = async () => {
+    try {
+      const response = await fetch(`/api/rfps/${rfpId}/suppliers`);
+      if (response.ok) {
+        const data = await response.json();
+        setSuppliersForExport(data.suppliers || []);
+      }
+    } catch (err) {
+      console.error("Failed to load suppliers for export:", err);
+    }
+  };
+
+  // Export supplier responses to JSON
+  const handleExportSupplierResponses = async (supplier: SupplierForExport) => {
+    setExportingResponses(true);
+    try {
+      // Fetch tree data to get requirement codes
+      const treeResponse = await fetch(`/api/rfps/${rfpId}/tree`);
+      if (!treeResponse.ok) throw new Error("Failed to fetch tree data");
+      const treeData = await treeResponse.json();
+
+      // Build a map of requirement_id -> requirement_code
+      const requirementCodeMap = new Map<string, string>();
+      const extractRequirements = (nodes: any[]) => {
+        for (const node of nodes) {
+          if (node.type === "requirement") {
+            requirementCodeMap.set(node.id, node.code);
+          }
+          if (node.children) {
+            extractRequirements(node.children);
+          }
+        }
+      };
+      extractRequirements(treeData);
+
+      // Fetch responses for this supplier
+      const responsesUrl = activeVersion?.id
+        ? `/api/rfps/${rfpId}/responses/export?supplierId=${supplier.id}&versionId=${activeVersion.id}`
+        : `/api/rfps/${rfpId}/responses/export?supplierId=${supplier.id}`;
+
+      const responsesResponse = await fetch(responsesUrl);
+      if (!responsesResponse.ok) throw new Error("Failed to fetch responses");
+      const responsesData = await responsesResponse.json();
+
+      // Format responses for export (matching import format)
+      const exportData = responsesData.responses.map((r: any) => {
+        const exportItem: any = {
+          requirement_id_external: requirementCodeMap.get(r.requirement_id) || r.requirement_id,
+        };
+
+        // Only include fields that have values
+        if (r.response_text) exportItem.response_text = r.response_text;
+        if (r.ai_score !== null && r.ai_score !== undefined) exportItem.ai_score = r.ai_score;
+        if (r.ai_comment) exportItem.ai_comment = r.ai_comment;
+        if (r.manual_score !== null && r.manual_score !== undefined) exportItem.manual_score = r.manual_score;
+        if (r.manual_comment) exportItem.manual_comment = r.manual_comment;
+        if (r.question) exportItem.question = r.question;
+        if (r.status && r.status !== "pending") exportItem.status = r.status;
+        if (r.is_checked) exportItem.is_checked = r.is_checked;
+
+        return exportItem;
+      });
+
+      // Download JSON file
+      const jsonString = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonString], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `rfp-${rfpId}-responses-${supplier.supplier_id_external || supplier.name.replace(/\s+/g, "-")}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setShowResponsesSubmenu(false);
+    } catch (err) {
+      console.error("Export error:", err);
+      alert("Erreur lors de l'export des réponses");
+    } finally {
+      setExportingResponses(false);
+    }
+  };
 
   if (error) {
     return (
@@ -187,7 +281,15 @@ export default function RFPSummaryPage() {
                 </div>
               </PopoverContent>
             </Popover>
-            <Popover>
+            <Popover
+              onOpenChange={(open) => {
+                if (open) {
+                  loadSuppliersForExport();
+                } else {
+                  setShowResponsesSubmenu(false);
+                }
+              }}
+            >
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
                   <Download className="h-4 w-4" />
@@ -377,6 +479,42 @@ export default function RFPSummaryPage() {
                   >
                     Données (Exigences)
                   </Button>
+
+                  {/* Responses Export with Supplier Selection */}
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-between font-normal"
+                      onClick={() => setShowResponsesSubmenu(!showResponsesSubmenu)}
+                      disabled={exportingResponses}
+                    >
+                      <span>Réponses fournisseur</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${showResponsesSubmenu ? "rotate-180" : ""}`} />
+                    </Button>
+
+                    {showResponsesSubmenu && (
+                      <div className="mt-1 rounded-md border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 max-h-48 overflow-y-auto">
+                        {suppliersForExport.length === 0 ? (
+                          <p className="px-3 py-2 text-sm text-slate-500">
+                            Aucun fournisseur
+                          </p>
+                        ) : (
+                          suppliersForExport.map((supplier) => (
+                            <Button
+                              key={supplier.id}
+                              variant="ghost"
+                              className="w-full justify-start font-normal text-sm h-auto py-2"
+                              onClick={() => handleExportSupplierResponses(supplier)}
+                              disabled={exportingResponses}
+                            >
+                              <Building2 className="h-3 w-3 mr-2 flex-shrink-0" />
+                              <span className="truncate">{supplier.name}</span>
+                            </Button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </PopoverContent>
             </Popover>
