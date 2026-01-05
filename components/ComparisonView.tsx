@@ -80,6 +80,35 @@ interface ResponseState {
   };
 }
 
+type DesktopCardProps = React.ComponentProps<typeof SupplierResponseCard>;
+type MobileCardProps = React.ComponentProps<typeof MobileSupplierCard>;
+
+const MemoizedSupplierResponseCard = React.memo(
+  (props: DesktopCardProps) => <SupplierResponseCard {...props} />
+);
+
+const MemoizedMobileSupplierCard = React.memo((props: MobileCardProps) => (
+  <MobileSupplierCard {...props} />
+));
+
+const getInitialStateFromResponse = (
+  response: ResponseWithSupplier
+): ResponseState[string] => {
+  const statusValue = response.status || "pending";
+
+  return {
+    expanded: false,
+    manualScore: response.manual_score ?? undefined,
+    status: statusValue as "pass" | "partial" | "fail" | "pending",
+    isChecked: response.is_checked || false,
+    manualComment: response.manual_comment || "",
+    question: response.question || "",
+    isSaving: false,
+    showSaved: false,
+    dirtyFields: new Set(),
+  };
+};
+
 export function ComparisonView({
   selectedRequirementId,
   allRequirements,
@@ -94,7 +123,6 @@ export function ComparisonView({
   const [error, setError] = useState<string | null>(null);
   const [contextExpanded, setContextExpanded] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
-  const [responseStates, setResponseStates] = useState<ResponseState>({});
   const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
   const [supplierDocuments, setSupplierDocuments] = useState<PDFDocument[]>([]);
   const [loadingSupplierDocs, setLoadingSupplierDocs] = useState(false);
@@ -112,9 +140,6 @@ export function ComparisonView({
   // Timers for hiding "Saved" indicator
   const savedTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
-  // Ref to always have access to the latest responseStates (avoids stale closures)
-  const responseStatesRef = useRef(responseStates);
-
   // Touch/Swipe tracking for mobile navigation
   const touchStartXRef = useRef<number>(0);
   const touchStartYRef = useRef<number>(0);
@@ -127,8 +152,41 @@ export function ComparisonView({
   // Fetch the tree to determine if selected item is a category
   const { tree } = useRequirementsTree(rfpId || null);
 
-  // Fetch available cahier_charges documents for PDF opening
-  const { availableDocuments } = useRequirementDocument(rfpId || null);
+  // Fetch available cahier_charges documents for PDF opening (deferred)
+  const { availableDocuments, loadDocuments } = useRequirementDocument(
+    rfpId || null,
+    { autoFetch: false }
+  );
+
+  useEffect(() => {
+    if (!rfpId) return;
+
+    let timeoutId: NodeJS.Timeout | null = null;
+    let idleCallbackId: number | null = null;
+
+    const loadDeferredDocuments = () => {
+      loadDocuments().catch((error) =>
+        console.error("[ComparisonView] Failed to load documents lazily", error)
+      );
+    };
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleCallbackId = (window as any).requestIdleCallback(loadDeferredDocuments);
+    } else {
+      timeoutId = setTimeout(loadDeferredDocuments, 500);
+    }
+
+    return () => {
+      if (
+        typeof window !== "undefined" &&
+        idleCallbackId !== null &&
+        "cancelIdleCallback" in window
+      ) {
+        (window as any).cancelIdleCallback(idleCallbackId);
+      }
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [loadDocuments, rfpId]);
 
   // Get the selected requirement object
   const selectedRequirement = useMemo(() => {
@@ -182,6 +240,23 @@ export function ComparisonView({
     return suppliers.map((s: any) => s.name);
   }, [suppliers]);
 
+  const initialResponseStates = useMemo(() => {
+    const initialState: ResponseState = {};
+
+    responses.forEach((response: any) => {
+      initialState[response.id] = getInitialStateFromResponse(response);
+    });
+
+    return initialState;
+  }, [responses]);
+
+  const [responseStates, setResponseStates] = useState<ResponseState>(
+    () => initialResponseStates
+  );
+
+  // Ref to always have access to the latest responseStates (avoids stale closures)
+  const responseStatesRef = useRef(responseStates);
+
   const isSingleSupplierView = suppliers.length === 1;
 
   // Find the selected node in the tree to check its type
@@ -228,6 +303,14 @@ export function ComparisonView({
     }
     return all;
   }, [responses, supplierId]);
+
+  const responsesBySupplierId = useMemo(() => {
+    const mapping = new Map<string, ResponseWithSupplier>();
+    requirementResponses.forEach((response: any) => {
+      mapping.set(response.supplier_id, response);
+    });
+    return mapping;
+  }, [requirementResponses]);
 
   // Build breadcrumb path with codes from tree
   const breadcrumbPath = useMemo(() => {
@@ -425,19 +508,7 @@ export function ComparisonView({
 
         if (!state) {
           // First time seeing this response - initialize with full DB data
-          updated[response.id] = {
-            expanded: false,
-            manualScore: response.manual_score ?? undefined,
-            status:
-              (response.status as "pass" | "partial" | "fail" | "pending") ||
-              "pending",
-            isChecked: response.is_checked || false,
-            manualComment: response.manual_comment || "",
-            question: response.question || "",
-            isSaving: false,
-            showSaved: false,
-            dirtyFields: new Set(),
-          };
+          updated[response.id] = getInitialStateFromResponse(response);
           hasChanges = true;
         } else {
           // State already exists - sync with DB values if they changed
@@ -478,55 +549,58 @@ export function ComparisonView({
     });
   }, [responses]);
 
-  const updateResponseState = (
-    responseId: string,
-    updates: Partial<ResponseState[string]>,
-    immediate: boolean = false
-  ) => {
-    // Track which fields are being edited (mark as dirty)
-    const newDirtyFields = new Set(
-      responseStates[responseId]?.dirtyFields || []
-    );
-    if (updates.manualComment !== undefined && !immediate) {
-      newDirtyFields.add("manualComment");
-    }
-    if (updates.question !== undefined && !immediate) {
-      newDirtyFields.add("question");
-    }
+  const updateResponseState = useCallback(
+    (
+      responseId: string,
+      updates: Partial<ResponseState[string]>,
+      immediate: boolean = false
+    ) => {
+      // Update local state immediately for UI responsiveness
+      setResponseStates((prev) => {
+        const prevState = prev[responseId];
+        const newDirtyFields = new Set(prevState?.dirtyFields || []);
 
-    // Update local state immediately for UI responsiveness
-    setResponseStates((prev) => ({
-      ...prev,
-      [responseId]: {
-        ...prev[responseId],
-        ...updates,
-        dirtyFields: newDirtyFields,
-      },
-    }));
+        if (updates.manualComment !== undefined && !immediate) {
+          newDirtyFields.add("manualComment");
+        }
+        if (updates.question !== undefined && !immediate) {
+          newDirtyFields.add("question");
+        }
 
-    // Persist to database (optimistic update handled by mutation hook)
-    const dbUpdates: Record<string, any> = {};
-    if (updates.manualScore !== undefined)
-      dbUpdates.manual_score = updates.manualScore;
-    if (updates.status !== undefined) dbUpdates.status = updates.status;
-    if (updates.isChecked !== undefined)
-      dbUpdates.is_checked = updates.isChecked;
-    if (updates.manualComment !== undefined)
-      dbUpdates.manual_comment = updates.manualComment;
-    if (updates.question !== undefined) dbUpdates.question = updates.question;
+        return {
+          ...prev,
+          [responseId]: {
+            ...prevState,
+            ...updates,
+            dirtyFields: newDirtyFields,
+          },
+        };
+      });
 
-    // Only call mutation if we have actual DB fields to update
-    if (Object.keys(dbUpdates).length > 0) {
-      // Check if this update includes comment fields
-      const isCommentUpdate =
-        updates.manualComment !== undefined || updates.question !== undefined;
+      // Persist to database (optimistic update handled by mutation hook)
+      const dbUpdates: Record<string, any> = {};
+      if (updates.manualScore !== undefined)
+        dbUpdates.manual_score = updates.manualScore;
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.isChecked !== undefined)
+        dbUpdates.is_checked = updates.isChecked;
+      if (updates.manualComment !== undefined)
+        dbUpdates.manual_comment = updates.manualComment;
+      if (updates.question !== undefined) dbUpdates.question = updates.question;
 
-      // For comment fields, only save on blur (immediate flag)
-      // For other fields (score, status, checkbox), save immediately
-      if (isCommentUpdate && !immediate) {
-        // Don't save on onChange for comments, wait for blur
-        return;
-      } else {
+      // Only call mutation if we have actual DB fields to update
+      if (Object.keys(dbUpdates).length > 0) {
+        // Check if this update includes comment fields
+        const isCommentUpdate =
+          updates.manualComment !== undefined || updates.question !== undefined;
+
+        // For comment fields, only save on blur (immediate flag)
+        // For other fields (score, status, checkbox), save immediately
+        if (isCommentUpdate && !immediate) {
+          // Don't save on onChange for comments, wait for blur
+          return;
+        }
+
         // Immediate update for:
         // - non-comment fields (score, status, checkbox)
         // - comment fields with immediate flag (onBlur)
@@ -613,8 +687,9 @@ export function ComparisonView({
           }
         );
       }
-    }
-  };
+    },
+    [mutation, refetchResponses]
+  );
 
   // Toggle expand/collapse all responses
   const toggleExpandAll = () => {
@@ -672,7 +747,7 @@ export function ComparisonView({
         setLoadingSupplierDocs(false);
       }
     },
-    [rfpId]
+    [isMobile, rfpId]
   );
 
   const handleOpenBookmark = useCallback(
@@ -705,7 +780,7 @@ export function ComparisonView({
         setLoadingSupplierDocs(false);
       }
     },
-    [rfpId]
+    [isMobile, rfpId]
   );
 
   const handleOpenContextPDF = useCallback(async () => {
@@ -734,7 +809,10 @@ export function ComparisonView({
     setLoadingSupplierDocs(true);
     try {
       // Use available documents from hook (already filtered for cahier_charges PDFs)
-      const documents = availableDocuments;
+      const documents =
+        availableDocuments.length > 0
+          ? availableDocuments
+          : await loadDocuments();
 
       // Find the document linked to this requirement
       let targetDocumentId = selectedRequirement.rf_document_id;
@@ -768,7 +846,68 @@ export function ComparisonView({
     } finally {
       setLoadingSupplierDocs(false);
     }
-  }, [rfpId, selectedRequirement]);
+  }, [availableDocuments, loadDocuments, rfpId, selectedRequirement]);
+
+  const buildCardHandlers = useCallback(
+    (responseId: string, supplierId: string) => ({
+      onStatusChange: (status: ResponseState[string]["status"]) =>
+        updateResponseState(responseId, { status }),
+      onCheckChange: (isChecked: boolean) =>
+        updateResponseState(responseId, { isChecked }),
+      onScoreChange: (manualScore: number | undefined) =>
+        updateResponseState(responseId, { manualScore }),
+      onExpandChange: (expanded: boolean) =>
+        updateResponseState(responseId, { expanded }),
+      onCommentChange: (manualComment: string) =>
+        updateResponseState(responseId, { manualComment }),
+      onQuestionChange: (question: string) =>
+        updateResponseState(responseId, { question }),
+      onCommentBlur: () =>
+        updateResponseState(
+          responseId,
+          {
+            manualComment:
+              responseStatesRef.current[responseId]?.manualComment || "",
+          },
+          true
+        ),
+      onQuestionBlur: () =>
+        updateResponseState(
+          responseId,
+          {
+            question: responseStatesRef.current[responseId]?.question || "",
+          },
+          true
+        ),
+      onAICommentUpdate: () => {
+        refetchResponses();
+      },
+      onOpenDocuments: () => handleOpenSupplierDocuments(supplierId),
+      onOpenBookmark: handleOpenBookmark,
+    }),
+    [
+      handleOpenBookmark,
+      handleOpenSupplierDocuments,
+      refetchResponses,
+      updateResponseState,
+    ]
+  );
+
+  const cardHandlersByResponseId = useMemo(() => {
+    const mapping = new Map<string, ReturnType<typeof buildCardHandlers>>();
+
+    suppliers.forEach((supplier) => {
+      const response = responsesBySupplierId.get(supplier.id);
+      if (response) {
+        mapping.set(
+          response.id,
+          buildCardHandlers(response.id, supplier.id)
+        );
+      }
+    });
+
+    return mapping;
+  }, [buildCardHandlers, responsesBySupplierId, suppliers]);
 
   // const handleDeleteBookmark = useCallback(
   //   (bookmark: PDFAnnotation) => {
@@ -1218,172 +1357,81 @@ export function ComparisonView({
 
                 <div className="space-y-2">
                   {suppliers.map((supplier) => {
-                    const response = requirementResponses.find(
-                      (r) => r.supplier_id === supplier.id
-                    );
+                    const response = responsesBySupplierId.get(supplier.id);
                     if (!response) return null;
 
-                    const statusValue = response.status || "pending";
-                    const state = responseStates[response.id] || {
-                      expanded: false,
-                      manualScore: response.manual_score ?? undefined,
-                      status: statusValue as
-                        | "pass"
-                        | "partial"
-                        | "fail"
-                        | "pending",
-                      isChecked: response.is_checked || false,
-                      manualComment: response.manual_comment || "",
-                      question: response.question || "",
-                      isSaving: false,
-                      showSaved: false,
-                      dirtyFields: new Set(),
+                    const state =
+                      responseStates[response.id] ||
+                      initialResponseStates[response.id] ||
+                      getInitialStateFromResponse(response);
+
+                    const handlers = cardHandlersByResponseId.get(response.id);
+                    if (!handlers) return null;
+
+                    const commonCardProps = {
+                      key: response.id,
+                      supplierId: supplier.id,
+                      supplierName: supplier.name,
+                      responseId: response.id,
+                      responseText: response.response_text || "",
+                      aiScore: response.ai_score ?? 0,
+                      aiComment: response.ai_comment ?? "",
+                      status: state.status,
+                      isChecked: state.isChecked,
+                      manualScore: state.manualScore,
+                      manualComment: state.manualComment,
+                      questionText: state.question,
+                      isSaving: state.isSaving,
+                      showSaved: state.showSaved,
+                      supplierNames,
+                      userAccessLevel,
+                      rfpId,
                     };
 
                     // Use mobile-optimized card on mobile devices
                     if (isMobile) {
                       return (
-                        <MobileSupplierCard
-                          key={response.id}
-                          supplierId={supplier.id}
-                          supplierName={supplier.name}
-                          responseId={response.id}
-                          responseText={response.response_text || ""}
-                          aiScore={response.ai_score ?? 0}
-                          aiComment={response.ai_comment ?? ""}
-                          status={state.status}
-                          isChecked={state.isChecked}
-                          manualScore={state.manualScore}
-                          manualComment={state.manualComment}
-                          questionText={state.question}
-                          isSaving={state.isSaving}
-                          showSaved={state.showSaved}
+                        <MemoizedMobileSupplierCard
+                          {...commonCardProps}
                           requirementTitle={selectedRequirement?.title || ""}
                           requirementDescription={
                             selectedRequirement?.description || ""
                           }
-                          supplierNames={supplierNames}
-                          userAccessLevel={userAccessLevel}
-                          onStatusChange={(status) =>
-                            updateResponseState(response.id, { status })
-                          }
-                          onCheckChange={(isChecked) =>
-                            updateResponseState(response.id, { isChecked })
-                          }
-                          onScoreChange={(manualScore) =>
-                            updateResponseState(response.id, { manualScore })
-                          }
-                          onCommentChange={(manualComment) =>
-                            updateResponseState(response.id, { manualComment })
-                          }
-                          onQuestionChange={(question) =>
-                            updateResponseState(response.id, { question })
-                          }
-                          onCommentBlur={() =>
-                            updateResponseState(
-                              response.id,
-                              {
-                                manualComment:
-                                  responseStatesRef.current[response.id]
-                                    ?.manualComment || "",
-                              },
-                              true
-                            )
-                          }
-                          onQuestionBlur={() =>
-                            updateResponseState(
-                              response.id,
-                              {
-                                question:
-                                  responseStatesRef.current[response.id]
-                                    ?.question || "",
-                              },
-                              true
-                            )
-                          }
-                          rfpId={rfpId}
                           requirementId={selectedRequirementId}
-                          onAICommentUpdate={() => {
-                            // Refetch to ensure we have the latest data
-                            refetchResponses();
-                          }}
+                          onStatusChange={handlers.onStatusChange}
+                          onCheckChange={handlers.onCheckChange}
+                          onScoreChange={handlers.onScoreChange}
+                          onCommentChange={handlers.onCommentChange}
+                          onQuestionChange={handlers.onQuestionChange}
+                          onCommentBlur={handlers.onCommentBlur}
+                          onQuestionBlur={handlers.onQuestionBlur}
+                          onAICommentUpdate={handlers.onAICommentUpdate}
                         />
                       );
                     }
 
                     return (
-                      <SupplierResponseCard
-                        key={response.id}
-                        supplierId={supplier.id}
-                        supplierName={supplier.name}
-                        responseId={response.id}
-                        responseText={response.response_text || ""}
-                        aiScore={response.ai_score ?? 0}
-                        aiComment={response.ai_comment ?? ""}
-                        status={state.status}
-                        isChecked={state.isChecked}
-                        manualScore={state.manualScore}
-                        manualComment={state.manualComment}
-                        questionText={state.question}
-                        isSaving={state.isSaving}
-                        showSaved={state.showSaved}
+                      <MemoizedSupplierResponseCard
+                        {...commonCardProps}
                         isExpanded={
                           isSingleSupplierView ? true : state.expanded
                         }
                         collapsible={!isSingleSupplierView}
-                        onExpandChange={(expanded) =>
-                          updateResponseState(response.id, { expanded })
-                        }
-                        onStatusChange={(status) =>
-                          updateResponseState(response.id, { status })
-                        }
-                        onCheckChange={(isChecked) =>
-                          updateResponseState(response.id, { isChecked })
-                        }
-                        onScoreChange={(manualScore) =>
-                          updateResponseState(response.id, { manualScore })
-                        }
-                        onCommentChange={(manualComment) =>
-                          updateResponseState(response.id, { manualComment })
-                        }
-                        onQuestionChange={(question) =>
-                          updateResponseState(response.id, { question })
-                        }
-                        onCommentBlur={() =>
-                          updateResponseState(
-                            response.id,
-                            {
-                              manualComment:
-                                responseStatesRef.current[response.id]
-                                  ?.manualComment || "",
-                            },
-                            true
-                          )
-                        }
-                        onQuestionBlur={() =>
-                          updateResponseState(
-                            response.id,
-                            {
-                              question:
-                                responseStatesRef.current[response.id]
-                                  ?.question || "",
-                            },
-                            true
-                          )
-                        }
-                        onOpenDocuments={handleOpenSupplierDocuments}
+                        onExpandChange={handlers.onExpandChange}
+                        onStatusChange={handlers.onStatusChange}
+                        onCheckChange={handlers.onCheckChange}
+                        onScoreChange={handlers.onScoreChange}
+                        onCommentChange={handlers.onCommentChange}
+                        onQuestionChange={handlers.onQuestionChange}
+                        onCommentBlur={handlers.onCommentBlur}
+                        onQuestionBlur={handlers.onQuestionBlur}
+                        onOpenDocuments={handlers.onOpenDocuments}
                         hasDocuments={response.supplier?.has_documents}
                         requirementId={selectedRequirementId}
                         requirementTitle={requirement?.title || ""}
                         requirementDescription={requirement?.description || ""}
-                        supplierNames={supplierNames}
-                        userAccessLevel={userAccessLevel}
-                        onOpenBookmark={handleOpenBookmark}
-                        rfpId={rfpId}
-                        onAICommentUpdate={() => {
-                          // Refetch to ensure we have latest data
-                          refetchResponses();
-                        }}
+                        onOpenBookmark={handlers.onOpenBookmark}
+                        onAICommentUpdate={handlers.onAICommentUpdate}
                       />
                     );
                   })}
