@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Supplier } from "@/types/supplier";
 import { Response } from "@/types/response";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CategoryCard } from "./CategoryCard";
 import { CategoryRequirementsModal } from "./CategoryRequirementsModal";
@@ -274,6 +275,32 @@ export function CategoryHeatmap({
     return flat;
   }, [tree, expandedCategories]);
 
+  // Check if weights are missing (all weights are 0 or undefined)
+  const hasNoWeights = useMemo(() => {
+    // Count requirements and check if any have weight > 0
+    let requirementCount = 0;
+    let weightedCount = 0;
+
+    const countRequirements = (nodes: TreeNode[]) => {
+      for (const node of nodes) {
+        if (node.type === "requirement") {
+          requirementCount++;
+          if (weights[node.id] && weights[node.id] > 0) {
+            weightedCount++;
+          }
+        }
+        if (node.children) {
+          countRequirements(node.children);
+        }
+      }
+    };
+
+    countRequirements(tree);
+
+    // Return true if there are requirements but none have weights
+    return requirementCount > 0 && weightedCount === 0;
+  }, [tree, weights]);
+
   // Get selected category details for modal
   const selectedModalCategory = useMemo(() => {
     if (!selectedModalCategoryId) return null;
@@ -331,6 +358,17 @@ export function CategoryHeatmap({
             Synthèse par Catégorie
           </CardTitle>
         </CardHeader>
+        {hasNoWeights && (
+          <div className="px-6 pb-4 -mt-2">
+            <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800 flex items-center">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <AlertDescription className="text-amber-800 dark:text-amber-200">
+                Les pondérations des exigences ne sont pas définies. Veuillez les configurer dans l&apos;onglet{" "}
+                <strong>Pondérations</strong> pour afficher les scores par catégorie.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
         <ClientOnly>
           <CardContent>
             {isMobile ? (
