@@ -872,7 +872,8 @@ export async function getResponsesForRequirement(
 export async function getResponsesForRFP(
   rfpId: string,
   requirementId?: string,
-  versionId?: string
+  versionId?: string,
+  supplierId?: string
 ): Promise<
   Array<{
     id: string;
@@ -944,6 +945,10 @@ export async function getResponsesForRFP(
 
   if (versionId) {
     query = query.eq("version_id", versionId);
+  }
+
+  if (supplierId) {
+    query = query.eq("supplier_id", supplierId);
   }
 
   const { data, error } = await query;
