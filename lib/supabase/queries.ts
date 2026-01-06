@@ -693,7 +693,7 @@ export async function getRFPCompletionPercentage(
   // Get all responses for leaf requirements only (level 4)
   let query = supabase
     .from("responses")
-    .select("id, is_checked, requirement_id")
+    .select("id, is_checked, requirement_id, supplier_id")
     .eq("rfp_id", rfpId);
 
   if (versionId) {
@@ -709,11 +709,22 @@ export async function getRFPCompletionPercentage(
     );
   }
 
-  const responses = (data || []) as Array<{
+  let responses = (data || []) as Array<{
     id: string;
     is_checked: boolean;
     requirement_id: string;
+    supplier_id: string;
   }>;
+
+  // Filter responses to only include active suppliers of the version
+  if (versionId) {
+    const { getVersionSupplierStatuses, getActiveSupplierIds } = await import(
+      "@/lib/suppliers/status-cache"
+    );
+    const statuses = await getVersionSupplierStatuses(supabase, versionId);
+    const activeSupplierIds = getActiveSupplierIds(statuses);
+    responses = responses.filter((r) => activeSupplierIds.has(r.supplier_id));
+  }
 
   // Get all requirements to identify leaf nodes (requirements without children)
   const { data: requirements, error: reqError } = await supabase

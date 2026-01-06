@@ -6,6 +6,10 @@ import {
   getRFPCompletionPercentage,
   getCategories,
 } from "@/lib/supabase/queries";
+import {
+  getVersionSupplierStatuses,
+  getActiveSupplierIds,
+} from "@/lib/suppliers/status-cache";
 import type { RFP, ResponseWithSupplier } from "@/lib/supabase/types";
 
 interface DashboardResponse {
@@ -179,14 +183,35 @@ export async function GET(
     });
 
     // Suppliers analysis
-    const suppliers = [...new Set(allResponses.map((r) => r.supplier_id))];
+    let suppliers: string[];
+    let supplierNameMap: Map<string, string> = new Map();
+
+    if (versionId) {
+      // Get active suppliers for this specific version
+      const statuses = await getVersionSupplierStatuses(supabase, versionId);
+      suppliers = Array.from(getActiveSupplierIds(statuses));
+
+      // Build supplier name map from all responses (including removed suppliers for lookup)
+      allResponses.forEach((response) => {
+        if (!supplierNameMap.has(response.supplier_id)) {
+          const supplierName = response.supplier?.name || `Fournisseur ${response.supplier_id}`;
+          supplierNameMap.set(response.supplier_id, supplierName);
+        }
+      });
+    } else {
+      // Get suppliers from responses if no version filter
+      suppliers = [...new Set(allResponses.map((r) => r.supplier_id))];
+    }
+
     const suppliersData = await Promise.all(
       suppliers.map(async (supplierId) => {
         const supplierResponses = allResponses.filter(
           (r) => r.supplier_id === supplierId
         );
         const supplierName =
-          supplierResponses[0]?.supplier.name || `Fournisseur ${supplierId}`;
+          supplierNameMap.get(supplierId) ||
+          supplierResponses[0]?.supplier.name ||
+          `Fournisseur ${supplierId}`;
 
         // Category scores
         const categoryScores: Record<string, number> = {};
