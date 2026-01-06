@@ -75,7 +75,8 @@ export function useRequirementDocument(
 
       if (error) {
         console.error("Failed to fetch documents:", error);
-        return;
+        setAvailableDocuments([]);
+        return documents;
       }
 
       console.log(
