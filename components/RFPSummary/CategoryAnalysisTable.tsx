@@ -188,16 +188,17 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
 
       const enrichTree = (nodes: TreeNode[]): TreeNode[] => {
         return nodes.map((node) => {
-          if (node.type === "category" && analysisMap[node.id]) {
+          if (node.type === "category") {
+            // Always set analysis for categories - either from analysisMap or explicitly undefined
+            // This ensures old values are cleared when switching suppliers
             return {
               ...node,
-              analysis: analysisMap[node.id],
+              analysis: analysisMap[node.id] || undefined,
               children: node.children ? enrichTree(node.children) : undefined,
             };
           }
           return {
             ...node,
-            analysis: node.type === "category" ? undefined : node.analysis,
             children: node.children ? enrichTree(node.children) : undefined,
           };
         });
@@ -223,17 +224,23 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     versionId: string | null = null
   ) => {
     try {
-      // First, load all analyses for this RFP if not already loaded
-      if (Object.keys(allAnalysesBySupplier).length === 0) {
-        console.log("[ANALYSIS LOADER] Loading all analyses for RFP");
+      // Check if we need to load analyses for this supplier
+      const needsLoading =
+        Object.keys(allAnalysesBySupplier).length === 0 ||
+        (supplierId && !allAnalysesBySupplier[supplierId]);
+
+      if (needsLoading) {
+        console.log(
+          "[ANALYSIS LOADER] Loading analyses for supplier:",
+          supplierId
+        );
         let resultsUrl = `/api/rfps/${rfpId}/analyze-defense/results/latest`;
         const params = new URLSearchParams();
         if (versionId) {
           params.append("versionId", versionId);
         }
-        if (supplierId) {
-          params.append("supplierId", supplierId);
-        }
+        // Load all suppliers' analyses without filtering by supplierId
+        // This allows switching between suppliers without reloading
         if (params.toString()) {
           resultsUrl += `?${params.toString()}`;
         }
@@ -325,16 +332,17 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       // Update tree with loaded analyses
       const enrichTree = (nodes: TreeNode[]): TreeNode[] => {
         return nodes.map((node) => {
-          if (node.type === "category" && analysisMap[node.id]) {
+          if (node.type === "category") {
+            // Always set analysis for categories - either from analysisMap or explicitly undefined
+            // This ensures old values are cleared when switching suppliers
             return {
               ...node,
-              analysis: analysisMap[node.id],
+              analysis: analysisMap[node.id] || undefined,
               children: node.children ? enrichTree(node.children) : undefined,
             };
           }
           return {
             ...node,
-            analysis: node.type === "category" ? undefined : node.analysis,
             children: node.children ? enrichTree(node.children) : undefined,
           };
         });
