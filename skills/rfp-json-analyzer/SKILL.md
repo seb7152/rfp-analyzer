@@ -140,18 +140,93 @@ Global Score = Σ(supplier_score × requirement_weight) / Σ(all_weights)
 **Weights are critical for accurate ranking.** A supplier with uniform scores across all requirements may score differently than one with varied performance, depending on where they excel:
 
 **Example:**
+
 - Supplier A: Scores 5 (excellent) on high-weight requirement (40%), but 2 on low-weight requirement (10%)
 - Supplier B: Scores 4 (good) on high-weight requirement (40%), but 5 on low-weight requirement (10%)
 
 With proper weights:
+
 - A = (5×0.40) + (2×0.10) = 2.0 + 0.2 = 2.2 → **2.2/0.5 = 4.4** ✓ Wins
 - B = (4×0.40) + (5×0.10) = 1.6 + 0.5 = 2.1 → **2.1/0.5 = 4.2**
 
 Without weights (uniform 0.25):
+
 - A = (5+2)/2 = 3.5
 - B = (4+5)/2 = 4.5 ✗ Wrong winner
 
 **Always verify weights reflect your priorities.** High-weight requirements should truly be critical to your decision.
+
+## Interactive Output Selection
+
+**Before generating any analysis, ask the user to clarify the desired output format.**
+
+This prevents unnecessary file generation and ensures the response matches the user's actual needs.
+
+### Ask These Questions
+
+When a user asks for analysis, comparison, or detailed information, always respond first with:
+
+1. **Output Format** - What would you prefer?
+   - Simple text summary (1-2 paragraphs)
+   - Structured table/comparison
+   - Detailed markdown report
+   - JSON/CSV export
+   - Multiple formats
+
+2. **Scope** - What specifically do you need?
+   - Quick answer (1 key insight)
+   - Complete analysis (all requirements)
+   - Specific categories only
+   - Focused on specific suppliers
+
+3. **Content** - What elements matter?
+   - Just scores and rankings
+   - Include reasoning/justifications
+   - Add negotiation points
+   - Identify risks only
+   - Full capability breakdown
+
+### Example Scenarios
+
+**Scenario 1: User asks "Who wins?"**
+- ✗ Don't: Generate 3 spreadsheets automatically
+- ✓ Do: "I can give you:
+  - Quick answer: 1-2 paragraph summary with winner and key reasoning
+  - Detailed: Full scoring table + category breakdown + negotiation points
+  - Custom: Focus on specific categories?
+
+  What works best for you?"
+
+**Scenario 2: User asks "What roadmap items for each supplier?"**
+- ✗ Don't: Export 3 separate Excel files
+- ✓ Do: "I can provide:
+  - Comparison table: Side-by-side roadmap gaps
+  - Narrative analysis: Detailed by supplier with priorities
+  - Risk-focused: Only critical missing capabilities
+
+  And format as:
+  - Markdown (ready to paste)
+  - JSON (for import)
+  - Plain text
+
+  What's most useful?"
+
+**Scenario 3: User asks "Compare A and B on Security"**
+- ✗ Don't: Generate report + table + matrix + recommendations
+- ✓ Do: "For Security comparison, I can show:
+  - Quick: Which excels and why (2 paragraphs)
+  - Table: Side-by-side scores for each requirement
+  - Deep dive: Full assessment + gap analysis + negotiation lever
+
+  What detail level do you need?"
+
+### When NOT to Ask
+
+Skip asking and provide direct answers for:
+- Clarification questions ("What does this score mean?")
+- Calculation questions ("What's the weighted score?")
+- Definition questions ("What's a 3.5 score?")
+- Single-fact requests ("Is Supplier A better?")
 
 ## Response Formats
 
@@ -241,25 +316,19 @@ What would you like to know?"
 
 **User**: "Who wins?"
 
-**You**: "Based on weighted scores:
+**You**: "I can show you the winner in different ways:
 
-**1. Supplier A: 4.2/5** ✓ Recommended
+1. **Quick summary**: 1 paragraph with the winner and why (best for quick decisions)
+2. **Ranking table**: All suppliers scored and ranked by category (best for overview)
+3. **Detailed analysis**: Full breakdown including negotiation points and risks (best for decision-making)
 
-- Security: 4.5 (strong MFA, encryption - weight 30%)
-- Performance: 4.0 (good SLA, latency acceptable - weight 25%)
-- Support: 3.9 (24/7 available, responsive - weight 20%)
+Which would be most useful? Or would you like a combination?"
 
-**2. Supplier B: 3.4/5**
+**User**: "Give me the quick one"
 
-- Security: 3.0 (MFA limited, encryption weaker - weight 30%) ⚠️
-- Performance: 3.8 (SLA marginal, latency concerns)
-- Support: 3.5 (business hours only - doesn't meet 24/7 requirement)
+**You**: "**Supplier A wins with 4.2/5** ✓
 
-**Key insight**: Although weights are equal across categories, Security has 30% impact. B's weakness in Security (3.0 vs A's 4.5) directly costs them 0.45 points on the global score, which is the largest gap.
-
-**Recommendation**: Choose A. B's cost advantage doesn't offset the security risk (high-weight requirement).
-
-**Negotiation**: Push A on cost; their security performance is significantly stronger."
+Supplier A significantly outperforms B (3.4/5), primarily because Security is heavily weighted (30%) and A scores 4.5 vs B's 3.0 — that alone costs B 0.45 points on the global score. While B has a cost advantage, A's stronger security posture makes it the clear choice. I'd recommend pushing A on cost during negotiations."
 
 **User**: "What's the risk if we choose A?"
 
@@ -270,31 +339,40 @@ What would you like to know?"
 3. Open questions: Deployment timeline and scalability under peak load
 
 **Mitigation**:
+
 - Negotiate on cost, emphasizing long-term partnership
 - Get written confirmation of deployment timeline (target 6 months)
 - Request load-testing data for your expected scale"
 
 ## Commands & Natural Language
 
-Users can ask questions in natural language:
+Users can ask questions in natural language. For complex requests, always ask about format preferences first.
 
+### Direct Answer Questions (no format selection needed)
 ```
-/ranking           → Simple ranking with scores
-/summary           → Executive summary (1 page)
-/detail {code}     → Deep dive on specific requirement
-/compare A B       → Head-to-head comparison
-/risks             → Identify weak spots
-/questions         → List open questions
-/matrix            → Risk matrix (weight vs score)
+"Is Supplier A better?" → Direct yes/no + brief explanation
+"Why is B weak on security?" → Direct explanation
+"What's the weighted score?" → Direct calculation
+"What does a 3.5 score mean?" → Direct definition
 ```
 
-Also accept conversational:
+### Analysis Requests (ask for format first)
+```
+/ranking           → Ask: Quick list or detailed table?
+/summary           → Ask: 1-pager or full analysis?
+/detail {code}     → Ask: Just scores or with commentary?
+/compare A B       → Ask: Quick comparison or deep dive?
+/risks             → Ask: Top risks or exhaustive list?
+/matrix            → Ask: Visual table or text breakdown?
+```
 
-- "Who wins?"
-- "Why is B weak on security?"
-- "What should we negotiate?"
-- "Give me a table"
-- "Detailed analysis of Category X"
+### Example Conversational Requests
+- "Who wins?" → Ask format
+- "Compare them" → Ask format and scope
+- "What roadmap items for each?" → Ask format and detail level
+- "Should we negotiate?" → Direct yes/no
+- "What's critical to fix?" → Direct answer (high-weight weak spots)
+- "Show me everything" → Ask which aspects (scores, gaps, risks, etc.)
 
 ## Validation
 
@@ -343,6 +421,24 @@ See `scripts/rfp-analyzer.js` for implementation.
 - User's domain knowledge matters
 - Ask clarifying questions if confused
 - Help user think through constraints (budget, timeline, risk tolerance)
+
+### Interactive Output Philosophy
+
+**Always ask before generating output.**
+
+- Don't assume the user needs multiple files or detailed tables
+- Ask about format preferences (text, table, JSON, etc.)
+- Ask about scope (quick summary vs. exhaustive analysis)
+- Let the user control detail level
+- Prevent unnecessary file generation
+- Match the output to actual needs
+
+**Example**: If user asks "What roadmap items?", ask first:
+- Do you need a comparison table or narrative analysis?
+- Should it be by supplier or by category?
+- Format: Markdown, JSON, or plain text?
+
+This makes interactions more efficient and user-friendly.
 
 ## Resources
 
