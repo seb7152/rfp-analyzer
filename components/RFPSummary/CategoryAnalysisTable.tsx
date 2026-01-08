@@ -111,15 +111,14 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       setIsRefreshing(true);
       console.log("[REFRESH] Refreshing analysis results");
 
-      // Reload all analyses from the server
+      // Reload all analyses from the server (for all suppliers)
       let resultsUrl = `/api/rfps/${rfpId}/analyze-defense/results/latest`;
       const params = new URLSearchParams();
       if (selectedVersionId) {
         params.append("versionId", selectedVersionId);
       }
-      if (selectedSupplierId) {
-        params.append("supplierId", selectedSupplierId);
-      }
+      // Don't filter by supplierId - load all suppliers' analyses
+      // This allows switching between suppliers without reloading
       if (params.toString()) {
         resultsUrl += `?${params.toString()}`;
       }
@@ -229,6 +228,9 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         Object.keys(allAnalysesBySupplier).length === 0 ||
         (supplierId && !allAnalysesBySupplier[supplierId]);
 
+      // This will hold the current analyses data (either freshly loaded or from cache)
+      let currentAnalysesBySupplier = allAnalysesBySupplier;
+
       if (needsLoading) {
         console.log(
           "[ANALYSIS LOADER] Loading analyses for supplier:",
@@ -307,18 +309,23 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
             Object.keys(bySupplier)
           );
           setAllAnalysesBySupplier(bySupplier);
+
+          // Use the freshly loaded data immediately (don't wait for state update)
+          currentAnalysesBySupplier = bySupplier;
         } else {
           console.log("[ANALYSIS LOADER] No analyses found");
           setAllAnalysesBySupplier({});
           setTaskIdMap({});
           setAnalysisIdMap({});
+          currentAnalysesBySupplier = {};
         }
       }
 
       // Now apply the analyses for the selected supplier to the tree
+      // Use currentAnalysesBySupplier which contains either freshly loaded or cached data
       const analysisMap =
-        supplierId && allAnalysesBySupplier[supplierId]
-          ? allAnalysesBySupplier[supplierId]
+        supplierId && currentAnalysesBySupplier[supplierId]
+          ? currentAnalysesBySupplier[supplierId]
           : {};
 
       console.log(
