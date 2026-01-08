@@ -151,8 +151,8 @@ Supplier responses to each requirement with evaluation scores.
 | `requirement_id_external` | string  | **Yes**    | Requirement code (e.g., "SEC.1")      |
 | `requirement_code`        | string  | No         | Alias for `requirement_id_external`   |
 | `response_text`           | string  | No         | Supplier's answer/explanation         |
-| `ai_score`                | number  | Optional\* | AI evaluation (0-10 scale)            |
-| `manual_score`            | number  | Optional\* | Human evaluation (0-10 scale)         |
+| `ai_score`                | number  | Optional\* | AI evaluation (0-5 scale)             |
+| `manual_score`            | number  | Optional\* | Human evaluation (0-5 scale)          |
 | `ai_comment`              | string  | No         | AI justification                      |
 | `manual_comment`          | string  | No         | Human justification                   |
 | `question`                | string  | No         | Follow-up question                    |
@@ -161,11 +161,20 @@ Supplier responses to each requirement with evaluation scores.
 
 ### Score Selection
 
+**Manual scores take absolute priority over AI scores.**
+
 The skill uses this priority for score selection:
 
-1. **manual_score** if provided (human judgment takes priority)
-2. **ai_score** if manual not provided
-3. Skip if neither provided (contribution is 0)
+1. **Use `manual_score` if provided** (human judgment is authoritative)
+   - Always preferred, even if it differs from `ai_score`
+   - Represents expert evaluation and contextual understanding
+2. **Use `ai_score` only if `manual_score` is missing**
+   - Fallback when human hasn't reviewed the requirement
+3. **Skip requirement if neither provided**
+   - Contribution to overall score is 0
+   - Note the missing evaluation in analysis
+
+**Why this matters**: A human evaluator may score a requirement differently than an AI system due to contextual factors, stakeholder feedback, or clarifications from the supplier. Always trust the manual score.
 
 ### Status Values
 

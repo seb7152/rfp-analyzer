@@ -82,7 +82,7 @@ See [references/data-formats.md](references/data-formats.md) for complete JSON s
 ### Quick Format Overview
 
 **Requirements** - code, title, category_name, weight (0-1 or percentage)
-**Responses** - requirement_id_external (must match requirement code), manual_score or ai_score (0-10), status, comments
+**Responses** - requirement_id_external (must match requirement code), manual_score or ai_score (0-5 scale), status, comments
 
 ### Weight Handling
 
@@ -94,9 +94,17 @@ Weights can be:
 
 ### Score Priority
 
-1. Use `manual_score` if provided (human judgment)
-2. Fall back to `ai_score` if manual missing
-3. Skip if no score (contribution is 0)
+**Manual scores override AI scores.** The hierarchy is:
+
+1. **Use `manual_score` if provided** (human judgment takes absolute priority)
+   - Represents evaluated expert assessment
+   - Takes precedence even if it differs from `ai_score`
+2. **Fall back to `ai_score` only if `manual_score` is missing**
+   - Used only when human hasn't reviewed yet
+3. **Skip requirement if neither score is provided**
+   - Contribution is 0 to the calculation
+
+**Why this matters**: Human evaluators often catch nuances AI misses. Always prioritize manual scores in your analysis.
 
 ## Scoring Methodology
 
@@ -112,20 +120,38 @@ Global Score = Σ(supplier_score × requirement_weight) / Σ(all_weights)
 
 **Uniform weights** (all 0.25):
 
-- Scores: 8, 7, 9, 8
-- Global: (8+7+9+8)/4 = 8.0
+- Scores: 4, 3, 5, 4
+- Global: (4+3+5+4)/4 = 4.0
 
 **Varied weights** (0.20, 0.15, 0.10, 0.25, 0.30):
 
-- Scores: 9, 7, 8, 5, 8
-- Weighted sum: 1.8 + 1.05 + 0.8 + 1.25 + 2.4 = 7.3
-- Global: 7.3/1.0 = 7.3
+- Scores: 5, 3, 4, 2, 4
+- Weighted sum: (5×0.20) + (3×0.15) + (4×0.10) + (2×0.25) + (4×0.30) = 1.0 + 0.45 + 0.4 + 0.5 + 1.2 = 3.55
+- Global: 3.55/1.0 = 3.55
 
 **Partial responses** (supplier missing 1 of 4 requirements):
 
 - Answered: 3 requirements with weights summing to 0.75
 - Calculate with only answered requirements
 - Report response rate (3/4 = 75%)
+
+### Why Weights Matter
+
+**Weights are critical for accurate ranking.** A supplier with uniform scores across all requirements may score differently than one with varied performance, depending on where they excel:
+
+**Example:**
+- Supplier A: Scores 5 (excellent) on high-weight requirement (40%), but 2 on low-weight requirement (10%)
+- Supplier B: Scores 4 (good) on high-weight requirement (40%), but 5 on low-weight requirement (10%)
+
+With proper weights:
+- A = (5×0.40) + (2×0.10) = 2.0 + 0.2 = 2.2 → **2.2/0.5 = 4.4** ✓ Wins
+- B = (4×0.40) + (5×0.10) = 1.6 + 0.5 = 2.1 → **2.1/0.5 = 4.2**
+
+Without weights (uniform 0.25):
+- A = (5+2)/2 = 3.5
+- B = (4+5)/2 = 4.5 ✗ Wrong winner
+
+**Always verify weights reflect your priorities.** High-weight requirements should truly be critical to your decision.
 
 ## Response Formats
 
@@ -136,8 +162,8 @@ Adapt format to the question:
 ```
 | Supplier | Global | Security | Performance | Cost |
 |----------|--------|----------|-------------|------|
-| A        | 8.2    | 8.5      | 8.0         | 7.5  |
-| B        | 6.8    | 6.0      | 7.5         | 7.0  |
+| A        | 4.2    | 4.5      | 4.0         | 3.8  |
+| B        | 3.4    | 3.0      | 3.8         | 3.5  |
 ```
 
 ### Narrative Summary
@@ -217,31 +243,36 @@ What would you like to know?"
 
 **You**: "Based on weighted scores:
 
-**1. Supplier A: 8.2/10** ✓ Recommended
+**1. Supplier A: 4.2/5** ✓ Recommended
 
-- Security: 8.5 (strong MFA, encryption)
-- Performance: 8.0 (good SLA, latency acceptable)
-- Support: 7.8 (24/7 available, responsive)
+- Security: 4.5 (strong MFA, encryption - weight 30%)
+- Performance: 4.0 (good SLA, latency acceptable - weight 25%)
+- Support: 3.9 (24/7 available, responsive - weight 20%)
 
-**2. Supplier B: 6.8/10**
+**2. Supplier B: 3.4/5**
 
-- Security: 6.0 (MFA limited, encryption weaker)
-- Performance: 7.0 (SLA marginal, latency concerns)
-- Support: 7.5 (business hours only)
+- Security: 3.0 (MFA limited, encryption weaker - weight 30%) ⚠️
+- Performance: 3.8 (SLA marginal, latency concerns)
+- Support: 3.5 (business hours only - doesn't meet 24/7 requirement)
 
-**Recommendation**: Choose A. Critical risks with B: weak security on high-weight category (30%). B's cost advantage ($80k vs $150k) doesn't offset security gap.
+**Key insight**: Although weights are equal across categories, Security has 30% impact. B's weakness in Security (3.0 vs A's 4.5) directly costs them 0.45 points on the global score, which is the largest gap.
 
-**Negotiation**: Push A on cost; their security is strong."
+**Recommendation**: Choose A. B's cost advantage doesn't offset the security risk (high-weight requirement).
+
+**Negotiation**: Push A on cost; their security performance is significantly stronger."
 
 **User**: "What's the risk if we choose A?"
 
 **You**: "Key risks with Supplier A:
 
-1. Higher cost premium (87% more than B)
-2. Performance at 99.99% SLA - check if you need 99.9999%
-3. One open question on deployment timeline
+1. Cost: Significantly higher than B (though B's security weakness is the real concern)
+2. Performance (score 4.0): Good but not perfect - verify if 99.99% SLA meets your uptime needs
+3. Open questions: Deployment timeline and scalability under peak load
 
-**Mitigation**: Negotiate annual fees in exchange for longer contract. Get commitment on 6-month implementation."
+**Mitigation**:
+- Negotiate on cost, emphasizing long-term partnership
+- Get written confirmation of deployment timeline (target 6 months)
+- Request load-testing data for your expected scale"
 
 ## Commands & Natural Language
 

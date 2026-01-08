@@ -88,44 +88,46 @@ final_score = round(global_score, 1)
 
 **Data:**
 
-- REQ.1 (weight 0.25): Supplier scores 8
-- REQ.2 (weight 0.25): Supplier scores 7
-- REQ.3 (weight 0.25): Supplier scores 9
-- REQ.4 (weight 0.25): Supplier scores 8
+- REQ.1 (weight 0.25): Supplier scores 4
+- REQ.2 (weight 0.25): Supplier scores 3
+- REQ.3 (weight 0.25): Supplier scores 5
+- REQ.4 (weight 0.25): Supplier scores 4
 
 **Calculation:**
 
 ```
-weighted_sum = (8×0.25) + (7×0.25) + (9×0.25) + (8×0.25)
-             = 2.0 + 1.75 + 2.25 + 2.0
-             = 8.0
+weighted_sum = (4×0.25) + (3×0.25) + (5×0.25) + (4×0.25)
+             = 1.0 + 0.75 + 1.25 + 1.0
+             = 4.0
 
 total_weight = 0.25 + 0.25 + 0.25 + 0.25 = 1.0
 
-score = 8.0 / 1.0 = 8.0
+score = 4.0 / 1.0 = 4.0
 ```
 
 ### Complex Case: Varied Weights
 
 **Data:**
 
-- SEC.1 (weight 0.20): Supplier scores 9
-- SEC.2 (weight 0.15): Supplier scores 7
-- PERF.1 (weight 0.10): Supplier scores 8
-- COST.1 (weight 0.25): Supplier scores 5
-- SUPP.1 (weight 0.30): Supplier scores 8
+- SEC.1 (weight 0.20): Supplier scores 5 (excellent)
+- SEC.2 (weight 0.15): Supplier scores 3 (fair)
+- PERF.1 (weight 0.10): Supplier scores 4 (good)
+- COST.1 (weight 0.25): Supplier scores 2 (weak pricing)
+- SUPP.1 (weight 0.30): Supplier scores 4 (good)
 
 **Calculation:**
 
 ```
-weighted_sum = (9×0.20) + (7×0.15) + (8×0.10) + (5×0.25) + (8×0.30)
-             = 1.8 + 1.05 + 0.8 + 1.25 + 2.4
-             = 7.3
+weighted_sum = (5×0.20) + (3×0.15) + (4×0.10) + (2×0.25) + (4×0.30)
+             = 1.0 + 0.45 + 0.4 + 0.5 + 1.2
+             = 3.55
 
 total_weight = 0.20 + 0.15 + 0.10 + 0.25 + 0.30 = 1.0
 
-score = 7.3 / 1.0 = 7.3
+score = 3.55 / 1.0 = 3.55
 ```
+
+**Note:** Even though SUPP has the highest weight (30%), the global score of 3.55 is pulled down by the weak pricing (2/5). This demonstrates how high-weight requirements directly impact final scores.
 
 ### Partial Responses Case
 
@@ -133,24 +135,24 @@ If a supplier didn't answer all requirements:
 
 **Data:**
 
-- REQ.1 (weight 0.20): Score 8 ✓
-- REQ.2 (weight 0.15): Score 7 ✓
+- REQ.1 (weight 0.20): Score 4 ✓
+- REQ.2 (weight 0.15): Score 3 ✓
 - REQ.3 (weight 0.25): No response ✗
-- REQ.4 (weight 0.40): Score 9 ✓
+- REQ.4 (weight 0.40): Score 5 ✓
 
 **Calculation:**
 
 ```
-weighted_sum = (8×0.20) + (7×0.15) + (9×0.40)
-             = 1.6 + 1.05 + 3.6
-             = 6.25
+weighted_sum = (4×0.20) + (3×0.15) + (5×0.40)
+             = 0.8 + 0.45 + 2.0
+             = 3.25
 
 total_weight = 0.20 + 0.15 + 0.40 = 0.75  // Only requirements with responses
 
-score = 6.25 / 0.75 = 8.33 → 8.3
+score = 3.25 / 0.75 = 4.33 → 4.3
 ```
 
-**Note**: Missing requirements reduce total weight but don't penalize the score unless they're required. Report response rate (3/4 = 75%).
+**Note**: Missing requirements reduce total weight but don't penalize the score. However, report response rate (3/4 = 75%) since incomplete data may affect decision confidence.
 
 ## Category Scores
 
@@ -214,16 +216,18 @@ Suppliers with identical weighted scores:
 
 ## Interpreting Results
 
-### Score Scale (0-10)
+### Score Scale (0-5)
 
-| Range    | Interpretation                         |
-| -------- | -------------------------------------- |
-| 9.0-10.0 | Excellent - exceeds all requirements   |
-| 8.0-8.9  | Very Good - meets all key requirements |
-| 7.0-7.9  | Good - meets most requirements well    |
-| 6.0-6.9  | Fair - meets requirements with gaps    |
-| 5.0-5.9  | Marginal - significant gaps remain     |
-| < 5.0    | Weak - major concerns                  |
+| Range | Interpretation                                 |
+|-------|----------------------------------------------|
+| 4.5-5.0 | Excellent - meets or exceeds all requirements |
+| 4.0-4.4 | Very Good - meets most key requirements well |
+| 3.5-3.9 | Good - meets core requirements, some gaps    |
+| 3.0-3.4 | Fair - meets base requirements, multiple gaps |
+| 2.0-2.9 | Weak - significant gaps on key requirements  |
+| < 2.0  | Poor - major concerns and deal-breakers      |
+
+**Remember**: A score of 3.0 means "adequate" on a 5-point scale. Don't confuse this with a 50% score. With weighted scoring, even a 3.0 average might be acceptable if the supplier excels on high-weight requirements.
 
 ### What Affects Ranking
 
