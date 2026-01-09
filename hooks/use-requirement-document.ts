@@ -11,6 +11,10 @@ export interface RequirementDocument {
   mime_type: string;
 }
 
+export interface UseRequirementDocumentOptions {
+  autoFetch?: boolean;
+}
+
 export interface UseRequirementDocumentReturn {
   isLoadingDocuments: boolean;
   availableDocuments: RequirementDocument[];
@@ -22,6 +26,7 @@ export interface UseRequirementDocumentReturn {
     requirement: Requirement,
     documents: RequirementDocument[]
   ) => Promise<void>;
+  loadDocuments: () => Promise<RequirementDocument[]>;
 }
 
 /**
@@ -30,8 +35,10 @@ export interface UseRequirementDocumentReturn {
  * and the user needs to select which one to link with the requirement
  */
 export function useRequirementDocument(
-  rfpId: string | null
+  rfpId: string | null,
+  options: UseRequirementDocumentOptions = {}
 ): UseRequirementDocumentReturn {
+  const { autoFetch = true } = options;
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [availableDocuments, setAvailableDocuments] = useState<
     RequirementDocument[]
@@ -43,13 +50,15 @@ export function useRequirementDocument(
 
   // Fetch cahier_charges documents for this RFP
   const fetchDocuments = useCallback(async () => {
+    let documents: RequirementDocument[] = [];
+
     console.log(
       "[useRequirementDocument] fetchDocuments called with rfpId:",
       rfpId
     );
     if (!rfpId) {
       console.log("[useRequirementDocument] No rfpId, returning");
-      return;
+      return documents;
     }
 
     setIsLoadingDocuments(true);
@@ -66,23 +75,28 @@ export function useRequirementDocument(
 
       if (error) {
         console.error("Failed to fetch documents:", error);
-        return;
+        setAvailableDocuments([]);
+        return documents;
       }
 
       console.log(
         "[useRequirementDocument] Found documents:",
         data?.length || 0
       );
-      setAvailableDocuments((data || []) as RequirementDocument[]);
+      documents = (data || []) as RequirementDocument[];
+      setAvailableDocuments(documents);
     } finally {
       setIsLoadingDocuments(false);
     }
+
+    return documents;
   }, [rfpId]);
 
-  // Load documents on mount
+  // Load documents on mount (can be deferred)
   useEffect(() => {
+    if (!autoFetch) return;
     fetchDocuments();
-  }, [fetchDocuments]);
+  }, [autoFetch, fetchDocuments]);
 
   // Select and link document to requirement
   const selectDocument = useCallback(async (documentId: string) => {
@@ -131,5 +145,6 @@ export function useRequirementDocument(
     selectDocument,
     dismissDocumentSelector,
     openDocumentWithPage,
+    loadDocuments: fetchDocuments,
   };
 }
