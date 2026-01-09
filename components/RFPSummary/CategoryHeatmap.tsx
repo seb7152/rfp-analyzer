@@ -363,8 +363,9 @@ export function CategoryHeatmap({
             <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800 flex items-center">
               <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               <AlertDescription className="text-amber-800 dark:text-amber-200">
-                Les pondérations des exigences ne sont pas définies. Veuillez les configurer dans l&apos;onglet{" "}
-                <strong>Pondérations</strong> pour afficher les scores par catégorie.
+                Les pondérations des exigences ne sont pas définies. Veuillez
+                les configurer dans l&apos;onglet <strong>Pondérations</strong>{" "}
+                pour afficher les scores par catégorie.
               </AlertDescription>
             </Alert>
           </div>

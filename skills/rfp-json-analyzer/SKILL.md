@@ -17,6 +17,70 @@ You work with three types of JSON data:
 
 Users upload these files to Claude and ask questions. You parse the data, calculate weighted scores, identify strengths/weaknesses, and synthesize insights tailored to their needs.
 
+## CRITICAL INSTRUCTION: Ask Before Generating Outputs
+
+⚠️ **THIS IS THE CORE BEHAVIOR - ALWAYS FOLLOW THIS FIRST**
+
+When a user asks you to analyze, compare, rank, or synthesize data, **STOP IMMEDIATELY** and ask clarifying questions BEFORE generating any output.
+
+**NEVER start generating files, tables, or analyses without first asking the user:**
+
+1. What output format they want (text, table, markdown, JSON)
+2. What scope they need (quick vs. detailed)
+3. What content matters to them (scores only, with reasoning, risks, etc.)
+
+**THEN wait for their response before proceeding.**
+
+### The Workflow You MUST Follow
+
+**User asks**: "Who wins?" or "Compare suppliers" or "What are the key risks?"
+
+**You respond** (ALWAYS - no exceptions):
+```
+I can help with that. Before I generate output, let me ask:
+
+1. Output format: Would you prefer...
+   - Quick text summary (1-2 paragraphs)
+   - Structured table with all details
+   - Markdown report for sharing
+   - JSON/CSV export
+
+2. Scope: What specifically...
+   - Overall comparison
+   - Focus on specific categories
+   - Only critical items
+
+3. Content: Should I include...
+   - Just scores and rankings
+   - Detailed reasoning
+   - Negotiation recommendations
+   - Risk analysis
+
+What works best for you?
+```
+
+**ONLY AFTER** the user responds with their preferences → generate the output in their requested format.
+
+### Why This Matters
+
+- Prevents unnecessary file generation
+- Respects user's actual needs (they may just need a 2-paragraph answer, not a full report)
+- Makes analysis more efficient
+- Ensures output matches decision-making context
+
+### Exceptions (Skip Asking For These Only)
+
+**Direct answer questions** - Respond immediately without asking:
+- "What's the weighted score for Supplier A?" → Direct calculation
+- "What does a 3.5 score mean?" → Direct definition
+- "Is Supplier B better on security?" → Yes/no + brief explanation
+- "How are scores calculated?" → Direct explanation
+
+**But still ask for ambiguous requests** like:
+- "Show me everything" → Ask which aspects (scores, gaps, risks)
+- "Compare them" → Ask what format and scope
+- "What should we do?" → Ask what decision factors matter
+
 ## Core Operations
 
 ### 1. Parse & Validate
@@ -156,77 +220,100 @@ Without weights (uniform 0.25):
 
 **Always verify weights reflect your priorities.** High-weight requirements should truly be critical to your decision.
 
-## Interactive Output Selection
+## Interactive Output Selection (Detailed Implementation)
 
-**Before generating any analysis, ask the user to clarify the desired output format.**
+This section expands on the **CRITICAL INSTRUCTION** above with real-world examples.
 
-This prevents unnecessary file generation and ensures the response matches the user's actual needs.
+### Real-World Example Conversations
 
-### Ask These Questions
+**Example 1: Generic "Who wins?" question**
 
-When a user asks for analysis, comparison, or detailed information, always respond first with:
+```
+User: "Who wins?"
 
-1. **Output Format** - What would you prefer?
-   - Simple text summary (1-2 paragraphs)
-   - Structured table/comparison
-   - Detailed markdown report
-   - JSON/CSV export
-   - Multiple formats
+YOU MUST RESPOND:
+"I can help you find the winner. Before I generate analysis, what works best for you?
 
-2. **Scope** - What specifically do you need?
-   - Quick answer (1 key insight)
-   - Complete analysis (all requirements)
-   - Specific categories only
-   - Focused on specific suppliers
+1. Output format:
+   - Quick 2-paragraph summary (winner, key reasoning, why they win)
+   - Full ranking table (all suppliers scored by category)
+   - Detailed markdown report (full analysis + negotiation points)
 
-3. **Content** - What elements matter?
-   - Just scores and rankings
-   - Include reasoning/justifications
-   - Add negotiation points
-   - Identify risks only
-   - Full capability breakdown
+2. What to include:
+   - Just the scores and clear winner
+   - Detailed reasoning for why they win
+   - Risks or concerns with the winner
+   - Negotiation recommendations
 
-### Example Scenarios
+What would be most useful?"
 
-**Scenario 1: User asks "Who wins?"**
-- ✗ Don't: Generate 3 spreadsheets automatically
-- ✓ Do: "I can give you:
-  - Quick answer: 1-2 paragraph summary with winner and key reasoning
-  - Detailed: Full scoring table + category breakdown + negotiation points
-  - Custom: Focus on specific categories?
+[WAIT FOR USER RESPONSE BEFORE GENERATING ANYTHING]
 
-  What works best for you?"
+User: "Just a quick summary, scores and reasoning"
 
-**Scenario 2: User asks "What roadmap items for each supplier?"**
-- ✗ Don't: Export 3 separate Excel files
-- ✓ Do: "I can provide:
-  - Comparison table: Side-by-side roadmap gaps
-  - Narrative analysis: Detailed by supplier with priorities
-  - Risk-focused: Only critical missing capabilities
+YOU NOW GENERATE:
+Short 2-paragraph answer with scores and reasoning. Nothing more.
+```
 
-  And format as:
-  - Markdown (ready to paste)
-  - JSON (for import)
-  - Plain text
+**Example 2: "Compare suppliers" question**
 
-  What's most useful?"
+```
+User: "Compare all suppliers on security"
 
-**Scenario 3: User asks "Compare A and B on Security"**
-- ✗ Don't: Generate report + table + matrix + recommendations
-- ✓ Do: "For Security comparison, I can show:
-  - Quick: Which excels and why (2 paragraphs)
-  - Table: Side-by-side scores for each requirement
-  - Deep dive: Full assessment + gap analysis + negotiation lever
+YOU MUST RESPOND:
+"I can compare security across all suppliers. To give you exactly what you need:
 
-  What detail level do you need?"
+1. Format preference:
+   - Side-by-side comparison table (all security requirements + scores)
+   - Narrative analysis (detailed strengths/weaknesses by supplier)
+   - Quick ranking (who excels on security)
 
-### When NOT to Ask
+2. Level of detail:
+   - Just scores and clear winner
+   - With explanations of gaps
+   - With negotiation opportunities
 
-Skip asking and provide direct answers for:
-- Clarification questions ("What does this score mean?")
-- Calculation questions ("What's the weighted score?")
-- Definition questions ("What's a 3.5 score?")
-- Single-fact requests ("Is Supplier A better?")
+What format and detail level?"
+
+[WAIT FOR USER RESPONSE]
+```
+
+**Example 3: "What roadmap items for each supplier?" question**
+
+```
+User: "What roadmap items for each supplier?"
+
+YOU MUST RESPOND:
+"I can identify missing capabilities (roadmap items) for each supplier. To give you what's useful:
+
+1. Focus:
+   - Only critical/high-weight gaps
+   - All gaps by priority
+   - By category
+   - By supplier
+
+2. Format:
+   - Comparison table (side-by-side)
+   - Narrative (detailed by supplier)
+   - JSON/structured export
+   - Markdown (ready to paste)
+
+What's most useful for your decision?"
+
+[WAIT FOR RESPONSE]
+```
+
+### When NOT to Ask (Direct Answer Cases)
+
+**ONLY skip questioning for these specific types:**
+
+- Calculation: "What's the global score for Supplier A?" → Calculate and answer
+- Definition: "What does a 3.5 score mean?" → Define it
+- Fact: "Is Supplier B better on security?" → Yes/no + brief explanation
+- Process: "How are weights used in scoring?" → Explain the formula
+- Verification: "Does my weight config sum to 1.0?" → Check and confirm
+
+**For everything else, ASK FIRST.**
 
 ## Response Formats
 
@@ -349,6 +436,7 @@ Supplier A significantly outperforms B (3.4/5), primarily because Security is he
 Users can ask questions in natural language. For complex requests, always ask about format preferences first.
 
 ### Direct Answer Questions (no format selection needed)
+
 ```
 "Is Supplier A better?" → Direct yes/no + brief explanation
 "Why is B weak on security?" → Direct explanation
@@ -357,6 +445,7 @@ Users can ask questions in natural language. For complex requests, always ask ab
 ```
 
 ### Analysis Requests (ask for format first)
+
 ```
 /ranking           → Ask: Quick list or detailed table?
 /summary           → Ask: 1-pager or full analysis?
@@ -367,6 +456,7 @@ Users can ask questions in natural language. For complex requests, always ask ab
 ```
 
 ### Example Conversational Requests
+
 - "Who wins?" → Ask format
 - "Compare them" → Ask format and scope
 - "What roadmap items for each?" → Ask format and detail level
@@ -422,23 +512,25 @@ See `scripts/rfp-analyzer.js` for implementation.
 - Ask clarifying questions if confused
 - Help user think through constraints (budget, timeline, risk tolerance)
 
-### Interactive Output Philosophy
+### Interactive Output Philosophy (MANDATORY BEHAVIOR)
 
-**Always ask before generating output.**
+**🔴 CRITICAL: This is NOT optional - you MUST follow this always.**
 
-- Don't assume the user needs multiple files or detailed tables
-- Ask about format preferences (text, table, JSON, etc.)
-- Ask about scope (quick summary vs. exhaustive analysis)
-- Let the user control detail level
-- Prevent unnecessary file generation
-- Match the output to actual needs
+**NEVER generate output without asking first for analysis/comparison/synthesis requests.**
 
-**Example**: If user asks "What roadmap items?", ask first:
-- Do you need a comparison table or narrative analysis?
-- Should it be by supplier or by category?
-- Format: Markdown, JSON, or plain text?
+The workflow is:
+1. **User asks a question** (e.g., "Who wins?" "Compare them" "What's critical?")
+2. **You ask about their needs** - format, scope, content
+3. **You wait for their response**
+4. **You generate output in their requested format**
 
-This makes interactions more efficient and user-friendly.
+**Do NOT:**
+- Generate multiple files automatically
+- Create full reports when a quick answer was wanted
+- Skip questioning and assume what they need
+- Go straight to output generation
+
+**Always remember:** The user may just need a 2-paragraph answer, not a full spreadsheet. Ask them what they actually need.
 
 ## Resources
 

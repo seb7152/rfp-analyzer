@@ -56,7 +56,10 @@ export async function GET(
 
     // Filter by supplier status to exclude removed suppliers if version is specified
     if (versionId) {
-      const activeStatuses = await getVersionSupplierStatuses(supabase, versionId);
+      const activeStatuses = await getVersionSupplierStatuses(
+        supabase,
+        versionId
+      );
       const activeSupplierIds = getActiveSupplierIds(activeStatuses);
 
       responses = responses.filter((r) => activeSupplierIds.has(r.supplier_id));

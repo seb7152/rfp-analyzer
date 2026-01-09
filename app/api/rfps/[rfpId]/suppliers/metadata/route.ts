@@ -35,18 +35,27 @@ export async function GET(
       return accessCheckResponse;
     }
 
-    let supplierStatuses: Record<string, { shortlist_status: string | null; is_active: boolean | null }> = {};
+    let supplierStatuses: Record<
+      string,
+      { shortlist_status: string | null; is_active: boolean | null }
+    > = {};
     let supplierIds: string[] = [];
 
     if (versionId) {
       const statuses = await getVersionSupplierStatuses(supabase, versionId);
-      supplierStatuses = statuses.reduce((acc, status) => {
-        acc[status.supplier_id] = {
-          shortlist_status: status.shortlist_status,
-          is_active: status.is_active,
-        };
-        return acc;
-      }, {} as Record<string, { shortlist_status: string | null; is_active: boolean | null }>);
+      supplierStatuses = statuses.reduce(
+        (acc, status) => {
+          acc[status.supplier_id] = {
+            shortlist_status: status.shortlist_status,
+            is_active: status.is_active,
+          };
+          return acc;
+        },
+        {} as Record<
+          string,
+          { shortlist_status: string | null; is_active: boolean | null }
+        >
+      );
 
       const activeSupplierIds = getActiveSupplierIds(statuses);
       supplierIds = supplierId

@@ -21,10 +21,7 @@ export function DashboardSwitcher() {
   if (isRFPPage && rfpId) {
     return (
       <ClientOnly>
-        <div className={cn(
-          "flex items-center",
-          isMobile ? "gap-1" : "gap-3"
-        )}>
+        <div className={cn("flex items-center", isMobile ? "gap-1" : "gap-3")}>
           <RFPSwitcher />
           <VersionSwitcher />
         </div>

@@ -99,7 +99,9 @@ export default function RFPSummaryPage() {
   const [isDocxImportModalOpen, setIsDocxImportModalOpen] = useState(false);
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [suppliersForExport, setSuppliersForExport] = useState<SupplierForExport[]>([]);
+  const [suppliersForExport, setSuppliersForExport] = useState<
+    SupplierForExport[]
+  >([]);
   const [showResponsesSubmenu, setShowResponsesSubmenu] = useState(false);
   const [exportingResponses, setExportingResponses] = useState(false);
 
@@ -191,14 +193,17 @@ export default function RFPSummaryPage() {
       // Format responses for export (matching import format)
       const exportData = responsesData.responses.map((r: any) => {
         const exportItem: any = {
-          requirement_id_external: requirementCodeMap.get(r.requirement_id) || r.requirement_id,
+          requirement_id_external:
+            requirementCodeMap.get(r.requirement_id) || r.requirement_id,
         };
 
         // Only include fields that have values
         if (r.response_text) exportItem.response_text = r.response_text;
-        if (r.ai_score !== null && r.ai_score !== undefined) exportItem.ai_score = r.ai_score;
+        if (r.ai_score !== null && r.ai_score !== undefined)
+          exportItem.ai_score = r.ai_score;
         if (r.ai_comment) exportItem.ai_comment = r.ai_comment;
-        if (r.manual_score !== null && r.manual_score !== undefined) exportItem.manual_score = r.manual_score;
+        if (r.manual_score !== null && r.manual_score !== undefined)
+          exportItem.manual_score = r.manual_score;
         if (r.manual_comment) exportItem.manual_comment = r.manual_comment;
         if (r.question) exportItem.question = r.question;
         if (r.status && r.status !== "pending") exportItem.status = r.status;
@@ -485,11 +490,15 @@ export default function RFPSummaryPage() {
                     <Button
                       variant="ghost"
                       className="w-full justify-between font-normal"
-                      onClick={() => setShowResponsesSubmenu(!showResponsesSubmenu)}
+                      onClick={() =>
+                        setShowResponsesSubmenu(!showResponsesSubmenu)
+                      }
                       disabled={exportingResponses}
                     >
                       <span>Réponses fournisseur</span>
-                      <ChevronDown className={`h-4 w-4 transition-transform ${showResponsesSubmenu ? "rotate-180" : ""}`} />
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform ${showResponsesSubmenu ? "rotate-180" : ""}`}
+                      />
                     </Button>
 
                     {showResponsesSubmenu && (
@@ -504,7 +513,9 @@ export default function RFPSummaryPage() {
                               key={supplier.id}
                               variant="ghost"
                               className="w-full justify-start font-normal text-sm h-auto py-2"
-                              onClick={() => handleExportSupplierResponses(supplier)}
+                              onClick={() =>
+                                handleExportSupplierResponses(supplier)
+                              }
                               disabled={exportingResponses}
                             >
                               <Building2 className="h-3 w-3 mr-2 flex-shrink-0" />

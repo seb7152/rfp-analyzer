@@ -54,59 +54,56 @@ export function RFPSwitcher() {
   return (
     <ClientOnly>
       <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn(
-            "justify-between",
-            isMobile ? "w-auto max-w-[100px]" : "w-[200px]"
-          )}
-          title={currentRfp?.title || "Select RFP..."}
-        >
-          <span className="truncate">
-            {currentRfp?.title || "Select RFP..."}
-          </span>
-          <ChevronsUpDown className="opacity-50 h-4 w-4 ml-2 flex-shrink-0" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className={cn(
-        "p-0",
-        isMobile ? "w-64" : "w-[200px]"
-      )}>
-        <Command>
-          <CommandInput placeholder="Search RFPs..." className="h-9" />
-          <CommandList>
-            <CommandEmpty>No RFP found.</CommandEmpty>
-            <CommandGroup>
-              {rfps.map((rfp) => (
-                <CommandItem
-                  key={rfp.id}
-                  value={rfp.id}
-                  onSelect={(selectedId) => {
-                    router.push(`/dashboard/rfp/${selectedId}/summary`);
-                    setOpen(false);
-                  }}
-                >
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <span className="font-medium text-sm">{rfp.title}</span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">
-                      {rfp.status}
-                    </span>
-                  </div>
-                  <Check
-                    className={cn(
-                      "ml-auto flex-shrink-0",
-                      currentRfp?.id === rfp.id ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn(
+              "justify-between",
+              isMobile ? "w-auto max-w-[100px]" : "w-[200px]"
+            )}
+            title={currentRfp?.title || "Select RFP..."}
+          >
+            <span className="truncate">
+              {currentRfp?.title || "Select RFP..."}
+            </span>
+            <ChevronsUpDown className="opacity-50 h-4 w-4 ml-2 flex-shrink-0" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className={cn("p-0", isMobile ? "w-64" : "w-[200px]")}>
+          <Command>
+            <CommandInput placeholder="Search RFPs..." className="h-9" />
+            <CommandList>
+              <CommandEmpty>No RFP found.</CommandEmpty>
+              <CommandGroup>
+                {rfps.map((rfp) => (
+                  <CommandItem
+                    key={rfp.id}
+                    value={rfp.id}
+                    onSelect={(selectedId) => {
+                      router.push(`/dashboard/rfp/${selectedId}/summary`);
+                      setOpen(false);
+                    }}
+                  >
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <span className="font-medium text-sm">{rfp.title}</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        {rfp.status}
+                      </span>
+                    </div>
+                    <Check
+                      className={cn(
+                        "ml-auto flex-shrink-0",
+                        currentRfp?.id === rfp.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
       </Popover>
     </ClientOnly>
   );

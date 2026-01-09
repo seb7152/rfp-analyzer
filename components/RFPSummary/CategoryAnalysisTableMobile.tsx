@@ -119,21 +119,20 @@ export function CategoryAnalysisTableMobile({
                     <SelectItem key={supplier.id} value={supplier.id}>
                       <div className="flex items-center gap-2">
                         <span>{supplier.name}</span>
-                        {status &&
-                          status.shortlist_status !== "active" && (
-                            <Badge
-                              variant={
-                                status.shortlist_status === "removed"
-                                  ? "destructive"
-                                  : "secondary"
-                              }
-                              className="text-xs"
-                            >
-                              {status.shortlist_status === "removed"
-                                ? "Supprimé"
-                                : "Sélectionné"}
-                            </Badge>
-                          )}
+                        {status && status.shortlist_status !== "active" && (
+                          <Badge
+                            variant={
+                              status.shortlist_status === "removed"
+                                ? "destructive"
+                                : "secondary"
+                            }
+                            className="text-xs"
+                          >
+                            {status.shortlist_status === "removed"
+                              ? "Supprimé"
+                              : "Sélectionné"}
+                          </Badge>
+                        )}
                       </div>
                     </SelectItem>
                   );
@@ -303,7 +302,10 @@ export function CategoryAnalysisTableMobile({
                       </div>
                       <ul className="space-y-1 text-xs">
                         {childTitles.map((title, idx) => (
-                          <li key={idx} className="flex gap-2 text-slate-700 dark:text-slate-300">
+                          <li
+                            key={idx}
+                            className="flex gap-2 text-slate-700 dark:text-slate-300"
+                          >
                             <span className="flex-shrink-0">•</span>
                             <span className="break-words">{title}</span>
                           </li>
@@ -320,7 +322,10 @@ export function CategoryAnalysisTableMobile({
                       </div>
                       <ul className="space-y-1 text-xs">
                         {analysis.forces.map((force, idx) => (
-                          <li key={idx} className="flex gap-2 text-slate-700 dark:text-slate-300">
+                          <li
+                            key={idx}
+                            className="flex gap-2 text-slate-700 dark:text-slate-300"
+                          >
                             <span className="flex-shrink-0">•</span>
                             <span className="break-words">{force}</span>
                           </li>
@@ -337,7 +342,10 @@ export function CategoryAnalysisTableMobile({
                       </div>
                       <ul className="space-y-1 text-xs">
                         {analysis.faiblesses.map((faiblesse, idx) => (
-                          <li key={idx} className="flex gap-2 text-slate-700 dark:text-slate-300">
+                          <li
+                            key={idx}
+                            className="flex gap-2 text-slate-700 dark:text-slate-300"
+                          >
                             <span className="flex-shrink-0">•</span>
                             <span className="break-words">{faiblesse}</span>
                           </li>
@@ -354,7 +362,10 @@ export function CategoryAnalysisTableMobile({
                       </div>
                       <ul className="space-y-1 text-xs">
                         {attentionPoints.map((point, idx) => (
-                          <li key={idx} className="flex gap-2 text-slate-700 dark:text-slate-300">
+                          <li
+                            key={idx}
+                            className="flex gap-2 text-slate-700 dark:text-slate-300"
+                          >
                             <span className="flex-shrink-0">•</span>
                             <span className="break-words">{point}</span>
                           </li>
