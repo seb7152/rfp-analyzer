@@ -110,7 +110,21 @@ Questions serve to:
 
 2. "Are there existing scores (AI or manual) in the file? If so, where?"
 
-3. "Should I import the 'status' field? If so, where is it or what should I default to?"
+3. **Status field handling** (IMPORTANT):
+   - If the file contains status columns/fields: "Would you like me to import these statuses from the supplier, or would you prefer to assign statuses yourself during evaluation?"
+   - Valid status values (database enforced): `pending` (default), `pass`, `partial`, `fail`
+   - Meanings:
+     - `pending` - En attente (awaiting evaluation)
+     - `pass` - Conforme (requirement fully satisfied)
+     - `partial` - Partiellement conforme (requirement partially satisfied)
+     - `fail` - Non conforme (requirement not satisfied)
+   - If the file has different status values (e.g., "compliant", "partial_compliant"), I'll map them:
+     ```
+     compliant → pass
+     partial_compliant → partial
+     non_compliant → fail
+     ```
+   - If you choose to not import statuses, I'll default to `pending` for all responses
 
 ---
 

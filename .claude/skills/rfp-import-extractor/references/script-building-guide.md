@@ -142,7 +142,7 @@ response = {
     "ai_comment": row[3],      # Optional - AI evaluation notes
     "manual_score": float(row[4]) if row[4] else None,  # Optional - 0-5 range
     "manual_comment": row[5],   # Optional - human evaluation notes
-    "status": row[6],          # Optional - pending/pass/partial/fail
+    "status": row[6],          # Optional - must be: pending, pass, partial, or fail
     "is_checked": bool(row[7]) if row[7] else False,  # Optional - reviewed flag
 }
 ```
@@ -151,7 +151,22 @@ response = {
 
 - `requirement_id_external` links the response to a requirement code
 - Scores must be 0-5 with 0.5 increments (0, 0.5, 1.0, 1.5, etc.)
-- Valid statuses: `pending`, `pass`, `partial`, `fail`
+- **Valid statuses (ONLY these 4 values allowed)**:
+  - `pending` - En attente (default if not specified)
+  - `pass` - Conforme (fully satisfies requirement)
+  - `partial` - Partiellement conforme (partially satisfies requirement)
+  - `fail` - Non conforme (does not satisfy requirement)
+- **Status mapping**: If your source file uses different status values (e.g., "compliant", "partial_compliant", "approved"), map them in the extraction script:
+  ```python
+  # Example mapping for custom statuses
+  status_mapping = {
+      "compliant": "pass",
+      "partial_compliant": "partial",
+      "non_compliant": "fail",
+      "approved": "pass",
+  }
+  status = status_mapping.get(row[6], "pending")  # Default to pending if not found
+  ```
 - Multiple responses can exist for the same requirement (multi-supplier)
 
 ### Logging and Debugging

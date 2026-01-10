@@ -223,6 +223,8 @@ def validate_responses(data: List[Dict[str, Any]]) -> List[str]:
     Required fields: requirement_id_external
     Optional fields: response_text, ai_score, ai_comment, manual_score,
                     manual_comment, question, status, is_checked
+
+    STRICT MODE: Rejects any fields not in the allowed list
     """
     errors = []
 
@@ -231,10 +233,24 @@ def validate_responses(data: List[Dict[str, Any]]) -> List[str]:
 
     valid_statuses = ["pending", "pass", "partial", "fail"]
 
+    # Allowed field names (required and optional)
+    allowed_fields = {
+        "requirement_id_external", "response_text", "ai_score", "ai_comment",
+        "manual_score", "manual_comment", "question", "status", "is_checked"
+    }
+
     for idx, response in enumerate(data):
         if not isinstance(response, dict):
             errors.append(f"Response at index {idx} must be an object")
             continue
+
+        # Check for extra fields (strict validation)
+        extra_fields = set(response.keys()) - allowed_fields
+        if extra_fields:
+            errors.append(
+                f"Response at index {idx}: unexpected fields {extra_fields}. "
+                f"Only these fields are allowed: {', '.join(sorted(allowed_fields))}"
+            )
 
         # Required field
         if "requirement_id_external" not in response:
@@ -253,11 +269,14 @@ def validate_responses(data: List[Dict[str, Any]]) -> List[str]:
                     elif (score * 2) % 1 != 0:
                         errors.append(f"Response at index {idx}: {score_field} must be in 0.5 increments (got {score})")
 
-        # Validate status
+        # Validate status (if provided, must be one of the valid statuses)
         if "status" in response:
             status = response["status"]
-            if status and status not in valid_statuses:
-                errors.append(f"Response at index {idx}: status must be one of {valid_statuses} (got '{status}')")
+            if status is not None:  # Only validate if status is explicitly provided
+                if not isinstance(status, str):
+                    errors.append(f"Response at index {idx}: status must be a string (got {type(status).__name__})")
+                elif status not in valid_statuses:
+                    errors.append(f"Response at index {idx}: status must be one of {valid_statuses} (got '{status}')")
 
         # Validate is_checked is boolean
         if "is_checked" in response:

@@ -210,7 +210,12 @@ Responses contain supplier answers and evaluations (both AI and manual).
 
 - `requirement_id_external` must reference an existing requirement code
 - `ai_score` and `manual_score` must be between 0 and 5, in increments of 0.5 (0, 0.5, 1.0, 1.5, ..., 5.0)
-- `status` must be one of: "pending", "pass", "partial", "fail"
+- **Status values** - `status` field must be ONE of these **exact values** (database enforced):
+  - `"pending"` - En attente (Awaiting evaluation) - **default if not specified**
+  - `"pass"` - Conforme (Requirement fully satisfied)
+  - `"partial"` - Partiellement conforme (Requirement partially satisfied)
+  - `"fail"` - Non conforme (Requirement not satisfied)
+- **STRICT validation**: Only these 4 status values are allowed. Any other values (e.g., "compliant", "partial_compliant", "approved", etc.) will be rejected by the database CHECK constraint. If your source file contains different status values, you must map them to the valid values in your extraction script.
 - At least one of the optional fields should be provided (otherwise the response has no data)
 
 ---
