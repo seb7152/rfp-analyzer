@@ -627,72 +627,6 @@ async function getOrCreateTags(
 }
 
 /**
- * Link tags to a requirement, avoiding duplicates.
- * Only creates new associations for tags not already linked to the requirement.
- *
- * @param supabase - Supabase client
- * @param requirementId - Requirement ID
- * @param tagIds - Array of tag IDs to link
- * @param userId - User ID for audit trail
- */
-async function linkTagsToRequirement(
-  supabase: Awaited<ReturnType<typeof createServerClient>>,
-  requirementId: string,
-  tagIds: string[],
-  userId: string
-): Promise<void> {
-  const uniqueTagIds = Array.from(new Set(tagIds));
-
-  if (uniqueTagIds.length === 0) {
-    return;
-  }
-
-  try {
-    // Step 1: Fetch existing associations
-    const { data: existingLinks, error: fetchError } = await supabase
-      .from("requirement_tags")
-      .select("tag_id")
-      .eq("requirement_id", requirementId);
-
-    if (fetchError) {
-      console.error("Error fetching existing tag links:", fetchError);
-      throw fetchError;
-    }
-
-    // Step 2: Identify new associations
-    const existingTagIds = new Set<string>();
-    if (existingLinks) {
-      for (const link of existingLinks) {
-        existingTagIds.add(link.tag_id);
-      }
-    }
-
-    const newTagIds = uniqueTagIds.filter((id) => !existingTagIds.has(id));
-
-    // Step 3: Create new associations
-    if (newTagIds.length > 0) {
-      const associations = newTagIds.map((tagId) => ({
-        requirement_id: requirementId,
-        tag_id: tagId,
-        created_by: userId,
-      }));
-
-      const { error: insertError } = await supabase
-        .from("requirement_tags")
-        .insert(associations);
-
-      if (insertError) {
-        console.error("Error linking tags to requirement:", insertError);
-        // Don't throw here - just log and continue (graceful degradation)
-      }
-    }
-  } catch (error) {
-    console.error("Error in linkTagsToRequirement:", error);
-    // Don't throw here - just log and continue (graceful degradation)
-  }
-}
-
-/**
  * Import requirements for an RFP
  * Uses UPSERT to replace existing requirements with the same rfp_id and requirement_id_external
  * Links requirements to existing categories by name
@@ -783,6 +717,7 @@ export async function importRequirements(
     // Auto-increment order for requirements without explicit order
     let currentOrder = 1;
     let upsertedCount = 0;
+    const tagRequests: Array<{ code: string; tags: string[] }> = [];
 
     // If we are NOT importing codes (Update Only mode), we need to know which codes exist
     let existingCodes = new Set<string>();
@@ -931,56 +866,87 @@ export async function importRequirements(
 
       upsertedCount++;
 
-      // STEP 1b: Link tags to requirement if tags are provided
       if (req.tags && Array.isArray(req.tags) && req.tags.length > 0) {
-        try {
-          // Fetch the requirement ID we just created/updated
-          const { data: requirement, error: fetchError } = await supabase
-            .from("requirements")
-            .select("id")
-            .eq("rfp_id", rfpId)
-            .eq("requirement_id_external", req.code)
-            .single();
+        const normalizedTags = Array.from(
+          new Set(
+            req.tags
+              .map((tagName) => tagName.trim())
+              .filter((tagName) => tagName.length > 0)
+          )
+        );
 
-          if (fetchError) {
-            console.warn(
-              `Failed to fetch requirement ID for tags linking (${req.code}):`,
-              fetchError
-            );
-          } else if (requirement) {
-            // Map tag names to tag IDs
-            const tagIds = new Set<string>();
-            for (const tagName of req.tags) {
-              const normalized = tagName.trim();
-              if (!normalized) continue;
-              const tagId = tagNameToIdMap.get(normalized);
-              if (tagId) {
-                tagIds.add(tagId);
-              }
-            }
-
-            // Link tags to requirement
-            if (tagIds.size > 0) {
-              await linkTagsToRequirement(
-                supabase,
-                requirement.id,
-                Array.from(tagIds),
-                userId
-              );
-            }
-          }
-        } catch (tagError) {
-          // Log warning but don't fail the import (graceful degradation)
-          console.warn(
-            `Failed to link tags for requirement ${req.code}:`,
-            tagError
-          );
+        if (normalizedTags.length > 0) {
+          tagRequests.push({ code: req.code, tags: normalizedTags });
         }
       }
 
       // Only increment if using auto-increment
       if (req.order === undefined) {
         currentOrder++;
+      }
+    }
+
+    if (tagRequests.length > 0 && tagNameToIdMap.size > 0) {
+      try {
+        const codes = Array.from(new Set(tagRequests.map((req) => req.code)));
+        const { data: taggedRequirements, error: taggedReqError } =
+          await supabase
+            .from("requirements")
+            .select("id, requirement_id_external")
+            .eq("rfp_id", rfpId)
+            .in("requirement_id_external", codes);
+
+        if (taggedReqError) {
+          console.warn("Failed to fetch requirements for tag linking:", taggedReqError);
+        } else {
+          const requirementIdByCode = new Map<string, string>();
+          for (const requirement of taggedRequirements || []) {
+            requirementIdByCode.set(
+              requirement.requirement_id_external,
+              requirement.id
+            );
+          }
+
+          const associations: Array<{
+            requirement_id: string;
+            tag_id: string;
+            created_by: string;
+          }> = [];
+          const associationKeys = new Set<string>();
+
+          for (const request of tagRequests) {
+            const requirementId = requirementIdByCode.get(request.code);
+            if (!requirementId) continue;
+
+            for (const tagName of request.tags) {
+              const tagId = tagNameToIdMap.get(tagName);
+              if (!tagId) continue;
+              const key = `${requirementId}:${tagId}`;
+              if (associationKeys.has(key)) continue;
+              associationKeys.add(key);
+              associations.push({
+                requirement_id: requirementId,
+                tag_id: tagId,
+                created_by: userId,
+              });
+            }
+          }
+
+          if (associations.length > 0) {
+            const { error: linkError } = await supabase
+              .from("requirement_tags")
+              .upsert(associations, {
+                onConflict: "requirement_id,tag_id",
+                ignoreDuplicates: true,
+              });
+
+            if (linkError) {
+              console.warn("Failed to link tags in bulk:", linkError);
+            }
+          }
+        }
+      } catch (tagError) {
+        console.warn("Failed to link tags in bulk:", tagError);
       }
     }
 
