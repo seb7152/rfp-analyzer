@@ -67,6 +67,7 @@ Requirements are the individual items that need to be evaluated in the RFP.
   "description": "string",       // Required - Detailed description
   "weight": float,               // Required - Weight/importance (0.0 to 1.0)
   "category_name": "string",     // Required - Category code or title
+  "tags": ["string"],            // Optional - Array of tag names (1-100 chars each)
   "is_mandatory": boolean,       // Optional - Is this a mandatory requirement? (default: false)
   "is_optional": boolean,        // Optional - Is this an optional requirement? (default: false)
   "page_number": integer,        // Optional - Page number in source document
@@ -84,6 +85,7 @@ Requirements are the individual items that need to be evaluated in the RFP.
     "description": "The system must support secure user authentication with SSO capabilities",
     "weight": 0.9,
     "category_name": "DOM1.1",
+    "tags": ["Security", "Critical", "Backend"],
     "is_mandatory": true,
     "is_optional": false,
     "page_number": 12
@@ -94,6 +96,7 @@ Requirements are the individual items that need to be evaluated in the RFP.
     "description": "Support for MFA using TOTP or SMS",
     "weight": 0.6,
     "category_name": "User Management",
+    "tags": ["Security", "Authentication"],
     "is_mandatory": false,
     "is_optional": true,
     "page_number": 13
@@ -106,6 +109,9 @@ Requirements are the individual items that need to be evaluated in the RFP.
 - `code` must be unique across all requirements
 - `weight` must be between 0.0 and 1.0
 - `category_name` can be either the category `code` or `title` - the system will match it
+- `tags` must be an array of strings, each 1-100 characters (auto-created if new, deduplicated)
+- Tag names are case-sensitive ("Backend" ≠ "backend")
+- Duplicate tag names in the same requirement are automatically removed
 - `is_mandatory` and `is_optional` should not both be true
 - `page_number` must be a positive integer if provided
 
@@ -169,6 +175,71 @@ Responses contain supplier answers and evaluations (both AI and manual).
 - `ai_score` and `manual_score` must be between 0 and 5, in increments of 0.5 (0, 0.5, 1.0, 1.5, ..., 5.0)
 - `status` must be one of: "pending", "pass", "partial", "fail"
 - At least one of the optional fields should be provided (otherwise the response has no data)
+
+---
+
+## Tags
+
+Tags are optional labels that can be attached to requirements for categorization, filtering, and organization.
+
+### How Tags Work
+
+- **Auto-Creation**: New tag names are automatically created with random colors from a predefined palette
+- **Deduplication**: Existing tags with the same name (case-sensitive) are reused
+- **Optional**: Tags field is completely optional - existing imports work without changes
+- **Flexible**: Use tags for any purpose: functional areas, status, priority, implementation phase, etc.
+
+### Tag Validation Rules
+
+| Rule | Example | Valid | Invalid |
+|------|---------|-------|---------|
+| Non-empty | "Backend" | ✓ | "" (empty string) |
+| Length | 1-100 characters | ✓ | Strings longer than 100 chars |
+| Whitespace | " Backend " | ✓ (trimmed to "Backend") | N/A |
+| Case-sensitive | "backend" ≠ "Backend" | ✓ Different tags | N/A |
+| Duplicates | `["Tag", "Tag"]` | ✓ (deduplicated) | N/A |
+
+### Common Tag Use Cases
+
+**Functional Areas:**
+```json
+{
+  "tags": ["Backend", "Database", "API"]
+}
+```
+
+**Priority/Criticality:**
+```json
+{
+  "tags": ["Critical", "High-Priority", "Nice-to-Have"]
+}
+```
+
+**Implementation Status:**
+```json
+{
+  "tags": ["Implemented", "In-Progress", "Blocked"]
+}
+```
+
+**Project Phases:**
+```json
+{
+  "tags": ["Phase-1", "MVP", "Post-Launch"]
+}
+```
+
+**Technical Stack:**
+```json
+{
+  "tags": ["Python", "React", "PostgreSQL"]
+}
+```
+
+### Tag Colors
+
+Tags are automatically assigned colors from this palette:
+- Blue, Purple, Pink, Amber, Green, Cyan, Red, Indigo
 
 ---
 

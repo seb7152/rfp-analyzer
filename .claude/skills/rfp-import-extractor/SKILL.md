@@ -148,8 +148,12 @@ Refer to `references/recommended_questions.md` for comprehensive question lists.
 3. "How do I identify which category each requirement belongs to?"
 
 **Phase 4 - Optional Fields:**
-1. "Would you like me to import optional fields such as [list relevant optional fields]?"
-2. "Should I set default values for missing fields?"
+1. "Would you like me to import optional fields such as:"
+   - **Requirements**: `tags`, `is_mandatory`, `is_optional`, `page_number`
+   - **Categories**: `short_name`, `order`
+   - **Responses**: `question`, `ai_comment`, `manual_comment`, `is_checked`
+2. "If tags are available in the file, should I extract them? How are they formatted (comma-separated, pipe-separated, etc.)?"
+3. "Should I set default values for missing fields?"
 
 **Phase 5 - Category Mapping:**
 1. "Should I map to existing categories or create new ones?"
@@ -273,8 +277,9 @@ requirement = {
     "description": row[2],     # Required
     "weight": float(row[3]),   # Required (0.0-1.0)
     "category_name": row[4],   # Required (category code or title)
-    "is_mandatory": row[5] if row[5] else False,  # Optional
-    "page_number": int(row[6]) if row[6] else None,  # Optional
+    "tags": row[5].split(",") if row[5] else [],  # Optional (comma-separated)
+    "is_mandatory": row[6] if row[6] else False,  # Optional
+    "page_number": int(row[7]) if row[7] else None,  # Optional
 }
 ```
 
@@ -449,7 +454,7 @@ For complete schema details, see `references/json_schemas.md`.
 
 **Requirements:**
 - Required: `code`, `title`, `description`, `weight`, `category_name`
-- Optional: `is_mandatory`, `is_optional`, `page_number`, `rf_document_id`
+- Optional: `tags`, `is_mandatory`, `is_optional`, `page_number`, `rf_document_id`
 
 **Supplier Responses:**
 - Required: `requirement_id_external`

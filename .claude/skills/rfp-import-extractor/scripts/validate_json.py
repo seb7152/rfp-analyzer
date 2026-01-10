@@ -87,7 +87,7 @@ def validate_requirements(data: List[Dict[str, Any]]) -> List[str]:
     Validate requirements JSON structure.
 
     Required fields: code, title, description, weight, category_name
-    Optional fields: is_mandatory, is_optional, page_number, rf_document_id
+    Optional fields: tags, is_mandatory, is_optional, page_number, rf_document_id
     """
     errors = []
     codes_seen = set()
@@ -130,6 +130,20 @@ def validate_requirements(data: List[Dict[str, Any]]) -> List[str]:
             page_num = requirement["page_number"]
             if not isinstance(page_num, int) or page_num < 1:
                 errors.append(f"Requirement at index {idx}: page_number must be a positive integer (got {page_num})")
+
+        # Validate tags
+        if "tags" in requirement:
+            tags = requirement["tags"]
+            if not isinstance(tags, list):
+                errors.append(f"Requirement at index {idx}: tags must be an array")
+            else:
+                for tag_idx, tag in enumerate(tags):
+                    if not isinstance(tag, str):
+                        errors.append(f"Requirement at index {idx}: tag at position {tag_idx} must be a string")
+                    elif len(tag.strip()) == 0:
+                        errors.append(f"Requirement at index {idx}: tag at position {tag_idx} cannot be empty")
+                    elif len(tag) > 100:
+                        errors.append(f"Requirement at index {idx}: tag at position {tag_idx} exceeds 100 characters (got {len(tag)})")
 
     return errors
 
