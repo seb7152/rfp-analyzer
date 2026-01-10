@@ -78,7 +78,7 @@ export async function GET(
  *
  * Body: {
  *   manual_score?: number (0-5),
- *   status?: "pending" | "pass" | "partial" | "fail",
+ *   status?: "pending" | "pass" | "partial" | "fail" | "roadmap",
  *   is_checked?: boolean,
  *   manual_comment?: string,
  *   question?: string

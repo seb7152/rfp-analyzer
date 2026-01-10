@@ -20,7 +20,7 @@ import { createClient } from "@/lib/supabase/server";
  *     id: "req-1",
  *     requirement_id_external: "REQ-1.1.1",
  *     title: "Requirement Title",
- *     status: "pass" | "partial" | "fail" | "pending"
+ *     status: "pass" | "partial" | "fail" | "pending" | "roadmap"
  *   }
  * ]
  */

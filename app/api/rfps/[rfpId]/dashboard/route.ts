@@ -338,7 +338,7 @@ export async function GET(
           ) / Math.max(reqResponses.length, 1);
         const checkedCount = reqResponses.filter((r) => r.is_checked).length;
         const totalCount = reqResponses.length;
-        let status: "pass" | "partial" | "fail" | "pending" = "pending";
+        let status: "pass" | "partial" | "fail" | "pending" | "roadmap" = "pending";
         if (checkedCount === totalCount && totalCount > 0) status = "pass";
         else if (checkedCount > 0 && checkedCount < totalCount)
           status = "partial";
