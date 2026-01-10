@@ -336,7 +336,15 @@ cat test_output.json | head -n 50
 
 # Validate structure
 python validate_json.py test_output.json requirements
+
+# Validate against categories (recommended)
+python validate_json.py test_output.json requirements categories.json
 ```
+
+The validator will output a summary table showing:
+- Total requirements extracted
+- Requirements per category
+- Any validation errors or warnings
 
 ## Common Issues and Solutions
 

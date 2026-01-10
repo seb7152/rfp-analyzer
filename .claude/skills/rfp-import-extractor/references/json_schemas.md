@@ -75,6 +75,8 @@ Requirements are the individual items that need to be evaluated in the RFP.
 }
 ```
 
+**⚠️ Important: ONLY use the fields listed above. Do NOT add extra fields like "id", "lot", "notes", etc.**
+
 ### Example
 
 ```json

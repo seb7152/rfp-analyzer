@@ -226,6 +226,9 @@ python scripts/validate_json.py categories.json categories
 # Validate requirements
 python scripts/validate_json.py requirements.json requirements
 
+# Validate requirements against categories (recommended)
+python scripts/validate_json.py requirements.json requirements categories.json
+
 # Validate supplier responses
 python scripts/validate_json.py responses.json responses
 ```
@@ -238,6 +241,10 @@ The validator checks:
 - ✅ Value constraints (weights 0-1, scores 0-5, etc.)
 - ✅ Unique codes
 - ✅ Valid enum values (status, etc.)
+- ✅ **STRICT mode**: Rejects unknown fields (e.g., "lot", "notes", etc.)
+- ✅ **Category validation**: Verifies category_name matches existing categories (when categories.json provided)
+
+**For requirements import, always provide categories.json to validate category references!**
 
 **If validation fails:**
 

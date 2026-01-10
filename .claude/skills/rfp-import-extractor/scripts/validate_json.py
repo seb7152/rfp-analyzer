@@ -5,15 +5,27 @@ JSON Validation Script for RFP Import
 Validates JSON files for categories, requirements, and supplier responses
 against the expected schema for the RFP Analyzer project.
 
+Features:
+- STRICT validation: Rejects unknown fields (e.g., "lot", "notes", etc.)
+- Category mapping: Validates category_name references when categories file provided
+- Format checking: Validates required fields, types, and constraints
+
 Usage:
     python validate_json.py <file.json> <type>
+    python validate_json.py <requirements.json> requirements <categories.json>
 
     Types: categories, requirements, responses
 
 Examples:
     python validate_json.py categories.json categories
     python validate_json.py requirements.json requirements
+    python validate_json.py requirements.json requirements categories.json
     python validate_json.py supplier_responses.json responses
+
+Important Notes:
+- For requirements import, categories.json is REQUIRED if you're validating references
+- Only allowed fields will be imported; extra fields are rejected with clear errors
+- category_name must match either a category code or title from categories.json
 """
 
 import json
@@ -88,9 +100,17 @@ def validate_requirements(data: List[Dict[str, Any]]) -> List[str]:
 
     Required fields: code, title, description, weight, category_name
     Optional fields: tags, is_mandatory, is_optional, page_number, rf_document_id
+
+    STRICT MODE: Rejects any fields not in the allowed list
     """
     errors = []
     codes_seen = set()
+
+    # Allowed field names (required and optional)
+    allowed_fields = {
+        "code", "title", "description", "weight", "category_name",
+        "tags", "is_mandatory", "is_optional", "page_number", "rf_document_id"
+    }
 
     if not isinstance(data, list):
         return ["Data must be a list of requirement objects"]
@@ -99,6 +119,14 @@ def validate_requirements(data: List[Dict[str, Any]]) -> List[str]:
         if not isinstance(requirement, dict):
             errors.append(f"Requirement at index {idx} must be an object")
             continue
+
+        # Check for extra fields (strict validation)
+        extra_fields = set(requirement.keys()) - allowed_fields
+        if extra_fields:
+            errors.append(
+                f"Requirement at index {idx}: unexpected fields {extra_fields}. "
+                f"Only these fields are allowed: {', '.join(sorted(allowed_fields))}"
+            )
 
         # Required fields
         required_fields = ["code", "title", "description", "weight", "category_name"]
@@ -231,22 +259,165 @@ def load_and_validate(file_path: str, data_type: str) -> Tuple[bool, List[str]]:
     return is_valid, errors
 
 
+def validate_requirements_with_categories(
+    requirements_data: List[Dict[str, Any]],
+    categories_data: List[Dict[str, Any]]
+) -> List[str]:
+    """
+    Validate requirements JSON against a categories JSON.
+    Checks that all category_name values exist in the categories.
+
+    Args:
+        requirements_data: List of requirement objects
+        categories_data: List of category objects with 'code' and 'title' fields
+
+    Returns:
+        List of validation errors (empty if valid)
+    """
+    errors = []
+
+    if not isinstance(categories_data, list):
+        return ["Categories must be a list"]
+
+    # Build set of valid category codes and titles
+    valid_category_codes = set()
+    valid_category_titles = set()
+
+    for idx, cat in enumerate(categories_data):
+        if not isinstance(cat, dict):
+            errors.append(f"Category at index {idx} must be an object")
+            continue
+
+        code = cat.get("code")
+        title = cat.get("title")
+
+        if code:
+            valid_category_codes.add(str(code).strip())
+        if title:
+            valid_category_titles.add(str(title).strip())
+
+    if errors:
+        return errors
+
+    # Validate each requirement's category_name
+    if not isinstance(requirements_data, list):
+        return ["Requirements must be a list"]
+
+    for idx, requirement in enumerate(requirements_data):
+        if not isinstance(requirement, dict):
+            continue
+
+        category_name = requirement.get("category_name")
+        if not category_name:
+            continue
+
+        category_name_str = str(category_name).strip()
+
+        # Check if category_name matches any code or title
+        if (category_name_str not in valid_category_codes and
+                category_name_str not in valid_category_titles):
+            errors.append(
+                f"Requirement at index {idx} references non-existent category '{category_name_str}'. "
+                f"Valid categories: {sorted(valid_category_codes | valid_category_titles)}"
+            )
+
+    return errors
+
+
 def main():
     """Main entry point for CLI usage"""
-    if len(sys.argv) != 3:
+    # Support two modes:
+    # 1. validate_json.py <file.json> <type>
+    # 2. validate_json.py <requirements.json> requirements <categories.json>
+
+    if len(sys.argv) < 3:
         print(__doc__)
+        print("\nUsage:")
+        print("  python validate_json.py <file.json> <type>")
+        print("  python validate_json.py <requirements.json> requirements <categories.json>")
+        print("\nTypes: categories, requirements, responses")
+        print("\nExamples:")
+        print("  python validate_json.py categories.json categories")
+        print("  python validate_json.py requirements.json requirements")
+        print("  python validate_json.py requirements.json requirements categories.json")
         sys.exit(1)
 
     file_path = sys.argv[1]
     data_type = sys.argv[2]
+    categories_file = sys.argv[3] if len(sys.argv) > 3 else None
 
     print(f"🔍 Validating {data_type} JSON: {file_path}")
+    if categories_file:
+        print(f"   Against categories: {categories_file}")
     print()
 
     is_valid, errors = load_and_validate(file_path, data_type)
 
+    # Additional validation: category_name against categories file
+    if is_valid and data_type == "requirements" and categories_file:
+        print("✅ Basic structure valid. Checking category references...")
+        print()
+
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                req_data = json.load(f)
+            with open(categories_file, 'r', encoding='utf-8') as f:
+                cat_data = json.load(f)
+
+            # Normalize to list format
+            req_list = req_data if isinstance(req_data, list) else req_data.get("requirements", [])
+            cat_list = cat_data if isinstance(cat_data, list) else cat_data.get("categories", [])
+
+            category_errors = validate_requirements_with_categories(req_list, cat_list)
+
+            if category_errors:
+                is_valid = False
+                errors = category_errors
+
+        except FileNotFoundError as e:
+            print(f"❌ File not found: {e}")
+            sys.exit(1)
+        except json.JSONDecodeError as e:
+            print(f"❌ Invalid JSON: {e}")
+            sys.exit(1)
+
     if is_valid:
         print("✅ Validation successful! JSON is valid.")
+
+        # Print summary table for requirements
+        if data_type == "requirements":
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    req_data = json.load(f)
+
+                req_list = req_data if isinstance(req_data, list) else req_data.get("requirements", [])
+
+                if req_list:
+                    print("\n📊 Summary:")
+                    print(f"   Total requirements: {len(req_list)}")
+
+                    # Count by category
+                    from collections import Counter
+                    category_counts = Counter(
+                        req.get("category_name", "Unknown") for req in req_list
+                        if isinstance(req, dict)
+                    )
+
+                    if category_counts:
+                        print("\n   Requirements by category:")
+                        print("   " + "-" * 50)
+                        print(f"   {'Category':<35} | {'Count':>10}")
+                        print("   " + "-" * 50)
+
+                        for category, count in sorted(category_counts.items()):
+                            print(f"   {category:<35} | {count:>10}")
+
+                        print("   " + "-" * 50)
+
+            except Exception as e:
+                # Silent fail for summary - validation already passed
+                pass
+
         sys.exit(0)
     else:
         print("❌ Validation failed with the following errors:")
