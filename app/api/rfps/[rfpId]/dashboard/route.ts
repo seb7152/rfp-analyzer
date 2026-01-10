@@ -24,6 +24,7 @@ interface DashboardResponse {
       partial: number;
       fail: number;
       pending: number;
+      roadmap: number;
     };
     averageScores: Record<string, number>;
   };
@@ -64,7 +65,7 @@ interface DashboardResponse {
         title: string;
         currentWeight: number;
         averageScore: number;
-        status: "pass" | "partial" | "fail" | "pending";
+        status: "pass" | "partial" | "fail" | "pending" | "roadmap";
       }>
     >;
   };
@@ -164,6 +165,7 @@ export async function GET(
       partial: allResponses.filter((r) => r.status === "partial").length,
       fail: allResponses.filter((r) => r.status === "fail").length,
       pending: allResponses.filter((r) => r.status === "pending").length,
+      roadmap: allResponses.filter((r) => r.status === "roadmap").length,
     };
 
     // Average scores by supplier
@@ -318,7 +320,7 @@ export async function GET(
         title: string;
         currentWeight: number;
         averageScore: number;
-        status: "pass" | "partial" | "fail" | "pending";
+        status: "pass" | "partial" | "fail" | "pending" | "roadmap";
       }>
     > = {};
     categories.forEach((category: any) => {

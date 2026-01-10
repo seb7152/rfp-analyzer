@@ -142,6 +142,7 @@ export function EvaluationFilters({
                   { value: "pass", label: "Conforme ✓" },
                   { value: "partial", label: "Partiel ≈" },
                   { value: "fail", label: "Non-conforme ✗" },
+                  { value: "roadmap", label: "Roadmap 🗺️" },
                   { value: "pending", label: "En attente ⏳" },
                 ].map(({ value, label }) => (
                   <div key={value} className="flex items-center space-x-2">

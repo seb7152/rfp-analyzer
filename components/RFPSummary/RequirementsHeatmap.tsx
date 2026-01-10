@@ -50,6 +50,8 @@ const getStatusColor = (status: string) => {
       return "bg-red-500 hover:bg-red-600 text-white";
     case "partial":
       return "bg-orange-500 hover:bg-orange-600 text-white";
+    case "roadmap":
+      return "bg-purple-500 hover:bg-purple-600 text-white";
     case "pending":
       return "bg-slate-200 hover:bg-slate-300 text-slate-600";
     default:
@@ -519,6 +521,10 @@ export function RequirementsHeatmap({
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded bg-red-500"></div>
                   <span>Non conforme (Fail)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-purple-500"></div>
+                  <span>Roadmap</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded bg-slate-200 border border-slate-300"></div>

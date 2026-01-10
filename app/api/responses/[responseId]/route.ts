@@ -125,7 +125,7 @@ export async function PUT(
 
     // Validate status if provided
     if (status !== undefined) {
-      const validStatuses = ["pending", "pass", "partial", "fail"];
+      const validStatuses = ["pending", "pass", "partial", "fail", "roadmap"];
       if (!validStatuses.includes(status)) {
         return NextResponse.json(
           { error: `Status must be one of: ${validStatuses.join(", ")}` },

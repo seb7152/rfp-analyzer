@@ -10,7 +10,7 @@ export interface ResponseWithSupplier {
   ai_score: number | null;
   ai_comment: string | null;
   manual_score: number | null;
-  status: "pending" | "pass" | "partial" | "fail";
+  status: "pending" | "pass" | "partial" | "fail" | "roadmap";
   is_checked: boolean;
   manual_comment: string | null;
   question: string | null;
@@ -39,6 +39,7 @@ export interface GetResponsesResponse {
       pass: number;
       partial: number;
       fail: number;
+      roadmap: number;
     };
   };
 }

@@ -69,7 +69,7 @@ interface ResponseState {
   [responseId: string]: {
     expanded: boolean;
     manualScore: number | undefined;
-    status: "pass" | "partial" | "fail" | "pending";
+    status: "pass" | "partial" | "fail" | "pending" | "roadmap";
     isChecked: boolean;
     manualComment: string;
     question: string;
@@ -99,7 +99,7 @@ const getInitialStateFromResponse = (
   return {
     expanded: false,
     manualScore: response.manual_score ?? undefined,
-    status: statusValue as "pass" | "partial" | "fail" | "pending",
+    status: statusValue as "pass" | "partial" | "fail" | "pending" | "roadmap",
     isChecked: response.is_checked || false,
     manualComment: response.manual_comment || "",
     question: response.question || "",
@@ -527,8 +527,12 @@ export function ComparisonView({
             // Sync local state with fresh data, BUT only for fields not currently being edited
             newState.manualScore = response.manual_score ?? undefined;
             newState.status =
-              (response.status as "pass" | "partial" | "fail" | "pending") ||
-              "pending";
+              (response.status as
+                | "pass"
+                | "partial"
+                | "fail"
+                | "pending"
+                | "roadmap") || "pending";
             newState.isChecked = response.is_checked || false;
 
             // Only sync comment fields if they're not currently being edited
@@ -1129,9 +1133,8 @@ export function ComparisonView({
             {!isMobile && (
               <div className="relative">
                 <p
-                  className={`text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap ${
-                    !descriptionExpanded ? "line-clamp-5" : ""
-                  }`}
+                  className={`text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap ${!descriptionExpanded ? "line-clamp-5" : ""
+                    }`}
                 >
                   {requirement.description}
                 </p>
@@ -1146,9 +1149,8 @@ export function ComparisonView({
                       >
                         {descriptionExpanded ? "Voir moins" : "Voir plus"}
                         <ChevronDown
-                          className={`w-3 h-3 transition-transform ${
-                            descriptionExpanded ? "rotate-180" : ""
-                          }`}
+                          className={`w-3 h-3 transition-transform ${descriptionExpanded ? "rotate-180" : ""
+                            }`}
                         />
                       </button>
                     </div>
@@ -1285,9 +1287,8 @@ export function ComparisonView({
                         Contexte du cahier des charges
                       </span>
                       <ChevronDown
-                        className={`w-4 h-4 text-slate-600 dark:text-slate-400 transition-transform ${
-                          contextExpanded ? "rotate-180" : ""
-                        }`}
+                        className={`w-4 h-4 text-slate-600 dark:text-slate-400 transition-transform ${contextExpanded ? "rotate-180" : ""
+                          }`}
                       />
                     </button>
                     {contextExpanded && (

@@ -12,7 +12,7 @@ import { useVersion } from "@/contexts/VersionContext";
 export interface UpdateResponseInput {
   responseId: string;
   manual_score?: number | null;
-  status?: "pending" | "pass" | "partial" | "fail";
+  status?: "pending" | "pass" | "partial" | "fail" | "roadmap";
   is_checked?: boolean;
   manual_comment?: string | null;
   question?: string | null;
@@ -131,29 +131,29 @@ export function useResponseMutation(): UseMutationResult<
           const updatedResponses = old.responses.map((response) =>
             response.id === responseId
               ? {
-                  ...response,
-                  manual_score:
-                    variables.manual_score !== undefined
-                      ? variables.manual_score
-                      : response.manual_score,
-                  status:
-                    variables.status !== undefined
-                      ? variables.status
-                      : response.status,
-                  is_checked:
-                    variables.is_checked !== undefined
-                      ? variables.is_checked
-                      : response.is_checked,
-                  manual_comment:
-                    variables.manual_comment !== undefined
-                      ? variables.manual_comment
-                      : response.manual_comment,
-                  question:
-                    variables.question !== undefined
-                      ? variables.question
-                      : response.question,
-                  updated_at: new Date().toISOString(),
-                }
+                ...response,
+                manual_score:
+                  variables.manual_score !== undefined
+                    ? variables.manual_score
+                    : response.manual_score,
+                status:
+                  variables.status !== undefined
+                    ? variables.status
+                    : response.status,
+                is_checked:
+                  variables.is_checked !== undefined
+                    ? variables.is_checked
+                    : response.is_checked,
+                manual_comment:
+                  variables.manual_comment !== undefined
+                    ? variables.manual_comment
+                    : response.manual_comment,
+                question:
+                  variables.question !== undefined
+                    ? variables.question
+                    : response.question,
+                updated_at: new Date().toISOString(),
+              }
               : response
           );
 
@@ -163,9 +163,12 @@ export function useResponseMutation(): UseMutationResult<
             pass: 0,
             partial: 0,
             fail: 0,
+            roadmap: 0,
           };
           updatedResponses.forEach((r) => {
-            byStatus[r.status]++;
+            if (r.status in byStatus) {
+              byStatus[r.status]++;
+            }
           });
 
           return {
@@ -253,7 +256,7 @@ export function useUpdateResponseStatus() {
     ...mutation,
     updateStatus: (
       responseId: string,
-      status: "pending" | "pass" | "partial" | "fail"
+      status: "pending" | "pass" | "partial" | "fail" | "roadmap"
     ) => mutation.mutate({ responseId, status }),
   };
 }
