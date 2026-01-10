@@ -14,6 +14,8 @@ import {
   Copy,
   Check,
 } from "lucide-react";
+import type { RFPAccessLevel } from "@/types/user";
+import { canUseAIFeatures } from "@/lib/permissions/ai-permissions";
 
 interface Supplier {
   id: string;
@@ -31,13 +33,16 @@ interface TranscriptData {
 export function PresentationTranscriptImport({
   rfpId,
   suppliers,
+  userAccessLevel,
 }: {
   rfpId: string;
   suppliers: Supplier[];
+  userAccessLevel?: RFPAccessLevel;
 }) {
   const [transcripts, setTranscripts] = useState<TranscriptData>({});
   const [activeTab, setActiveTab] = useState<string>(suppliers[0]?.id || "");
   const [copied, setCopied] = useState(false);
+  const hasAIAccess = canUseAIFeatures(userAccessLevel);
 
   // Initialize transcript data for all suppliers
   useEffect(() => {
@@ -279,25 +284,27 @@ Prochaines étapes:
                   )}
 
                   <div className="flex gap-2 justify-end">
-                    <Button
-                      onClick={() => handleAnalyzeTranscript(supplier.id)}
-                      disabled={
-                        data.status === "loading" || !data.transcript.trim()
-                      }
-                      className="gap-2"
-                    >
-                      {data.status === "loading" ? (
-                        <>
-                          <Loader className="h-4 w-4 animate-spin" />
-                          Analyse en cours...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4" />
-                          Analyser
-                        </>
-                      )}
-                    </Button>
+                    {hasAIAccess && (
+                      <Button
+                        onClick={() => handleAnalyzeTranscript(supplier.id)}
+                        disabled={
+                          data.status === "loading" || !data.transcript.trim()
+                        }
+                        className="gap-2"
+                      >
+                        {data.status === "loading" ? (
+                          <>
+                            <Loader className="h-4 w-4 animate-spin" />
+                            Analyse en cours...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="h-4 w-4" />
+                            Analyser
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </div>
               </TabsContent>

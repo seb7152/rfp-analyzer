@@ -45,7 +45,7 @@ import {
   useCategoryRequirements,
   useRequirementsTree,
 } from "@/hooks/use-requirements";
-import { useResponses } from "@/hooks/use-responses";
+import { useResponses, type ResponseWithSupplier } from "@/hooks/use-responses";
 import { useResponseMutation } from "@/hooks/use-response-mutation";
 import { useRequirementDocument } from "@/hooks/use-requirement-document";
 import type { TreeNode } from "@/hooks/use-requirements";
@@ -60,7 +60,9 @@ interface ComparisonViewProps {
   onRequirementChange: (id: string) => void;
   rfpId?: string;
   supplierId?: string;
+  responses?: ResponseWithSupplier[];
   isMobile?: boolean;
+  userAccessLevel?: "owner" | "evaluator" | "viewer" | "admin";
 }
 
 interface ResponseState {
@@ -84,7 +86,9 @@ export function ComparisonView({
   onRequirementChange,
   rfpId,
   supplierId,
+  responses: preloadedResponses,
   isMobile = false,
+  userAccessLevel,
 }: ComparisonViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -131,11 +135,14 @@ export function ComparisonView({
     return allRequirements.find((r) => r.id === selectedRequirementId) || null;
   }, [allRequirements, selectedRequirementId]);
 
-  // Fetch responses for the selected requirement
+  const shouldFetchResponses = !preloadedResponses;
+
+  // Fetch responses for the selected requirement (only if not preloaded)
   const { data: responsesData, refetch: refetchResponses } = useResponses(
     rfpId || "",
     selectedRequirementId,
-    activeVersion?.id
+    activeVersion?.id,
+    { enabled: shouldFetchResponses }
   );
 
   // Fetch annotations for the selected requirement
@@ -145,7 +152,14 @@ export function ComparisonView({
   //   deleteAnnotation,
   // } = useRequirementAnnotations(selectedRequirementId);
 
-  const responses: any[] = (responsesData as any)?.responses || [];
+  const responses: ResponseWithSupplier[] = useMemo(() => {
+    if (preloadedResponses) {
+      return preloadedResponses.filter(
+        (response) => response.requirement_id === selectedRequirementId
+      );
+    }
+    return ((responsesData as any)?.responses || []) as ResponseWithSupplier[];
+  }, [preloadedResponses, responsesData, selectedRequirementId]);
   const suppliers = useMemo(() => {
     // Extract unique suppliers from responses
     const supplierMap = new Map();
@@ -1249,6 +1263,7 @@ export function ComparisonView({
                             selectedRequirement?.description || ""
                           }
                           supplierNames={supplierNames}
+                          userAccessLevel={userAccessLevel}
                           onStatusChange={(status) =>
                             updateResponseState(response.id, { status })
                           }
@@ -1362,10 +1377,11 @@ export function ComparisonView({
                         requirementTitle={requirement?.title || ""}
                         requirementDescription={requirement?.description || ""}
                         supplierNames={supplierNames}
+                        userAccessLevel={userAccessLevel}
                         onOpenBookmark={handleOpenBookmark}
                         rfpId={rfpId}
                         onAICommentUpdate={() => {
-                          // Refetch to ensure we have the latest data
+                          // Refetch to ensure we have latest data
                           refetchResponses();
                         }}
                       />

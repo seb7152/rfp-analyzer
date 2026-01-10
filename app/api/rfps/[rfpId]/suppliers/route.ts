@@ -1,5 +1,10 @@
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
 import { NextRequest, NextResponse } from "next/server";
+import {
+  getActiveSupplierIds,
+  getVersionSupplierStatuses,
+} from "@/lib/suppliers/status-cache";
 
 /**
  * GET /api/rfps/[rfpId]/suppliers
@@ -33,48 +38,42 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Verify user has access to this RFP
+    const accessCheckResponse = await verifyRFPAccess(rfpId, user.id);
+    if (accessCheckResponse) {
+      return accessCheckResponse;
+    }
+
     // Fetch suppliers for this RFP, filtered by version if provided
     let suppliers, suppliersError;
 
     if (versionId) {
-      // Fetch suppliers with their version status
-      const result = await supabase
-        .from("suppliers")
-        .select(
-          `
-          id,
-          name,
-          version_supplier_status!inner (
-            is_active,
-            shortlist_status
+      const statuses = await getVersionSupplierStatuses(supabase, versionId);
+      const activeSupplierIds = getActiveSupplierIds(statuses);
+
+      if (activeSupplierIds.size === 0) {
+        suppliers = [];
+        suppliersError = null;
+      } else {
+        const result = await supabase
+          .from("suppliers")
+          .select(
+            "id, name, supplier_id_external, contact_name, contact_email, contact_phone"
           )
-        `
-        )
-        .eq("rfp_id", rfpId)
-        .eq("version_supplier_status.version_id", versionId)
-        .order("name", { ascending: true });
+          .eq("rfp_id", rfpId)
+          .in("id", Array.from(activeSupplierIds))
+          .order("name", { ascending: true });
 
-      suppliersError = result.error;
-
-      // Filter client-side to exclude removed and inactive suppliers
-      // (Supabase .neq() with nested relations may not work reliably)
-      // version_supplier_status might be an array or object depending on query result
-      suppliers =
-        result.data?.filter((supplier: any) => {
-          const status = supplier.version_supplier_status;
-          const statusObj = Array.isArray(status) ? status[0] : status;
-
-          return (
-            statusObj &&
-            statusObj.is_active === true &&
-            statusObj.shortlist_status !== "removed"
-          );
-        }) || [];
+        suppliers = result.data;
+        suppliersError = result.error;
+      }
     } else {
       // Fetch all suppliers if no versionId provided
       const result = await supabase
         .from("suppliers")
-        .select("id, name")
+        .select(
+          "id, name, supplier_id_external, contact_name, contact_email, contact_phone"
+        )
         .eq("rfp_id", rfpId)
         .order("name", { ascending: true });
 

@@ -1,0 +1,302 @@
+{
+  "structure": {
+    "categories": [
+      {
+        "id": "cat-001",
+        "code": "SEC",
+        "title": "Security & Compliance",
+        "level": 1,
+        "weight": 0.3
+      },
+      {
+        "id": "cat-002",
+        "code": "PERF",
+        "title": "Performance & Reliability",
+        "level": 1,
+        "weight": 0.25
+      },
+      {
+        "id": "cat-003",
+        "code": "COST",
+        "title": "Pricing & Cost",
+        "level": 1,
+        "weight": 0.2
+      },
+      {
+        "id": "cat-004",
+        "code": "SUPP",
+        "title": "Support & Service",
+        "level": 1,
+        "weight": 0.25
+      }
+    ]
+  },
+  "requirements": [
+    {
+      "code": "SEC.1",
+      "title": "Multi-Factor Authentication (MFA)",
+      "description": "Support for MFA via authenticator apps, hardware tokens, and/or SMS",
+      "category_name": "SEC",
+      "weight": 0.2,
+      "is_mandatory": true
+    },
+    {
+      "code": "SEC.2",
+      "title": "Data Encryption (in transit & at rest)",
+      "description": "AES-256 encryption for data in transit (TLS 1.2+) and at rest",
+      "category_name": "SEC",
+      "weight": 0.2,
+      "is_mandatory": true
+    },
+    {
+      "code": "SEC.3",
+      "title": "Compliance Certifications",
+      "description": "SOC2 Type II, ISO 27001, and GDPR compliance",
+      "category_name": "SEC",
+      "weight": 0.15,
+      "is_mandatory": false
+    },
+    {
+      "code": "PERF.1",
+      "title": "API Response Time",
+      "description": "API endpoints respond within 100ms (p95)",
+      "category_name": "PERF",
+      "weight": 0.15,
+      "is_mandatory": false
+    },
+    {
+      "code": "PERF.2",
+      "title": "Uptime SLA",
+      "description": "99.99% uptime SLA with guaranteed availability",
+      "category_name": "PERF",
+      "weight": 0.2,
+      "is_mandatory": true
+    },
+    {
+      "code": "PERF.3",
+      "title": "Scalability",
+      "description": "Handle 100x load increase without degradation",
+      "category_name": "PERF",
+      "weight": 0.15,
+      "is_mandatory": false
+    },
+    {
+      "code": "COST.1",
+      "title": "Annual License Cost",
+      "description": "Total cost of ownership for 100 users, per year",
+      "category_name": "COST",
+      "weight": 1.0,
+      "is_mandatory": true
+    },
+    {
+      "code": "SUPP.1",
+      "title": "24/7 Support Availability",
+      "description": "Phone and email support available 24 hours, 7 days a week",
+      "category_name": "SUPP",
+      "weight": 0.25,
+      "is_mandatory": false
+    },
+    {
+      "code": "SUPP.2",
+      "title": "Response Time SLA",
+      "description": "First response to critical issues within 1 hour",
+      "category_name": "SUPP",
+      "weight": 0.25,
+      "is_mandatory": false
+    },
+    {
+      "code": "SUPP.3",
+      "title": "Training & Onboarding",
+      "description": "Comprehensive training program and dedicated onboarding support",
+      "category_name": "SUPP",
+      "weight": 0.15,
+      "is_mandatory": false
+    }
+  ],
+  "responses_supplier_a": [
+    {
+      "requirement_id_external": "SEC.1",
+      "response_text": "We support MFA via Google Authenticator, Microsoft Authenticator, and hardware FIDO2 tokens. SMS backup codes available.",
+      "manual_score": 5,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "SEC.2",
+      "response_text": "All data encrypted with AES-256. TLS 1.3 for all in-transit communications. Encryption keys rotated quarterly.",
+      "manual_score": 5,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "SEC.3",
+      "response_text": "SOC2 Type II certified. ISO 27001 certified. GDPR compliant with data residency options.",
+      "manual_score": 5,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "PERF.1",
+      "response_text": "Average API response time 45ms, p95 response time 95ms across global CDN.",
+      "manual_score": 4,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "PERF.2",
+      "response_text": "99.99% uptime SLA guaranteed. Redundant data centers across 3 regions. Automatic failover.",
+      "manual_score": 5,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "PERF.3",
+      "response_text": "Horizontal auto-scaling. Tested to handle 500x load increase. No performance degradation observed.",
+      "manual_score": 5,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "COST.1",
+      "response_text": "$150,000 per year for 100 users. Volume discounts available at 500+ users.",
+      "manual_score": 2,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "SUPP.1",
+      "response_text": "24/7 phone and email support. Average wait time 5 minutes. Multiple support channels.",
+      "manual_score": 4,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "SUPP.2",
+      "response_text": "Critical issues: 30-minute first response time. High priority: 2 hours. Standard: 8 hours.",
+      "manual_score": 5,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "SUPP.3",
+      "response_text": "Comprehensive 5-day onboarding program. Dedicated account manager. Quarterly business reviews.",
+      "manual_score": 4,
+      "status": "pass"
+    }
+  ],
+  "responses_supplier_b": [
+    {
+      "requirement_id_external": "SEC.1",
+      "response_text": "MFA available via Google Authenticator and SMS only. Hardware tokens not supported.",
+      "manual_score": 3,
+      "status": "partial"
+    },
+    {
+      "requirement_id_external": "SEC.2",
+      "response_text": "Data encrypted with AES-128. TLS 1.2 for communications. Encryption keys rotated annually.",
+      "manual_score": 3,
+      "status": "partial"
+    },
+    {
+      "requirement_id_external": "SEC.3",
+      "response_text": "SOC2 Type I in progress. ISO 27001 pending. GDPR compliant.",
+      "manual_score": 2,
+      "status": "partial"
+    },
+    {
+      "requirement_id_external": "PERF.1",
+      "response_text": "Average API response time 150ms. p95 response time 250ms.",
+      "manual_score": 2,
+      "status": "partial"
+    },
+    {
+      "requirement_id_external": "PERF.2",
+      "response_text": "99.9% uptime SLA. Single data center with backup. Some downtime during maintenance windows.",
+      "manual_score": 3,
+      "status": "partial"
+    },
+    {
+      "requirement_id_external": "PERF.3",
+      "response_text": "Basic auto-scaling. Tested to handle 50x load increase. Performance degradation above that.",
+      "manual_score": 2,
+      "status": "partial"
+    },
+    {
+      "requirement_id_external": "COST.1",
+      "response_text": "$80,000 per year for 100 users. No volume discounts.",
+      "manual_score": 5,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "SUPP.1",
+      "response_text": "Business hours support only (9am-5pm EST). Email support available 24/7 with delayed response.",
+      "manual_score": 2,
+      "status": "fail"
+    },
+    {
+      "requirement_id_external": "SUPP.2",
+      "response_text": "Critical issues: 4-hour first response time during business hours only.",
+      "manual_score": 1,
+      "status": "fail"
+    },
+    {
+      "requirement_id_external": "SUPP.3",
+      "response_text": "Basic documentation and 2-day onboarding. No dedicated support.",
+      "manual_score": 1,
+      "status": "fail"
+    }
+  ],
+  "responses_supplier_c": [
+    {
+      "requirement_id_external": "SEC.1",
+      "response_text": "MFA supported via Google Authenticator and Okta. FIDO2 tokens supported. Yubikey compatible.",
+      "manual_score": 5,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "SEC.2",
+      "response_text": "AES-256 encryption for data at rest and TLS 1.3 for in-transit. Customer-managed keys available.",
+      "manual_score": 5,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "SEC.3",
+      "response_text": "SOC2 Type II certified. ISO 27001 certified. GDPR compliant with EU data residency.",
+      "manual_score": 5,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "PERF.1",
+      "response_text": "Average API response time 60ms, p95 response time 100ms. Geographic load balancing.",
+      "manual_score": 4,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "PERF.2",
+      "response_text": "99.95% uptime SLA. Dual region redundancy. Automatic failover with <1 minute recovery.",
+      "manual_score": 4,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "PERF.3",
+      "response_text": "Elastic auto-scaling. Designed for 200x load increase. Tested under extreme load conditions.",
+      "manual_score": 4,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "COST.1",
+      "response_text": "$120,000 per year for 100 users. Volume discounts starting at 250 users.",
+      "manual_score": 3,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "SUPP.1",
+      "response_text": "24/7 phone, email, and chat support. Average response time 10 minutes.",
+      "manual_score": 4,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "SUPP.2",
+      "response_text": "Critical: 1-hour first response. High: 4 hours. Standard: 8 hours. 99% SLA achievement.",
+      "manual_score": 4,
+      "status": "pass"
+    },
+    {
+      "requirement_id_external": "SUPP.3",
+      "response_text": "3-day comprehensive onboarding program. Dedicated account manager. Annual training updates.",
+      "manual_score": 3,
+      "status": "pass"
+    }
+  ]
+}

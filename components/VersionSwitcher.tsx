@@ -19,10 +19,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { ClientOnly } from "@/components/ClientOnly";
 
 export function VersionSwitcher() {
   const versionContext = useContext(VersionContext);
   const [open, setOpen] = React.useState(false);
+  const isMobile = useIsMobile();
 
   // If no VersionProvider, don't render anything
   if (!versionContext) {
@@ -54,60 +57,66 @@ export function VersionSwitcher() {
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-[160px] justify-between"
-        >
-          <span className="truncate">
-            {activeVersion
-              ? activeVersion.version_name ||
-                `Version ${activeVersion.version_number}`
-              : "Select version..."}
-          </span>
-          <ChevronsUpDown className="opacity-50 h-4 w-4 ml-2 flex-shrink-0" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[160px] p-0">
-        <Command>
-          <CommandInput placeholder="Search versions..." className="h-9" />
-          <CommandList>
-            <CommandEmpty>No version found.</CommandEmpty>
-            <CommandGroup>
-              {versions.map((version) => (
-                <CommandItem
-                  key={version.id}
-                  value={version.id}
-                  onSelect={() => handleSelectVersion(version.id)}
-                >
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <span className="font-medium text-sm">
-                      {version.version_name ||
-                        `Version ${version.version_number}`}
-                    </span>
-                    {version.is_active && (
-                      <span className="text-xs text-green-600 dark:text-green-400">
-                        Active
+    <ClientOnly>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn("justify-between", isMobile ? "w-16" : "w-[160px]")}
+          >
+            <span className="truncate">
+              {activeVersion
+                ? isMobile
+                  ? `V${activeVersion.version_number}`
+                  : activeVersion.version_name ||
+                    `Version ${activeVersion.version_number}`
+                : isMobile
+                  ? "V"
+                  : "Select version..."}
+            </span>
+            <ChevronsUpDown className="opacity-50 h-4 w-4 ml-2 flex-shrink-0" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className={cn("p-0", isMobile ? "w-48" : "w-[160px]")}>
+          <Command>
+            <CommandInput placeholder="Search versions..." className="h-9" />
+            <CommandList>
+              <CommandEmpty>No version found.</CommandEmpty>
+              <CommandGroup>
+                {versions.map((version) => (
+                  <CommandItem
+                    key={version.id}
+                    value={version.id}
+                    onSelect={() => handleSelectVersion(version.id)}
+                  >
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <span className="font-medium text-sm">
+                        {version.version_name ||
+                          `Version ${version.version_number}`}
                       </span>
-                    )}
-                  </div>
-                  <Check
-                    className={cn(
-                      "ml-auto flex-shrink-0",
-                      activeVersion?.id === version.id
-                        ? "opacity-100"
-                        : "opacity-0"
-                    )}
-                  />
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                      {version.is_active && (
+                        <span className="text-xs text-green-600 dark:text-green-400">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <Check
+                      className={cn(
+                        "ml-auto flex-shrink-0",
+                        activeVersion?.id === version.id
+                          ? "opacity-100"
+                          : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </ClientOnly>
   );
 }

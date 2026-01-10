@@ -9,7 +9,11 @@ export interface GetAllResponsesResponse {
  * Hook to fetch all responses for a specific RFP
  * Note: Supplier filtering should be done in-memory after fetching
  */
-export function useAllResponses(rfpId: string, versionId?: string) {
+export function useAllResponses(
+  rfpId: string,
+  versionId?: string,
+  options?: { enabled?: boolean }
+) {
   return useQuery<GetAllResponsesResponse>({
     queryKey: ["all-responses", rfpId, versionId] as const,
     queryFn: async () => {
@@ -26,7 +30,7 @@ export function useAllResponses(rfpId: string, versionId?: string) {
 
       return await response.json();
     },
-    enabled: !!rfpId,
+    enabled: !!rfpId && (options?.enabled ?? true),
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // 10 minutes
   } as any);

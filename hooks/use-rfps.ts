@@ -2,21 +2,21 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type { RFP } from "@/lib/supabase/types";
+import { useOrganization } from "./use-organization";
 
-export function useRFPs(organizationId: string | null) {
+export function useRFPs() {
+  const { currentOrgId } = useOrganization();
+
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["rfps", organizationId],
+    queryKey: ["rfps", currentOrgId],
     queryFn: async () => {
-      if (!organizationId) {
+      if (!currentOrgId) {
         return [];
       }
 
-      const response = await fetch(
-        `/api/organizations/${organizationId}/rfps`,
-        {
-          credentials: "include",
-        }
-      );
+      const response = await fetch(`/api/organizations/${currentOrgId}/rfps`, {
+        credentials: "include",
+      });
 
       if (!response.ok) {
         throw new Error(`Failed to fetch RFPs: ${response.statusText}`);
@@ -25,7 +25,7 @@ export function useRFPs(organizationId: string | null) {
       const data = await response.json();
       return data.rfps as RFP[];
     },
-    enabled: !!organizationId,
+    enabled: !!currentOrgId,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 

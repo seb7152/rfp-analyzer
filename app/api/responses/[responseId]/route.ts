@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
 import { getResponse } from "@/lib/supabase/queries";
 
 /**
@@ -24,6 +25,29 @@ export async function GET(
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get the RFP associated with this response to verify access
+    const { data: responseData, error: responseError } = await supabase
+      .from("responses")
+      .select("rfp_id")
+      .eq("id", responseId)
+      .single();
+
+    if (responseError || !responseData) {
+      return NextResponse.json(
+        { error: "Response not found" },
+        { status: 404 }
+      );
+    }
+
+    // Verify user has access to the RFP
+    const accessCheckResponse = await verifyRFPAccess(
+      responseData.rfp_id,
+      user.id
+    );
+    if (accessCheckResponse) {
+      return accessCheckResponse;
     }
 
     // Fetch response with supplier information

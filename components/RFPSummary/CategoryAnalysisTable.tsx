@@ -45,6 +45,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Supplier } from "@/types/supplier";
 import { toast } from "sonner";
 import { EditableList } from "./EditableList";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { CategoryAnalysisTableMobile } from "./CategoryAnalysisTableMobile";
+import { ClientOnly } from "../ClientOnly";
 
 // Types
 interface TreeNode {
@@ -63,6 +66,7 @@ interface TreeNode {
 
 interface CategoryAnalysisTableProps {
   rfpId: string;
+  userAccessLevel?: any;
 }
 
 interface SupplierStatus {
@@ -73,6 +77,7 @@ interface SupplierStatus {
 
 export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const { activeVersion, versions } = useVersion();
+  const isMobile = useIsMobile();
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -1646,6 +1651,28 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       </CardContent>
     </>
   );
+
+  if (isMobile) {
+    return (
+      <ClientOnly>
+        <CategoryAnalysisTableMobile
+          flatCategories={flatCategories}
+          suppliers={suppliers}
+          supplierStatuses={supplierStatuses}
+          selectedSupplierId={selectedSupplierId}
+          onSupplierChange={setSelectedSupplierId}
+          onRefresh={refreshAnalysisResults}
+          onAnalyze={triggerAnalysis}
+          isRefreshing={isRefreshing}
+          analysisLoading={analysisLoading}
+          getCategoryScore={getCategoryScore}
+          getAverageCategoryScore={getAverageCategoryScore}
+          getChildTitles={getChildTitles}
+          getAttentionPoints={getAttentionPoints}
+        />
+      </ClientOnly>
+    );
+  }
 
   return (
     <>

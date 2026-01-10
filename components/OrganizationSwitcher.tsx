@@ -30,6 +30,13 @@ export function OrganizationSwitcher() {
     );
   }
 
+  const handleSelectOrganization = (selectedId: string) => {
+    switchOrganization(selectedId);
+    setOpen(false);
+    // Force page reload to refresh all data
+    window.location.reload();
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -55,10 +62,7 @@ export function OrganizationSwitcher() {
                 <CommandItem
                   key={org.id}
                   value={org.id}
-                  onSelect={(selectedId) => {
-                    switchOrganization(selectedId);
-                    setOpen(false);
-                  }}
+                  onSelect={handleSelectOrganization}
                 >
                   <div className="flex flex-col flex-1 min-w-0">
                     <span className="font-medium">{org.name}</span>

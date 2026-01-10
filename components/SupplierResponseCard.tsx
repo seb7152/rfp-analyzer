@@ -30,6 +30,8 @@ import { StarRating } from "@/components/ui/star-rating";
 import { useToast } from "@/hooks/use-toast";
 import { useAnalyzeResponse } from "@/hooks/use-analyze-response";
 import { cn } from "@/lib/utils";
+import type { RFPAccessLevel } from "@/types/user";
+import { canUseAIFeatures } from "@/lib/permissions/ai-permissions";
 
 export interface SupplierResponseCardProps {
   supplierId?: string;
@@ -45,6 +47,7 @@ export interface SupplierResponseCardProps {
   questionText?: string;
   isSaving?: boolean;
   showSaved?: boolean;
+  userAccessLevel?: RFPAccessLevel;
   onStatusChange?: (status: "pending" | "pass" | "partial" | "fail") => void;
   onCheckChange?: (checked: boolean) => void;
   onScoreChange?: (score: number) => void;
@@ -80,6 +83,7 @@ export function SupplierResponseCard({
   questionText = "",
   isSaving = false,
   showSaved = false,
+  userAccessLevel,
   onStatusChange,
   onCheckChange,
   onScoreChange,
@@ -109,6 +113,7 @@ export function SupplierResponseCard({
   const currentScore = manualScore ?? localAIScore;
   const pollingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const originalCommentRef = React.useRef<string | null>(null);
+  const hasAIAccess = canUseAIFeatures(userAccessLevel);
 
   // Update local state when props change
   React.useEffect(() => {
@@ -423,27 +428,29 @@ export function SupplierResponseCard({
                     >
                       <Copy className="w-3 h-3 text-slate-600 dark:text-slate-400" />
                     </button>
-                    <button
-                      onClick={handleReanalyzeResponse}
-                      disabled={analyzeResponse.isPending}
-                      className={cn(
-                        "p-1 rounded transition-colors relative",
-                        analyzeResponse.isPending
-                          ? "opacity-50 cursor-not-allowed"
-                          : "hover:bg-slate-200 dark:hover:bg-slate-800"
-                      )}
-                      title="Relancer l'analyse IA"
-                    >
-                      {analyzeResponse.isPending ? (
-                        <Loader2 className="w-3 h-3 text-slate-600 dark:text-slate-400 animate-spin" />
-                      ) : (
-                        <Sparkles className="w-3 h-3 text-slate-600 dark:text-slate-400" />
-                      )}
-                    </button>
+                    {hasAIAccess && (
+                      <button
+                        onClick={handleReanalyzeResponse}
+                        disabled={analyzeResponse.isPending}
+                        className={cn(
+                          "p-1 rounded transition-colors relative",
+                          analyzeResponse.isPending
+                            ? "opacity-50 cursor-not-allowed"
+                            : "hover:bg-slate-200 dark:hover:bg-slate-800"
+                        )}
+                        title="Relancer l'analyse IA"
+                      >
+                        {analyzeResponse.isPending ? (
+                          <Loader2 className="w-3 h-3 text-slate-600 dark:text-slate-400 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-3 h-3 text-slate-600 dark:text-slate-400" />
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
                 <ScrollArea className="flex-1 rounded border border-slate-200 dark:border-slate-700">
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed p-3">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed p-3 whitespace-pre-wrap">
                     {localAIComment}
                   </p>
                 </ScrollArea>
@@ -490,6 +497,7 @@ export function SupplierResponseCard({
                       requirementText={`${requirementTitle}\n\n${requirementDescription}`}
                       supplierName={supplierName}
                       supplierNames={supplierNames}
+                      userAccessLevel={userAccessLevel}
                       onEnhancementComplete={(enhancedText) => {
                         onCommentChange?.(enhancedText);
                         setTimeout(() => {
@@ -539,6 +547,7 @@ export function SupplierResponseCard({
                       requirementText={`${requirementTitle}\n\n${requirementDescription}`}
                       supplierName={supplierName}
                       supplierNames={supplierNames}
+                      userAccessLevel={userAccessLevel}
                       onEnhancementComplete={(enhancedText) => {
                         onQuestionChange?.(enhancedText);
                         setTimeout(() => {

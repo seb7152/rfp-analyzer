@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
 import { getResponsesForRFP } from "@/lib/supabase/queries";
+import {
+  getActiveSupplierIds,
+  getVersionSupplierStatuses,
+} from "@/lib/suppliers/status-cache";
 
 /**
  * GET /api/rfps/[rfpId]/responses
@@ -22,6 +27,8 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const requirementId = searchParams.get("requirementId") || undefined;
     const versionId = searchParams.get("versionId") || undefined;
+    const supplierId = searchParams.get("supplierId") || undefined;
+    const includeDocs = searchParams.get("includeDocs") !== "false";
 
     // Verify RFP exists and user has access
     const supabase = await createServerClient();
@@ -34,67 +41,67 @@ export async function GET(
     }
 
     // Verify user has access to this RFP
-    const { data: rfp, error: rfpError } = await supabase
-      .from("rfps")
-      .select("id")
-      .eq("id", rfpId)
-      .maybeSingle();
-
-    if (rfpError || !rfp) {
-      return NextResponse.json({ error: "RFP not found" }, { status: 404 });
+    const accessCheckResponse = await verifyRFPAccess(rfpId, user.id);
+    if (accessCheckResponse) {
+      return accessCheckResponse;
     }
 
     // Fetch responses with supplier information, passing versionId if provided
-    let responses = await getResponsesForRFP(rfpId, requirementId, versionId);
+    let responses = await getResponsesForRFP(
+      rfpId,
+      requirementId,
+      versionId,
+      supplierId
+    );
 
     // Filter by supplier status to exclude removed suppliers if version is specified
     if (versionId) {
-      const { data: activeSupplierStatuses } = await supabase
-        .from("version_supplier_status")
-        .select("supplier_id")
-        .eq("version_id", versionId)
-        .in("shortlist_status", ["active", "shortlisted"]);
-
-      const activeSupplierIds = new Set(
-        (activeSupplierStatuses || []).map((status) => status.supplier_id)
+      const activeStatuses = await getVersionSupplierStatuses(
+        supabase,
+        versionId
       );
+      const activeSupplierIds = getActiveSupplierIds(activeStatuses);
 
       responses = responses.filter((r) => activeSupplierIds.has(r.supplier_id));
     }
 
-    // Fetch document availability for these suppliers
-    // 1. Get all document IDs for this RFP
-    const { data: rfpDocs } = await supabase
-      .from("rfp_documents")
-      .select("id")
-      .eq("rfp_id", rfpId)
-      .is("deleted_at", null);
+    let enrichedResponses = responses;
 
-    const rfpDocIds = rfpDocs?.map((d) => d.id) || [];
-    const supplierIds = Array.from(
-      new Set(responses.map((r) => r.supplier_id))
-    );
-    const suppliersWithDocs = new Set<string>();
+    if (includeDocs && responses.length > 0) {
+      // Fetch document availability for these suppliers
+      // 1. Get all document IDs for this RFP
+      const { data: rfpDocs } = await supabase
+        .from("rfp_documents")
+        .select("id")
+        .eq("rfp_id", rfpId)
+        .is("deleted_at", null);
 
-    // 2. Check which suppliers are linked to these documents
-    if (rfpDocIds.length > 0 && supplierIds.length > 0) {
-      const { data: docSuppliers } = await supabase
-        .from("document_suppliers")
-        .select("supplier_id")
-        .in("document_id", rfpDocIds)
-        .in("supplier_id", supplierIds);
+      const rfpDocIds = rfpDocs?.map((d) => d.id) || [];
+      const supplierIds = Array.from(
+        new Set(responses.map((r) => r.supplier_id))
+      );
+      const suppliersWithDocs = new Set<string>();
 
-      docSuppliers?.forEach((ds) => suppliersWithDocs.add(ds.supplier_id));
+      // 2. Check which suppliers are linked to these documents
+      if (rfpDocIds.length > 0 && supplierIds.length > 0) {
+        const { data: docSuppliers } = await supabase
+          .from("document_suppliers")
+          .select("supplier_id")
+          .in("document_id", rfpDocIds)
+          .in("supplier_id", supplierIds);
+
+        docSuppliers?.forEach((ds) => suppliersWithDocs.add(ds.supplier_id));
+      }
+
+      // 3. Enrich responses with has_documents flag
+      enrichedResponses = responses.map((response) => ({
+        ...response,
+        supplier: {
+          ...response.supplier,
+          has_documents: suppliersWithDocs.has(response.supplier_id),
+        },
+      }));
     }
-
-    // 3. Enrich responses with has_documents flag
-    const enrichedResponses = responses.map((response) => ({
-      ...response,
-      supplier: {
-        ...response.supplier,
-        has_documents: suppliersWithDocs.has(response.supplier_id),
-      },
-    }));
 
     return NextResponse.json({
       responses: enrichedResponses,

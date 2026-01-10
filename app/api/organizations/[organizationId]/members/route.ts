@@ -1,11 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-type Params = Promise<{ organizationId: string }>;
-
-export async function GET(_request: Request, { params }: { params: Params }) {
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: { organizationId: string } }
+) {
   try {
-    const { organizationId } = await params;
+    const { organizationId } = params;
     const supabase = await createClient();
 
     // Get current user
@@ -30,7 +31,8 @@ export async function GET(_request: Request, { params }: { params: Params }) {
     }
 
     // Get organization members
-    const { data: members, error: membersError } = await supabase
+    // Admins see all members, non-admins only see their own membership
+    let query = supabase
       .from("user_organizations")
       .select(
         `
@@ -47,6 +49,13 @@ export async function GET(_request: Request, { params }: { params: Params }) {
       )
       .eq("organization_id", organizationId)
       .order("joined_at", { ascending: false });
+
+    // Non-admins can only see their own membership
+    if (membership.role !== "admin") {
+      query = query.eq("user_id", user.id);
+    }
+
+    const { data: members, error: membersError } = await query;
 
     if (membersError) {
       return NextResponse.json(

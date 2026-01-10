@@ -6,7 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Supplier } from "@/types/supplier";
 import { Response } from "@/types/response";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { CategoryCard } from "./CategoryCard";
+import { CategoryRequirementsModal } from "./CategoryRequirementsModal";
+import { ClientOnly } from "../ClientOnly";
 
 // Types
 interface TreeNode {
@@ -36,8 +41,8 @@ const getScoreColor = (score: number | null) => {
   return "bg-red-500 text-white"; // Rouge
 };
 
-const formatScore = (score: number | null) => {
-  if (score === null) return "-";
+const formatScore = (score: number | null | undefined) => {
+  if (score == null) return "-";
   return score.toFixed(1);
 };
 
@@ -47,6 +52,7 @@ export function CategoryHeatmap({
   selectedCategoryId,
 }: CategoryHeatmapProps) {
   const { activeVersion } = useVersion();
+  const isMobile = useIsMobile();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [responses, setResponses] = useState<Response[]>([]);
@@ -55,6 +61,10 @@ export function CategoryHeatmap({
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set()
   );
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedModalCategoryId, setSelectedModalCategoryId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -166,12 +176,13 @@ export function CategoryHeatmap({
 
         // Calculate final score for this category
         const categorySupplierScores: Record<string, number | null> = {};
-        nodeScores.forEach((data, supplierId) => {
-          if (data.totalWeight > 0) {
-            categorySupplierScores[supplierId] =
+        suppliers.forEach((supplier) => {
+          const data = nodeScores.get(supplier.id);
+          if (data && data.totalWeight > 0) {
+            categorySupplierScores[supplier.id] =
               data.weightedSum / data.totalWeight;
           } else {
-            categorySupplierScores[supplierId] = null;
+            categorySupplierScores[supplier.id] = null;
           }
         });
         scores[node.id] = categorySupplierScores;
@@ -233,11 +244,12 @@ export function CategoryHeatmap({
 
     traverse(tree);
 
-    supplierTotals.forEach((data, supplierId) => {
-      if (data.totalWeight > 0) {
-        scores[supplierId] = data.weightedSum / data.totalWeight;
+    suppliers.forEach((supplier) => {
+      const data = supplierTotals.get(supplier.id);
+      if (data && data.totalWeight > 0) {
+        scores[supplier.id] = data.weightedSum / data.totalWeight;
       } else {
-        scores[supplierId] = null;
+        scores[supplier.id] = null;
       }
     });
 
@@ -263,6 +275,56 @@ export function CategoryHeatmap({
     return flat;
   }, [tree, expandedCategories]);
 
+  // Check if weights are missing (all weights are 0 or undefined)
+  const hasNoWeights = useMemo(() => {
+    // Count requirements and check if any have weight > 0
+    let requirementCount = 0;
+    let weightedCount = 0;
+
+    const countRequirements = (nodes: TreeNode[]) => {
+      for (const node of nodes) {
+        if (node.type === "requirement") {
+          requirementCount++;
+          if (weights[node.id] && weights[node.id] > 0) {
+            weightedCount++;
+          }
+        }
+        if (node.children) {
+          countRequirements(node.children);
+        }
+      }
+    };
+
+    countRequirements(tree);
+
+    // Return true if there are requirements but none have weights
+    return requirementCount > 0 && weightedCount === 0;
+  }, [tree, weights]);
+
+  // Get selected category details for modal
+  const selectedModalCategory = useMemo(() => {
+    if (!selectedModalCategoryId) return null;
+    const findCategory = (nodes: TreeNode[]): TreeNode | null => {
+      for (const node of nodes) {
+        if (node.id === selectedModalCategoryId) return node;
+        if (node.children) {
+          const found = findCategory(node.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return findCategory(tree);
+  }, [selectedModalCategoryId, tree]);
+
+  if (loading) {
+    return (
+      <div className="py-8 text-center text-slate-500">
+        Chargement de la synthèse...
+      </div>
+    );
+  }
+
   const toggleCategory = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setExpandedCategories((prev) => {
@@ -282,165 +344,213 @@ export function CategoryHeatmap({
     }
   };
 
-  if (loading) {
-    return (
-      <div className="py-8 text-center text-slate-500">
-        Chargement de la synthèse...
-      </div>
-    );
-  }
+  // Handle modal opening
+  const handleOpenModal = (categoryId: string) => {
+    setSelectedModalCategoryId(categoryId);
+    setIsModalOpen(true);
+  };
 
   return (
-    <Card className="w-full overflow-hidden mb-8">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg font-medium">
-          Synthèse par Catégorie
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="relative w-full overflow-auto max-h-[600px] border rounded-md">
-          <table className="w-full text-sm text-left border-collapse">
-            <thead className="text-xs text-slate-700 uppercase bg-slate-50 sticky top-0 z-20 shadow-sm">
-              <tr>
-                <th className="px-4 py-3 font-medium sticky left-0 bg-slate-50 z-30 border-b border-r min-w-[300px]">
-                  Catégorie
-                </th>
-                {suppliers.map((supplier) => (
-                  <th
-                    key={supplier.id}
-                    className="px-2 py-3 w-24 text-center border-b border-r last:border-r-0 min-w-[96px]"
-                  >
-                    <div
-                      className="truncate max-w-[90px] mx-auto"
-                      title={supplier.name}
-                    >
-                      {supplier.name}
-                    </div>
-                  </th>
+    <>
+      <Card className="w-full overflow-hidden mb-8">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-medium">
+            Synthèse par Catégorie
+          </CardTitle>
+        </CardHeader>
+        {hasNoWeights && (
+          <div className="px-6 pb-4 -mt-2">
+            <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800 flex items-center">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <AlertDescription className="text-amber-800 dark:text-amber-200">
+                Les pondérations des exigences ne sont pas définies. Veuillez
+                les configurer dans l&apos;onglet <strong>Pondérations</strong>{" "}
+                pour afficher les scores par catégorie.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+        <ClientOnly>
+          <CardContent>
+            {isMobile ? (
+              /* Mobile: Cards layout */
+              <div className="space-y-3">
+                {flatCategories.map((category) => (
+                  <CategoryCard
+                    key={category.id}
+                    categoryCode={category.code}
+                    categoryTitle={category.title}
+                    suppliers={suppliers}
+                    scores={categoryScores[category.id] || {}}
+                    onClick={() => handleOpenModal(category.id)}
+                  />
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {flatCategories.map((category) => (
-                <tr
-                  key={category.id}
-                  className={cn(
-                    "border-b transition-colors cursor-pointer",
-                    selectedCategoryId === category.id
-                      ? "bg-blue-50 hover:bg-blue-100"
-                      : "bg-white hover:bg-slate-50"
-                  )}
-                  onClick={() => handleCategoryClick(category.id)}
-                >
-                  <td
-                    className={cn(
-                      "px-4 py-2 font-medium text-slate-900 sticky left-0 z-10 border-r min-w-[300px]",
-                      selectedCategoryId === category.id
-                        ? "bg-blue-50 group-hover:bg-blue-100"
-                        : "bg-white group-hover:bg-slate-50"
-                    )}
-                  >
-                    <div
-                      className="flex items-center gap-2 select-none"
-                      style={{ paddingLeft: `${category.level * 20}px` }}
-                    >
-                      <div
-                        className="cursor-pointer p-1 hover:bg-slate-200 rounded"
-                        onClick={(e) => toggleCategory(category.id, e)}
-                      >
-                        {category.children &&
-                        category.children.some((c) => c.type === "category") ? (
-                          expandedCategories.has(category.id) ? (
-                            <ChevronDown className="h-4 w-4 text-slate-400" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 text-slate-400" />
-                          )
-                        ) : (
-                          <span className="w-4 h-4 block" /> // Spacer
-                        )}
-                      </div>
-
-                      <span className="font-mono text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded flex-shrink-0">
-                        {category.code}
-                      </span>
-                      <span
-                        className="truncate max-w-[200px]"
-                        title={category.title}
-                      >
-                        {category.title}
-                      </span>
-                    </div>
-                  </td>
-                  {suppliers.map((supplier) => {
-                    const score =
-                      categoryScores[category.id]?.[supplier.id] ?? null;
-                    return (
-                      <td
-                        key={`${category.id}-${supplier.id}`}
-                        className="p-1 border-r last:border-r-0 text-center align-middle w-24 min-w-[96px]"
-                      >
-                        <div
-                          className={cn(
-                            "w-full h-8 rounded flex items-center justify-center text-xs font-bold transition-colors cursor-help shadow-sm",
-                            getScoreColor(score)
-                          )}
-                          title={`${supplier.name} - ${category.title}\nNote: ${formatScore(score)}`}
+              </div>
+            ) : (
+              /* Desktop: Table layout */
+              <div className="relative w-full overflow-auto max-h-[600px] border rounded-md">
+                <table className="w-full text-sm text-left border-collapse">
+                  <thead className="text-xs text-slate-700 uppercase bg-slate-50 sticky top-0 z-20 shadow-sm">
+                    <tr>
+                      <th className="px-4 py-3 font-medium sticky left-0 bg-slate-50 z-30 border-b border-r min-w-[300px]">
+                        Catégorie
+                      </th>
+                      {suppliers.map((supplier) => (
+                        <th
+                          key={supplier.id}
+                          className="px-2 py-3 w-24 text-center border-b border-r last:border-r-0 min-w-[96px]"
                         >
-                          {formatScore(score)}
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-            <tfoot className="bg-slate-50 border-t-2 border-slate-300 sticky bottom-0 z-10">
-              <tr>
-                <td className="px-4 py-3 font-semibold text-sm text-slate-700 sticky left-0 bg-slate-50 z-20 border-r">
-                  Note Globale / 5
-                </td>
-                {suppliers.map((supplier) => {
-                  const score = globalScores[supplier.id] ?? null;
-                  return (
-                    <td
-                      key={`global-5-${supplier.id}`}
-                      className="p-2 border-r last:border-r-0 w-24 min-w-[96px] text-center"
-                    >
-                      <div
+                          <div
+                            className="truncate max-w-[90px] mx-auto"
+                            title={supplier.name}
+                          >
+                            {supplier.name}
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {flatCategories.map((category) => (
+                      <tr
+                        key={category.id}
                         className={cn(
-                          "w-full h-8 rounded flex items-center justify-center text-xs font-bold shadow-sm",
-                          getScoreColor(score)
+                          "border-b transition-colors cursor-pointer",
+                          selectedCategoryId === category.id
+                            ? "bg-blue-50 hover:bg-blue-100"
+                            : "bg-white hover:bg-slate-50"
                         )}
+                        onClick={() => handleCategoryClick(category.id)}
                       >
-                        {formatScore(score)}
-                      </div>
-                    </td>
-                  );
-                })}
-              </tr>
-              <tr>
-                <td className="px-4 py-3 font-semibold text-sm text-slate-700 sticky left-0 bg-slate-50 z-20 border-r">
-                  Note Globale / 20
-                </td>
-                {suppliers.map((supplier) => {
-                  const score = globalScores[supplier.id] ?? null;
-                  const score20 = score !== null ? score * 4 : null;
-                  return (
-                    <td
-                      key={`global-20-${supplier.id}`}
-                      className="p-2 border-r last:border-r-0 w-24 min-w-[96px] text-center"
-                    >
-                      <div className="text-sm font-bold text-slate-700">
-                        {score20 !== null ? score20.toFixed(1) : "-"}
-                      </div>
-                    </td>
-                  );
-                })}
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
+                        <td
+                          className={cn(
+                            "px-4 py-2 font-medium text-slate-900 sticky left-0 z-10 border-r min-w-[300px]",
+                            selectedCategoryId === category.id
+                              ? "bg-blue-50 group-hover:bg-blue-100"
+                              : "bg-white group-hover:bg-slate-50"
+                          )}
+                        >
+                          <div
+                            className="flex items-center gap-2 select-none"
+                            style={{ paddingLeft: `${category.level * 20}px` }}
+                          >
+                            <div
+                              className="cursor-pointer p-1 hover:bg-slate-200 rounded"
+                              onClick={(e) => toggleCategory(category.id, e)}
+                            >
+                              {category.children &&
+                              category.children.some(
+                                (c) => c.type === "category"
+                              ) ? (
+                                expandedCategories.has(category.id) ? (
+                                  <ChevronDown className="h-4 w-4 text-slate-400" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4 text-slate-400" />
+                                )
+                              ) : (
+                                <span className="w-4 h-4 block" /> // Spacer
+                              )}
+                            </div>
+
+                            <span className="font-mono text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded flex-shrink-0">
+                              {category.code}
+                            </span>
+                            <span
+                              className="truncate max-w-[200px]"
+                              title={category.title}
+                            >
+                              {category.title}
+                            </span>
+                          </div>
+                        </td>
+                        {suppliers.map((supplier) => {
+                          const score =
+                            categoryScores[category.id]?.[supplier.id] ?? null;
+                          return (
+                            <td
+                              key={`${category.id}-${supplier.id}`}
+                              className="p-1 border-r last:border-r-0 text-center align-middle w-24 min-w-[96px]"
+                            >
+                              <div
+                                className={cn(
+                                  "w-full h-8 rounded flex items-center justify-center text-xs font-bold transition-colors cursor-help shadow-sm",
+                                  getScoreColor(score)
+                                )}
+                                title={`${supplier.name} - ${category.title}\nNote: ${formatScore(score)}`}
+                              >
+                                {formatScore(score)}
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-slate-50 border-t-2 border-slate-300 sticky bottom-0 z-10">
+                    <tr>
+                      <td className="px-4 py-3 font-semibold text-sm text-slate-700 sticky left-0 bg-slate-50 z-20 border-r">
+                        Note Globale / 5
+                      </td>
+                      {suppliers.map((supplier) => {
+                        const score = globalScores[supplier.id] ?? null;
+                        return (
+                          <td
+                            key={`global-5-${supplier.id}`}
+                            className="p-2 border-r last:border-r-0 w-24 min-w-[96px] text-center"
+                          >
+                            <div
+                              className={cn(
+                                "w-full h-8 rounded flex items-center justify-center text-xs font-bold shadow-sm",
+                                getScoreColor(score)
+                              )}
+                            >
+                              {formatScore(score)}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-semibold text-sm text-slate-700 sticky left-0 bg-slate-50 z-20 border-r">
+                        Note Globale / 20
+                      </td>
+                      {suppliers.map((supplier) => {
+                        const score = globalScores[supplier.id] ?? null;
+                        const score20 = score !== null ? score * 4 : null;
+                        return (
+                          <td
+                            key={`global-20-${supplier.id}`}
+                            className="p-2 border-r last:border-r-0 w-24 min-w-[96px] text-center"
+                          >
+                            <div className="text-sm font-bold text-slate-700">
+                              {score20 !== null ? score20.toFixed(1) : "-"}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </ClientOnly>
+      </Card>
+
+      {/* Modal for mobile - requires requirementsHeatmap to show filtered requirements */}
+      {isMobile && selectedModalCategory && (
+        <CategoryRequirementsModal
+          isOpen={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          rfpId={rfpId}
+          categoryId={selectedModalCategory.id}
+          categoryCode={selectedModalCategory.code}
+          categoryTitle={selectedModalCategory.title}
+          tree={tree}
+          suppliers={suppliers}
+          responses={responses}
+        />
+      )}
+    </>
   );
 }

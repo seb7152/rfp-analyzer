@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
 import {
   getRequirements,
   buildHierarchy,
@@ -69,43 +70,9 @@ export async function GET(
     }
 
     // Verify user has access to this RFP
-    // Check if user is member of the RFP's organization
-    const { data: rfp, error: rfpError } = await supabase
-      .from("rfps")
-      .select("id, organization_id")
-      .eq("id", rfpId)
-      .maybeSingle();
-
-    if (rfpError) {
-      console.error("Error fetching RFP:", rfpError);
-      return NextResponse.json(
-        { error: "Failed to fetch RFP" },
-        { status: 500 }
-      );
-    }
-
-    if (!rfp) {
-      return NextResponse.json({ error: "RFP not found" }, { status: 404 });
-    }
-
-    // Check if user is member of the organization
-    const { data: userOrg, error: userOrgError } = await supabase
-      .from("user_organizations")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("organization_id", rfp.organization_id)
-      .maybeSingle();
-
-    if (userOrgError) {
-      console.error("Error checking user organization:", userOrgError);
-      return NextResponse.json(
-        { error: "Failed to verify access" },
-        { status: 500 }
-      );
-    }
-
-    if (!userOrg) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    const accessCheckResponse = await verifyRFPAccess(rfpId, user.id);
+    if (accessCheckResponse) {
+      return accessCheckResponse;
     }
 
     // Fetch requirements
