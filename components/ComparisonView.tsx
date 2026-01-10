@@ -524,6 +524,13 @@ export function ComparisonView({
 
           if (dbChanged) {
             // DB was updated (likely by refetch after save)
+
+            // CRITICAL: If we are currently saving this response, DO NOT sync from responses prop.
+            // This prevents the "revert" bug where refetched data (still stale) overwrites our optimistic local state.
+            if (state.isSaving) {
+              return;
+            }
+
             // Sync local state with fresh data, BUT only for fields not currently being edited
             newState.manualScore = response.manual_score ?? undefined;
             newState.status =
