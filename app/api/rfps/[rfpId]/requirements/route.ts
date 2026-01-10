@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
 import {
   getRequirements,
+  getRequirementsWithTags,
   buildHierarchy,
   searchRequirements,
 } from "@/lib/supabase/queries";
@@ -15,6 +16,7 @@ import {
  * Query Parameters:
  *   - search: Optional search query to filter requirements by ID or title
  *   - flatten: Optional boolean to return flat list instead of hierarchy
+ *   - includeTags: Optional boolean to include tag names for each requirement (default: false)
  *
  * Response:
  *   - 200: Array of requirements with hierarchical structure
@@ -32,6 +34,7 @@ import {
  *     title: "Domain 1",
  *     level: 1,
  *     parent_id: null,
+ *     tags: ["Fonctionnel", "Technique"],  // Only if includeTags=true
  *     children: [
  *       {
  *         id: "req-2",
@@ -39,6 +42,7 @@ import {
  *         title: "Category 1.1",
  *         level: 2,
  *         parent_id: "req-1",
+ *         tags: ["Backend"],  // Only if includeTags=true
  *         children: [...]
  *       }
  *     ]
@@ -78,12 +82,16 @@ export async function GET(
     // Fetch requirements
     const search = searchParams.get("search");
     const flatten = searchParams.get("flatten") === "true";
+    const includeTags = searchParams.get("includeTags") === "true";
 
     let requirements;
     if (search) {
       requirements = await searchRequirements(rfpId, search);
     } else {
-      requirements = await getRequirements(rfpId);
+      // Use getRequirementsWithTags if includeTags is requested
+      requirements = includeTags
+        ? await getRequirementsWithTags(rfpId)
+        : await getRequirements(rfpId);
     }
 
     // Return flat list or hierarchical structure

@@ -296,6 +296,7 @@ export interface ImportRequirementPayload {
   is_optional?: boolean;
   page_number?: number;
   rf_document_id?: string;
+  tags?: string[]; // Optional: array of tag names
 }
 
 export interface ImportRequirementsRequest {

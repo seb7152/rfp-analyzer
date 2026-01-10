@@ -435,6 +435,45 @@ export default function RFPSummaryPage() {
                         };
 
                         // Export Requirements
+                        const requirementIds: string[] = [];
+                        const collectRequirementIds = (nodes: any[]) => {
+                          for (const node of nodes) {
+                            if (node.type === "requirement") {
+                              requirementIds.push(node.id);
+                            }
+                            if (node.children) {
+                              collectRequirementIds(node.children);
+                            }
+                          }
+                        };
+                        collectRequirementIds(treeData);
+
+                        let tagsByRequirement: Record<string, any[]> = {};
+                        if (requirementIds.length > 0) {
+                          try {
+                            const tagsResponse = await fetch(
+                              `/api/rfps/${rfpId}/tags/bulk-fetch`,
+                              {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ requirementIds }),
+                              }
+                            );
+
+                            if (tagsResponse.ok) {
+                              const tagsData = await tagsResponse.json();
+                              tagsByRequirement = tagsData.tagsByRequirement || {};
+                            } else {
+                              console.warn(
+                                "Tags bulk-fetch failed:",
+                                tagsResponse.status
+                              );
+                            }
+                          } catch (tagsError) {
+                            console.warn("Tags bulk-fetch error:", tagsError);
+                          }
+                        }
+
                         const exportData: any[] = [];
                         const traverse = (
                           nodes: any[],
@@ -446,6 +485,14 @@ export default function RFPSummaryPage() {
                                 traverse(node.children, node.code);
                             } else if (node.type === "requirement") {
                               const realWeight = calculateRealWeight(node.id);
+                              const rawTags = tagsByRequirement[node.id] || [];
+                              const tagNames = Array.from(
+                                new Set(
+                                  rawTags
+                                    .map((tag: any) => tag?.name)
+                                    .filter((name: unknown) => typeof name === "string")
+                                )
+                              );
                               exportData.push({
                                 code: node.code,
                                 title: node.title,
@@ -454,6 +501,7 @@ export default function RFPSummaryPage() {
                                 category_name: parentCategoryCode,
                                 is_mandatory: node.is_mandatory,
                                 is_optional: node.is_optional,
+                                ...(tagNames.length > 0 && { tags: tagNames }),
                               });
                             }
                           }
