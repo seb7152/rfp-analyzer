@@ -11,6 +11,7 @@ interface TreeNode {
   is_optional?: boolean;
   description?: string;
   short_name?: string;
+  tags?: string[]; // Array of tag names
   children?: TreeNode[];
 }
 
@@ -101,7 +102,7 @@ export async function GET(
     const { data: requirements, error: reqError } = await supabase
       .from("requirements")
       .select(
-        "id, requirement_id_external, title, description, category_id, level, display_order, is_mandatory, is_optional"
+        "id, requirement_id_external, title, description, category_id, level, display_order, is_mandatory, is_optional, requirement_tags(tag:tags(id, name))"
       )
       .eq("rfp_id", rfpId)
       .order("display_order", { ascending: true });
@@ -146,6 +147,17 @@ export async function GET(
     // Map requirements to categories
     const requirementsByCategory = new Map<string, TreeNode[]>();
     for (const req of requirements || []) {
+      // Extract tag names from requirement_tags relationship
+      const tags: string[] = [];
+      if (req.requirement_tags && Array.isArray(req.requirement_tags)) {
+        for (const assoc of req.requirement_tags) {
+          const tagData = Array.isArray(assoc.tag) ? assoc.tag[0] : assoc.tag;
+          if (tagData && tagData.name) {
+            tags.push(tagData.name);
+          }
+        }
+      }
+
       const reqNode: TreeNode = {
         id: req.id,
         type: "requirement",
@@ -155,6 +167,7 @@ export async function GET(
         level: req.level,
         is_mandatory: req.is_mandatory,
         is_optional: req.is_optional,
+        ...(tags.length > 0 && { tags }), // Only include tags if present
       };
 
       if (req.category_id) {

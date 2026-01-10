@@ -122,7 +122,8 @@ export async function POST(
         title,
         description,
         weight,
-        category_id
+        category_id,
+        requirement_tags(tag:tags(id, name))
       `
       )
       .eq("rfp_id", rfpId)

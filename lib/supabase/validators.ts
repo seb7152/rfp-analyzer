@@ -144,7 +144,15 @@ export function validateRequirementPayload(
       (typeof req.page_number === "number" && req.page_number > 0)) &&
     (req.rf_document_id === undefined ||
       (typeof req.rf_document_id === "string" &&
-        req.rf_document_id.trim().length > 0))
+        req.rf_document_id.trim().length > 0)) &&
+    (req.tags === undefined ||
+      (Array.isArray(req.tags) &&
+        req.tags.every(
+          (tag) =>
+            typeof tag === "string" &&
+            tag.trim().length > 0 &&
+            tag.trim().length <= 100
+        )))
   );
 }
 
