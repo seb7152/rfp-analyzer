@@ -51,6 +51,36 @@ Categories define the hierarchical structure of requirements (domains, sub-domai
 - `level` must be a positive integer (1, 2, 3, ...)
 - Top-level categories (level 1) should have `parent_id` set to `null`
 - `parent_id` must reference an existing category `id` (if not null)
+- Optional fields (`short_name`, `parent_id`, `order`) can be safely omitted - they are truly optional and not required for import
+
+### Recommended Code Scheme
+
+Unless the user specifies otherwise, use **hierarchical numbering** for category codes:
+
+- Level 1: `1`, `2`, `3`, ...
+- Level 2: `1.1`, `1.2`, `2.1`, `2.2`, ...
+- Level 3: `1.1.1`, `1.1.2`, `1.2.1`, ...
+
+**Example:**
+```
+1 (Functional Requirements)
+├── 1.1 (User Management)
+│   ├── 1.1.1 (Authentication)
+│   └── 1.1.2 (Authorization)
+├── 1.2 (Data Management)
+│   └── 1.2.1 (Storage)
+2 (Non-Functional Requirements)
+├── 2.1 (Performance)
+└── 2.2 (Security)
+```
+
+**Benefits:**
+- Easy to identify parent-child relationships
+- Natural reading order (1, 1.1, 1.1.1)
+- Supports any depth
+- Intuitive for users
+
+Always ask the user: "Should I use hierarchical numbering (1, 1.1, 1.1.1) for category codes, or do you have a different naming scheme?"
 
 ---
 

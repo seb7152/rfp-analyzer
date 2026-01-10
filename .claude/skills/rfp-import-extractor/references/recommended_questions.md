@@ -76,6 +76,17 @@ Questions serve to:
 
 3. "Should I generate category codes automatically, or are they in the file?"
 
+4. **CODE SCHEME (Important):** "For the category codes, what scheme should I use?"
+   - **Default recommendation**: "I recommend hierarchical numbering (1, 1.1, 1.1.1, etc.) based on the hierarchy - this makes parent-child relationships very clear. Should I use this approach?"
+   - If they have codes in the file: "Should I use the codes from the file, or should I generate hierarchical codes instead?"
+   - If they want custom scheme: "What naming scheme would you prefer? (e.g., FUNC-001, SEC-001, or something else?)"
+
+   **Benefits of hierarchical numbering to mention:**
+   - Makes parent-child relationships obvious
+   - Natural reading order
+   - Scales to any depth
+   - Intuitive for users
+
 **For Requirements:**
 
 1. "I need to extract: code, title, description, weight, and category. Can you point me to each?"

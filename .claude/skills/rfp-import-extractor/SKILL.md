@@ -133,6 +133,20 @@ Start by summarizing what you found:
 >
 > Can you confirm this is correct?"
 
+### Ask About Category Code Scheme
+
+When extracting categories, **always ask about the code scheme** (unless codes already exist in the file):
+
+> "For the category codes, I recommend using hierarchical numbering (1, 1.1, 1.1.1) based on the hierarchy. This makes parent-child relationships very clear. Should I use this approach, or do you have a different naming scheme in mind?"
+
+**Benefits to mention:**
+- Hierarchical codes make parent-child relationships obvious
+- Natural reading order (1, 1.1, 1.1.1)
+- Scales to any depth
+- Intuitive for users
+
+See `references/json_schemas.md` for **Recommended Code Scheme** details.
+
 ### Ask Targeted Questions
 
 Refer to `references/recommended_questions.md` for comprehensive question lists. Key questions include:

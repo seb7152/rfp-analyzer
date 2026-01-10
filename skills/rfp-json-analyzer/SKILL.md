@@ -36,6 +36,7 @@ When a user asks you to analyze, compare, rank, or synthesize data, **STOP IMMED
 **User asks**: "Who wins?" or "Compare suppliers" or "What are the key risks?"
 
 **You respond** (ALWAYS - no exceptions):
+
 ```
 I can help with that. Before I generate output, let me ask:
 
@@ -71,12 +72,14 @@ What works best for you?
 ### Exceptions (Skip Asking For These Only)
 
 **Direct answer questions** - Respond immediately without asking:
+
 - "What's the weighted score for Supplier A?" → Direct calculation
 - "What does a 3.5 score mean?" → Direct definition
 - "Is Supplier B better on security?" → Yes/no + brief explanation
 - "How are scores calculated?" → Direct explanation
 
 **But still ask for ambiguous requests** like:
+
 - "Show me everything" → Ask which aspects (scores, gaps, risks)
 - "Compare them" → Ask what format and scope
 - "What should we do?" → Ask what decision factors matter
@@ -519,12 +522,14 @@ See `scripts/rfp-analyzer.js` for implementation.
 **NEVER generate output without asking first for analysis/comparison/synthesis requests.**
 
 The workflow is:
+
 1. **User asks a question** (e.g., "Who wins?" "Compare them" "What's critical?")
 2. **You ask about their needs** - format, scope, content
 3. **You wait for their response**
 4. **You generate output in their requested format**
 
 **Do NOT:**
+
 - Generate multiple files automatically
 - Create full reports when a quick answer was wanted
 - Skip questioning and assume what they need

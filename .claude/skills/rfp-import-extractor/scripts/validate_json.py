@@ -44,10 +44,18 @@ def validate_categories(data: List[Dict[str, Any]]) -> List[str]:
 
     Required fields: id, code, title, level
     Optional fields: short_name, parent_id, order
+
+    STRICT MODE: Rejects any fields not in the allowed list
     """
     errors = []
     codes_seen = set()
     ids_seen = set()
+
+    # Allowed field names (required and optional)
+    allowed_fields = {
+        "id", "code", "title", "level",
+        "short_name", "parent_id", "order"
+    }
 
     if not isinstance(data, list):
         return ["Data must be a list of category objects"]
@@ -56,6 +64,14 @@ def validate_categories(data: List[Dict[str, Any]]) -> List[str]:
         if not isinstance(category, dict):
             errors.append(f"Category at index {idx} must be an object")
             continue
+
+        # Check for extra fields (strict validation)
+        extra_fields = set(category.keys()) - allowed_fields
+        if extra_fields:
+            errors.append(
+                f"Category at index {idx}: unexpected fields {extra_fields}. "
+                f"Only these fields are allowed: {', '.join(sorted(allowed_fields))}"
+            )
 
         # Required fields
         required_fields = ["id", "code", "title", "level"]

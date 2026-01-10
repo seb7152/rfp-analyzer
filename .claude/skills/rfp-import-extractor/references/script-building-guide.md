@@ -323,6 +323,79 @@ def extract_data(file_path):
     return data
 ```
 
+#### Pattern 5: Generating Hierarchical Category Codes
+
+When extracting categories with a hierarchy, automatically generate codes using hierarchical numbering (1, 1.1, 1.1.1, etc.).
+
+```python
+def extract_categories_with_hierarchical_codes(file_path):
+    """Extract categories and assign hierarchical codes based on level"""
+    import openpyxl
+
+    wb = openpyxl.load_workbook(file_path)
+    ws = wb['Categories']
+
+    data = []
+
+    # Track code counters per level
+    level_counters = {}  # {level: count}
+    parent_ids = {}  # {level: id}
+
+    for row_num, row in enumerate(ws.iter_rows(min_row=2, values_only=False), start=2):
+        title = row[0].value
+        level = int(row[1].value) if row[1].value else 1
+
+        if not title:
+            continue
+
+        # Initialize counter for this level if needed
+        if level not in level_counters:
+            level_counters[level] = 1
+        else:
+            level_counters[level] += 1
+
+        # Reset deeper level counters
+        levels_to_reset = [l for l in level_counters if l > level]
+        for l in levels_to_reset:
+            del level_counters[l]
+
+        # Generate hierarchical code
+        code_parts = []
+        for l in range(1, level + 1):
+            code_parts.append(str(level_counters.get(l, 1)))
+        code = ".".join(code_parts)
+
+        # Determine parent_id
+        parent_id = parent_ids.get(level - 1) if level > 1 else None
+
+        # Generate ID (same as code for simplicity)
+        id_val = code
+
+        item = {
+            "id": id_val,
+            "code": code,
+            "title": str(title).strip(),
+            "level": level,
+            "parent_id": parent_id,
+        }
+        data.append(item)
+
+        # Track this level's ID for child categories
+        parent_ids[level] = id_val
+
+    return data
+```
+
+**Output example:**
+```json
+[
+  { "id": "1", "code": "1", "title": "Functional Requirements", "level": 1, "parent_id": null },
+  { "id": "1.1", "code": "1.1", "title": "User Management", "level": 2, "parent_id": "1" },
+  { "id": "1.1.1", "code": "1.1.1", "title": "Authentication", "level": 3, "parent_id": "1.1" },
+  { "id": "1.2", "code": "1.2", "title": "Data Management", "level": 2, "parent_id": "1" }
+]
+```
+
 ## Testing Your Script
 
 Before running on the full file, test with a small sample:
@@ -342,6 +415,7 @@ python validate_json.py test_output.json requirements categories.json
 ```
 
 The validator will output a summary table showing:
+
 - Total requirements extracted
 - Requirements per category
 - Any validation errors or warnings
