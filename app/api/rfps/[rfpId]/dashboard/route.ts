@@ -194,7 +194,8 @@ export async function GET(
       // Build supplier name map from all responses (including removed suppliers for lookup)
       allResponses.forEach((response) => {
         if (!supplierNameMap.has(response.supplier_id)) {
-          const supplierName = response.supplier?.name || `Fournisseur ${response.supplier_id}`;
+          const supplierName =
+            response.supplier?.name || `Fournisseur ${response.supplier_id}`;
           supplierNameMap.set(response.supplier_id, supplierName);
         }
       });

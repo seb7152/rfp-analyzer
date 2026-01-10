@@ -289,101 +289,92 @@ export function Sidebar({
       <div
         className={`flex flex-col h-full bg-white/50 text-slate-900 border-r border-slate-200 dark:bg-slate-900/40 dark:text-slate-50 dark:border-slate-800 ${className}`}
       >
-      {/* Header */}
-      <div className="flex-shrink-0 border-b border-slate-200 dark:border-slate-800 p-4 space-y-3">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-          Requirements
-        </h2>
+        {/* Header */}
+        <div className="flex-shrink-0 border-b border-slate-200 dark:border-slate-800 p-4 space-y-3">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Requirements
+          </h2>
 
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
-          <Input
-            placeholder="Search by ID or title..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8"
-          />
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
+            <Input
+              placeholder="Search by ID or title..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+
+          {/* Expand/Collapse Buttons + Filters */}
+          <div className={cn("flex", isMobile ? "gap-1" : "gap-2")}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleExpandAll}
+              className={cn("flex-1", isMobile && "px-1")}
+              title="Expand all requirements"
+            >
+              <ChevronDown className="w-4 h-4" />
+              <span className={isMobile ? "hidden sm:inline ml-1" : "ml-1"}>
+                Expand All
+              </span>
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleCollapseAll}
+              className={cn("flex-1", isMobile && "px-1")}
+              title="Collapse all requirements"
+            >
+              <ChevronUp className="w-4 h-4" />
+              <span className={isMobile ? "hidden sm:inline ml-1" : "ml-1"}>
+                Collapse All
+              </span>
+            </Button>
+            {isSingleSupplier && (
+              <EvaluationFilters
+                filters={filters}
+                onFiltersChange={setFilters}
+                onApplyFilters={handleApplyFilters}
+                activeFilterCount={activeFilterCount}
+              />
+            )}
+          </div>
         </div>
 
-        {/* Expand/Collapse Buttons + Filters */}
-        <div className={cn(
-          "flex",
-          isMobile ? "gap-1" : "gap-2"
-        )}>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleExpandAll}
-            className={cn(
-              "flex-1",
-              isMobile && "px-1"
-            )}
-            title="Expand all requirements"
-          >
-            <ChevronDown className="w-4 h-4" />
-            <span className={isMobile ? "hidden sm:inline ml-1" : "ml-1"}>
-              Expand All
-            </span>
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleCollapseAll}
-            className={cn(
-              "flex-1",
-              isMobile && "px-1"
-            )}
-            title="Collapse all requirements"
-          >
-            <ChevronUp className="w-4 h-4" />
-            <span className={isMobile ? "hidden sm:inline ml-1" : "ml-1"}>
-              Collapse All
-            </span>
-          </Button>
-          {isSingleSupplier && (
-            <EvaluationFilters
-              filters={filters}
-              onFiltersChange={setFilters}
-              onApplyFilters={handleApplyFilters}
-              activeFilterCount={activeFilterCount}
-            />
+        {/* Requirements Tree */}
+        <div className="flex-1 overflow-hidden">
+          {isLoading ? (
+            <div className="p-4 text-slate-500 dark:text-slate-400">
+              Loading tree...
+            </div>
+          ) : error ? (
+            <div className="p-4 text-red-600 dark:text-red-400">
+              Error loading tree: {String(error)}
+            </div>
+          ) : filteredTree.length === 0 ? (
+            <div className="p-4 text-slate-500 dark:text-slate-400">
+              {searchQuery
+                ? "No items matching your search"
+                : hasActiveAppliedFilters
+                  ? "No requirements matching the applied filters"
+                  : "No categories or requirements found"}
+            </div>
+          ) : (
+            <ScrollArea className="h-full">
+              <div className="p-2">
+                <RequirementsTreeView
+                  nodes={filteredTree}
+                  selectedNodeId={selectedRequirementId}
+                  expandedNodeIds={displayedExpandedNodeIds}
+                  onSelectNode={onSelectRequirement}
+                  onToggleNode={handleToggleNode}
+                />
+              </div>
+            </ScrollArea>
           )}
         </div>
-      </div>
-
-      {/* Requirements Tree */}
-      <div className="flex-1 overflow-hidden">
-        {isLoading ? (
-          <div className="p-4 text-slate-500 dark:text-slate-400">
-            Loading tree...
-          </div>
-        ) : error ? (
-          <div className="p-4 text-red-600 dark:text-red-400">
-            Error loading tree: {String(error)}
-          </div>
-        ) : filteredTree.length === 0 ? (
-          <div className="p-4 text-slate-500 dark:text-slate-400">
-            {searchQuery
-              ? "No items matching your search"
-              : hasActiveAppliedFilters
-                ? "No requirements matching the applied filters"
-                : "No categories or requirements found"}
-          </div>
-        ) : (
-          <ScrollArea className="h-full">
-            <div className="p-2">
-              <RequirementsTreeView
-                nodes={filteredTree}
-                selectedNodeId={selectedRequirementId}
-                expandedNodeIds={displayedExpandedNodeIds}
-                onSelectNode={onSelectRequirement}
-                onToggleNode={handleToggleNode}
-              />
-            </div>
-          </ScrollArea>
-        )}
-      </div>
       </div>
     </ClientOnly>
   );

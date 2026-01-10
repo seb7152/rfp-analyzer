@@ -48,7 +48,8 @@ export function getActiveSupplierIds(
     statuses
       .filter(
         (status) =>
-          (status.is_active ?? true) && (status.shortlist_status ?? "active") !== "removed"
+          (status.is_active ?? true) &&
+          (status.shortlist_status ?? "active") !== "removed"
       )
       .map((status) => status.supplier_id)
   );

@@ -71,7 +71,9 @@ export async function GET(
       // Fetch all suppliers if no versionId provided
       const result = await supabase
         .from("suppliers")
-        .select("id, name, supplier_id_external, contact_name, contact_email, contact_phone")
+        .select(
+          "id, name, supplier_id_external, contact_name, contact_email, contact_phone"
+        )
         .eq("rfp_id", rfpId)
         .order("name", { ascending: true });
 
