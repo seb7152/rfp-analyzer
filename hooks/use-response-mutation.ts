@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ResponseWithSupplier, GetResponsesResponse } from "./use-responses";
+import type { GetAllResponsesResponse } from "./use-all-responses";
 import { useOnlineStatus } from "./use-online-status";
 import { offlineQueue } from "@/lib/offline-queue";
 import { useVersion } from "@/contexts/VersionContext";
@@ -91,6 +92,7 @@ export function useResponseMutation(): UseMutationResult<
       // Cancel any outgoing refetches to avoid overwriting our optimistic update
       await queryClient.cancelQueries({ queryKey: ["response", responseId] });
       await queryClient.cancelQueries({ queryKey: ["responses"] });
+      await queryClient.cancelQueries({ queryKey: ["all-responses"] });
 
       // Snapshot the previous value for rollback
       const previousResponse = queryClient.getQueryData<{
@@ -100,6 +102,14 @@ export function useResponseMutation(): UseMutationResult<
       const previousResponsesLists = queryClient
         .getQueryCache()
         .findAll({ queryKey: ["responses"] })
+        .map((query) => ({
+          key: query.queryKey,
+          data: query.state.data,
+        }));
+
+      const previousAllResponsesLists = queryClient
+        .getQueryCache()
+        .findAll({ queryKey: ["all-responses"] })
         .map((query) => ({
           key: query.queryKey,
           data: query.state.data,
@@ -179,8 +189,53 @@ export function useResponseMutation(): UseMutationResult<
         });
       });
 
+      // Optimistically update "all responses" lists used in supplier view
+      previousAllResponsesLists.forEach(({ key }) => {
+        queryClient.setQueryData<GetAllResponsesResponse>(key, (old) => {
+          if (!old) return old;
+
+          const updatedResponses = old.responses.map((response) =>
+            response.id === responseId
+              ? {
+                  ...response,
+                  manual_score:
+                    variables.manual_score !== undefined
+                      ? variables.manual_score
+                      : response.manual_score,
+                  status:
+                    variables.status !== undefined
+                      ? variables.status
+                      : response.status,
+                  is_checked:
+                    variables.is_checked !== undefined
+                      ? variables.is_checked
+                      : response.is_checked,
+                  manual_comment:
+                    variables.manual_comment !== undefined
+                      ? variables.manual_comment
+                      : response.manual_comment,
+                  question:
+                    variables.question !== undefined
+                      ? variables.question
+                      : response.question,
+                  updated_at: new Date().toISOString(),
+                }
+              : response
+          );
+
+          return {
+            ...old,
+            responses: updatedResponses,
+          };
+        });
+      });
+
       // Return context with snapshots for rollback
-      return { previousResponse, previousResponsesLists };
+      return {
+        previousResponse,
+        previousResponsesLists,
+        previousAllResponsesLists,
+      };
     },
 
     // On error, rollback to the previous values
@@ -194,6 +249,12 @@ export function useResponseMutation(): UseMutationResult<
 
       if (context?.previousResponsesLists) {
         context.previousResponsesLists.forEach(({ key, data }) => {
+          queryClient.setQueryData(key, data);
+        });
+      }
+
+      if (context?.previousAllResponsesLists) {
+        context.previousAllResponsesLists.forEach(({ key, data }) => {
           queryClient.setQueryData(key, data);
         });
       }
@@ -214,6 +275,11 @@ export function useResponseMutation(): UseMutationResult<
       // Invalidate all responses lists
       queryClient.invalidateQueries({
         queryKey: ["responses"],
+      });
+
+      // Invalidate all-responses list used in single supplier view
+      queryClient.invalidateQueries({
+        queryKey: ["all-responses"],
       });
 
       // Invalidate category requirements to update status aggregation
