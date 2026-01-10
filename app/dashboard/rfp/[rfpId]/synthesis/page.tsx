@@ -28,6 +28,7 @@ interface DashboardData {
       partial: number;
       fail: number;
       pending: number;
+      roadmap: number;
     };
     averageScores: Record<string, number>;
   };
@@ -68,7 +69,7 @@ interface DashboardData {
         title: string;
         currentWeight: number;
         averageScore: number;
-        status: "pass" | "partial" | "fail" | "pending";
+        status: "pass" | "partial" | "fail" | "pending" | "roadmap";
       }>
     >;
   };
@@ -224,7 +225,7 @@ export default function RFPSynthesisPage() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={() => {}}>
+            <Button variant="outline" size="sm" onClick={() => { }}>
               Réinitialiser les poids
             </Button>
             <Button
@@ -322,6 +323,13 @@ export default function RFPSynthesisPage() {
                   <p className="text-sm font-medium">En attente</p>
                   <Progress
                     value={globalProgress.statusDistribution.pending}
+                    className="w-full h-2"
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Roadmap</p>
+                  <Progress
+                    value={globalProgress.statusDistribution.roadmap}
                     className="w-full h-2"
                   />
                 </div>

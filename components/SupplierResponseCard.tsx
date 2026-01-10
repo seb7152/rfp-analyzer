@@ -14,6 +14,7 @@ import {
   FileText,
   Maximize2,
   Sparkles,
+  Map,
 } from "lucide-react";
 import { SupplierBookmarks } from "@/components/SupplierBookmarks";
 import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
@@ -40,7 +41,7 @@ export interface SupplierResponseCardProps {
   responseText: string;
   aiScore: number;
   aiComment: string;
-  status?: "pending" | "pass" | "partial" | "fail";
+  status?: "pending" | "pass" | "partial" | "fail" | "roadmap";
   isChecked?: boolean;
   manualScore?: number;
   manualComment?: string;
@@ -48,7 +49,7 @@ export interface SupplierResponseCardProps {
   isSaving?: boolean;
   showSaved?: boolean;
   userAccessLevel?: RFPAccessLevel;
-  onStatusChange?: (status: "pending" | "pass" | "partial" | "fail") => void;
+  onStatusChange?: (status: "pending" | "pass" | "partial" | "fail" | "roadmap") => void;
   onCheckChange?: (checked: boolean) => void;
   onScoreChange?: (score: number) => void;
   onCommentChange?: (comment: string) => void;
@@ -242,6 +243,13 @@ export function SupplierResponseCard({
           <Badge className="bg-red-500 px-3 py-1.5">
             <AlertCircle className="w-4 h-4 mr-1.5" />
             Non conforme
+          </Badge>
+        );
+      case "roadmap":
+        return (
+          <Badge className="bg-purple-500 px-3 py-1.5 text-white">
+            <Map className="w-4 h-4 mr-1.5" />
+            Roadmap
           </Badge>
         );
       default:

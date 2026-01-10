@@ -12,7 +12,7 @@ import { useVersion } from "@/contexts/VersionContext";
 export interface UpdateResponseInput {
   responseId: string;
   manual_score?: number | null;
-  status?: "pending" | "pass" | "partial" | "fail";
+  status?: "pending" | "pass" | "partial" | "fail" | "roadmap";
   is_checked?: boolean;
   manual_comment?: string | null;
   question?: string | null;
@@ -91,6 +91,7 @@ export function useResponseMutation(): UseMutationResult<
       // Cancel any outgoing refetches to avoid overwriting our optimistic update
       await queryClient.cancelQueries({ queryKey: ["response", responseId] });
       await queryClient.cancelQueries({ queryKey: ["responses"] });
+      await queryClient.cancelQueries({ queryKey: ["all-responses"] });
 
       // Snapshot the previous value for rollback
       const previousResponse = queryClient.getQueryData<{
@@ -100,6 +101,14 @@ export function useResponseMutation(): UseMutationResult<
       const previousResponsesLists = queryClient
         .getQueryCache()
         .findAll({ queryKey: ["responses"] })
+        .map((query) => ({
+          key: query.queryKey,
+          data: query.state.data,
+        }));
+
+      const previousAllResponsesLists = queryClient
+        .getQueryCache()
+        .findAll({ queryKey: ["all-responses"] })
         .map((query) => ({
           key: query.queryKey,
           data: query.state.data,
@@ -131,29 +140,29 @@ export function useResponseMutation(): UseMutationResult<
           const updatedResponses = old.responses.map((response) =>
             response.id === responseId
               ? {
-                  ...response,
-                  manual_score:
-                    variables.manual_score !== undefined
-                      ? variables.manual_score
-                      : response.manual_score,
-                  status:
-                    variables.status !== undefined
-                      ? variables.status
-                      : response.status,
-                  is_checked:
-                    variables.is_checked !== undefined
-                      ? variables.is_checked
-                      : response.is_checked,
-                  manual_comment:
-                    variables.manual_comment !== undefined
-                      ? variables.manual_comment
-                      : response.manual_comment,
-                  question:
-                    variables.question !== undefined
-                      ? variables.question
-                      : response.question,
-                  updated_at: new Date().toISOString(),
-                }
+                ...response,
+                manual_score:
+                  variables.manual_score !== undefined
+                    ? variables.manual_score
+                    : response.manual_score,
+                status:
+                  variables.status !== undefined
+                    ? variables.status
+                    : response.status,
+                is_checked:
+                  variables.is_checked !== undefined
+                    ? variables.is_checked
+                    : response.is_checked,
+                manual_comment:
+                  variables.manual_comment !== undefined
+                    ? variables.manual_comment
+                    : response.manual_comment,
+                question:
+                  variables.question !== undefined
+                    ? variables.question
+                    : response.question,
+                updated_at: new Date().toISOString(),
+              }
               : response
           );
 
@@ -163,9 +172,12 @@ export function useResponseMutation(): UseMutationResult<
             pass: 0,
             partial: 0,
             fail: 0,
+            roadmap: 0,
           };
           updatedResponses.forEach((r) => {
-            byStatus[r.status]++;
+            if (r.status in byStatus) {
+              byStatus[r.status]++;
+            }
           });
 
           return {
@@ -179,8 +191,49 @@ export function useResponseMutation(): UseMutationResult<
         });
       });
 
+      // Optimistically update all-responses lists
+      previousAllResponsesLists.forEach(({ key }) => {
+        queryClient.setQueryData<any>(key, (old: any) => {
+          if (!old || !old.responses) return old;
+
+          const updatedResponses = old.responses.map((response: any) =>
+            response.id === responseId
+              ? {
+                ...response,
+                manual_score:
+                  variables.manual_score !== undefined
+                    ? variables.manual_score
+                    : response.manual_score,
+                status:
+                  variables.status !== undefined
+                    ? variables.status
+                    : response.status,
+                is_checked:
+                  variables.is_checked !== undefined
+                    ? variables.is_checked
+                    : response.is_checked,
+                manual_comment:
+                  variables.manual_comment !== undefined
+                    ? variables.manual_comment
+                    : response.manual_comment,
+                question:
+                  variables.question !== undefined
+                    ? variables.question
+                    : response.question,
+                updated_at: new Date().toISOString(),
+              }
+              : response
+          );
+
+          return {
+            ...old,
+            responses: updatedResponses,
+          };
+        });
+      });
+
       // Return context with snapshots for rollback
-      return { previousResponse, previousResponsesLists };
+      return { previousResponse, previousResponsesLists, previousAllResponsesLists };
     },
 
     // On error, rollback to the previous values
@@ -194,6 +247,12 @@ export function useResponseMutation(): UseMutationResult<
 
       if (context?.previousResponsesLists) {
         context.previousResponsesLists.forEach(({ key, data }) => {
+          queryClient.setQueryData(key, data);
+        });
+      }
+
+      if (context?.previousAllResponsesLists) {
+        context.previousAllResponsesLists.forEach(({ key, data }) => {
           queryClient.setQueryData(key, data);
         });
       }
@@ -214,6 +273,11 @@ export function useResponseMutation(): UseMutationResult<
       // Invalidate all responses lists
       queryClient.invalidateQueries({
         queryKey: ["responses"],
+      });
+
+      // Invalidate all-responses lists
+      queryClient.invalidateQueries({
+        queryKey: ["all-responses"],
       });
 
       // Invalidate category requirements to update status aggregation
@@ -253,7 +317,7 @@ export function useUpdateResponseStatus() {
     ...mutation,
     updateStatus: (
       responseId: string,
-      status: "pending" | "pass" | "partial" | "fail"
+      status: "pending" | "pass" | "partial" | "fail" | "roadmap"
     ) => mutation.mutate({ responseId, status }),
   };
 }

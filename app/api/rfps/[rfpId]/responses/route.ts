@@ -112,6 +112,7 @@ export async function GET(
           pass: responses.filter((r) => r.status === "pass").length,
           partial: responses.filter((r) => r.status === "partial").length,
           fail: responses.filter((r) => r.status === "fail").length,
+          roadmap: responses.filter((r) => r.status === "roadmap").length,
         },
       },
     });

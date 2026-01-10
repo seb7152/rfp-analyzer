@@ -24,6 +24,7 @@ interface DashboardResponse {
       partial: number;
       fail: number;
       pending: number;
+      roadmap: number;
     };
     averageScores: Record<string, number>;
   };
@@ -64,7 +65,7 @@ interface DashboardResponse {
         title: string;
         currentWeight: number;
         averageScore: number;
-        status: "pass" | "partial" | "fail" | "pending";
+        status: "pass" | "partial" | "fail" | "pending" | "roadmap";
       }>
     >;
   };
@@ -164,6 +165,7 @@ export async function GET(
       partial: allResponses.filter((r) => r.status === "partial").length,
       fail: allResponses.filter((r) => r.status === "fail").length,
       pending: allResponses.filter((r) => r.status === "pending").length,
+      roadmap: allResponses.filter((r) => r.status === "roadmap").length,
     };
 
     // Average scores by supplier
@@ -318,7 +320,7 @@ export async function GET(
         title: string;
         currentWeight: number;
         averageScore: number;
-        status: "pass" | "partial" | "fail" | "pending";
+        status: "pass" | "partial" | "fail" | "pending" | "roadmap";
       }>
     > = {};
     categories.forEach((category: any) => {
@@ -336,7 +338,7 @@ export async function GET(
           ) / Math.max(reqResponses.length, 1);
         const checkedCount = reqResponses.filter((r) => r.is_checked).length;
         const totalCount = reqResponses.length;
-        let status: "pass" | "partial" | "fail" | "pending" = "pending";
+        let status: "pass" | "partial" | "fail" | "pending" | "roadmap" = "pending";
         if (checkedCount === totalCount && totalCount > 0) status = "pass";
         else if (checkedCount > 0 && checkedCount < totalCount)
           status = "partial";

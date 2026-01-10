@@ -11,6 +11,7 @@ export const RESPONSE_STATUSES = {
   pass: "pass",
   partial: "partial",
   fail: "fail",
+  roadmap: "roadmap",
 } as const;
 
 export const RESPONSE_STATUS_LABELS = {
@@ -18,6 +19,7 @@ export const RESPONSE_STATUS_LABELS = {
   pass: "Conforme",
   partial: "Partiellement conforme",
   fail: "Non conforme",
+  roadmap: "Roadmap",
 } as const;
 
 export const RESPONSE_STATUS_COLORS = {
@@ -25,6 +27,7 @@ export const RESPONSE_STATUS_COLORS = {
   pass: "bg-green-100 text-green-800 border-green-300",
   partial: "bg-blue-100 text-blue-800 border-blue-300",
   fail: "bg-red-100 text-red-800 border-red-300",
+  roadmap: "bg-purple-100 text-purple-800 border-purple-300",
 } as const;
 
 export const RESPONSE_STATUS_ICONS = {
@@ -32,6 +35,7 @@ export const RESPONSE_STATUS_ICONS = {
   pass: "check-circle",
   partial: "zap",
   fail: "x-circle",
+  roadmap: "map",
 } as const;
 
 // ============================================================================

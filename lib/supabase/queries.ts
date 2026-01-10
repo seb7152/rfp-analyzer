@@ -757,8 +757,8 @@ export async function importRequirements(
 
       const positionInPdf = req.page_number
         ? {
-            page_number: req.page_number,
-          }
+          page_number: req.page_number,
+        }
         : null;
 
       // Handle partial updates / merging
@@ -1135,7 +1135,7 @@ export async function getResponsesForRequirement(
     ai_score: number | null;
     ai_comment: string | null;
     manual_score: number | null;
-    status: "pending" | "pass" | "partial" | "fail";
+    status: "pending" | "pass" | "partial" | "fail" | "roadmap";
     is_checked: boolean;
     manual_comment: string | null;
     question: string | null;
@@ -1227,7 +1227,7 @@ export async function getResponsesForRFP(
     ai_score: number | null;
     ai_comment: string | null;
     manual_score: number | null;
-    status: "pending" | "pass" | "partial" | "fail";
+    status: "pending" | "pass" | "partial" | "fail" | "roadmap";
     is_checked: boolean;
     manual_comment: string | null;
     question: string | null;
@@ -1324,7 +1324,7 @@ export async function getResponse(responseId: string): Promise<{
   ai_score: number | null;
   ai_comment: string | null;
   manual_score: number | null;
-  status: "pending" | "pass" | "partial" | "fail";
+  status: "pending" | "pass" | "partial" | "fail" | "roadmap";
   is_checked: boolean;
   manual_comment: string | null;
   question: string | null;

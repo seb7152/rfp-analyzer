@@ -78,7 +78,7 @@ export async function GET(
  *
  * Body: {
  *   manual_score?: number (0-5),
- *   status?: "pending" | "pass" | "partial" | "fail",
+ *   status?: "pending" | "pass" | "partial" | "fail" | "roadmap",
  *   is_checked?: boolean,
  *   manual_comment?: string,
  *   question?: string
@@ -125,7 +125,7 @@ export async function PUT(
 
     // Validate status if provided
     if (status !== undefined) {
-      const validStatuses = ["pending", "pass", "partial", "fail"];
+      const validStatuses = ["pending", "pass", "partial", "fail", "roadmap"];
       if (!validStatuses.includes(status)) {
         return NextResponse.json(
           { error: `Status must be one of: ${validStatuses.join(", ")}` },

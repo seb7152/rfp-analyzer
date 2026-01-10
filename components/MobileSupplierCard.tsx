@@ -10,6 +10,7 @@ import {
   Loader2,
   Copy,
   Sparkles,
+  Map,
 } from "lucide-react";
 import { AudioRecorder } from "@/components/AudioRecorder";
 import { TextEnhancer } from "@/components/TextEnhancer";
@@ -31,7 +32,7 @@ export interface MobileSupplierCardProps {
   responseText: string;
   aiScore: number;
   aiComment: string;
-  status?: "pending" | "pass" | "partial" | "fail";
+  status?: "pending" | "pass" | "partial" | "fail" | "roadmap";
   isChecked?: boolean;
   manualScore?: number;
   manualComment?: string;
@@ -42,7 +43,7 @@ export interface MobileSupplierCardProps {
   requirementTitle?: string;
   requirementDescription?: string;
   supplierNames?: string[];
-  onStatusChange?: (status: "pending" | "pass" | "partial" | "fail") => void;
+  onStatusChange?: (status: "pending" | "pass" | "partial" | "fail" | "roadmap") => void;
   onCheckChange?: (checked: boolean) => void;
   onScoreChange?: (score: number) => void;
   onCommentChange?: (comment: string) => void;
@@ -221,6 +222,13 @@ export function MobileSupplierCard({
           <Badge className="bg-red-500 px-3 py-1.5">
             <AlertCircle className="w-4 h-4 mr-1.5" />
             Non conforme
+          </Badge>
+        );
+      case "roadmap":
+        return (
+          <Badge className="bg-purple-500 px-3 py-1.5 text-white">
+            <Map className="w-4 h-4 mr-1.5" />
+            Roadmap
           </Badge>
         );
       default:
@@ -428,11 +436,10 @@ export function MobileSupplierCard({
                   <button
                     onClick={handleReanalyzeResponse}
                     disabled={analyzeResponse.isPending}
-                    className={`p-1.5 rounded transition-colors ${
-                      analyzeResponse.isPending
+                    className={`p-1.5 rounded transition-colors ${analyzeResponse.isPending
                         ? "opacity-50 cursor-not-allowed"
                         : "hover:bg-slate-200 dark:hover:bg-slate-800"
-                    }`}
+                      }`}
                     title="Relancer l'analyse IA"
                   >
                     {analyzeResponse.isPending ? (
