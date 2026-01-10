@@ -64,6 +64,7 @@ print("Merged cells:", ws.merged_cells.ranges)
 ```
 
 **Look for:**
+
 - Which sheets contain relevant data
 - Column headers and their meanings
 - Starting row for data (after headers)
@@ -94,6 +95,7 @@ for i, table in enumerate(doc.tables):
 ```
 
 **Look for:**
+
 - Heading levels (Heading 1, 2, 3) used for categories
 - Tables containing structured data
 - Numbered or bulleted lists
@@ -103,6 +105,7 @@ for i, table in enumerate(doc.tables):
 ### Common Patterns
 
 Refer to `references/analysis_guidelines.md` for detailed examples of common file patterns, including:
+
 - Simple tables with columns
 - Hierarchical sections with headers
 - Supplier responses in columns
@@ -122,6 +125,7 @@ After analyzing the file, engage in a dialogue with the user to confirm understa
 Start by summarizing what you found:
 
 > "I've analyzed your [Excel/Word] file. Here's what I found:
+>
 > - [Sheet/Section names]
 > - [Column/field structure]
 > - [Number of items detected]
@@ -134,20 +138,24 @@ Start by summarizing what you found:
 Refer to `references/recommended_questions.md` for comprehensive question lists. Key questions include:
 
 **Phase 1 - Structure Confirmation:**
+
 1. "Which sheet/section contains the data you want to extract?"
 2. "Can you confirm the column/field mappings I identified?"
 3. "Should I skip any rows, columns, or sections?"
 
 **Phase 2 - Data Type:**
+
 1. "What type of data should I extract: categories, requirements, supplier responses, or a combination?"
 2. "If this contains supplier responses, which supplier(s) should I extract?"
 
 **Phase 3 - Field Mapping:**
+
 1. "How should I determine [required field] from the file?"
 2. "For fields not in the file (like weight), should I use default values?"
 3. "How do I identify which category each requirement belongs to?"
 
 **Phase 4 - Optional Fields:**
+
 1. "Would you like me to import optional fields such as:"
    - **Requirements**: `tags`, `is_mandatory`, `is_optional`, `page_number`
    - **Categories**: `short_name`, `order`
@@ -156,15 +164,18 @@ Refer to `references/recommended_questions.md` for comprehensive question lists.
 3. "Should I set default values for missing fields?"
 
 **Phase 5 - Category Mapping:**
+
 1. "Should I map to existing categories or create new ones?"
 2. "Should I use category codes or titles in the output JSON?"
 
 **Phase 6 - Validation:**
+
 1. "Before I build the script, let me confirm my understanding: [summarize]. Is this correct?"
 2. "Where should I save the output JSON file?"
 3. "What should I name the extraction script for future reuse?"
 
 **Best Practices:**
+
 - Ask questions in phases, not all at once
 - Wait for answers before proceeding
 - Use the user's terminology, not jargon
@@ -177,142 +188,16 @@ Refer to `references/recommended_questions.md` for comprehensive question lists.
 
 Create a Python script tailored to the specific file structure. Each file is unique, so avoid generic solutions.
 
-### Script Template
+For complete guidance on building extraction scripts, including:
 
-```python
-#!/usr/bin/env python3
-"""
-Custom extraction script for [FILE_NAME]
+- Script templates and structure
+- Field mapping for each data type
+- Common extraction patterns (direct mapping, hierarchical, multi-supplier, etc.)
+- Handling edge cases (merged cells, empty rows, special characters)
+- Logging, testing, and debugging strategies
+- Performance tips for large files
 
-Purpose: Extract [data type] from [file type]
-File structure: [brief description]
-Created: [DATE]
-
-Usage:
-    python extract_[description].py input_file.xlsx output.json
-"""
-
-import json
-import sys
-# Import libraries as needed: openpyxl, pandas, python-docx, etc.
-
-def extract_data(file_path):
-    """
-    Extract [categories/requirements/responses] from the file.
-
-    Returns:
-        List of dictionaries matching the JSON schema
-    """
-    data = []
-
-    # Your custom extraction logic here based on file structure
-    # Example for Excel:
-    # wb = openpyxl.load_workbook(file_path)
-    # ws = wb['SheetName']
-    # for row in ws.iter_rows(min_row=2, values_only=True):
-    #     item = {
-    #         "code": row[0],
-    #         "title": row[1],
-    #         # ... map other fields
-    #     }
-    #     data.append(item)
-
-    return data
-
-def main():
-    if len(sys.argv) != 3:
-        print("Usage: python script.py <input_file> <output_json>")
-        sys.exit(1)
-
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
-
-    print(f"Extracting from {input_file}...")
-
-    # Extract data
-    data = extract_data(input_file)
-
-    print(f"Extracted {len(data)} items")
-
-    # Save to JSON
-    with open(output_file, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-    print(f"Saved to {output_file}")
-    print("\nNext step: Validate with 'python validate_json.py'")
-
-if __name__ == "__main__":
-    main()
-```
-
-### Extraction Guidelines
-
-**Handle edge cases:**
-- Empty cells → Use `None` or skip
-- Merged cells → Track current value from top-left cell
-- Whitespace → Use `.strip()` on all strings
-- Missing required fields → Log warning and skip item
-
-**Field mapping based on data type:**
-
-Refer to `references/json_schemas.md` for complete schemas. Key mappings:
-
-**Categories:**
-```python
-category = {
-    "id": row[0],              # Required
-    "code": row[1],            # Required (must be unique)
-    "title": row[2],           # Required
-    "level": int(row[3]),      # Required (positive integer)
-    "parent_id": row[4] or None,  # Optional (null for top-level)
-    "short_name": row[5],      # Optional
-}
-```
-
-**Requirements:**
-```python
-requirement = {
-    "code": row[0],            # Required (must be unique)
-    "title": row[1],           # Required
-    "description": row[2],     # Required
-    "weight": float(row[3]),   # Required (0.0-1.0)
-    "category_name": row[4],   # Required (category code or title)
-    "tags": row[5].split(",") if row[5] else [],  # Optional (comma-separated)
-    "is_mandatory": row[6] if row[6] else False,  # Optional
-    "page_number": int(row[7]) if row[7] else None,  # Optional
-}
-```
-
-**Supplier Responses:**
-```python
-response = {
-    "requirement_id_external": row[0],  # Required (requirement code)
-    "response_text": row[1],   # Optional
-    "ai_score": float(row[2]) if row[2] else None,  # Optional (0-5)
-    "ai_comment": row[3],      # Optional
-    "manual_score": float(row[4]) if row[4] else None,  # Optional (0-5)
-    "status": row[5],          # Optional (pending/pass/partial/fail)
-    "is_checked": bool(row[6]) if row[6] else False,  # Optional
-}
-```
-
-**Logging and Debugging:**
-
-Add print statements to help debug:
-
-```python
-# Log progress
-print(f"Processing row {row_num}...")
-
-# Warn on skipped items
-if not code:
-    print(f"WARNING: Skipping row {row_num} - missing code")
-    continue
-
-# Show summary
-print(f"\nExtracted {len(data)} items:")
-print(f"  - Codes: {[item['code'] for item in data[:5]]}...")
-```
+See **`references/script-building-guide.md`** for comprehensive details.
 
 ---
 
@@ -346,6 +231,7 @@ python scripts/validate_json.py responses.json responses
 ```
 
 The validator checks:
+
 - ✅ Valid JSON syntax
 - ✅ Required fields present
 - ✅ Field types correct (strings, numbers, booleans)
@@ -354,6 +240,7 @@ The validator checks:
 - ✅ Valid enum values (status, etc.)
 
 **If validation fails:**
+
 1. Review error messages
 2. Fix the extraction script logic
 3. Re-run extraction
@@ -401,9 +288,11 @@ mkdir -p scripts/extractions
 ### Naming Convention
 
 Use descriptive names:
+
 - `extract_[data_type]_[source]_[date].py`
 
 Examples:
+
 - `extract_requirements_acme_rfp_2024.py`
 - `extract_responses_vendor_x_excel.py`
 - `extract_categories_cahier_word.py`
@@ -449,14 +338,17 @@ For complete schema details, see `references/json_schemas.md`.
 ### Quick Reference
 
 **Categories:**
+
 - Required: `id`, `code`, `title`, `level`
 - Optional: `short_name`, `parent_id`, `order`
 
 **Requirements:**
+
 - Required: `code`, `title`, `description`, `weight`, `category_name`
 - Optional: `tags`, `is_mandatory`, `is_optional`, `page_number`, `rf_document_id`
 
 **Supplier Responses:**
+
 - Required: `requirement_id_external`
 - Optional: `response_text`, `ai_score`, `ai_comment`, `manual_score`, `manual_comment`, `question`, `status`, `is_checked`
 
@@ -467,9 +359,12 @@ For complete schema details, see `references/json_schemas.md`.
 ### Scripts
 
 - **validate_json.py** - Validates extracted JSON against expected schemas for categories, requirements, and responses
+- **extractions/extract_requirements_simple_excel.py** - Reusable template for extracting requirements from Excel files with simple table structure (columns with headers)
+- **extractions/extract_responses_supplier_columns.py** - Reusable template for extracting supplier responses from Excel files where responses are organized as columns (one per supplier)
 
 ### References
 
+- **script-building-guide.md** - Comprehensive guide for building custom extraction scripts, including templates, patterns, edge cases, and debugging tips
 - **json_schemas.md** - Complete JSON schema definitions with examples and validation rules
 - **analysis_guidelines.md** - Detailed guide on analyzing Excel and Word files, common patterns, and extraction best practices
 - **recommended_questions.md** - Comprehensive list of questions to ask users during the extraction process
@@ -483,6 +378,7 @@ For complete schema details, see `references/json_schemas.md`.
 **User Request:** "Extract requirements from this Excel file"
 
 **Process:**
+
 1. Load and explore the Excel file
 2. Identify sheet with requirements and column structure
 3. Confirm with user: "I see columns A-E containing Code, Title, Description, Weight, Category. Is this correct?"
@@ -496,6 +392,7 @@ For complete schema details, see `references/json_schemas.md`.
 **User Request:** "Import supplier responses from this file"
 
 **Process:**
+
 1. Analyze file structure (multiple suppliers in columns? separate sheets?)
 2. Confirm: "I see 3 suppliers (columns D, E, F) with responses. Should I extract all of them?"
 3. Ask: "Are there scores in the file, or should I only import response text?"
@@ -509,6 +406,7 @@ For complete schema details, see `references/json_schemas.md`.
 **User Request:** "Analyze this Word document and extract the category structure"
 
 **Process:**
+
 1. Explore document structure (headings, tables, numbering)
 2. Confirm: "I see Heading 1 for top-level categories and Heading 2 for sub-categories. Is this the structure?"
 3. Ask: "Should I use the heading numbers as codes (e.g., '1.1', '1.2')?"
@@ -533,24 +431,29 @@ For complete schema details, see `references/json_schemas.md`.
 ## Troubleshooting
 
 **Problem:** "Validation fails with missing required fields"
+
 - Check if the extraction script is mapping fields correctly
 - Verify the source data actually contains those fields
 - Add default values for optional fields
 
 **Problem:** "Duplicate code errors"
+
 - Ensure requirement/category codes are unique in the source
 - Add logic to append suffixes if needed (e.g., REQ001_2)
 
 **Problem:** "Category not found errors"
+
 - Confirm category names match existing categories in the RFP
 - Ask user if they want to create new categories
 - Use category codes instead of titles for more reliable matching
 
 **Problem:** "Encoding errors with special characters"
+
 - Always use `encoding='utf-8'` when reading/writing files
 - Use `ensure_ascii=False` when writing JSON
 
 **Problem:** "Script works on sample but fails on full file"
+
 - Check for edge cases: empty cells, merged cells, unexpected formats
 - Add defensive checks (`if cell is not None`, `.strip()`, etc.)
 - Log skipped rows for review

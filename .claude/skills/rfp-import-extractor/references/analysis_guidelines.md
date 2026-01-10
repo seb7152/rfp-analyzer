@@ -20,6 +20,7 @@ This document provides guidance on how to analyze Excel and Word files to extrac
 When given an Excel file, perform these steps:
 
 1. **List all sheets**
+
    ```python
    import openpyxl
    wb = openpyxl.load_workbook('file.xlsx')
@@ -90,6 +91,7 @@ REQ003 | Response Time       | < 2 seconds...
 ### Excel Libraries
 
 Recommended Python libraries:
+
 - **openpyxl**: Best for .xlsx files, supports reading cell styles
 - **pandas**: Great for table-like data, easy data manipulation
 - **xlrd**: For older .xls files
@@ -103,6 +105,7 @@ Recommended Python libraries:
 When given a Word document, perform these steps:
 
 1. **Extract document structure**
+
    ```python
    from docx import Document
    doc = Document('file.docx')
@@ -139,6 +142,7 @@ When given a Word document, perform these steps:
 ```
 
 **Extraction approach**:
+
 - Track current category from Heading 1
 - Extract requirements from tables under each heading
 
@@ -153,6 +157,7 @@ When given a Word document, perform these steps:
 ```
 
 **Extraction approach**:
+
 - Parse numbered items
 - Extract category from top-level numbers
 - Extract requirements from sub-numbers
@@ -172,6 +177,7 @@ All sensitive data...
 ```
 
 **Extraction approach**:
+
 - Use regex to find requirement codes (REQ\d+)
 - Extract text following each code
 - Track category from headings
@@ -189,6 +195,7 @@ All sensitive data...
 ### Word Libraries
 
 Recommended Python libraries:
+
 - **python-docx**: Best for .docx files, supports paragraphs, tables, and styles
 - **mammoth**: Converts to HTML, good for complex formatting
 - **docx2txt**: Simple text extraction (no formatting)
@@ -265,21 +272,25 @@ if __name__ == "__main__":
 ### Common Challenges
 
 **Empty cells/fields**:
+
 - Use `.strip()` to remove whitespace
 - Check if cell is `None` before processing
 - Provide default values for optional fields
 
 **Merged cells in Excel**:
+
 - Merged cells only have value in the top-left cell
 - Other cells in the merge return `None`
 - Track the "current" value for merged category headers
 
 **Inconsistent formatting**:
+
 - Use regex for flexible pattern matching
 - Strip extra spaces, normalize case
 - Handle variations (e.g., "REQ-001" vs "REQ001")
 
 **Missing data**:
+
 - Decide whether to skip or use defaults
 - Log missing items for user review
 - Validate critical fields are present
@@ -303,11 +314,13 @@ scripts/
 ### Naming Convention
 
 Use descriptive names that indicate:
+
 - What is being extracted (rfp, requirements, responses)
 - Source/context (vendor name, project, date)
 - File type (excel, word)
 
 Examples:
+
 - `extract_requirements_acme_rfp_2024.py`
 - `extract_responses_techcorp_excel.py`
 - `extract_categories_word_cahier.py`

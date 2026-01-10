@@ -191,17 +191,18 @@ Tags are optional labels that can be attached to requirements for categorization
 
 ### Tag Validation Rules
 
-| Rule | Example | Valid | Invalid |
-|------|---------|-------|---------|
-| Non-empty | "Backend" | ✓ | "" (empty string) |
-| Length | 1-100 characters | ✓ | Strings longer than 100 chars |
-| Whitespace | " Backend " | ✓ (trimmed to "Backend") | N/A |
-| Case-sensitive | "backend" ≠ "Backend" | ✓ Different tags | N/A |
-| Duplicates | `["Tag", "Tag"]` | ✓ (deduplicated) | N/A |
+| Rule           | Example               | Valid                    | Invalid                       |
+| -------------- | --------------------- | ------------------------ | ----------------------------- |
+| Non-empty      | "Backend"             | ✓                        | "" (empty string)             |
+| Length         | 1-100 characters      | ✓                        | Strings longer than 100 chars |
+| Whitespace     | " Backend "           | ✓ (trimmed to "Backend") | N/A                           |
+| Case-sensitive | "backend" ≠ "Backend" | ✓ Different tags         | N/A                           |
+| Duplicates     | `["Tag", "Tag"]`      | ✓ (deduplicated)         | N/A                           |
 
 ### Common Tag Use Cases
 
 **Functional Areas:**
+
 ```json
 {
   "tags": ["Backend", "Database", "API"]
@@ -209,6 +210,7 @@ Tags are optional labels that can be attached to requirements for categorization
 ```
 
 **Priority/Criticality:**
+
 ```json
 {
   "tags": ["Critical", "High-Priority", "Nice-to-Have"]
@@ -216,6 +218,7 @@ Tags are optional labels that can be attached to requirements for categorization
 ```
 
 **Implementation Status:**
+
 ```json
 {
   "tags": ["Implemented", "In-Progress", "Blocked"]
@@ -223,6 +226,7 @@ Tags are optional labels that can be attached to requirements for categorization
 ```
 
 **Project Phases:**
+
 ```json
 {
   "tags": ["Phase-1", "MVP", "Post-Launch"]
@@ -230,6 +234,7 @@ Tags are optional labels that can be attached to requirements for categorization
 ```
 
 **Technical Stack:**
+
 ```json
 {
   "tags": ["Python", "React", "PostgreSQL"]
@@ -239,6 +244,7 @@ Tags are optional labels that can be attached to requirements for categorization
 ### Tag Colors
 
 Tags are automatically assigned colors from this palette:
+
 - Blue, Purple, Pink, Amber, Green, Cyan, Red, Indigo
 
 ---
@@ -248,6 +254,7 @@ Tags are automatically assigned colors from this palette:
 ### UPSERT Behavior (Responses)
 
 When importing supplier responses, the system uses **UPSERT** mode:
+
 - If a response for a requirement already exists, it will be **updated** with the provided fields
 - Fields not provided in the import JSON will **retain their existing values**
 - This allows partial updates without overwriting all data

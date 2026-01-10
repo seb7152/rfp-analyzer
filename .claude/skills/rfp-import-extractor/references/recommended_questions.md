@@ -5,6 +5,7 @@ This document provides recommended questions to ask users during the file analys
 ## Purpose of Questions
 
 Questions serve to:
+
 1. **Confirm understanding** of the file structure
 2. **Clarify ambiguities** in data organization
 3. **Get user preferences** on optional fields and mapping
@@ -174,38 +175,46 @@ Questions serve to:
 ### Do's
 
 ✅ **Ask open-ended questions** to understand context:
-   - "How is this file organized?"
-   - "What's the best way to identify categories?"
+
+- "How is this file organized?"
+- "What's the best way to identify categories?"
 
 ✅ **Confirm observations** before assuming:
-   - "I notice... Is this correct?"
-   - "It looks like... Can you confirm?"
+
+- "I notice... Is this correct?"
+- "It looks like... Can you confirm?"
 
 ✅ **Offer options** when there are multiple valid approaches:
-   - "Should I use option A or option B?"
-   - "Would you prefer X or Y?"
+
+- "Should I use option A or option B?"
+- "Would you prefer X or Y?"
 
 ✅ **Summarize understanding** periodically:
-   - "Let me make sure I understand..."
-   - "So, to summarize..."
+
+- "Let me make sure I understand..."
+- "So, to summarize..."
 
 ### Don'ts
 
 ❌ **Don't assume** without asking:
-   - Bad: "I'll use column A as the code."
-   - Good: "Should I use column A as the code, or is it in a different column?"
+
+- Bad: "I'll use column A as the code."
+- Good: "Should I use column A as the code, or is it in a different column?"
 
 ❌ **Don't ask too many questions at once**:
-   - Break questions into logical phases
-   - Wait for answers before moving forward
+
+- Break questions into logical phases
+- Wait for answers before moving forward
 
 ❌ **Don't use technical jargon** without explanation:
-   - Bad: "Should I normalize the schema using BCNF?"
-   - Good: "Should I restructure the data to avoid duplicates?"
+
+- Bad: "Should I normalize the schema using BCNF?"
+- Good: "Should I restructure the data to avoid duplicates?"
 
 ❌ **Don't make the user do the work**:
-   - Bad: "Can you write a regex to extract codes?"
-   - Good: "I'll write a regex to extract codes. Can you confirm this pattern: REQ-XXX?"
+
+- Bad: "Can you write a regex to extract codes?"
+- Good: "I'll write a regex to extract codes. Can you confirm this pattern: REQ-XXX?"
 
 ---
 
@@ -222,6 +231,7 @@ Questions serve to:
 **User**: "Yes, the Requirements sheet."
 
 **Agent**: "Perfect. I can see the following:
+
 - Column A: Requirement codes (REQ001, REQ002, ...)
 - Column B: Category names
 - Column C: Requirement titles
@@ -233,6 +243,7 @@ Can you confirm this is correct?"
 **User**: "Yes, that's right."
 
 **Agent**: "Great! A few questions:
+
 1. Should I import the categories as-is from column B, or should I map them to existing categories in your project?
 2. Are there any optional fields you'd like me to extract (like page numbers or mandatory flags)?
 3. What should I name the output JSON file?"
@@ -252,6 +263,7 @@ Can you confirm this is correct?"
 **Agent**: "✅ Validation successful! The JSON is valid. Should I save this extraction script as `extract_requirements_project_2024.py` for future reuse?"
 
 This flow demonstrates:
+
 - Progressive disclosure (one phase at a time)
 - Confirmation at each step
 - Clear, non-technical communication
