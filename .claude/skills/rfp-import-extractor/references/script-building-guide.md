@@ -94,14 +94,15 @@ category = {
     "code": row[1],            # Required - must be unique
     "title": row[2],           # Required - display name
     "level": int(row[3]),      # Required - positive integer (1, 2, 3...)
-    "parent_id": row[4] or None,  # Optional - reference to parent category
-    "short_name": row[5],      # Optional - abbreviated name
+    "short_name": row[4],      # Required - abbreviated name (max 50 chars, displayed in UI)
+    "parent_id": row[5] or None,  # Optional - reference to parent category
 }
 ```
 
 **Validation notes:**
 
 - Both `id` and `code` must be unique within the category set
+- `short_name` is REQUIRED and must be 1-50 characters (used in the UI)
 - `level` must be a positive integer
 - Top-level categories should have `parent_id` as `null`
 - If using hierarchies, parent_id must reference an existing category id
@@ -371,10 +372,19 @@ def extract_categories_with_hierarchical_codes(file_path):
         # Generate ID (same as code for simplicity)
         id_val = code
 
+        # Generate short_name: abbreviate title (max 50 chars)
+        title_str = str(title).strip()
+        short_name = title_str[:50]  # Use up to 50 chars from title
+        # Optionally: create acronym from title words
+        # Example: "User Management" → "UM"
+        # words = title_str.split()
+        # short_name = "".join(w[0].upper() for w in words if w)[:50]
+
         item = {
             "id": id_val,
             "code": code,
-            "title": str(title).strip(),
+            "title": title_str,
+            "short_name": short_name,  # Required field
             "level": level,
             "parent_id": parent_id,
         }
@@ -387,12 +397,41 @@ def extract_categories_with_hierarchical_codes(file_path):
 ```
 
 **Output example:**
+
 ```json
 [
-  { "id": "1", "code": "1", "title": "Functional Requirements", "level": 1, "parent_id": null },
-  { "id": "1.1", "code": "1.1", "title": "User Management", "level": 2, "parent_id": "1" },
-  { "id": "1.1.1", "code": "1.1.1", "title": "Authentication", "level": 3, "parent_id": "1.1" },
-  { "id": "1.2", "code": "1.2", "title": "Data Management", "level": 2, "parent_id": "1" }
+  {
+    "id": "1",
+    "code": "1",
+    "title": "Functional Requirements",
+    "short_name": "Functional Requirements",
+    "level": 1,
+    "parent_id": null
+  },
+  {
+    "id": "1.1",
+    "code": "1.1",
+    "title": "User Management",
+    "short_name": "User Management",
+    "level": 2,
+    "parent_id": "1"
+  },
+  {
+    "id": "1.1.1",
+    "code": "1.1.1",
+    "title": "Authentication",
+    "short_name": "Authentication",
+    "level": 3,
+    "parent_id": "1.1"
+  },
+  {
+    "id": "1.2",
+    "code": "1.2",
+    "title": "Data Management",
+    "short_name": "Data Management",
+    "level": 2,
+    "parent_id": "1"
+  }
 ]
 ```
 

@@ -68,9 +68,10 @@ Questions serve to:
 
 **For Categories:**
 
-1. "I need to extract: code, title, and level. Can you confirm where each of these is?"
+1. "I need to extract: id, code, title, short_name, and level. Can you confirm where each of these is?"
    - "What should I use as the category code?" (column, pattern, etc.)
    - "What determines the hierarchy level?" (heading level, numbering, column, etc.)
+   - "Where should short_name come from?" (abbreviated name, max 50 chars - used in the UI display)
 
 2. "Do categories have parent-child relationships? If so, how can I identify them?"
 

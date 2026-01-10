@@ -13,7 +13,7 @@ Categories define the hierarchical structure of requirements (domains, sub-domai
   "id": "string",              // Required - Unique identifier for the category
   "code": "string",            // Required - Code for the category (must be unique)
   "title": "string",           // Required - Display title
-  "short_name": "string",      // Optional - Abbreviated name
+  "short_name": "string",      // Required - Abbreviated name (displayed in UI)
   "level": integer,            // Required - Hierarchy level (1, 2, 3, etc.)
   "parent_id": "string|null",  // Optional - ID of parent category (null for top-level)
   "order": integer             // Optional - Display order within the same level
@@ -47,11 +47,13 @@ Categories define the hierarchical structure of requirements (domains, sub-domai
 
 ### Validation Rules
 
+- `id`, `code`, `title`, `short_name` are all **Required** and must not be empty
 - `id` and `code` must be unique across all categories
+- `short_name` must be 1-50 characters (used for display in the UI)
 - `level` must be a positive integer (1, 2, 3, ...)
 - Top-level categories (level 1) should have `parent_id` set to `null`
 - `parent_id` must reference an existing category `id` (if not null)
-- Optional fields (`short_name`, `parent_id`, `order`) can be safely omitted - they are truly optional and not required for import
+- Optional fields (`parent_id`, `order`) can be safely omitted
 
 ### Recommended Code Scheme
 
@@ -62,6 +64,7 @@ Unless the user specifies otherwise, use **hierarchical numbering** for category
 - Level 3: `1.1.1`, `1.1.2`, `1.2.1`, ...
 
 **Example:**
+
 ```
 1 (Functional Requirements)
 ├── 1.1 (User Management)
@@ -75,6 +78,7 @@ Unless the user specifies otherwise, use **hierarchical numbering** for category
 ```
 
 **Benefits:**
+
 - Easy to identify parent-child relationships
 - Natural reading order (1, 1.1, 1.1.1)
 - Supports any depth

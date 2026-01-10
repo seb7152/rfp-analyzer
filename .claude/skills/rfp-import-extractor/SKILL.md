@@ -140,6 +140,7 @@ When extracting categories, **always ask about the code scheme** (unless codes a
 > "For the category codes, I recommend using hierarchical numbering (1, 1.1, 1.1.1) based on the hierarchy. This makes parent-child relationships very clear. Should I use this approach, or do you have a different naming scheme in mind?"
 
 **Benefits to mention:**
+
 - Hierarchical codes make parent-child relationships obvious
 - Natural reading order (1, 1.1, 1.1.1)
 - Scales to any depth

@@ -42,8 +42,8 @@ def validate_categories(data: List[Dict[str, Any]]) -> List[str]:
     """
     Validate categories JSON structure.
 
-    Required fields: id, code, title, level
-    Optional fields: short_name, parent_id, order
+    Required fields: id, code, title, short_name, level
+    Optional fields: parent_id, order
 
     STRICT MODE: Rejects any fields not in the allowed list
     """
@@ -73,8 +73,8 @@ def validate_categories(data: List[Dict[str, Any]]) -> List[str]:
                 f"Only these fields are allowed: {', '.join(sorted(allowed_fields))}"
             )
 
-        # Required fields
-        required_fields = ["id", "code", "title", "level"]
+        # Required fields (including short_name)
+        required_fields = ["id", "code", "title", "level", "short_name"]
         for field in required_fields:
             if field not in category:
                 errors.append(f"Category at index {idx} missing required field: {field}")
@@ -92,6 +92,16 @@ def validate_categories(data: List[Dict[str, Any]]) -> List[str]:
             if cat_id in ids_seen:
                 errors.append(f"Duplicate id '{cat_id}' at index {idx}")
             ids_seen.add(cat_id)
+
+        # Validate short_name length
+        if "short_name" in category:
+            short_name = category["short_name"]
+            if not isinstance(short_name, str):
+                errors.append(f"Category at index {idx}: short_name must be a string")
+            elif len(short_name.strip()) == 0:
+                errors.append(f"Category at index {idx}: short_name cannot be empty")
+            elif len(short_name) > 50:
+                errors.append(f"Category at index {idx}: short_name exceeds 50 characters (got {len(short_name)})")
 
         # Validate level is a positive integer
         if "level" in category:
