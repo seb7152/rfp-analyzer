@@ -46,10 +46,12 @@ def validate_categories(data: List[Dict[str, Any]]) -> List[str]:
     Optional fields: parent_id, order
 
     STRICT MODE: Rejects any fields not in the allowed list
+    Validates parent_id references actual category ids
     """
     errors = []
     codes_seen = set()
     ids_seen = set()
+    categories_by_idx = {}  # Track categories for parent_id validation
 
     # Allowed field names (required and optional)
     allowed_fields = {
@@ -60,10 +62,13 @@ def validate_categories(data: List[Dict[str, Any]]) -> List[str]:
     if not isinstance(data, list):
         return ["Data must be a list of category objects"]
 
+    # FIRST PASS: Validate structure, collect ids
     for idx, category in enumerate(data):
         if not isinstance(category, dict):
             errors.append(f"Category at index {idx} must be an object")
             continue
+
+        categories_by_idx[idx] = category
 
         # Check for extra fields (strict validation)
         extra_fields = set(category.keys()) - allowed_fields
@@ -109,13 +114,22 @@ def validate_categories(data: List[Dict[str, Any]]) -> List[str]:
             if not isinstance(level, int) or level < 1:
                 errors.append(f"Category at index {idx}: level must be a positive integer (got {level})")
 
-        # Check parent_id references (optional, but if present should be valid)
+        # Check parent_id is a string or null (type check only)
         if "parent_id" in category and category["parent_id"] is not None:
             parent_id = category["parent_id"]
-            # Note: We can't fully validate parent_id references here without a second pass
-            # but we can check it's a string
             if not isinstance(parent_id, str):
-                errors.append(f"Category at index {idx}: parent_id must be a string or null")
+                errors.append(f"Category at index {idx}: parent_id must be a string or null (got {type(parent_id).__name__})")
+
+    # SECOND PASS: Validate parent_id references (only if first pass succeeded)
+    if not errors:
+        for idx, category in categories_by_idx.items():
+            if "parent_id" in category and category["parent_id"] is not None:
+                parent_id = category["parent_id"]
+                if parent_id not in ids_seen:
+                    errors.append(
+                        f"Category at index {idx}: parent_id '{parent_id}' does not reference an existing category id. "
+                        f"Valid ids: {sorted(ids_seen)}"
+                    )
 
     return errors
 

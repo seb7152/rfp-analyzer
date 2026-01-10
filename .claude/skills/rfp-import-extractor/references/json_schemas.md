@@ -52,8 +52,9 @@ Categories define the hierarchical structure of requirements (domains, sub-domai
 - `short_name` must be 1-50 characters (used for display in the UI)
 - `level` must be a positive integer (1, 2, 3, ...)
 - Top-level categories (level 1) should have `parent_id` set to `null`
-- `parent_id` must reference an existing category `id` (if not null)
+- **`parent_id` must EXACTLY match the `id` of the parent category** (case-sensitive) - it is NOT a reference to `code` or `title`, only to the `id` field
 - Optional fields (`parent_id`, `order`) can be safely omitted
+- If a category has a `parent_id`, that parent must exist in the same import with a matching `id`
 
 ### Recommended Code Scheme
 

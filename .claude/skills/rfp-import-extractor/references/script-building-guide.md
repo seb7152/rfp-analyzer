@@ -105,7 +105,8 @@ category = {
 - `short_name` is REQUIRED and must be 1-50 characters (used in the UI)
 - `level` must be a positive integer
 - Top-level categories should have `parent_id` as `null`
-- If using hierarchies, parent_id must reference an existing category id
+- **IMPORTANT**: `parent_id` must EXACTLY match the `id` of the parent category (case-sensitive, not `code` or `title`)
+- If using hierarchies, the parent category must exist in the same import with a matching `id`
 
 #### Requirements
 
@@ -366,7 +367,7 @@ def extract_categories_with_hierarchical_codes(file_path):
             code_parts.append(str(level_counters.get(l, 1)))
         code = ".".join(code_parts)
 
-        # Determine parent_id
+        # Determine parent_id: reference the ID of the parent category (not code or title)
         parent_id = parent_ids.get(level - 1) if level > 1 else None
 
         # Generate ID (same as code for simplicity)
