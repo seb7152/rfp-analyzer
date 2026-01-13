@@ -7,74 +7,80 @@
       "id": "US-1",
       "title": "Création du template financier",
       "priority": "P1",
-      "completed": false,
+      "completed": true,
       "description": "Créer un template financier avec structure hiérarchique de catégories (setup/recurrent) pour définir les lignes de coûts à comparer entre les fournisseurs.",
       "tasks": [
         {
           "id": "US-1-001",
           "description": "Créer la table financial_templates dans Supabase avec les colonnes: id, rfp_id, name, total_period_years, created_at, updated_at. Ajouter la migration SQL correspondante.",
           "prompt": "Créer la migration Supabase pour la table financial_templates. La table doit avoir: id (UUID PK), rfp_id (UUID FK → rfps), name (VARCHAR), total_period_years (INTEGER, default 3, CHECK IN (1,3,5)), created_at, updated_at. Ajouter unique constraint sur rfp_id.",
-          "completed": false
+          "completed": true,
+          "manual_execution_required": true,
+          "migration_file": "supabase/migrations/022_create_financial_templates.sql"
         },
         {
           "id": "US-1-002",
           "description": "Créer la table financial_template_lines pour les lignes hiérarchiques du template avec support parent-child.",
           "prompt": "Créer la migration Supabase pour la table financial_template_lines. Colonnes: id (UUID PK), template_id (UUID FK), parent_id (UUID FK nullable, self-reference), line_code (VARCHAR), name (VARCHAR), line_type (ENUM setup/recurrent), recurrence_type (ENUM monthly/yearly nullable), custom_formula (TEXT nullable), sort_order (INTEGER), is_active (BOOLEAN default true), created_at, updated_at. Ajouter UNIQUE constraint sur (template_id, line_code) et CHECK pour recurrence_type: (line_type != 'recurrent' OR recurrence_type IS NOT NULL) AND (recurrence_type IS NULL OR recurrence_type IN ('monthly', 'yearly')). Ajouter indexes pour performance.",
-          "completed": false
+          "completed": true,
+          "manual_execution_required": true,
+          "migration_file": "supabase/migrations/023_create_financial_template_lines.sql"
         },
         {
           "id": "US-1-003",
           "description": "Créer les RLS (Row Level Security) policies pour les tables financial_templates et financial_template_lines.",
           "prompt": "Implémenter les policies RLS pour financial_templates et financial_template_lines. Les users doivent pouvoir SELECT/INSERT/UPDATE uniquement sur les templates/lines de leurs propres RFPs (via rfp_id → organizations → user_organizations). Activer RLS sur les tables.",
-          "completed": false
+          "completed": true,
+          "manual_execution_required": true,
+          "migration_file": "supabase/migrations/022_create_financial_templates.sql et 023_create_financial_template_lines.sql"
         },
         {
           "id": "US-1-004",
           "description": "Créer l'endpoint API POST /api/rfps/[rfpId]/financial-template pour créer un nouveau template.",
           "prompt": "Créer l'endpoint POST /api/rfps/[rfpId]/financial-template. Vérifier que l'utilisateur a accès au RFP. Valider les inputs (name, total_period_years). Insérer dans financial_templates. Retourner le template créé.",
-          "completed": false
+          "completed": true
         },
         {
           "id": "US-1-005",
           "description": "Créer l'endpoint API GET /api/rfps/[rfpId]/financial-template pour récupérer le template financier.",
           "prompt": "Créer l'endpoint GET /api/rfps/[rfpId]/financial-template. Retourner le template avec toutes ses lignes hiérarchiques (structure tree récursive ou flat avec parent_id). Inclure les sous-totaux calculés si des lignes existent.",
-          "completed": false
+          "completed": true
         },
         {
           "id": "US-1-006",
           "description": "Créer l'endpoint API POST /api/financial-template-lines pour ajouter une ligne au template.",
           "prompt": "Créer l'endpoint POST /api/financial-template-lines. Inputs: template_id, parent_id (optionnel), line_code, name, line_type, recurrence_type (si recurrent), custom_formula (optionnel), sort_order. Valider que parent_id existe dans le même template. Générer sort_order automatiquement si non fourni.",
-          "completed": false
+          "completed": true
         },
         {
           "id": "US-1-007",
           "description": "Créer l'endpoint API PUT /api/financial-template-lines/[lineId] pour modifier une ligne existante.",
           "prompt": "Créer l'endpoint PUT /api/financial-template-lines/[lineId]. Permettre la modification de: line_code, name, line_type, recurrence_type, custom_formula, parent_id, sort_order. Empêcher de créer un cycle dans la hiérarchie (parent_id ne peut pas être descendant).",
-          "completed": false
+          "completed": true
         },
         {
           "id": "US-1-008",
           "description": "Créer l'endpoint API DELETE /api/financial-template-lines/[lineId] pour supprimer une ligne (soft delete).",
           "prompt": "Créer l'endpoint DELETE /api/financial-template-lines/[lineId]. Faire un soft delete (mettre is_active = false) ou hard delete si aucune ligne fille et aucune valeur associée. Si des lignes filles existent, proposer de supprimer aussi les enfants.",
-          "completed": false
+          "completed": true
         },
         {
           "id": "US-1-009",
           "description": "Implémenter le calcul des sous-totaux automatiquement à chaque niveau de la hiérarchie.",
           "prompt": "Créer une fonction SQL ou endpoint pour recalculer les sous-totaux. Pour chaque ligne parent: sommer les setup_cost et recurrent_cost des lignes filles directes. Récursif sur tous les niveaux. Appeler ce calcul après chaque création/modification de ligne ou de valeur.",
-          "completed": false
+          "completed": true
         },
         {
           "id": "US-1-010",
           "description": "Créer la page UI /dashboard/rfp/[rfpId]/financial-grid pour afficher et gérer le template.",
           "prompt": "Créer la page Next.js pour la grille financière. Ajouter un bouton 'Créer un template' si aucun template existe. Créer la modale de création du template. Afficher la liste des lignes avec indentation visuelle hiérarchique (20px par niveau). Flèches expand/collapse sur les nœuds avec enfants.",
-          "completed": false
+          "completed": true
         },
         {
           "id": "US-1-011",
           "description": "Créer le composant TemplateEditor pour gérer l'édition du template (ajouter/modifier/supprimer des lignes).",
           "prompt": "Créer un composant React TemplateEditor. Boutons: 'Ajouter une ligne racine', 'Ajouter une ligne fille' sur chaque ligne. Modale pour créer/modifier ligne avec champs: Code, Nom, Type (radio Setup/Recurrent), Fréquence (si Recurrent), Formule personnalisée (textarea). Badge indicateur de sous-totaux sur chaque ligne parent.",
-          "completed": false
+          "completed": true
         }
       ]
     },
