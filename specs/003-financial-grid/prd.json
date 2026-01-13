@@ -19,7 +19,7 @@
         {
           "id": "US-1-002",
           "description": "Créer la table financial_template_lines pour les lignes hiérarchiques du template avec support parent-child.",
-          "prompt": "Créer la migration Supabase pour la table financial_template_lines. Colonnes: id (UUID PK), template_id (UUID FK), parent_id (UUID FK nullable, self-reference), line_code (VARCHAR unique), name (VARCHAR), line_type (ENUM setup/recurrent), recurrence_type (ENUM monthly/yearly nullable), custom_formula (TEXT nullable), sort_order (INTEGER), is_active (BOOLEAN default true), created_at, updated_at. Ajouter indexes pour performance.",
+          "prompt": "Créer la migration Supabase pour la table financial_template_lines. Colonnes: id (UUID PK), template_id (UUID FK), parent_id (UUID FK nullable, self-reference), line_code (VARCHAR), name (VARCHAR), line_type (ENUM setup/recurrent), recurrence_type (ENUM monthly/yearly nullable), custom_formula (TEXT nullable), sort_order (INTEGER), is_active (BOOLEAN default true), created_at, updated_at. Ajouter UNIQUE constraint sur (template_id, line_code) et CHECK pour recurrence_type: (line_type != 'recurrent' OR recurrence_type IS NOT NULL) AND (recurrence_type IS NULL OR recurrence_type IN ('monthly', 'yearly')). Ajouter indexes pour performance.",
           "completed": false
         },
         {
@@ -100,13 +100,13 @@
         {
           "id": "US-2-003",
           "description": "Créer les RLS policies pour financial_offer_versions et financial_offer_values.",
-          "prompt": "Implémenter les policies RLS pour financial_offer_versions et financial_offer_values. Les users doivent pouvoir SELECT/INSERT/UPDATE/DELETE uniquement sur les versions/values de leurs propres RFPs (via supplier_id → rfp_id → organization). Activer RLS.",
+          "prompt": "Implémenter les policies RLS pour financial_offer_versions et financial_offer_values. Les users doivent pouvoir SELECT/INSERT/UPDATE/DELETE uniquement sur les versions/values de leurs propres RFPs (via supplier_id → rfp_id → organization). Pour financial_offer_values, ajouter WITH CHECK avec la même condition que le SELECT pour empêcher l'insertion de version_id hors org. Activer RLS.",
           "completed": false
         },
         {
           "id": "US-2-004",
           "description": "Créer l'endpoint API POST /api/rfps/[rfpId]/financial-offer-versions pour créer une nouvelle version.",
-          "prompt": "Créer l'endpoint POST /api/rfps/[rfpId]/financial-offer-versions. Inputs: supplier_id, version_name (optionnel, default 'v{count+1}'), version_date (optionnel). Valider que supplier_id existe pour le RFP. Créer la version et les valeurs vides pour toutes les lignes du template.",
+          "prompt": "Créer l'endpoint POST /api/rfps/[rfpId]/financial-offer-versions. Inputs: supplier_id, version_name (optionnel, default 'v{count+1}' généré dans l'API, pas en DB), version_date (optionnel). La version_name est nullable dans la DB mais sera générée automatiquement dans l'API si non fournie. Valider que supplier_id existe pour le RFP. Créer la version et les valeurs vides pour toutes les lignes du template.",
           "completed": false
         },
         {
@@ -235,7 +235,7 @@
         {
           "id": "US-5-002",
           "description": "Créer les RLS policies pour financial_comments.",
-          "prompt": "Implémenter les policies RLS pour financial_comments. Users peuvent SELECT tous les commentaires de leur RFP. Users peuvent INSERT leurs propres commentaires (created_by = auth.uid()). Users peuvent UPDATE/DELETE uniquement leurs propres commentaires. Activer RLS.",
+          "prompt": "Implémenter les policies RLS pour financial_comments. Users peuvent SELECT tous les commentaires de leur RFP. Users peuvent INSERT leurs propres commentaires (created_by = auth.uid()) avec WITH CHECK qui valide aussi que template_line_id/version_id appartiennent à leur RFP. Users peuvent UPDATE/DELETE uniquement leurs propres commentaires (avec USING et WITH CHECK). Activer RLS.",
           "completed": false
         },
         {
@@ -413,7 +413,7 @@
     {
       "id": "INF-002",
       "description": "Créer les RLS policies pour financial_grid_preferences.",
-      "prompt": "Implémenter les policies RLS pour financial_grid_preferences. Users peuvent SELECT/UPDATE leurs propres préférences (user_id = auth.uid()). Users peuvent INSERT leurs propres préférences. Activer RLS.",
+      "prompt": "Implémenter les policies RLS pour financial_grid_preferences. Users peuvent SELECT leurs propres préférences (user_id = auth.uid()). Users peuvent INSERT leurs propres préférences. Users peuvent UPDATE leurs propres préférences (user_id = auth.uid()) avec WITH CHECK qui valide aussi que rfp_id appartient à leur organization. Activer RLS.",
       "completed": false
     },
     {

@@ -649,7 +649,10 @@ CREATE TABLE financial_template_lines (
     line_code VARCHAR(50) NOT NULL,
     name VARCHAR(255) NOT NULL,
     line_type VARCHAR(20) NOT NULL CHECK (line_type IN ('setup', 'recurrent')),
-    recurrence_type VARCHAR(20) CHECK (recurrence_type IN ('monthly', 'yearly')),
+    recurrence_type VARCHAR(20) CHECK (
+        (line_type != 'recurrent' OR recurrence_type IS NOT NULL) AND
+        (recurrence_type IS NULL OR recurrence_type IN ('monthly', 'yearly'))
+    ),
     custom_formula TEXT,
     sort_order INTEGER DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
@@ -666,7 +669,7 @@ CREATE INDEX idx_financial_template_lines_template ON financial_template_lines(t
 CREATE TABLE financial_offer_versions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     supplier_id UUID NOT NULL REFERENCES suppliers(id) ON DELETE CASCADE,
-    version_name VARCHAR(255) NOT NULL,
+    version_name VARCHAR(255),
     version_date TIMESTAMP DEFAULT NOW(),
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT NOW(),
@@ -857,6 +860,21 @@ USING (
             )
         )
     )
+)
+WITH CHECK (
+    version_id IN (
+        SELECT id FROM financial_offer_versions
+        WHERE supplier_id IN (
+            SELECT id FROM suppliers
+            WHERE rfp_id IN (
+                SELECT id FROM rfps
+                WHERE organization_id IN (
+                    SELECT organization_id FROM user_organizations
+                    WHERE user_id = auth.uid()
+                )
+            )
+        )
+    )
 );
 
 -- Politiques pour financial_comments
@@ -880,11 +898,42 @@ USING (
 
 CREATE POLICY "Users can create comments"
 ON financial_comments FOR INSERT
-WITH CHECK (created_by = auth.uid());
+WITH CHECK (
+    created_by = auth.uid() AND
+    template_line_id IN (
+        SELECT id FROM financial_template_lines
+        WHERE template_id IN (
+            SELECT id FROM financial_templates
+            WHERE rfp_id IN (
+                SELECT id FROM rfps
+                WHERE organization_id IN (
+                    SELECT organization_id FROM user_organizations
+                    WHERE user_id = auth.uid()
+                )
+            )
+        )
+    )
+);
 
 CREATE POLICY "Users can update their own comments"
 ON financial_comments FOR UPDATE
-USING (created_by = auth.uid());
+USING (created_by = auth.uid())
+WITH CHECK (
+    created_by = auth.uid() AND
+    template_line_id IN (
+        SELECT id FROM financial_template_lines
+        WHERE template_id IN (
+            SELECT id FROM financial_templates
+            WHERE rfp_id IN (
+                SELECT id FROM rfps
+                WHERE organization_id IN (
+                    SELECT organization_id FROM user_organizations
+                    WHERE user_id = auth.uid()
+                )
+            )
+        )
+    )
+);
 
 CREATE POLICY "Users can delete their own comments"
 ON financial_comments FOR DELETE
@@ -897,7 +946,17 @@ USING (user_id = auth.uid());
 
 CREATE POLICY "Users can manage their own preferences"
 ON financial_grid_preferences FOR ALL
-USING (user_id = auth.uid());
+USING (user_id = auth.uid())
+WITH CHECK (
+    user_id = auth.uid() AND
+    rfp_id IN (
+        SELECT id FROM rfps
+        WHERE organization_id IN (
+            SELECT organization_id FROM user_organizations
+            WHERE user_id = auth.uid()
+        )
+    )
+);
 ```
 
 ---
