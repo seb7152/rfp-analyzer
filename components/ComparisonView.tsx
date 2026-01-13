@@ -83,9 +83,9 @@ interface ResponseState {
 type DesktopCardProps = React.ComponentProps<typeof SupplierResponseCard>;
 type MobileCardProps = React.ComponentProps<typeof MobileSupplierCard>;
 
-const MemoizedSupplierResponseCard = React.memo(
-  (props: DesktopCardProps) => <SupplierResponseCard {...props} />
-);
+const MemoizedSupplierResponseCard = React.memo((props: DesktopCardProps) => (
+  <SupplierResponseCard {...props} />
+));
 
 const MemoizedMobileSupplierCard = React.memo((props: MobileCardProps) => (
   <MobileSupplierCard {...props} />
@@ -171,7 +171,9 @@ export function ComparisonView({
     };
 
     if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      idleCallbackId = (window as any).requestIdleCallback(loadDeferredDocuments);
+      idleCallbackId = (window as any).requestIdleCallback(
+        loadDeferredDocuments
+      );
     } else {
       timeoutId = setTimeout(loadDeferredDocuments, 500);
     }
@@ -910,10 +912,7 @@ export function ComparisonView({
     suppliers.forEach((supplier) => {
       const response = responsesBySupplierId.get(supplier.id);
       if (response) {
-        mapping.set(
-          response.id,
-          buildCardHandlers(response.id, supplier.id)
-        );
+        mapping.set(response.id, buildCardHandlers(response.id, supplier.id));
       }
     });
 
