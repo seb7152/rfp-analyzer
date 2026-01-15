@@ -20,6 +20,9 @@ import {
 import { FinancialOfferValue, FinancialOfferVersion } from "@/types/financial";
 import { useFinancialValues } from "@/hooks/use-financial-data";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { CellWithComment } from "./CellWithComment";
+import { CommentPopover } from "./CommentPopover";
 
 interface SupplierVersionsGridProps {
     rfpId: string;
@@ -45,6 +48,9 @@ export function SupplierVersionsGrid({
     versions,
     tcoPeriod
 }: SupplierVersionsGridProps) {
+    const { user } = useAuth();
+    const currentUserId = user?.id || "";
+
     const { data: remoteValues = [] } = useFinancialValues(rfpId, "supplier", supplierId);
     const [expandedLines, setExpandedLines] = useState<Set<string>>(new Set());
 
@@ -202,7 +208,10 @@ export function SupplierVersionsGrid({
                             handleToggleExpand,
                             sortedVersions,
                             valuesMap,
-                            calculateLineTotal
+                            calculateLineTotal,
+                            0,
+                            currentUserId,
+                            rfpId
                         )}
 
                         {/* Totals Row */}
@@ -322,7 +331,9 @@ function renderRows(
     versions: FinancialOfferVersion[],
     valuesMap: Map<string, Map<string, FinancialOfferValue>>,
     calculateTotal: (line: LineWithValues, versionId: string, type: 'setup' | 'recurrent') => number | null,
-    depth: number = 0
+    depth: number = 0,
+    currentUserId: string = "",
+    rfpId: string = ""
 ): React.ReactNode[] {
     return lines.flatMap(line => {
         const isExpanded = expanded.has(line.id);
@@ -409,11 +420,18 @@ function renderRows(
                                             : '-'}
                                     </span>
                                 ) : (
-                                    <span className="text-sm text-slate-700">
-                                        {currentValue !== null
-                                            ? formatCurrency(currentValue)
-                                            : '-'}
-                                    </span>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-sm text-slate-700">
+                                            {currentValue !== null
+                                                ? formatCurrency(currentValue)
+                                                : '-'}
+                                        </span>
+                                        <CommentPopover
+                                            lineId={line.id}
+                                            versionId={version.id}
+                                            currentUserId={currentUserId}
+                                        />
+                                    </div>
                                 )}
                                 {variation !== null && (
                                     <VariationBadge variation={variation} />
@@ -426,7 +444,7 @@ function renderRows(
         );
 
         if (isExpanded && hasChildren) {
-            return [row, ...renderRows(line.children!, expanded, onToggle, versions, valuesMap, calculateTotal, depth + 1)];
+            return [row, ...renderRows(line.children!, expanded, onToggle, versions, valuesMap, calculateTotal, depth + 1, currentUserId, rfpId)];
         }
         return [row];
     });

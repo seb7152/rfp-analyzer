@@ -26,3 +26,34 @@ export interface FinancialOfferVersionWithSupplier extends FinancialOfferVersion
         name: string;
     };
 }
+
+export interface FinancialComment {
+    id: string;
+    template_line_id: string;
+    version_id: string | null;
+    comment: string;
+    created_by: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface FinancialCommentWithAuthor extends FinancialComment {
+    author?: {
+        id: string;
+        email: string;
+        user_metadata?: {
+            display_name?: string;
+            avatar_url?: string;
+        };
+    };
+}
+
+export interface CreateFinancialCommentInput {
+    template_line_id: string;
+    version_id?: string | null;
+    comment: string;
+}
+
+export interface UpdateFinancialCommentInput {
+    comment: string;
+}

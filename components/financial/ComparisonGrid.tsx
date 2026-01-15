@@ -24,11 +24,13 @@ import {
     useBatchUpdateFinancialValues
 } from "@/hooks/use-financial-data";
 import { EditableCell } from "./EditableCell";
+import { CellWithComment } from "./CellWithComment";
 import { SupplierColumnHeader } from "./SupplierColumnHeader";
 import { CreateVersionModal } from "./CreateVersionModal";
 import { SaveVersionModal } from "./SaveVersionModal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 
 interface ComparisonGridProps {
     rfpId: string;
@@ -54,6 +56,10 @@ export function ComparisonGrid({
     selectedVersions: externalSelectedVersions,
     onVersionChange
 }: ComparisonGridProps) {
+    // Authentication
+    const { user } = useAuth();
+    const currentUserId = user?.id || "";
+
     // Data Fetching
     const { data: versions = [] } = useFinancialVersions(rfpId);
     const { data: remoteValues = [] } = useFinancialValues(rfpId, "comparison");
@@ -307,7 +313,10 @@ export function ComparisonGrid({
                             currentValuesMap,
                             editingVersionId,
                             handleCellValueChange,
-                            calculateLineTotal
+                            calculateLineTotal,
+                            0,
+                            currentUserId,
+                            rfpId
                         )}
 
                         {/* Totals Row */}
@@ -431,7 +440,9 @@ function renderRows(
     editingVersionId: string | null,
     onCellChange: (lineId: string, field: 'setup_cost' | 'recurrent_cost', val: number | null) => void,
     calculateTotal: (line: LineWithValues, map: Map<string, Map<string, FinancialOfferValue>>, vid: string | undefined, type: 'setup' | 'recurrent') => number | null,
-    depth: number = 0
+    depth: number = 0,
+    currentUserId: string = "",
+    rfpId: string = ""
 ): React.ReactNode[] {
     return lines.flatMap(line => {
         const isExpanded = expanded.has(line.id);
@@ -484,7 +495,10 @@ function renderRows(
                                         : '-'}
                                 </div>
                             ) : (
-                                <EditableCell
+                                <CellWithComment
+                                    lineId={line.id}
+                                    versionId={version?.id}
+                                    currentUserId={currentUserId}
                                     value={line.line_type === 'setup' ? value?.setup_cost ?? null : value?.recurrent_cost ?? null}
                                     onChange={(val) => onCellChange(line.id, line.line_type === 'setup' ? 'setup_cost' : 'recurrent_cost', val)}
                                     isEditing={isEditing}
@@ -500,7 +514,7 @@ function renderRows(
         );
 
         if (isExpanded && hasChildren) {
-            return [row, ...renderRows(line.children!, expanded, onToggle, activeVersions, valuesMap, editingVersionId, onCellChange, calculateTotal, depth + 1)];
+            return [row, ...renderRows(line.children!, expanded, onToggle, activeVersions, valuesMap, editingVersionId, onCellChange, calculateTotal, depth + 1, currentUserId, rfpId)];
         }
         return [row];
     });
