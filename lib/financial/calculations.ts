@@ -14,6 +14,9 @@ export interface FinancialTemplateLine {
   custom_formula: string | null;
   sort_order: number;
   is_active: boolean;
+  subtotal_setup?: number;
+  subtotal_recurrent?: number;
+  child_count?: number;
 }
 
 export interface FinancialOfferValue {
@@ -206,18 +209,134 @@ export function evaluateCustomFormula(
     // Replace variables
     Object.entries(variables).forEach(([key, value]) => {
       const regex = new RegExp(`\\{${key}\\}`, "g");
-      evaluatedFormula = evaluatedFormula.replace(regex, String(value || 0));
+      evaluatedFormula = evaluatedFormula.replace(regex, String(value ?? 0));
     });
 
-    // Evaluate the formula (basic arithmetic only)
-    // eslint-disable-next-line no-eval
-    const result = eval(evaluatedFormula);
-
+    const result = evaluateArithmeticExpression(evaluatedFormula);
     return typeof result === "number" && !isNaN(result) ? result : 0;
   } catch (error) {
     console.error("Error evaluating custom formula:", error);
     return 0;
   }
+}
+
+function evaluateArithmeticExpression(expression: string): number {
+  const tokens = tokenizeExpression(expression);
+  const output: Array<number | string> = [];
+  const operators: string[] = [];
+  const precedence: Record<string, number> = {
+    "u-": 3,
+    "*": 2,
+    "/": 2,
+    "+": 1,
+    "-": 1,
+  };
+
+  const isOperator = (token: string) => ["+", "-", "*", "/", "u-"].includes(token);
+
+  tokens.forEach((token, index) => {
+    if (typeof token === "number") {
+      output.push(token);
+      return;
+    }
+
+    if (token === "(") {
+      operators.push(token);
+      return;
+    }
+
+    if (token === ")") {
+      while (operators.length && operators[operators.length - 1] !== "(") {
+        output.push(operators.pop() as string);
+      }
+      operators.pop();
+      return;
+    }
+
+    let operator = token as string;
+    const prev = tokens[index - 1];
+    const isUnary =
+      operator === "-" &&
+      (index === 0 ||
+        prev === "(" ||
+        (typeof prev !== "number" && isOperator(prev as string)));
+    if (isUnary) {
+      operator = "u-";
+    }
+
+    while (
+      operators.length &&
+      isOperator(operators[operators.length - 1]) &&
+      precedence[operators[operators.length - 1]] >= precedence[operator]
+    ) {
+      output.push(operators.pop() as string);
+    }
+    operators.push(operator);
+  });
+
+  while (operators.length) {
+    output.push(operators.pop() as string);
+  }
+
+  const stack: number[] = [];
+  output.forEach((token) => {
+    if (typeof token === "number") {
+      stack.push(token);
+      return;
+    }
+
+    if (token === "u-") {
+      const value = stack.pop();
+      stack.push(-(value ?? 0));
+      return;
+    }
+
+    const b = stack.pop() ?? 0;
+    const a = stack.pop() ?? 0;
+    switch (token) {
+      case "+":
+        stack.push(a + b);
+        break;
+      case "-":
+        stack.push(a - b);
+        break;
+      case "*":
+        stack.push(a * b);
+        break;
+      case "/":
+        stack.push(b === 0 ? 0 : a / b);
+        break;
+      default:
+        stack.push(0);
+        break;
+    }
+  });
+
+  return stack.pop() ?? 0;
+}
+
+function tokenizeExpression(expression: string): Array<number | string> {
+  const tokens: Array<number | string> = [];
+  const sanitized = expression.replace(/\s+/g, "");
+  const regex = /([()+\-*/]|\d*\.?\d+)/g;
+  let match: RegExpExecArray | null;
+  let rebuilt = "";
+
+  while ((match = regex.exec(sanitized)) !== null) {
+    const token = match[1];
+    rebuilt += token;
+    if (token.match(/^\d*\.?\d+$/)) {
+      tokens.push(Number(token));
+    } else {
+      tokens.push(token);
+    }
+  }
+
+  if (rebuilt.length !== sanitized.length) {
+    throw new Error("Invalid characters in expression");
+  }
+
+  return tokens;
 }
 
 /**

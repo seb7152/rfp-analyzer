@@ -13,7 +13,7 @@ import { AIAnalysisButton } from "@/components/AIAnalysisButton";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft, Loader2, CheckCircle2, FileUp } from "lucide-react";
+import { ChevronLeft, Loader2, CheckCircle2, FileUp, Euro } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useVersion } from "@/contexts/VersionContext";
@@ -144,7 +144,17 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   className="h-8 w-8 p-0"
                   title="Ajouter des documents PDF"
                 >
-                  <FileUp className="h-4 w-4" />
+                </Button>
+
+                {/* Financial Grid Button - icon only */}
+                <Button
+                  onClick={() => router.push(`/dashboard/rfp/${params.rfpId}/financial-grid`)}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  title="Analyse financière"
+                >
+                  <Euro className="h-4 w-4" />
                 </Button>
 
                 {/* AI Analysis Button - icon only */}
@@ -211,6 +221,18 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   <span className="hidden sm:inline">Documents</span>
                 </Button>
 
+                {/* Financial Grid Button */}
+                <Button
+                  onClick={() => router.push(`/dashboard/rfp/${params.rfpId}/financial-grid`)}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  title="Analyse financière"
+                >
+                  <Euro className="h-4 w-4" />
+                  <span className="hidden sm:inline">Analyse financière</span>
+                </Button>
+
                 {/* AI Analysis Button */}
                 {rfpData && (
                   <AIAnalysisButton
@@ -255,9 +277,8 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar with Tree */}
           <div
-            className={`${
-              isMobile ? "w-full" : "w-80"
-            } border-r border-slate-200 bg-white/50 dark:border-slate-800 dark:bg-slate-900/40`}
+            className={`${isMobile ? "w-full" : "w-80"
+              } border-r border-slate-200 bg-white/50 dark:border-slate-800 dark:bg-slate-900/40`}
           >
             <Sidebar
               rfpId={params.rfpId}

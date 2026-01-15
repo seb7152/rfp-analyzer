@@ -32,18 +32,150 @@ Un évaluateur doit créer un template financier avec une structure hiérarchiqu
 3. **Étant donné** une ligne existante, **lorsqu'il** ajoute une ligne fille, **alors** elle devient automatiquement une sous-catégorie de la ligne parente dans la hiérarchie
 4. **Étant donné** un template avec plusieurs niveaux, **lorsqu'il** visualise la grille, **alors** il voit la structure complète avec indicateurs de sous-totaux à chaque niveau
 
-### US-2 : Import d'une offre financière (Priorité : P1)
+### US-2 : Création et édition manuelle de versions d'offres (Priorité : P1)
 
-Un évaluateur doit créer une nouvelle version d'offre pour un fournisseur existant (ex: "Offre initiale") et saisir les coûts sur chaque ligne du template.
+Un évaluateur doit pouvoir créer et modifier les versions d'offres financières pour chaque fournisseur actif, soit par import JSON, soit par édition manuelle inline dans la grille. L'interface permet une saisie rapide et intuitive avec un feedback visuel clair.
 
-**Pourquoi cette priorité** : Sans la possibilité d'importer les offres financières, la grille reste vide. C'est le cœur du workflow de saisie des données.
+**Pourquoi cette priorité** : Sans la possibilité d'ajouter et modifier les offres financières, la grille reste vide. C'est le cœur du workflow de saisie des données avec deux modes complémentaires : import (automatisé) et édition manuelle (flexible).
 
 **Scénarios d'acceptation** :
 
-1. **Étant donné** un template existant et un fournisseur actif, **lorsqu'il** clique sur "Ajouter une version", **alors** une modale s'ouvre pour définir le nom de version (ex: "Offre initiale")
-2. **Étant donné** une version créée, **lorsqu'il** visualise la grille en mode inter-fournisseurs, **alors** une nouvelle colonne apparaît pour ce fournisseur avec la version par défaut
-3. **Étant donné** la colonne d'un fournisseur, **lorsqu'il** saisit des coûts dans les cellules, **alors** les valeurs sont sauvegardées automatiquement et les sous-totaux se recalculent
-4. **Étant donné** plusieurs versions créées pour un fournisseur, **lorsqu'il** sélectionne une version dans le dropdown de l'en-tête de colonne, **alors** la colonne affiche les coûts de cette version
+1. **Étant donné** un template existant et un fournisseur actif, **lorsqu'il** clique sur le dropdown [⋮] Actions dans l'en-tête de colonne, **alors** un menu s'affiche avec les options :
+   - "Importer une version" (upload JSON)
+   - "Nouvelle version" (création vide)
+   - "Éditer manuellement" (modification inline)
+
+2. **Étant donné** le menu ouvert, **lorsqu'il** sélectionne "Nouvelle version", **alors** une modale s'ouvre avec :
+   - Champ "Nom de version" (optionnel, défaut : "Version {n+1}")
+   - Champ "Date" (optionnel, défaut : aujourd'hui)
+   - Boutons [Créer] [Annuler]
+
+3. **Étant donné** une version créée, **lorsqu'il** visualise la grille en mode inter-fournisseurs, **alors** une nouvelle colonne apparaît pour ce fournisseur avec toutes les cellules vides
+
+4. **Étant donné** une colonne vide ou existante, **lorsqu'il** sélectionne "Éditer manuellement" dans le menu, **alors** :
+   - La colonne entre en mode édition (bordure orange #F59E0B sur toute la colonne)
+   - Un badge "En cours d'édition" apparaît dans l'en-tête
+   - Les cellules deviennent modifiables avec des champs input
+   - Un bouton "Sauvegarder version" apparaît en bas de la colonne
+
+5. **Étant donné** la colonne en mode édition, **lorsqu'il** saisit un coût dans une cellule, **alors** :
+   - La valeur est stockée localement (pas encore sauvegardée)
+   - Les sous-totaux se mettent à jour en temps réel
+   - La cellule modifiée affiche un petit indicateur (• bleu)
+
+6. **Étant donné** la colonne en mode édition, **lorsqu'il** clique sur "Sauvegarder version", **alors** :
+   - Une modale s'ouvre pour confirmer :
+     - Nom de la version (optionnel, défaut : "Révision v{n+1}" ou suggestion basée sur les modifications)
+     - Option "Créer une nouvelle version" (défaut) ou "Remplacer la version actuelle"
+   - Après confirmation, les valeurs sont sauvegardées et la colonne quitte le mode édition
+
+7. **Étant donné** la colonne en mode édition, **lorsqu'il** clique sur le bouton "Annuler", **alors** toutes les modifications sont annulées et la colonne retourne à son état initial
+
+8. **Étant donné** le menu ouvert, **lorsqu'il** sélectionne "Importer une version", **alors** une modale s'ouvre pour :
+   - Upload de fichier JSON (drag & drop ou clic)
+   - Option "Remplacer" ou "Ajouter" aux versions existantes de ce fournisseur
+   - Après import, les valeurs sont automatiquement créées et les totaux recalculés
+
+**Spécifications UI/UX détaillées** :
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Grille Financière                              [Comparaison fournisseurs▼]│
+│                                                   Période TCO: [3 ans ▼]   │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│ ┌────────────────────┐  ┌────────────────────┐  ┌────────────────────┐   │
+│ │ TechCorp Solutions │  │ Innovate Ltd       │  │ CloudFirst Inc.     │   │
+│ │ Version: v1       ▼│  │ Version: v2       ▼│  │ Version: Initial  ▼│   │
+│ │ [⋮] Actions      ▼│  │ [⋮] Actions      ▼│  │ [⋮] Actions      ▼│   │
+│ │                   │  │                   │  │                   │   │
+│ │       +───────┐  │  │       +───────┐  │  │       +───────┐  │   │
+│ │       │Importer│  │  │       │Importer│  │  │       │Importer│  │   │
+│ │       │Nouvelle │  │  │       │Nouvelle │  │  │       │Nouvelle │  │   │
+│ │       │version │  │  │       │version │  │  │       │version │  │   │
+│ │       │Éditer  │  │  │       │Éditer  │  │  │       │Éditer  │  │   │
+│ │       │manuel  │  │  │       │manuel  │  │  │       │manuel  │  │   │
+│ │       +───────┘  │  │       +───────┘  │  │       +───────┘  │   │
+│ │                   │  │                   │  │   ┌───────────┐   │   │
+│ └────────────────────┘  └────────────────────┘  │   │ En cours  │   │   │
+│                                                │   │ d'édition │   │   │
+├────────────────────────────────────────────────┴───────────────────┘   │
+│ Code │ Nom              │ Type    │ TechCorp │ Innovate │ CloudFirst│   │
+├─────────────────────────────────────────────────────────────────────────┤
+│ INF-01│ Infrastructure   │ Setup   │ 15000 €  │ 18000 €  │ [12000€ ] │← │
+│       │                  │         │          │          │          │  │
+│ INF-01│ └─ Serveurs      │ Setup   │ 10000 €  │ 12000 €  │ [ 8000€ ] │← │
+│       │                  │         │          │          │          │  │
+│ SAAS-01│ Abonnements     │ Recurrent│ 300 €/an│ 250 €/an│ [ 350€ ]  │← │
+│       │                  │ (mensuel)│         │          │          │  │
+│       │                  │         │          │          │          │  │
+│ LIC-01│ Licences        │ Setup   │ 5000 €   │ 7000 €   │ [ 6000€ ] │← │
+├─────────────────────────────────────────────────────────────────────────┤
+│ TOTAUX│                  │         │ 30000 €  │ 37250 €  │ 30500 €   │   │
+└─────────────────────────────────────────────────────────────────────────┘
+                                          [Sauvegarder version] [Annuler]
+```
+
+**Légende des indicateurs** :
+
+- `[⋮]` : Menu dropdown avec actions disponibles
+- `[valeur]` : Cellule modifiable en mode édition
+- `←` : Cellule modifiée avec indicateur (• bleu)
+- Bordure orange : Colonne en mode édition
+- Badge "En cours d'édition" : Feedback visuel de l'état d'édition
+
+**Comportements spécifiques** :
+
+1. **Mode édition inline** :
+   - Sélecteur de version désactivé (grisé) pendant l'édition
+   - Dropdown [⋮] Actions restant accessible pour annuler ou sauvegarder
+   - Undo/Redo local (Ctrl+Z / Ctrl+Y) pour les modifications dans la colonne
+   - Modification d'une cellule = création automatique d'un enregistrement `financial_offer_values` avec `version_id` à sauvegarder
+
+2. **Sauvegarde de version** :
+   - Nom par défaut intelligent :
+     - Si 1ère version : "Version 1"
+     - Si versions existantes : "Version {n+1}" ou "Révision v{n+1}" (si modifications)
+   - Option "Créer nouvelle version" (défaut) : Génère un nouvel UUID dans `financial_offer_versions`
+   - Option "Remplacer version actuelle" : Met à jour l'enregistrement existant
+   - Message de confirmation : "Version 'Révision v3' créée avec 12 modifications"
+
+3. **Import JSON** :
+   - Validation du format JSON avant import
+   - Option "Remplacer" : Supprime toutes les versions existantes de ce fournisseur
+   - Option "Ajouter" : Ajoute les versions du JSON aux versions existantes
+   - Message de succès : "3 versions importées pour TechCorp Solutions"
+
+4. **Calculs automatiques** :
+   - Sous-totaux recalculés en temps réel (< 500ms) à chaque modification
+   - TCO mis à jour instantanément
+   - Badge indicateur sur le panneau de synthèse quand une colonne est modifiée
+
+**États et feedback** :
+
+**État : Mode édition**
+
+- Bordure orange sur toute la colonne (#F59E0B)
+- Badge "En cours d'édition" en haut de colonne (fond jaune clair #FEF3C7)
+- Bouton "Sauvegarder version" en bas de colonne (vert #10B981)
+- Bouton "Annuler" (gris #6B7280)
+
+**État : Cellule modifiée**
+
+- Petit point bleu (• #3B82F6) en haut à droite de la cellule
+- Fond légèrement bleuté (rgba(59, 130, 246, 0.05))
+- Tooltip au survol : "Modifié - pas encore sauvegardé"
+
+**État : Succès**
+
+- Toast notification : "Version 'Révision v3' créée avec succès"
+- Colonne retourne à l'état normal
+- Totaux mis à jour
+
+**État : Erreur**
+
+- Toast notification : "Erreur lors de la sauvegarde : vérifiez les valeurs saisies"
+- Colonne reste en mode édition avec message en rouge
 
 ### US-3 : Comparaison inter-fournisseurs (Priorité : P1)
 
@@ -97,7 +229,59 @@ Un évaluateur doit changer la période de calcul TCO (1 an, 3 ans, 5 ans) pour 
 3. **Étant donné** une période de 3 ans sélectionnée, **lorsqu'il** consulte le tableau de synthèse, **alors** le TCO = Total Setup + (Total Recurrent annuel × 3)
 4. **Étant donné** une période modifiée, **lorsqu'il** quitte l'écran et y retourne, **alors** la période précédemment sélectionnée est conservée
 
-### US-7 : Export template en JSON (Priorité : P2)
+### US-7 : Import d'une offre depuis JSON (Priorité : P3)
+
+Un évaluateur doit importer les coûts d'une offre pour un fournisseur depuis un fichier JSON préalablement exporté, pour éviter de ressaisir les données manuellement.
+
+**Pourquoi cette priorité** : Utile pour la réutilisation et la restauration d'offres, mais l'édition manuelle est suffisante pour le MVP. L'import automatique depuis PDF n'est pas prévu.
+
+**Scénarios d'acceptation** :
+
+1. **Étant donné** un fournisseur avec au moins une version existante, **lorsqu'il** clique sur [⋮] Actions → "Importer une version", **alors** une modale s'ouvre pour sélectionner un fichier JSON
+2. **Étant donné** un fichier JSON valide sélectionné, **alors** une preview affiche : nom de la version, nombre de lignes, total setup, total recurrent
+3. **Étant donné** la preview affichée, **lorsqu'il** sélectionne l'option "Remplacer" (défaut), **alors** la version existante sera remplacée par celle du fichier
+4. **Étant donné** la preview affichée, **lorsqu'il** sélectionne l'option "Ajouter", **alors** une nouvelle version sera créée avec les données du fichier
+5. **Étant donné** l'import en cours, **lorsqu'il** clique sur "Importer", **alors** le système valide le JSON, crée/met à jour les valeurs et les totaux sont recalculés automatiquement
+
+**Contenu JSON attendu** :
+
+```json
+{
+  "metadata": {
+    "version": "1.0",
+    "export_date": "2025-11-13T10:30:00Z",
+    "supplier_name": "TechCorp Solutions",
+    "includes_data": true
+  },
+  "offer_version": {
+    "version_name": "Offre initiale",
+    "version_date": "2025-11-10T09:00:00Z"
+  },
+  "offer_values": [
+    {
+      "line_code": "INF-01-01",
+      "setup_cost": 15000.0,
+      "recurrent_cost": null,
+      "quantity": 1
+    },
+    {
+      "line_code": "SAAS-01",
+      "setup_cost": null,
+      "recurrent_cost": 250.0,
+      "quantity": 10
+    }
+  ]
+}
+```
+
+**Validation lors de l'import** :
+
+- Le JSON doit suivre le format défini dans `json-import-export-model.md`
+- Chaque `line_code` doit correspondre à une ligne du template existant
+- Les montants doivent être ≥ 0 et `quantity` > 0
+- Le fichier doit contenir au minimum la section `offer_values`
+
+### US-8 : Export template en JSON (Priorité : P2)
 
 Un évaluateur doit exporter le template financier au format JSON pour le sauvegarder localement, le partager avec d'autres équipes ou le réutiliser sur un autre RFP.
 

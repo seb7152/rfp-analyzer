@@ -86,64 +86,100 @@
     },
     {
       "id": "US-2",
-      "title": "Import d'une offre financière",
+      "title": "Création et édition manuelle de versions d'offres",
       "priority": "P1",
-      "completed": false,
-      "description": "Créer une nouvelle version d'offre pour un fournisseur existant et saisir les coûts sur chaque ligne du template.",
+      "completed": true,
+      "description": "Créer et modifier les versions d'offres financières pour chaque fournisseur, soit par import JSON, soit par édition manuelle inline dans la grille.",
       "tasks": [
         {
           "id": "US-2-001",
           "description": "Créer la table financial_offer_versions pour gérer les versions d'offres par fournisseur.",
-          "prompt": "Créer la migration Supabase pour financial_offer_versions. Colonnes: id (UUID PK), supplier_id (UUID FK → suppliers), version_name (VARCHAR), version_date (TIMESTAMP default NOW), is_active (BOOLEAN default true), created_at, updated_at. Index sur supplier_id.",
-          "completed": false
+          "prompt": "Créer la migration Supabase pour financial_offer_versions. Colonnes: id (UUID PK), supplier_id (UUID FK → suppliers), version_name (VARCHAR nullable), version_date (TIMESTAMP default NOW), is_active (BOOLEAN default true), created_at, updated_at. Index sur supplier_id.",
+          "completed": true
         },
         {
           "id": "US-2-002",
           "description": "Créer la table financial_offer_values pour stocker les coûts par ligne et par version.",
           "prompt": "Créer la migration Supabase pour financial_offer_values. Colonnes: id (UUID PK), version_id (UUID FK), template_line_id (UUID FK), setup_cost (DECIMAL 15,2 nullable), recurrent_cost (DECIMAL 15,2 nullable), quantity (INTEGER default 1), created_at, updated_at. Unique constraint sur (version_id, template_line_id). Index sur version_id.",
-          "completed": false
+          "completed": true
         },
         {
           "id": "US-2-003",
           "description": "Créer les RLS policies pour financial_offer_versions et financial_offer_values.",
           "prompt": "Implémenter les policies RLS pour financial_offer_versions et financial_offer_values. Les users doivent pouvoir SELECT/INSERT/UPDATE/DELETE uniquement sur les versions/values de leurs propres RFPs (via supplier_id → rfp_id → organization). Pour financial_offer_values, ajouter WITH CHECK avec la même condition que le SELECT pour empêcher l'insertion de version_id hors org. Activer RLS.",
-          "completed": false
+          "completed": true
         },
         {
           "id": "US-2-004",
-          "description": "Créer l'endpoint API POST /api/rfps/[rfpId]/financial-offer-versions pour créer une nouvelle version.",
-          "prompt": "Créer l'endpoint POST /api/rfps/[rfpId]/financial-offer-versions. Inputs: supplier_id, version_name (optionnel, default 'v{count+1}' généré dans l'API, pas en DB), version_date (optionnel). La version_name est nullable dans la DB mais sera générée automatiquement dans l'API si non fournie. Valider que supplier_id existe pour le RFP. Créer la version et les valeurs vides pour toutes les lignes du template.",
-          "completed": false
+          "description": "Créer l'endpoint API POST /api/rfps/[rfpId]/financial-offer-versions pour créer une nouvelle version vide.",
+          "prompt": "Créer l'endpoint POST /api/rfps/[rfpId]/financial-offer-versions. Inputs: supplier_id, version_name (optionnel), version_date (optionnel). Générer automatiquement le nom de version si non fourni: 'Version {n+1}' ou 'Révision v{n+1}'. Valider que supplier_id existe pour le RFP. Créer la version sans créer de financial_offer_values (les valeurs seront créées à la saisie).",
+          "completed": true
         },
         {
           "id": "US-2-005",
           "description": "Créer l'endpoint API GET /api/rfps/[rfpId]/financial-offer-versions pour lister toutes les versions.",
-          "prompt": "Créer l'endpoint GET /api/rfps/[rfpId]/financial-offer-versions. Retourner toutes les versions avec: id, supplier_name, version_name, version_date, is_active. Group by supplier pour affichage facile.",
-          "completed": false
+          "prompt": "Créer l'endpoint GET /api/rfps/[rfpId]/financial-offer-versions. Retourner toutes les versions avec: id, supplier_id, supplier_name, version_name, version_date, is_active. Group by supplier pour affichage facile. Trier par version_date DESC.",
+          "completed": true
         },
         {
           "id": "US-2-006",
           "description": "Créer l'endpoint API POST /api/financial-offer-values/batch pour créer ou mettre à jour en lot les valeurs.",
           "prompt": "Créer l'endpoint POST /api/financial-offer-values/batch. Input: version_id et un array de valeurs [{template_line_id, setup_cost, recurrent_cost, quantity}]. Upsert chaque valeur (INSERT ON CONFLICT UPDATE). Déclencher le recalcul des totaux après mise à jour.",
-          "completed": false
+          "completed": true
         },
         {
           "id": "US-2-007",
           "description": "Créer l'endpoint API GET /api/rfps/[rfpId]/financial-values pour récupérer toutes les valeurs selon le mode.",
           "prompt": "Créer l'endpoint GET /api/rfps/[rfpId]/financial-values. Query params: mode=comparison|supplier, supplierId (si mode=supplier). Retourner la structure du template + les valeurs de chaque version affichée. Mode comparison: une colonne par supplier. Mode supplier: toutes les versions du supplier.",
-          "completed": false
+          "completed": true
         },
         {
           "id": "US-2-008",
-          "description": "Créer le composant CreateVersionModal pour ajouter une nouvelle version d'offre.",
-          "prompt": "Créer le composant React CreateVersionModal. Sélecteur de fournisseur (liste des suppliers actifs du RFP). Input nom de version. Input date (date picker). Bouton 'Créer la version'. Appeler l'endpoint POST /financial-offer-versions et rafraîchir la grille.",
-          "completed": false
+          "description": "Créer le composant SupplierColumnHeader avec dropdown [⋮] Actions.",
+          "prompt": "Créer le composant React pour l'en-tête de colonne fournisseur. Afficher: nom du fournisseur, sélecteur de version (dropdown), bouton menu [⋮]. Le menu dropdown contient: 'Nouvelle version', 'Importer une version', 'Éditer manuellement'. Gérer l'état ouvert/fermé du menu.",
+          "completed": true
         },
         {
           "id": "US-2-009",
-          "description": "Implémenter l'édition inline des coûts dans la grille financière.",
-          "prompt": "Dans la grille, chaque cellule de coût doit être éditable. Input type number pour setup_cost et recurrent_cost. Auto-save après debounce (500ms). Afficher le format: '12 500 €' pour setup, '1 200 €/mois' pour recurrent. Calculer et afficher les sous-totaux à chaque modification.",
-          "completed": false
+          "description": "Créer le composant CreateVersionModal pour ajouter une nouvelle version d'offre.",
+          "prompt": "Créer le composant React CreateVersionModal. Champs: Nom de version (optionnel, placeholder généré automatiquement 'Version {n+1}'), Date (optionnel, défaut aujourd'hui). Boutons: 'Créer', 'Annuler'. Appeler l'endpoint POST /financial-offer-versions et rafraîchir la grille.",
+          "completed": true
+        },
+        {
+          "id": "US-2-010",
+          "description": "Implémenter le mode édition inline des coûts dans la grille financière.",
+          "prompt": "Ajouter un mode édition sur chaque colonne fournisseur. Lorsque 'Éditer manuellement' est activé: ajouter une bordure orange (#F59E0B) sur toute la colonne, afficher un badge 'En cours d'édition' dans l'en-tête, transformer les cellules en inputs modifiables, ajouter un bouton 'Sauvegarder version' en bas de colonne.",
+          "completed": true
+        },
+        {
+          "id": "US-2-011",
+          "description": "Créer le composant EditableCell pour l'édition inline des coûts.",
+          "prompt": "Créer le composant React EditableCell. Mode lecture: afficher la valeur formatée ('12 500 €' pour setup, '1 200 €/mois' pour recurrent). Mode édition: input type number avec formatage monétaire, indicateur (• bleu) si modifié depuis l'ouverture du mode édition. Auto-save local (state) sans persistance en base.",
+          "completed": true
+        },
+        {
+          "id": "US-2-012",
+          "description": "Implémenter le calcul en temps réel des sous-totaux pendant l'édition.",
+          "prompt": "En mode édition, recalculer les sous-totaux à chaque modification de cellule. Stocker les valeurs modifiées dans un état local (Map: template_line_id → {setup_cost, recurrent_cost, quantity}). Calculer les totaux (Total Setup, Total Recurrent, TCO) côté client pour feedback visuel instantané.",
+          "completed": true
+        },
+        {
+          "id": "US-2-013",
+          "description": "Créer le composant SaveVersionModal pour sauvegarder les modifications.",
+          "prompt": "Au clic sur 'Sauvegarder version', ouvrir une modale. Champs: Nom de la version (optionnel, suggestion intelligente basée sur les modifications: 'Révision v{n+1}'), Radio: 'Créer une nouvelle version' (défaut) ou 'Remplacer la version actuelle'. Au clic sur 'Sauvegarder': appeler l'endpoint batch pour upsert les valeurs, créer/mettre à jour la version, quitter le mode édition, afficher un toast de succès.",
+          "completed": true
+        },
+        {
+          "id": "US-2-014",
+          "description": "Implémenter l'annulation des modifications en mode édition.",
+          "prompt": "Au clic sur 'Annuler' dans le mode édition: restaurer les valeurs affichées avant l'ouverture du mode édition, quitter le mode édition sans sauvegarder, ne pas appeler d'API. Afficher un message de confirmation si des modifications non sauvegardées existent.",
+          "completed": true
+        },
+        {
+          "id": "US-2-015",
+          "description": "Ajouter Undo/Redo local pour les modifications en mode édition.",
+          "prompt": "En mode édition, maintenir une stack d'historique des modifications. Implémenter Ctrl+Z pour undo, Ctrl+Y pour redo. Chaque modification de cellule crée un nouvel état dans l'historique. L'historique est reset lors de la sauvegarde ou de l'annulation.",
+          "completed": true
         }
       ]
     },
@@ -311,6 +347,39 @@
     },
     {
       "id": "US-7",
+      "title": "Import d'une offre depuis JSON",
+      "priority": "P3",
+      "completed": false,
+      "description": "Importer les coûts d'une offre pour un fournisseur depuis un fichier JSON pour éviter la ressaisie manuelle.",
+      "tasks": [
+        {
+          "id": "US-7-001",
+          "description": "Créer l'endpoint API POST /api/rfps/[rfpId]/financial-offer-versions/import pour importer une version depuis JSON.",
+          "prompt": "Créer l'endpoint POST /api/rfps/[rfpId]/financial-offer-versions/import. Body: {supplier_id, version_name (optionnel), replace (boolean, default false), offer_values: [{line_code, setup_cost, recurrent_cost, quantity}]}. Valider que chaque line_code existe dans le template. Si replace=true: trouver la version existante et la remplacer. Si replace=false: créer une nouvelle version. Transaction rollback en cas d'erreur.",
+          "completed": false
+        },
+        {
+          "id": "US-7-002",
+          "description": "Créer le composant ImportOfferModal avec upload de fichier JSON.",
+          "prompt": "Créer la modale d'import d'offre. Zone de drag & drop pour fichier JSON. Parser le fichier et afficher une preview: nom de version, nombre de lignes, totaux (setup, recurrent). Toggle: 'Remplacer la version existante' (défaut false). Boutons: 'Importer', 'Annuler'.",
+          "completed": false
+        },
+        {
+          "id": "US-7-003",
+          "description": "Intégrer l'option 'Importer une version' dans le menu dropdown [⋮] Actions.",
+          "prompt": "Ajouter l'option 'Importer une version' dans le dropdown des actions fournisseur. Au clic, ouvrir ImportOfferModal. Récupérer supplier_id du fournisseur courant. Après import réussi, rafraîchir la grille et afficher un toast de succès.",
+          "completed": false
+        },
+        {
+          "id": "US-7-004",
+          "description": "Gérer les erreurs d'import avec messages détaillés.",
+          "prompt": "Si le JSON est invalide: retourner une erreur 400 avec le message: 'Format JSON invalide'. Si une ligne_code n'existe pas: 'Ligne INF-99 non trouvée dans le template'. Si transaction échoue: rollback complet et message 'Erreur lors de l'import'.",
+          "completed": false
+        }
+      ]
+    },
+    {
+      "id": "US-8",
       "title": "Export template en JSON",
       "priority": "P2",
       "completed": false,
@@ -337,38 +406,38 @@
       ]
     },
     {
-      "id": "US-8",
+      "id": "US-9",
       "title": "Export template en Excel",
       "priority": "P2",
       "completed": false,
       "description": "Exporter le template financier au format Excel avec formules pré-générées.",
       "tasks": [
         {
-          "id": "US-8-001",
+          "id": "US-9-001",
           "description": "Installer et configurer la librairie xlsx pour la génération Excel.",
           "prompt": "Installer la librairie xlsx (ou exceljs) côté backend/Next.js. Créer les utilitaires pour générer des fichiers .xlsx avec: feuilles, colonnes, formules Excel, mise en forme (gras, couleurs, bordures).",
           "completed": false
         },
         {
-          "id": "US-8-002",
+          "id": "US-9-002",
           "description": "Créer l'endpoint API GET /api/rfps/[rfpId]/financial-template/export/excel pour template vide.",
           "prompt": "Créer l'endpoint pour template vide (contentType=template-only). Générer un fichier .xlsx avec: Feuille 1: structure du template (Code, Nom, Type, Fréquence, Formule, Ordre). Indentation visuelle pour la hiérarchie. Formules Excel =SUM(INDIRECT(...)) pour les sous-totaux. Lignes de sous-totaux en gras.",
           "completed": false
         },
         {
-          "id": "US-8-003",
+          "id": "US-9-003",
           "description": "Créer l'endpoint API GET /api/rfps/[rfpId]/financial-template/export/excel pour avec données.",
           "prompt": "Créer l'endpoint pour avec données (contentType=with-data). Générer le .xlsx avec: Feuille 1: structure + colonnes dynamiques selon l'état de l'interface (mode, fournisseurs/versions affichés). Valeurs pré-remplies. Feuille 2: tableau de synthèse des totaux. Feuille 3: légende et instructions.",
           "completed": false
         },
         {
-          "id": "US-8-004",
+          "id": "US-9-004",
           "description": "Respecter l'état de l'interface lors de l'export Excel avec données.",
-          "prompt": "Récupérer les préférences utilisateur depuis financial_grid_preferences. Si mode=comparison: exporter tous les fournisseurs avec leurs versions sélectionnées. Si mode=supplier: exporter toutes les versions du supplier sélectionné. Appliquer la période TCO sélectionnée.",
+          "prompt": "Récupérer les préférences utilisateur depuis financial_grid_preferences. Si mode=comparison: exporter tous les fournisseurs avec leurs versions sélectionnés. Si mode=supplier: exporter toutes les versions du supplier sélectionné. Appliquer la période TCO sélectionnée.",
           "completed": false
         },
         {
-          "id": "US-8-005",
+          "id": "US-9-005",
           "description": "Créer le bouton 'Exporter Excel' dans la barre d'outils.",
           "prompt": "Ajouter un bouton dropdown 'Exporter Excel' dans la barre d'outils. Options: 'Template vide' (contentType=template-only) et 'Avec données' (contentType=with-data). Au clic, appeler l'endpoint et télécharger le fichier .xlsx.",
           "completed": false
@@ -376,32 +445,32 @@
       ]
     },
     {
-      "id": "US-9",
+      "id": "US-10",
       "title": "Import template depuis JSON",
       "priority": "P2",
       "completed": false,
       "description": "Importer un template depuis un fichier JSON existant pour créer rapidement un nouveau template.",
       "tasks": [
         {
-          "id": "US-9-001",
+          "id": "US-10-001",
           "description": "Créer le composant ImportJSONModal avec upload de fichier.",
           "prompt": "Créer la modale d'import JSON. Zone de drag & drop pour upload de fichier .json. Preview du contenu du fichier (nombre de lignes). Toggle: 'Remplacer le template existant' (coché par défaut). Boutons: 'Importer' et 'Annuler'.",
           "completed": false
         },
         {
-          "id": "US-9-002",
+          "id": "US-10-002",
           "description": "Créer l'endpoint API POST /api/rfps/[rfpId]/financial-template/import/json pour importer.",
           "prompt": "Créer l'endpoint POST /api/rfps/[rfpId]/financial-template/import/json. Body: JSON content. Query param: replace (true|false). Valider la structure JSON: pas de cycles dans la hiérarchie, types valides. Si replace=true: supprimer le template existant et créer nouveau. Si replace=false: ajouter les lignes au template existant.",
           "completed": false
         },
         {
-          "id": "US-9-003",
+          "id": "US-10-003",
           "description": "Valider la structure JSON lors de l'import.",
           "prompt": "Implémenter la validation: Vérifier que template existe. Vérifier que chaque ligne a: id, line_code, name, line_type, parent_id (optionnel). Valider que parent_id existe dans la liste (pas de cycles). Valider line_type IN ('setup', 'recurrent'). Retourner erreurs détaillées si invalide.",
           "completed": false
         },
         {
-          "id": "US-9-004",
+          "id": "US-10-004",
           "description": "Gérer les erreurs d'import avec transaction rollback.",
           "prompt": "Si validation échoue, retourner une erreur 400 avec la liste des erreurs. Si insertion échoue, faire un rollback complet (rien n'est importé). Message utilisateur: 'Erreur lors de l'import: [détails]'. Success: 'Template importé avec succès'.",
           "completed": false

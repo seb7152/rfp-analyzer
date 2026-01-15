@@ -61,13 +61,11 @@ export async function GET(
       );
     }
 
-    // Get all lines for this template
-    const { data: lines, error: linesError } = await supabase
-      .from("financial_template_lines")
-      .select("*")
-      .eq("template_id", template.id)
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true });
+    // Get all lines for this template with computed subtotals
+    const { data: lines, error: linesError } = await supabase.rpc(
+      "get_financial_template_lines_with_subtotals",
+      { p_template_id: template.id }
+    );
 
     if (linesError) {
       console.error("Error fetching template lines:", linesError);

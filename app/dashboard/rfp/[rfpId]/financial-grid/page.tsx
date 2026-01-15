@@ -1,20 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, Loader2, Plus } from "lucide-react";
 import { CreateTemplateModal } from "@/components/financial/CreateTemplateModal";
 import { TemplateEditor } from "@/components/financial/TemplateEditor";
+import { ComparisonGrid } from "@/components/financial/ComparisonGrid";
 import { FinancialTemplateLine } from "@/lib/financial/calculations";
+import { useSuppliers } from "@/hooks/use-financial-data";
 
-interface FinancialGridPageProps {
-  params: {
-    rfpId: string;
-  };
-}
+
 
 interface FinancialTemplate {
   id: string;
@@ -25,48 +24,58 @@ interface FinancialTemplate {
   updated_at: string;
 }
 
-export default function FinancialGridPage({ params }: FinancialGridPageProps) {
+export default function FinancialGridPage() {
   const router = useRouter();
+  const params = useParams();
+  const rfpId = (Array.isArray(params.rfpId) ? params.rfpId[0] : params.rfpId) as string;
   const { user, isLoading: authLoading } = useAuth();
   const [template, setTemplate] = useState<FinancialTemplate | null>(null);
   const [lines, setLines] = useState<FinancialTemplateLine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
+  const [viewMode, setViewMode] = useState<"template-definition" | "comparison">("comparison");
+
+  // Fetch Suppliers
+  // Using useParams hook for reliability in Client Components
+  const { data: suppliers = [] } = useSuppliers(rfpId);
 
   // Fetch RFP data
   useEffect(() => {
     const fetchRFPData = async () => {
       try {
-        const response = await fetch(`/api/rfps/${params.rfpId}`);
+        const response = await fetch(`/api/rfps/${rfpId}`);
         if (response.ok) {
           const data = await response.json();
-          setRfpTitle(data.title || `RFP ${params.rfpId.slice(0, 8)}`);
+          setRfpTitle(data.title || `RFP ${rfpId.slice(0, 8)}`);
         }
       } catch (error) {
         console.error("Failed to fetch RFP data:", error);
       }
     };
 
-    if (params.rfpId) {
+    if (rfpId) {
       fetchRFPData();
     }
-  }, [params.rfpId]);
+  }, [rfpId]);
 
   // Fetch financial template
   useEffect(() => {
     const fetchTemplate = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`/api/rfps/${params.rfpId}/financial-template`);
+        const response = await fetch(`/api/rfps/${rfpId}/financial-template`);
         if (response.ok) {
           const data = await response.json();
           setTemplate(data.template);
           setLines(data.lines || []);
+          // If we have a template, default to comparison view if we have suppliers? 
+          // Or stick to default.
         } else if (response.status === 404 || response.status === 200) {
           // No template exists yet
           setTemplate(null);
           setLines([]);
+          setViewMode("template-definition");
         } else {
           console.error("Failed to fetch template:", response.statusText);
         }
@@ -77,14 +86,15 @@ export default function FinancialGridPage({ params }: FinancialGridPageProps) {
       }
     };
 
-    if (params.rfpId && user) {
+    if (rfpId && user) {
       fetchTemplate();
     }
-  }, [params.rfpId, user]);
+  }, [rfpId, user]);
 
   const handleTemplateCreated = (newTemplate: FinancialTemplate) => {
     setTemplate(newTemplate);
     setIsCreateModalOpen(false);
+    setViewMode("template-definition"); // Go to editor first
   };
 
   const handleLineAdded = (line: FinancialTemplateLine) => {
@@ -134,8 +144,16 @@ export default function FinancialGridPage({ params }: FinancialGridPageProps) {
             </div>
           </div>
 
-          {template && (
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            {template && (
+              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-[400px] mr-4">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="comparison">Comparaison & Saisie</TabsTrigger>
+                  <TabsTrigger value="template-definition">Définition Template</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
+            {template && (
               <Button
                 variant="outline"
                 size="sm"
@@ -145,15 +163,15 @@ export default function FinancialGridPage({ params }: FinancialGridPageProps) {
               >
                 Exporter
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
       {/* Main content */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-hidden flex flex-col p-6">
         {!template ? (
-          <Card className="mx-auto max-w-2xl">
+          <Card className="mx-auto max-w-2xl mt-10">
             <CardHeader>
               <CardTitle>Créer un template financier</CardTitle>
               <CardDescription>
@@ -169,38 +187,45 @@ export default function FinancialGridPage({ params }: FinancialGridPageProps) {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-6">
-            {/* Template info */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>{template.name}</CardTitle>
-                    <CardDescription>
-                      Période TCO: {template.total_period_years} an{template.total_period_years > 1 ? "s" : ""}
-                    </CardDescription>
+          <div className="flex flex-col h-full space-y-4">
+            {/* Info and Tabs */}
+            <div className="flex justify-between items-start">
+              <Card className="w-full">
+                <CardHeader className="py-4 pb-2">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle className="text-lg">{template.name}</CardTitle>
+                      <CardDescription>
+                        Période TCO: {template.total_period_years} an{template.total_period_years > 1 ? "s" : ""}
+                      </CardDescription>
+                    </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      // TODO: Edit template functionality
-                    }}
-                  >
-                    Modifier
-                  </Button>
-                </div>
-              </CardHeader>
-            </Card>
+                </CardHeader>
+              </Card>
+            </div>
 
-            {/* Template Editor */}
-            <TemplateEditor
-              templateId={template.id}
-              lines={lines}
-              onLineAdded={handleLineAdded}
-              onLineUpdated={handleLineUpdated}
-              onLineDeleted={handleLineDeleted}
-            />
+            {/* Tab Content Area - utilizing flex-1 to fill remaining height */}
+            <div className="flex-1 overflow-hidden relative border rounded-md bg-white shadow-sm">
+              {viewMode === "template-definition" ? (
+                <div className="h-full overflow-auto p-4">
+                  <TemplateEditor
+                    templateId={template.id}
+                    lines={lines}
+                    onLineAdded={handleLineAdded}
+                    onLineUpdated={handleLineUpdated}
+                    onLineDeleted={handleLineDeleted}
+                  />
+                </div>
+              ) : (
+                <div className="h-full w-full">
+                  <ComparisonGrid
+                    rfpId={rfpId}
+                    templateLines={lines}
+                    suppliers={suppliers}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -209,7 +234,7 @@ export default function FinancialGridPage({ params }: FinancialGridPageProps) {
       <CreateTemplateModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        rfpId={params.rfpId}
+        rfpId={rfpId}
         onTemplateCreated={handleTemplateCreated}
       />
     </div>

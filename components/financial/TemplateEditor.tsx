@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FinancialTemplateLine } from "@/lib/financial/calculations";
+import { FinancialTemplateLine, formatCurrency } from "@/lib/financial/calculations";
 
 interface TemplateEditorProps {
   templateId: string;
@@ -206,6 +206,13 @@ export function TemplateEditor({
             {node.line_type === "setup" ? "Setup" : "Récurrent"}
             {node.recurrence_type && ` (${node.recurrence_type === "monthly" ? "mensuel" : "annuel"})`}
           </Badge>
+
+          {hasChildren && (
+            <Badge variant="outline" className="text-xs text-slate-600">
+              Sous-total: {formatCurrency(node.subtotal_setup || 0)} /{" "}
+              {formatCurrency(node.subtotal_recurrent || 0)}
+            </Badge>
+          )}
 
           {/* Actions */}
           <div className="flex items-center gap-1">

@@ -142,6 +142,13 @@ export async function PUT(
     }
 
     if (parent_id !== undefined) {
+      if (parent_id === lineId) {
+        return NextResponse.json(
+          { error: "parent_id cannot reference the line itself" },
+          { status: 400 }
+        );
+      }
+
       // Check if parent_id would create a cycle
       if (parent_id) {
         // Verify parent exists in the same template
@@ -159,19 +166,6 @@ export async function PUT(
           );
         }
 
-        // Check if parent_id is a descendant of this line (would create a cycle)
-        const { data: descendants, error: descendantsError } = await supabase
-          .rpc("get_line_descendants", { line_id: lineId });
-
-        if (!descendantsError && descendants) {
-          const descendantIds = descendants.map((d: { id: string }) => d.id);
-          if (descendantIds.indexOf(parent_id) !== -1) {
-            return NextResponse.json(
-              { error: "Cannot set parent_id to a descendant line (would create a cycle)" },
-              { status: 400 }
-            );
-          }
-        }
       }
       updateData.parent_id = parent_id || null;
     }
@@ -190,6 +184,12 @@ export async function PUT(
 
     if (updateError) {
       console.error("Error updating template line:", updateError);
+      if (updateError.message?.includes("Circular reference detected")) {
+        return NextResponse.json(
+          { error: "Cannot set parent_id to a descendant line (would create a cycle)" },
+          { status: 400 }
+        );
+      }
       return NextResponse.json(
         { error: `Failed to update template line: ${updateError.message}` },
         { status: 500 }
@@ -299,12 +299,28 @@ export async function DELETE(
     // Ignore error if table doesn't exist yet (will be created in US-2)
     const hasValues = !valuesError && values && values.length > 0;
 
-    // If has children or values, do soft delete
+    // If has children or values, do soft delete (cascade to descendants)
     if ((children && children.length > 0) || hasValues) {
+      const { data: descendants, error: descendantsError } = await supabase.rpc(
+        "get_line_descendants",
+        { line_id: lineId }
+      );
+
+      if (descendantsError) {
+        console.error("Error fetching descendants:", descendantsError);
+        return NextResponse.json(
+          { error: "Failed to fetch descendant lines" },
+          { status: 500 }
+        );
+      }
+
+      const descendantIds = descendants?.map((d: { id: string }) => d.id) || [];
+      const idsToDeactivate = [lineId, ...descendantIds];
+
       const { error: softDeleteError } = await supabase
         .from("financial_template_lines")
         .update({ is_active: false })
-        .eq("id", lineId);
+        .in("id", idsToDeactivate);
 
       if (softDeleteError) {
         console.error("Error soft deleting line:", softDeleteError);
