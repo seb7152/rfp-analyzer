@@ -52,6 +52,7 @@ export function TemplateEditor({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedLine, setSelectedLine] = useState<FinancialTemplateLine | null>(null);
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+  const [selectedParentLine, setSelectedParentLine] = useState<FinancialTemplateLine | null>(null);
   const [expandedLines, setExpandedLines] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [lineToDelete, setLineToDelete] = useState<string | null>(null);
@@ -89,11 +90,14 @@ export function TemplateEditor({
 
   const handleAddRootLine = () => {
     setSelectedParentId(null);
+    setSelectedParentLine(null);
     setIsAddModalOpen(true);
   };
 
   const handleAddChildLine = (parentId: string) => {
+    const parentLine = lines.find(l => l.id === parentId) || null;
     setSelectedParentId(parentId);
+    setSelectedParentLine(parentLine);
     setIsAddModalOpen(true);
   };
 
@@ -297,9 +301,11 @@ export function TemplateEditor({
         onClose={() => {
           setIsAddModalOpen(false);
           setSelectedParentId(null);
+          setSelectedParentLine(null);
         }}
         templateId={templateId}
         parentId={selectedParentId}
+        parentLine={selectedParentLine}
         onLineAdded={onLineAdded}
       />
 

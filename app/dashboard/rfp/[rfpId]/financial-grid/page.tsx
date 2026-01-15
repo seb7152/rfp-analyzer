@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, Loader2, Plus } from "lucide-react";
 import { CreateTemplateModal } from "@/components/financial/CreateTemplateModal";
 import { TemplateEditor } from "@/components/financial/TemplateEditor";
-import { ComparisonGrid } from "@/components/financial/ComparisonGrid";
+import { FinancialGrid } from "@/components/financial/FinancialGrid";
 import { FinancialTemplateLine } from "@/lib/financial/calculations";
 import { useSuppliers } from "@/hooks/use-financial-data";
 
@@ -169,7 +169,7 @@ export default function FinancialGridPage() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 overflow-hidden flex flex-col p-6">
+      <div className="flex-1 overflow-y-auto flex flex-col p-6">
         {!template ? (
           <Card className="mx-auto max-w-2xl mt-10">
             <CardHeader>
@@ -188,24 +188,8 @@ export default function FinancialGridPage() {
           </Card>
         ) : (
           <div className="flex flex-col h-full space-y-4">
-            {/* Info and Tabs */}
-            <div className="flex justify-between items-start">
-              <Card className="w-full">
-                <CardHeader className="py-4 pb-2">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <CardTitle className="text-lg">{template.name}</CardTitle>
-                      <CardDescription>
-                        Période TCO: {template.total_period_years} an{template.total_period_years > 1 ? "s" : ""}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-              </Card>
-            </div>
-
-            {/* Tab Content Area - utilizing flex-1 to fill remaining height */}
-            <div className="flex-1 overflow-hidden relative border rounded-md bg-white shadow-sm">
+            {/* Horizontal spacer removed card below */}
+            <div className="flex-1 overflow-y-auto relative border rounded-md bg-white shadow-sm">
               {viewMode === "template-definition" ? (
                 <div className="h-full overflow-auto p-4">
                   <TemplateEditor
@@ -218,10 +202,12 @@ export default function FinancialGridPage() {
                 </div>
               ) : (
                 <div className="h-full w-full">
-                  <ComparisonGrid
+                  <FinancialGrid
                     rfpId={rfpId}
                     templateLines={lines}
                     suppliers={suppliers}
+                    templatePeriodYears={template.total_period_years}
+                    templateName={template.name}
                   />
                 </div>
               )}

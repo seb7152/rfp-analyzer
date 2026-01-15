@@ -232,32 +232,36 @@
       "id": "US-4",
       "title": "Comparaison intra-fournisseur",
       "priority": "P2",
-      "completed": false,
+      "completed": true,
       "description": "Analyser l'évolution de l'offre d'un même fournisseur à travers ses différentes versions avec variations en pourcentage.",
       "tasks": [
         {
           "id": "US-4-001",
           "description": "Créer le sélecteur de fournisseur en mode intra-fournisseur.",
           "prompt": "Créer le composant SupplierSelector visible uniquement en mode supplier. Dropdown listant tous les fournisseurs actifs du RFP. Au changement de fournisseur, afficher toutes les versions de ce fournisseur en colonnes. Sauvegarder la sélection dans financial_grid_preferences.",
-          "completed": false
+          "completed": true,
+          "comments": "Composant SupplierSelector.tsx créé. Intégré dans SupplierModeContent.tsx. La sélection est sauvegardée dans les préférences via savePreferences({ selected_supplier_id })."
         },
         {
           "id": "US-4-002",
           "description": "Calculer les variations en pourcentage entre versions successives.",
           "prompt": "Créer une fonction pour calculer les variations par rapport à la version précédente. Pour chaque version n: variation = (total_n - total_{n-1}) / total_{n-1} × 100%. Calculer pour Total Setup, Total Recurrent et TCO. Retourner les valeurs en pourcentage (ex: -5.2 ou +3.5).",
-          "completed": false
+          "completed": true,
+          "comments": "Fonction calculateVariation implémentée dans SupplierSummaryTable.tsx et SupplierVersionsGrid.tsx. Calcule les variations pour Setup, Recurrent et TCO."
         },
         {
           "id": "US-4-003",
           "description": "Afficher les variations avec indicateurs visuels (▲ rouge / ▼ vert).",
           "prompt": "Dans la grille et le tableau de synthèse en mode supplier, afficher les variations avec badges: ▲ rouge si variation > 0 (hausse), ▼ vert si variation < 0 (baisse). Format: '▼ 5.2%' ou '▲ 3.5%'. Pas d'indicateur pour la première version (pas de référence).",
-          "completed": false
+          "completed": true,
+          "comments": "Composant VariationBadge créé dans SupplierVersionsGrid.tsx. Utilise TrendingUp (rouge) et TrendingDown (vert) de lucide-react. Format: '+X.X%' ou '-X.X%'."
         },
         {
           "id": "US-4-004",
           "description": "Créer le tableau de synthèse pour la comparaison intra-fournisseur.",
           "prompt": "Créer le composant SummaryTable en mode supplier. Tableau avec une ligne par version. Colonnes: Version, Total Setup, Total Recurrent/an, TCO, Variation % vs version précédente. Afficher la progression temporelle des coûts.",
-          "completed": false
+          "completed": true,
+          "comments": "Composant SupplierSummaryTable.tsx créé. Affiche une ligne par version avec colonnes: Version, Date, Total Setup, Total Récurrent/an, TCO, Variation TCO. Badge 'Meilleur' sur le TCO le plus bas."
         }
       ]
     },

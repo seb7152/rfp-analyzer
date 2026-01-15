@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,12 +23,14 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { FinancialTemplateLine } from "@/lib/financial/calculations";
 
 interface AddLineModalProps {
   isOpen: boolean;
   onClose: () => void;
   templateId: string;
   parentId: string | null;
+  parentLine?: FinancialTemplateLine | null;
   onLineAdded: (line: any) => void;
 }
 
@@ -37,6 +39,7 @@ export function AddLineModal({
   onClose,
   templateId,
   parentId,
+  parentLine,
   onLineAdded,
 }: AddLineModalProps) {
   const [lineCode, setLineCode] = useState("");
@@ -46,6 +49,22 @@ export function AddLineModal({
   const [customFormula, setCustomFormula] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  // Inherit parameters from parent line when modal opens
+  useEffect(() => {
+    if (isOpen && parentLine) {
+      if (parentLine.line_type) {
+        setLineType(parentLine.line_type);
+      }
+      if (parentLine.recurrence_type) {
+        setRecurrenceType(parentLine.recurrence_type as "monthly" | "yearly");
+      }
+    } else if (isOpen && !parentId) {
+      // Default for root lines
+      setLineType("setup");
+      setRecurrenceType("monthly");
+    }
+  }, [isOpen, parentLine, parentId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

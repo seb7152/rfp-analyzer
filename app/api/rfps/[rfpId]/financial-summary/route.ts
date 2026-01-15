@@ -98,7 +98,9 @@ export async function GET(
                 version_id: v.id,
                 version_name: v.version_name,
                 setup_total: totals.total_setup,
+                total_setup: totals.total_setup,
                 recurrent_annual_total: totals.total_recurrent_annual,
+                total_recurrent_annual: totals.total_recurrent_annual,
                 tco: totals.tco
             };
         });

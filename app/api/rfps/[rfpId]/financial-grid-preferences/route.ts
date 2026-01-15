@@ -1,18 +1,18 @@
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET(
-    request: Request,
+    _: NextRequest,
     { params }: { params: { rfpId: string } }
 ) {
     try {
-        const supabase = createRouteHandlerClient({ cookies });
+        const supabase = await createClient();
         const {
-            data: { session },
-        } = await supabase.auth.getSession();
+            data: { user },
+            error: authError,
+        } = await supabase.auth.getUser();
 
-        if (!session) {
+        if (authError || !user) {
             return new NextResponse("Unauthorized", { status: 401 });
         }
 
@@ -20,7 +20,7 @@ export async function GET(
             .from("financial_grid_preferences")
             .select("*")
             .eq("rfp_id", params.rfpId)
-            .eq("user_id", session.user.id)
+            .eq("user_id", user.id)
             .single();
 
         if (error && error.code !== "PGRST116") {
@@ -48,16 +48,17 @@ export async function GET(
 }
 
 export async function PUT(
-    request: Request,
+    request: NextRequest,
     { params }: { params: { rfpId: string } }
 ) {
     try {
-        const supabase = createRouteHandlerClient({ cookies });
+        const supabase = await createClient();
         const {
-            data: { session },
-        } = await supabase.auth.getSession();
+            data: { user },
+            error: authError,
+        } = await supabase.auth.getUser();
 
-        if (!session) {
+        if (authError || !user) {
             return new NextResponse("Unauthorized", { status: 401 });
         }
 
@@ -72,7 +73,6 @@ export async function PUT(
         } = body;
 
         // Validate inputs generally? Or trust schema checks?
-        // Basic val:
         if (tco_period_years && ![1, 3, 5].includes(tco_period_years)) {
             return new NextResponse("Invalid TCO period", { status: 400 });
         }
@@ -82,7 +82,7 @@ export async function PUT(
             .upsert(
                 {
                     rfp_id: params.rfpId,
-                    user_id: session.user.id,
+                    user_id: user.id,
                     ui_mode: ui_mode || "comparison",
                     selected_supplier_id,
                     displayed_versions: displayed_versions || {},
