@@ -96,7 +96,7 @@ export async function PUT(
  * Supprime un commentaire
  */
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { commentId: string } }
 ) {
   try {

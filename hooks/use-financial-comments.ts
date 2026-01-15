@@ -8,7 +8,7 @@ import {
 export function useFinancialComments(
   lineId: string,
   versionId?: string | null
-) {
+): ReturnType<typeof useQuery<FinancialCommentWithAuthor[], Error>> {
   return useQuery({
     queryKey: ["financial-comments", lineId, versionId],
     queryFn: async () => {
@@ -52,7 +52,7 @@ export function useCreateFinancialComment() {
 
       return response.json();
     },
-    onSuccess: (data, input) => {
+    onSuccess: (_data, input) => {
       // Invalidate and refetch comments for this line/version
       queryClient.invalidateQueries({
         queryKey: ["financial-comments", input.template_line_id, input.version_id],
@@ -85,7 +85,7 @@ export function useUpdateFinancialComment() {
 
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Invalidate all comments queries
       queryClient.invalidateQueries({
         queryKey: ["financial-comments"],

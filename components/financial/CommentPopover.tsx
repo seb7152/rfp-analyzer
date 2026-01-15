@@ -26,10 +26,11 @@ export function CommentPopover({
   const [editingText, setEditingText] = useState("");
 
   // Data fetching
-  const { data: comments = [], isLoading, error } = useFinancialComments(
+  const { data: commentsData, error } = useFinancialComments(
     lineId,
     versionId
   );
+  const comments: FinancialCommentWithAuthor[] = commentsData || [];
 
   // Mutations
   const { mutate: createComment, isPending: isCreating } =

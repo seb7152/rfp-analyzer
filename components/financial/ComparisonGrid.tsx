@@ -23,7 +23,6 @@ import {
     useFinancialValues,
     useBatchUpdateFinancialValues
 } from "@/hooks/use-financial-data";
-import { EditableCell } from "./EditableCell";
 import { CellWithComment } from "./CellWithComment";
 import { SupplierColumnHeader } from "./SupplierColumnHeader";
 import { CreateVersionModal } from "./CreateVersionModal";

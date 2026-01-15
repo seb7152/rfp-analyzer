@@ -21,7 +21,6 @@ import { FinancialOfferValue, FinancialOfferVersion } from "@/types/financial";
 import { useFinancialValues } from "@/hooks/use-financial-data";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
-import { CellWithComment } from "./CellWithComment";
 import { CommentPopover } from "./CommentPopover";
 
 interface SupplierVersionsGridProps {
