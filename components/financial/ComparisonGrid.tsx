@@ -34,6 +34,9 @@ interface ComparisonGridProps {
     rfpId: string;
     templateLines: FinancialTemplateLine[];
     suppliers: { id: string; name: string }[];
+    tcoPeriod: number; // US-3: Added TCO period
+    selectedVersions?: Map<string, string>; // supplierId -> versionId
+    onVersionChange?: (supplierId: string, versionId: string) => void;
 }
 
 interface EditState {
@@ -43,13 +46,24 @@ interface EditState {
     historyIndex: number;
 }
 
-export function ComparisonGrid({ rfpId, templateLines, suppliers }: ComparisonGridProps) {
+export function ComparisonGrid({
+    rfpId,
+    templateLines,
+    suppliers,
+    tcoPeriod,
+    selectedVersions: externalSelectedVersions,
+    onVersionChange
+}: ComparisonGridProps) {
     // Data Fetching
     const { data: versions = [] } = useFinancialVersions(rfpId);
     const { data: remoteValues = [] } = useFinancialValues(rfpId, "comparison");
 
     // Local State
-    const [selectedVersions, setSelectedVersions] = useState<Map<string, string>>(new Map()); // supplierId -> versionId
+    const [internalSelectedVersions, setInternalSelectedVersions] = useState<Map<string, string>>(new Map()); // supplierId -> versionId
+
+    // Use external state if provided, otherwise internal
+    const selectedVersions = externalSelectedVersions || internalSelectedVersions;
+
     const [expandedLines, setExpandedLines] = useState<Set<string>>(new Set());
     const [editingVersionId, setEditingVersionId] = useState<string | null>(null);
     const [editState, setEditState] = useState<EditState | null>(null);
@@ -65,8 +79,12 @@ export function ComparisonGrid({ rfpId, templateLines, suppliers }: ComparisonGr
 
     // Initialize selected versions (most recent by default)
     useEffect(() => {
+        // Only auto-select if NOT controlled externally (or if external map is empty and we want to help?)
+        // If controlled, parent should handle initialization via preferences.
+        if (externalSelectedVersions) return;
+
         if (versions.length > 0) {
-            const newSelection = new Map(selectedVersions);
+            const newSelection = new Map(internalSelectedVersions);
             let changed = false;
             suppliers.forEach(s => {
                 if (!newSelection.has(s.id)) {
@@ -77,9 +95,9 @@ export function ComparisonGrid({ rfpId, templateLines, suppliers }: ComparisonGr
                     }
                 }
             });
-            if (changed) setSelectedVersions(newSelection);
+            if (changed) setInternalSelectedVersions(newSelection);
         }
-    }, [versions, suppliers]);
+    }, [versions, suppliers, externalSelectedVersions, internalSelectedVersions]);
 
     // Expand all lines by default
     useEffect(() => {
@@ -142,9 +160,13 @@ export function ComparisonGrid({ rfpId, templateLines, suppliers }: ComparisonGr
     };
 
     const handleVersionChange = (supplierId: string, versionId: string) => {
-        const newMap = new Map(selectedVersions);
-        newMap.set(supplierId, versionId);
-        setSelectedVersions(newMap);
+        if (onVersionChange) {
+            onVersionChange(supplierId, versionId);
+        } else {
+            const newMap = new Map(internalSelectedVersions);
+            newMap.set(supplierId, versionId);
+            setInternalSelectedVersions(newMap);
+        }
     };
 
     const handleStartEdit = (versionId: string) => {
@@ -257,10 +279,10 @@ export function ComparisonGrid({ rfpId, templateLines, suppliers }: ComparisonGr
                 <Table className="relative w-full min-w-[max-content]">
                     <TableHeader className="sticky top-0 bg-white z-10 shadow-sm">
                         <TableRow>
-                            <TableHead className="w-[300px] min-w-[300px] pl-4">Ligne de coût</TableHead>
-                            <TableHead className="w-[100px]">Type</TableHead>
+                            <TableHead className="w-[300px] min-w-[300px] pl-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Ligne de coût</TableHead>
+                            <TableHead className="w-[100px] text-xs font-semibold uppercase tracking-wider text-slate-500">Type</TableHead>
                             {activeVersions.map(({ supplier, version }) => (
-                                <TableHead key={supplier.id} className="min-w-[180px] p-0 align-top border-l bg-gray-50/50">
+                                <TableHead key={supplier.id} className="min-w-[180px] p-0 align-top border-l bg-gray-50/30">
                                     <SupplierColumnHeader
                                         supplierId={supplier.id}
                                         supplierName={supplier.name}
@@ -289,16 +311,67 @@ export function ComparisonGrid({ rfpId, templateLines, suppliers }: ComparisonGr
                         )}
 
                         {/* Totals Row */}
-                        <TableRow className="bg-gray-100 font-bold hover:bg-gray-100">
-                            <TableCell className="pl-4">TOTAUX</TableCell>
-                            <TableCell>-</TableCell>
+                        <TableRow className="bg-slate-100/80 font-bold hover:bg-slate-100/80 border-t-2 border-slate-200">
+                            <TableCell className="pl-4 py-4">TOTAUX</TableCell>
+                            <TableCell className="py-4">-</TableCell>
                             {activeVersions.map(({ supplier, version }) => {
                                 const isEditing = editingVersionId === version?.id;
-                                // TODO: Calculate totals
+
+                                // Calculate totals
+                                let totalSetup = 0;
+                                let totalRecurrentAnnual = 0;
+
+                                if (version) {
+                                    const versionValues = currentValuesMap.get(version.id);
+                                    if (versionValues) {
+                                        // Iterate over lines to sum up only LEAF nodes to avoid double counting
+                                        templateLines.forEach(line => {
+                                            const isLeaf = !templateLines.some(l => l.parent_id === line.id);
+                                            if (isLeaf) {
+                                                const val = versionValues.get(line.id);
+                                                if (val) {
+                                                    const qty = Number(val.quantity ?? 1);
+                                                    if (line.line_type === 'setup') {
+                                                        totalSetup += Number(val.setup_cost || 0) * qty;
+                                                    } else if (line.line_type === 'recurrent') {
+                                                        let annualCost = Number(val.recurrent_cost || 0) * qty;
+                                                        if (line.recurrence_type === 'monthly') {
+                                                            annualCost *= 12;
+                                                        }
+                                                        totalRecurrentAnnual += annualCost;
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+
+                                const rawPeriod = Number(tcoPeriod);
+                                const safeTcoPeriod = isNaN(rawPeriod) || rawPeriod <= 0 ? 3 : rawPeriod;
+                                const tcoTotal = Number(totalSetup || 0) + (Number(totalRecurrentAnnual || 0) * safeTcoPeriod);
+
                                 return (
-                                    <TableCell key={supplier.id} className={cn("border-l", isEditing && "bg-orange-50 border-orange-200")}>
-                                        {/* Totals placeholder */}
-                                        -
+                                    <TableCell key={supplier.id} className={cn("border-l p-4 min-w-[200px]", isEditing && "bg-orange-50/50 border-orange-200")}>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center text-[11px] font-medium text-slate-500">
+                                                <span>Setup total:</span>
+                                                <span className="text-slate-900">
+                                                    {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(totalSetup)}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-[11px] font-medium text-slate-500 border-b border-slate-200 pb-1">
+                                                <span>Récurrent total/an:</span>
+                                                <span className="text-slate-900">
+                                                    {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(totalRecurrentAnnual)}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-[13px] font-bold text-slate-900 pt-1">
+                                                <span>TCO ({safeTcoPeriod} ans):</span>
+                                                <span className="text-emerald-600">
+                                                    {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(tcoTotal)}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </TableCell>
                                 )
                             })}
@@ -365,24 +438,28 @@ function renderRows(
         const hasChildren = line.children && line.children.length > 0;
 
         const row = (
-            <TableRow key={line.id} className={cn("hover:bg-gray-50/50", hasChildren && "bg-gray-50/30 font-medium")}>
-                <TableCell className="py-2">
+            <TableRow key={line.id} className={cn("hover:bg-slate-50/50 transition-colors", hasChildren && "bg-slate-50/30 font-semibold text-slate-900 border-l-2 border-l-slate-200")}>
+                <TableCell className="py-2 pl-4">
                     <div className="flex items-center min-w-0" style={{ paddingLeft: `${depth * 20}px` }}>
                         {hasChildren ? (
-                            <button onClick={() => onToggle(line.id)} className="mr-1 p-0.5 hover:bg-gray-200 rounded">
-                                {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                            <button onClick={() => onToggle(line.id)} className="mr-2 p-1 hover:bg-slate-200 rounded-md transition-colors text-slate-400">
+                                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                             </button>
-                        ) : <div className="w-5" />}
-                        <span className="text-xs font-mono text-gray-500 mr-2">{line.line_code}</span>
-                        <span className="text-sm truncate font-medium">{line.name}</span>
+                        ) : <div className="w-7" />}
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase leading-none mb-1">{line.line_code}</span>
+                            <span className="text-sm truncate font-medium">{line.name}</span>
+                        </div>
                     </div>
                 </TableCell>
                 <TableCell className="py-2">
                     <Badge variant="outline" className={cn(
-                        "text-[10px] h-5 px-1.5 font-normal",
-                        line.line_type === "setup" ? "border-blue-200 bg-blue-50 text-blue-700" : "border-green-200 bg-green-50 text-green-700"
+                        "text-[10px] h-5 px-2 font-semibold uppercase tracking-tight",
+                        line.line_type === "setup"
+                            ? "border-blue-200 bg-blue-50 text-blue-700"
+                            : "border-emerald-200 bg-emerald-50 text-emerald-700"
                     )}>
-                        {line.line_type === "setup" ? "Setup" : "Récurrent"}
+                        {line.line_type === "setup" ? "Setup" : "Rec"}
                     </Badge>
                 </TableCell>
 
@@ -401,7 +478,7 @@ function renderRows(
                     return (
                         <TableCell key={supplier.id} className={cn("p-2 border-l align-middle", isEditing && "bg-orange-50/30 border-orange-200")}>
                             {hasChildren ? (
-                                <div className="text-right text-xs font-semibold text-gray-900 px-3">
+                                <div className="text-right text-xs font-bold text-slate-900 px-3">
                                     {calculatedTotal !== null
                                         ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(calculatedTotal)
                                         : '-'}
@@ -412,7 +489,7 @@ function renderRows(
                                     onChange={(val) => onCellChange(line.id, line.line_type === 'setup' ? 'setup_cost' : 'recurrent_cost', val)}
                                     isEditing={isEditing}
                                     type="currency"
-                                    suffix={line.line_type === 'recurrent' && line.recurrence_type === 'monthly' ? '/mois' : (line.line_type === 'recurrent' ? '/an' : '')}
+                                    suffix={line.line_type === 'recurrent' && line.recurrence_type === 'monthly' ? '/m' : (line.line_type === 'recurrent' ? '/a' : '')}
                                     isModified={isModified}
                                 />
                             )}

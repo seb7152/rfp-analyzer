@@ -60,4 +60,4 @@ Thumbs.db
 
 # MCP Configuration with secrets
 .mcp.json
-.opencode.json
+.opencode.json.codex/

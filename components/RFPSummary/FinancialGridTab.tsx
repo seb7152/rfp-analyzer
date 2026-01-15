@@ -3,10 +3,12 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus, DollarSign } from "lucide-react";
+import { Loader2, Plus, DollarSign, PenBox, Grid } from "lucide-react";
 import { CreateTemplateModal } from "@/components/financial/CreateTemplateModal";
 import { TemplateEditor } from "@/components/financial/TemplateEditor";
+import { FinancialGrid } from "@/components/financial/FinancialGrid"; // US-3: Added
 import { FinancialTemplateLine } from "@/lib/financial/calculations";
+import { useSuppliers } from "@/hooks/use-suppliers"; // Need this hook or fetch manually
 
 interface FinancialTemplate {
   id: string;
@@ -26,6 +28,12 @@ export function FinancialGridTab({ rfpId }: FinancialGridTabProps) {
   const [lines, setLines] = useState<FinancialTemplateLine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // US-3: Editor mode toggle
+  const [isEditingTemplate, setIsEditingTemplate] = useState(false);
+
+  // US-3: Fetch suppliers for the grid
+  const { data: suppliers = [], isLoading: isLoadingSuppliers } = useSuppliers(rfpId);
 
   // Fetch financial template
   useEffect(() => {
@@ -75,7 +83,7 @@ export function FinancialGridTab({ rfpId }: FinancialGridTabProps) {
     setLines((prev) => prev.filter((line) => line.id !== lineId));
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingSuppliers) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -124,10 +132,10 @@ export function FinancialGridTab({ rfpId }: FinancialGridTabProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Template info */}
-      <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
-        <CardHeader>
+    <div className="space-y-6 h-full flex flex-col">
+      {/* Template info / Actions */}
+      <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 shrink-0">
+        <CardHeader className="py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-amber-100 p-2 dark:bg-amber-900/20">
@@ -152,27 +160,47 @@ export function FinancialGridTab({ rfpId }: FinancialGridTabProps) {
                 Exporter
               </Button>
               <Button
-                variant="outline"
+                variant={isEditingTemplate ? "secondary" : "outline"}
                 size="sm"
-                onClick={() => {
-                  // TODO: Edit template functionality
-                }}
+                onClick={() => setIsEditingTemplate(!isEditingTemplate)}
               >
-                Modifier
+                {isEditingTemplate ? (
+                  <>
+                    <Grid className="mr-2 h-4 w-4" /> Voir la grille
+                  </>
+                ) : (
+                  <>
+                    <PenBox className="mr-2 h-4 w-4" /> Modifier template
+                  </>
+                )}
               </Button>
             </div>
           </div>
         </CardHeader>
       </Card>
 
-      {/* Template Editor */}
-      <TemplateEditor
-        templateId={template.id}
-        lines={lines}
-        onLineAdded={handleLineAdded}
-        onLineUpdated={handleLineUpdated}
-        onLineDeleted={handleLineDeleted}
-      />
+      {/* Main Content: Editor or Grid */}
+      {isEditingTemplate ? (
+        <TemplateEditor
+          templateId={template.id}
+          lines={lines}
+          onLineAdded={handleLineAdded}
+          onLineUpdated={handleLineUpdated}
+          onLineDeleted={handleLineDeleted}
+        />
+      ) : (
+        <div className="flex-1 min-h-0">
+          <FinancialGrid
+            rfpId={rfpId}
+            templateLines={lines}
+            templatePeriodYears={template.total_period_years}
+            suppliers={suppliers.map((s: any) => ({
+              id: s.id,
+              name: s.company_name || s.contact_name || s.email || "Fournisseur"
+            }))}
+          />
+        </div>
+      )}
     </div>
   );
 }
