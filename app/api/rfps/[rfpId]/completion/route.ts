@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
 import { getRFPCompletionPercentage } from "@/lib/supabase/queries";
 
 /**
@@ -16,11 +17,13 @@ import { getRFPCompletionPercentage } from "@/lib/supabase/queries";
  *   - 500: Server error
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
+    const { searchParams } = new URL(request.url);
+    const versionId = searchParams.get("versionId");
 
     if (!rfpId || typeof rfpId !== "string") {
       return NextResponse.json({ error: "Invalid RFP ID" }, { status: 400 });
@@ -29,22 +32,27 @@ export async function GET(
     // Use server client with RLS - will automatically check user access
     const supabase = await createServerClient();
 
-    // Try to fetch the RFP - RLS will prevent access if user doesn't have permission
-    const { data: rfp, error: rfpError } = await supabase
-      .from("rfps")
-      .select("id")
-      .eq("id", rfpId)
-      .single();
+    // Get authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-    if (rfpError || !rfp) {
-      return NextResponse.json(
-        { error: "RFP not found or access denied" },
-        { status: 404 }
-      );
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify user has access to this RFP
+    const accessCheckResponse = await verifyRFPAccess(rfpId, user.id);
+    if (accessCheckResponse) {
+      return accessCheckResponse;
     }
 
     // Get completion percentage
-    const percentage = await getRFPCompletionPercentage(rfpId);
+    const percentage = await getRFPCompletionPercentage(
+      rfpId,
+      versionId || undefined
+    );
 
     return NextResponse.json({ percentage }, { status: 200 });
   } catch (error) {

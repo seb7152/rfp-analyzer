@@ -1,11 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-type Params = Promise<{ organizationId: string }>;
-
-export async function GET(_request: Request, { params }: { params: Params }) {
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: { organizationId: string } }
+) {
   try {
-    const { organizationId } = await params;
+    const { organizationId } = params;
     const supabase = await createClient();
 
     // Get current user
@@ -58,9 +59,12 @@ export async function GET(_request: Request, { params }: { params: Params }) {
   }
 }
 
-export async function PUT(request: Request, { params }: { params: Params }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { organizationId: string } }
+) {
   try {
-    const { organizationId } = await params;
+    const { organizationId } = params;
     const { name, settings } = await request.json();
 
     const supabase = await createClient();

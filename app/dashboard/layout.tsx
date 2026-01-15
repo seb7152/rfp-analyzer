@@ -2,6 +2,8 @@
 
 import { Navbar } from "@/components/Navbar";
 import { useAuth } from "@/hooks/use-auth";
+import { VersionProvider } from "@/contexts/VersionContext";
+import { useParams } from "next/navigation";
 
 export default function DashboardLayout({
   children,
@@ -9,8 +11,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { isLoading } = useAuth();
+  const params = useParams();
+  const rfpId = params?.rfpId as string | undefined;
 
-  return (
+  // Wrap with VersionProvider if we're on an RFP page
+  const content = (
     <>
       <Navbar />
       <main className="min-h-screen bg-white dark:bg-slate-950">
@@ -27,4 +32,11 @@ export default function DashboardLayout({
       </main>
     </>
   );
+
+  // Only provide VersionContext when we're on an RFP page
+  if (rfpId) {
+    return <VersionProvider rfpId={rfpId}>{content}</VersionProvider>;
+  }
+
+  return content;
 }

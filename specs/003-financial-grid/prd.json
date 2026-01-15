@@ -1,0 +1,517 @@
+{
+  "feature": "003-financial-grid",
+  "title": "Grille Financière - RFP Analyzer",
+  "description": "Module de comparaison financière des offres fournisseurs avec templates hiérarchiques, calculs TCO, et multi-mode comparison",
+  "user_stories": [
+    {
+      "id": "US-1",
+      "title": "Création du template financier",
+      "priority": "P1",
+      "completed": true,
+      "description": "Créer un template financier avec structure hiérarchique de catégories (setup/recurrent) pour définir les lignes de coûts à comparer entre les fournisseurs.",
+      "tasks": [
+        {
+          "id": "US-1-001",
+          "description": "Créer la table financial_templates dans Supabase avec les colonnes: id, rfp_id, name, total_period_years, created_at, updated_at. Ajouter la migration SQL correspondante.",
+          "prompt": "Créer la migration Supabase pour la table financial_templates. La table doit avoir: id (UUID PK), rfp_id (UUID FK → rfps), name (VARCHAR), total_period_years (INTEGER, default 3, CHECK IN (1,3,5)), created_at, updated_at. Ajouter unique constraint sur rfp_id.",
+          "completed": true,
+          "manual_execution_required": true,
+          "migration_file": "supabase/migrations/022_create_financial_templates.sql"
+        },
+        {
+          "id": "US-1-002",
+          "description": "Créer la table financial_template_lines pour les lignes hiérarchiques du template avec support parent-child.",
+          "prompt": "Créer la migration Supabase pour la table financial_template_lines. Colonnes: id (UUID PK), template_id (UUID FK), parent_id (UUID FK nullable, self-reference), line_code (VARCHAR), name (VARCHAR), line_type (ENUM setup/recurrent), recurrence_type (ENUM monthly/yearly nullable), custom_formula (TEXT nullable), sort_order (INTEGER), is_active (BOOLEAN default true), created_at, updated_at. Ajouter UNIQUE constraint sur (template_id, line_code) et CHECK pour recurrence_type: (line_type != 'recurrent' OR recurrence_type IS NOT NULL) AND (recurrence_type IS NULL OR recurrence_type IN ('monthly', 'yearly')). Ajouter indexes pour performance.",
+          "completed": true,
+          "manual_execution_required": true,
+          "migration_file": "supabase/migrations/023_create_financial_template_lines.sql"
+        },
+        {
+          "id": "US-1-003",
+          "description": "Créer les RLS (Row Level Security) policies pour les tables financial_templates et financial_template_lines.",
+          "prompt": "Implémenter les policies RLS pour financial_templates et financial_template_lines. Les users doivent pouvoir SELECT/INSERT/UPDATE uniquement sur les templates/lines de leurs propres RFPs (via rfp_id → organizations → user_organizations). Activer RLS sur les tables.",
+          "completed": true,
+          "manual_execution_required": true,
+          "migration_file": "supabase/migrations/022_create_financial_templates.sql et 023_create_financial_template_lines.sql"
+        },
+        {
+          "id": "US-1-004",
+          "description": "Créer l'endpoint API POST /api/rfps/[rfpId]/financial-template pour créer un nouveau template.",
+          "prompt": "Créer l'endpoint POST /api/rfps/[rfpId]/financial-template. Vérifier que l'utilisateur a accès au RFP. Valider les inputs (name, total_period_years). Insérer dans financial_templates. Retourner le template créé.",
+          "completed": true
+        },
+        {
+          "id": "US-1-005",
+          "description": "Créer l'endpoint API GET /api/rfps/[rfpId]/financial-template pour récupérer le template financier.",
+          "prompt": "Créer l'endpoint GET /api/rfps/[rfpId]/financial-template. Retourner le template avec toutes ses lignes hiérarchiques (structure tree récursive ou flat avec parent_id). Inclure les sous-totaux calculés si des lignes existent.",
+          "completed": true
+        },
+        {
+          "id": "US-1-006",
+          "description": "Créer l'endpoint API POST /api/financial-template-lines pour ajouter une ligne au template.",
+          "prompt": "Créer l'endpoint POST /api/financial-template-lines. Inputs: template_id, parent_id (optionnel), line_code, name, line_type, recurrence_type (si recurrent), custom_formula (optionnel), sort_order. Valider que parent_id existe dans le même template. Générer sort_order automatiquement si non fourni.",
+          "completed": true
+        },
+        {
+          "id": "US-1-007",
+          "description": "Créer l'endpoint API PUT /api/financial-template-lines/[lineId] pour modifier une ligne existante.",
+          "prompt": "Créer l'endpoint PUT /api/financial-template-lines/[lineId]. Permettre la modification de: line_code, name, line_type, recurrence_type, custom_formula, parent_id, sort_order. Empêcher de créer un cycle dans la hiérarchie (parent_id ne peut pas être descendant).",
+          "completed": true
+        },
+        {
+          "id": "US-1-008",
+          "description": "Créer l'endpoint API DELETE /api/financial-template-lines/[lineId] pour supprimer une ligne (soft delete).",
+          "prompt": "Créer l'endpoint DELETE /api/financial-template-lines/[lineId]. Faire un soft delete (mettre is_active = false) ou hard delete si aucune ligne fille et aucune valeur associée. Si des lignes filles existent, proposer de supprimer aussi les enfants.",
+          "completed": true
+        },
+        {
+          "id": "US-1-009",
+          "description": "Implémenter le calcul des sous-totaux automatiquement à chaque niveau de la hiérarchie.",
+          "prompt": "Créer une fonction SQL ou endpoint pour recalculer les sous-totaux. Pour chaque ligne parent: sommer les setup_cost et recurrent_cost des lignes filles directes. Récursif sur tous les niveaux. Appeler ce calcul après chaque création/modification de ligne ou de valeur.",
+          "completed": true
+        },
+        {
+          "id": "US-1-010",
+          "description": "Créer la page UI /dashboard/rfp/[rfpId]/financial-grid pour afficher et gérer le template.",
+          "prompt": "Créer la page Next.js pour la grille financière. Ajouter un bouton 'Créer un template' si aucun template existe. Créer la modale de création du template. Afficher la liste des lignes avec indentation visuelle hiérarchique (20px par niveau). Flèches expand/collapse sur les nœuds avec enfants.",
+          "completed": true
+        },
+        {
+          "id": "US-1-011",
+          "description": "Créer le composant TemplateEditor pour gérer l'édition du template (ajouter/modifier/supprimer des lignes).",
+          "prompt": "Créer un composant React TemplateEditor. Boutons: 'Ajouter une ligne racine', 'Ajouter une ligne fille' sur chaque ligne. Modale pour créer/modifier ligne avec champs: Code, Nom, Type (radio Setup/Recurrent), Fréquence (si Recurrent), Formule personnalisée (textarea). Badge indicateur de sous-totaux sur chaque ligne parent.",
+          "completed": true
+        }
+      ]
+    },
+    {
+      "id": "US-2",
+      "title": "Création et édition manuelle de versions d'offres",
+      "priority": "P1",
+      "completed": true,
+      "description": "Créer et modifier les versions d'offres financières pour chaque fournisseur, soit par import JSON, soit par édition manuelle inline dans la grille.",
+      "tasks": [
+        {
+          "id": "US-2-001",
+          "description": "Créer la table financial_offer_versions pour gérer les versions d'offres par fournisseur.",
+          "prompt": "Créer la migration Supabase pour financial_offer_versions. Colonnes: id (UUID PK), supplier_id (UUID FK → suppliers), version_name (VARCHAR nullable), version_date (TIMESTAMP default NOW), is_active (BOOLEAN default true), created_at, updated_at. Index on supplier_id.",
+          "completed": true
+        },
+        {
+          "id": "US-2-002",
+          "description": "Créer la table financial_offer_values pour stocker les coûts par ligne et par version.",
+          "prompt": "Créer la migration Supabase pour financial_offer_values. Colonnes: id (UUID PK), version_id (UUID FK), template_line_id (UUID FK), setup_cost (DECIMAL 15,2 nullable), recurrent_cost (DECIMAL 15,2 nullable), quantity (INTEGER default 1), created_at, updated_at. Unique constraint sur (version_id, template_line_id). Index sur version_id.",
+          "completed": true
+        },
+        {
+          "id": "US-2-003",
+          "description": "Créer les RLS policies pour financial_offer_versions et financial_offer_values.",
+          "prompt": "Implémenter les policies RLS pour financial_offer_versions et financial_offer_values. Les users doivent pouvoir SELECT/INSERT/UPDATE/DELETE uniquement sur les versions/values de leurs propres RFPs (via supplier_id → rfp_id → organization). Pour financial_offer_values, ajouter WITH CHECK avec la même condition que le SELECT pour empêcher l'insertion de version_id hors org. Activer RLS.",
+          "completed": true
+        },
+        {
+          "id": "US-2-004",
+          "description": "Créer l'endpoint API POST /api/rfps/[rfpId]/financial-offer-versions pour créer une nouvelle version vide.",
+          "prompt": "Créer l'endpoint POST /api/rfps/[rfpId]/financial-offer-versions. Inputs: supplier_id, version_name (optionnel), version_date (optionnel). Générer automatiquement le nom de version si non fourni: 'Version {n+1}' ou 'Révision v{n+1}'. Valider que supplier_id existe pour le RFP. Créer la version sans créer de financial_offer_values (les valeurs seront créées à la saisie).",
+          "completed": true
+        },
+        {
+          "id": "US-2-005",
+          "description": "Créer l'endpoint API GET /api/rfps/[rfpId]/financial-offer-versions pour lister toutes les versions.",
+          "prompt": "Créer l'endpoint GET /api/rfps/[rfpId]/financial-offer-versions. Retourner toutes les versions avec: id, supplier_id, supplier_name, version_name, version_date, is_active. Group by supplier pour affichage facile. Trier par version_date DESC.",
+          "completed": true
+        },
+        {
+          "id": "US-2-006",
+          "description": "Créer l'endpoint API POST /api/financial-offer-values/batch pour créer ou mettre à jour en lot les valeurs.",
+          "prompt": "Créer l'endpoint POST /api/financial-offer-values/batch. Input: version_id et un array de valeurs [{template_line_id, setup_cost, recurrent_cost, quantity}]. Upsert chaque valeur (INSERT ON CONFLICT UPDATE). Déclencher le recalcul des totaux après mise à jour.",
+          "completed": true
+        },
+        {
+          "id": "US-2-007",
+          "description": "Créer l'endpoint API GET /api/rfps/[rfpId]/financial-values pour récupérer toutes les valeurs selon le mode.",
+          "prompt": "Créer l'endpoint GET /api/rfps/[rfpId]/financial-values. Query params: mode=comparison|supplier, supplierId (si mode=supplier). Retourner la structure du template + les valeurs de chaque version affichée. Mode comparison: une colonne par supplier. Mode supplier: toutes les versions du supplier.",
+          "completed": true
+        },
+        {
+          "id": "US-2-008",
+          "description": "Créer le composant SupplierColumnHeader avec dropdown [⋮] Actions.",
+          "prompt": "Créer le composant React pour l'en-tête de colonne fournisseur. Afficher: nom du fournisseur, sélecteur de version (dropdown), bouton menu [⋮]. Le menu dropdown contient: 'Nouvelle version', 'Importer une version', 'Éditer manuellement'. Gérer l'état ouvert/fermé du menu.",
+          "completed": true
+        },
+        {
+          "id": "US-2-009",
+          "description": "Créer le composant CreateVersionModal pour ajouter une nouvelle version d'offre.",
+          "prompt": "Créer le composant React CreateVersionModal. Champs: Nom de version (optionnel, placeholder généré automatiquement 'Version {n+1}'), Date (optionnel, défaut aujourd'hui). Boutons: 'Créer', 'Annuler'. Appeler l'endpoint POST /financial-offer-versions et rafraîchir la grille.",
+          "completed": true
+        },
+        {
+          "id": "US-2-010",
+          "description": "Implémenter le mode édition inline des coûts dans la grille financière.",
+          "prompt": "Ajouter un mode édition sur chaque colonne fournisseur. Lorsque 'Éditer manuellement' est activé: ajouter une bordure orange (#F59E0B) sur toute la colonne, afficher un badge 'En cours d'édition' dans l'en-tête, transformer les cellules en inputs modifiables, ajouter un bouton 'Sauvegarder version' en bas de colonne.",
+          "completed": true
+        },
+        {
+          "id": "US-2-011",
+          "description": "Créer le composant EditableCell pour l'édition inline des coûts.",
+          "prompt": "Créer le composant React EditableCell. Mode lecture: afficher la valeur formatée ('12 500 €' pour setup, '1 200 €/mois' pour recurrent). Mode édition: input type number avec formatage monétaire, indicateur (• bleu) si modifié depuis l'ouverture du mode édition. Auto-save local (state) sans persistance en base.",
+          "completed": true
+        },
+        {
+          "id": "US-2-012",
+          "description": "Implémenter le calcul en temps réel des sous-totaux pendant l'édition.",
+          "prompt": "En mode édition, recalculer les sous-totaux à chaque modification de cellule. Stocker les valeurs modifiées dans un état local (Map: template_line_id → {setup_cost, recurrent_cost, quantity}). Calculer les totaux (Total Setup, Total Recurrent, TCO) côté client pour feedback visuel instantané.",
+          "completed": true
+        },
+        {
+          "id": "US-2-013",
+          "description": "Créer le composant SaveVersionModal pour sauvegarder les modifications.",
+          "prompt": "Au clic sur 'Sauvegarder version', ouvrir une modale. Champs: Nom de la version (optionnel, suggestion intelligente basée sur les modifications: 'Révision v{n+1}'), Radio: 'Créer une nouvelle version' (défaut) ou 'Remplacer la version actuelle'. Au clic sur 'Sauvegarder': appeler l'endpoint batch pour upsert les valeurs, créer/mettre à jour la version, quitter le mode édition, afficher un toast de succès.",
+          "completed": true
+        },
+        {
+          "id": "US-2-014",
+          "description": "Implémenter l'annulation des modifications en mode édition.",
+          "prompt": "Au clic sur 'Annuler' dans le mode édition: restaurer les valeurs affichées avant l'ouverture du mode édition, quitter le mode édition sans sauvegarder, ne pas appeler d'API. Afficher un message de confirmation si des modifications non sauvegardées existent.",
+          "completed": true
+        },
+        {
+          "id": "US-2-015",
+          "description": "Ajouter Undo/Redo local pour les modifications en mode édition.",
+          "prompt": "En mode édition, maintenir une stack d'historique des modifications. Implémenter Ctrl+Z pour undo, Ctrl+Y pour redo. Chaque modification de cellule crée un nouvel état dans l'historique. L'historique est reset lors de la sauvegarde ou de l'annulation.",
+          "completed": true
+        }
+      ]
+    },
+    {
+      "id": "US-3",
+      "title": "Comparaison inter-fournisseurs",
+      "priority": "P1",
+      "completed": true,
+      "description": "Comparer les offres financières de tous les fournisseurs actifs en sélectionnant une version par fournisseur, et voir les totaux/TCO.",
+      "tasks": [
+        {
+          "id": "US-3-001",
+          "description": "Créer la logique de calcul du Total Setup, Total Recurrent annuel et TCO pour chaque version.",
+          "prompt": "Créer une fonction SQL ou API endpoint pour calculer les totaux par version. Total Setup = Σ (setup_cost × quantity). Total Recurrent = Σ (recurrent_cost × quantity). TCO = Total Setup + (Total Recurrent × total_period_years). Calculer pour chaque version et retourner les résultats.",
+          "completed": true
+        },
+        {
+          "id": "US-3-002",
+          "description": "Créer l'endpoint API GET /api/rfps/[rfpId]/financial-summary pour récupérer les totaux de tous les fournisseurs.",
+          "prompt": "Créer l'endpoint GET /api/rfps/[rfpId]/financial-summary. Retourner pour chaque supplier: supplier_id, supplier_name, version_id (sélectionnée), total_setup, total_recurrent_annual, tco. Utiliser la période TCO du template. Mode comparison par défaut.",
+          "completed": true
+        },
+        {
+          "id": "US-3-003",
+          "description": "Créer le sélecteur de mode d'affichage: Inter-fournisseurs vs Intra-fournisseur.",
+          "prompt": "Créer le composant ModeSelector avec deux options: 'Inter-fournisseurs' (tous les suppliers) et 'Intra-fournisseur' (un supplier spécifique). Par défaut sur 'Inter-fournisseurs'. Stocker le mode dans financial_grid_preferences. Rafraîchir la grille au changement de mode.",
+          "completed": true
+        },
+        {
+          "id": "US-3-004",
+          "description": "Afficher la grille en mode inter-fournisseurs avec une colonne par fournisseur.",
+          "prompt": "En mode comparison, la grille doit afficher: colonnes fixes (Code, Nom, Type) + colonnes dynamiques (une par supplier actif). En-tête de chaque colonne: Nom du supplier + dropdown pour sélectionner la version. Afficher les valeurs de la version sélectionnée dans chaque cellule.",
+          "completed": true
+        },
+        {
+          "id": "US-3-005",
+          "description": "Créer le tableau de synthèse pour la comparaison inter-fournisseurs.",
+          "prompt": "Créer le composant SummaryTable en mode comparison. Tableau avec une ligne par supplier. Colonnes: Fournisseur, Total Setup (€), Total Recurrent/an (€), TCO sur période (€). Formatage monétaire avec 2 décimales. Mise en évidence du TCO minimum en vert.",
+          "completed": true
+        },
+        {
+          "id": "US-3-006",
+          "description": "Implémenter le sélecteur de version dans chaque colonne de fournisseur.",
+          "prompt": "Dans l'en-tête de chaque colonne supplier, ajouter un dropdown avec toutes les versions disponibles de ce supplier (v1, v2, etc.). Au changement de version: mettre à jour la colonne, recalculer les totaux, mettre à jour le tableau de synthèse. Sauvegarder la sélection dans financial_grid_preferences.",
+          "completed": true
+        }
+      ]
+    },
+    {
+      "id": "US-4",
+      "title": "Comparaison intra-fournisseur",
+      "priority": "P2",
+      "completed": true,
+      "description": "Analyser l'évolution de l'offre d'un même fournisseur à travers ses différentes versions avec variations en pourcentage.",
+      "tasks": [
+        {
+          "id": "US-4-001",
+          "description": "Créer le sélecteur de fournisseur en mode intra-fournisseur.",
+          "prompt": "Créer le composant SupplierSelector visible uniquement en mode supplier. Dropdown listant tous les fournisseurs actifs du RFP. Au changement de fournisseur, afficher toutes les versions de ce fournisseur en colonnes. Sauvegarder la sélection dans financial_grid_preferences.",
+          "completed": true,
+          "comments": "Composant SupplierSelector.tsx créé. Intégré dans SupplierModeContent.tsx. La sélection est sauvegardée dans les préférences via savePreferences({ selected_supplier_id })."
+        },
+        {
+          "id": "US-4-002",
+          "description": "Calculer les variations en pourcentage entre versions successives.",
+          "prompt": "Créer une fonction pour calculer les variations par rapport à la version précédente. Pour chaque version n: variation = (total_n - total_{n-1}) / total_{n-1} × 100%. Calculer pour Total Setup, Total Recurrent et TCO. Retourner les valeurs en pourcentage (ex: -5.2 ou +3.5).",
+          "completed": true,
+          "comments": "Fonction calculateVariation implémentée dans SupplierSummaryTable.tsx et SupplierVersionsGrid.tsx. Calcule les variations pour Setup, Recurrent et TCO."
+        },
+        {
+          "id": "US-4-003",
+          "description": "Afficher les variations avec indicateurs visuels (▲ rouge / ▼ vert).",
+          "prompt": "Dans la grille et le tableau de synthèse en mode supplier, afficher les variations avec badges: ▲ rouge si variation > 0 (hausse), ▼ vert si variation < 0 (baisse). Format: '▼ 5.2%' ou '▲ 3.5%'. Pas d'indicateur pour la première version (pas de référence).",
+          "completed": true,
+          "comments": "Composant VariationBadge créé dans SupplierVersionsGrid.tsx. Utilise TrendingUp (rouge) et TrendingDown (vert) de lucide-react. Format: '+X.X%' ou '-X.X%'."
+        },
+        {
+          "id": "US-4-004",
+          "description": "Créer le tableau de synthèse pour la comparaison intra-fournisseur.",
+          "prompt": "Créer le composant SummaryTable en mode supplier. Tableau avec une ligne par version. Colonnes: Version, Total Setup, Total Recurrent/an, TCO, Variation % vs version précédente. Afficher la progression temporelle des coûts.",
+          "completed": true,
+          "comments": "Composant SupplierSummaryTable.tsx créé. Affiche une ligne par version avec colonnes: Version, Date, Total Setup, Total Récurrent/an, TCO, Variation TCO. Badge 'Meilleur' sur le TCO le plus bas."
+        }
+      ]
+    },
+    {
+      "id": "US-5",
+      "title": "Commenter une cellule",
+      "priority": "P2",
+      "completed": false,
+      "description": "Ajouter un commentaire sur une cellule spécifique et le retrouver via un badge indicateur.",
+      "tasks": [
+        {
+          "id": "US-5-001",
+          "description": "Créer la table financial_comments pour les commentaires par cellule.",
+          "prompt": "Créer la migration Supabase pour financial_comments. Colonnes: id (UUID PK), template_line_id (UUID FK), version_id (UUID FK nullable pour commentaires globaux sur ligne), comment (TEXT), created_by (UUID FK → auth.users), created_at, updated_at. Index sur template_line_id et version_id.",
+          "completed": false
+        },
+        {
+          "id": "US-5-002",
+          "description": "Créer les RLS policies pour financial_comments.",
+          "prompt": "Implémenter les policies RLS pour financial_comments. Users peuvent SELECT tous les commentaires de leur RFP. Users peuvent INSERT leurs propres commentaires (created_by = auth.uid()) avec WITH CHECK qui valide aussi que template_line_id/version_id appartiennent à leur RFP. Users peuvent UPDATE/DELETE uniquement leurs propres commentaires (avec USING et WITH CHECK). Activer RLS.",
+          "completed": false
+        },
+        {
+          "id": "US-5-003",
+          "description": "Créer l'endpoint API POST /api/financial-comments pour ajouter un commentaire.",
+          "prompt": "Créer l'endpoint POST /api/financial-comments. Inputs: template_line_id, version_id (optionnel), comment. Valider que la ligne existe. created_by = auth.uid() automatiquement. Retourner le commentaire créé avec l'auteur et la date.",
+          "completed": false
+        },
+        {
+          "id": "US-5-004",
+          "description": "Créer l'endpoint API GET /api/financial-comments pour récupérer les commentaires.",
+          "prompt": "Créer l'endpoint GET /api/financial-comments. Query params: lineId, versionId (optionnel). Retourner tous les commentaires correspondants avec: id, comment, created_by, created_at, updated_at. Joindre avec auth.users pour récupérer nom/email de l'auteur.",
+          "completed": false
+        },
+        {
+          "id": "US-5-005",
+          "description": "Créer l'endpoint API PUT /api/financial-comments/[commentId] pour modifier un commentaire.",
+          "prompt": "Créer l'endpoint PUT /api/financial-comments/[commentId]. Input: comment. Valider que created_by = auth.uid() (seul l'auteur peut modifier). Mettre à jour updated_at. Retourner le commentaire modifié.",
+          "completed": false
+        },
+        {
+          "id": "US-5-006",
+          "description": "Créer l'endpoint API DELETE /api/financial-comments/[commentId] pour supprimer un commentaire.",
+          "prompt": "Créer l'endpoint DELETE /api/financial-comments/[commentId]. Valider que created_by = auth.uid(). Supprimer le commentaire. Retourner success.",
+          "completed": false
+        },
+        {
+          "id": "US-5-007",
+          "description": "Afficher l'icône de commentaire dans chaque cellule.",
+          "prompt": "Ajouter une icône (bulle de dialogue) dans chaque cellule de coût de la grille. Icône grise si pas de commentaire, bleue si commentaire existe. Position: coin supérieur droit de la cellule. Au clic, ouvrir une modale/popover.",
+          "completed": false
+        },
+        {
+          "id": "US-5-008",
+          "description": "Créer le composant CommentPopover pour afficher et gérer les commentaires.",
+          "prompt": "Créer le composant React CommentPopover. Au clic sur l'icône de commentaire: charger les commentaires de la cellule (lineId + versionId). Afficher la liste des commentaires avec: auteur (nom + avatar), date/heure, texte. Boutons 'Modifier' et 'Supprimer' si created_by = user courant. Input pour ajouter un nouveau commentaire.",
+          "completed": false
+        }
+      ]
+    },
+    {
+      "id": "US-6",
+      "title": "Calcul du TCO sur différentes périodes",
+      "priority": "P2",
+      "completed": false,
+      "description": "Changer la période de calcul TCO (1 an, 3 ans, 5 ans) pour voir l'impact sur les coûts totaux.",
+      "tasks": [
+        {
+          "id": "US-6-001",
+          "description": "Créer le sélecteur de période TCO dans la barre d'outils.",
+          "prompt": "Créer le composant PeriodSelector avec options: 1 an, 3 ans, 5 ans. Par défaut: 3 ans (valeur du template). Au changement de période: recalculer tous les TCO (Total Setup + Total Recurrent × période). Sauvegarder la sélection dans financial_grid_preferences.",
+          "completed": false
+        },
+        {
+          "id": "US-6-002",
+          "description": "Recalculer dynamiquement les TCO lors du changement de période.",
+          "prompt": "Lorsque la période change, appeler l'endpoint de recalcul ou recalculer côté client. Mettre à jour le tableau de synthèse avec les nouveaux TCO. Ne pas modifier les valeurs stockées, juste l'affichage. Afficher la période actuelle dans l'UI (ex: 'TCO sur 3 ans').",
+          "completed": true
+        },
+        {
+          "id": "US-6-003",
+          "description": "Sauvegarder et restaurer la période TCO dans financial_grid_preferences.",
+          "prompt": "Lors du changement de période, faire un PUT /api/rfps/[rfpId]/financial-grid-preferences avec {tco_period_years: nouvelle_valeur}. Au chargement de la page, faire un GET pour restaurer la période précédemment sélectionnée par l'utilisateur.",
+          "completed": true
+        }
+      ]
+    },
+    {
+      "id": "US-7",
+      "title": "Import d'une offre depuis JSON",
+      "priority": "P3",
+      "completed": false,
+      "description": "Importer les coûts d'une offre pour un fournisseur depuis un fichier JSON pour éviter la ressaisie manuelle.",
+      "tasks": [
+        {
+          "id": "US-7-001",
+          "description": "Créer l'endpoint API POST /api/rfps/[rfpId]/financial-offer-versions/import pour importer une version depuis JSON.",
+          "prompt": "Créer l'endpoint POST /api/rfps/[rfpId]/financial-offer-versions/import. Body: {supplier_id, version_name (optionnel), replace (boolean, default false), offer_values: [{line_code, setup_cost, recurrent_cost, quantity}]}. Valider que chaque line_code existe dans le template. Si replace=true: trouver la version existante et la remplacer. Si replace=false: créer une nouvelle version. Transaction rollback en cas d'erreur.",
+          "completed": false
+        },
+        {
+          "id": "US-7-002",
+          "description": "Créer le composant ImportOfferModal avec upload de fichier JSON.",
+          "prompt": "Créer la modale d'import d'offre. Zone de drag & drop pour fichier JSON. Parser le fichier et afficher une preview: nom de version, nombre de lignes, totaux (setup, recurrent). Toggle: 'Remplacer la version existante' (défaut false). Boutons: 'Importer', 'Annuler'.",
+          "completed": false
+        },
+        {
+          "id": "US-7-003",
+          "description": "Intégrer l'option 'Importer une version' dans le menu dropdown [⋮] Actions.",
+          "prompt": "Ajouter l'option 'Importer une version' dans le dropdown des actions fournisseur. Au clic, ouvrir ImportOfferModal. Récupérer supplier_id du fournisseur courant. Après import réussi, rafraîchir la grille et afficher un toast de succès.",
+          "completed": false
+        },
+        {
+          "id": "US-7-004",
+          "description": "Gérer les erreurs d'import avec messages détaillés.",
+          "prompt": "Si le JSON est invalide: retourner une erreur 400 avec le message: 'Format JSON invalide'. Si une ligne_code n'existe pas: 'Ligne INF-99 non trouvée dans le template'. Si transaction échoue: rollback complet et message 'Erreur lors de l'import'.",
+          "completed": false
+        }
+      ]
+    },
+    {
+      "id": "US-8",
+      "title": "Export template en JSON",
+      "priority": "P2",
+      "completed": false,
+      "description": "Exporter le template financier au format JSON pour sauvegarde, partage ou réutilisation.",
+      "tasks": [
+        {
+          "id": "US-8-001",
+          "description": "Créer l'endpoint API GET /api/rfps/[rfpId]/financial-template/export/json pour exporter le template.",
+          "prompt": "Créer l'endpoint GET /api/rfps/[rfpId]/financial-template/export/json. Query param: withData (true|false, default false). Si withData=false: retourner template + structure des lignes (id, code, name, line_type, parent_id, sort_order, custom_formula). Si withData=true: ajouter offer_versions et offer_values.",
+          "completed": false
+        },
+        {
+          "id": "US-8-002",
+          "description": "Créer le bouton 'Exporter JSON' dans la barre d'outils avec sous-menu.",
+          "prompt": "Ajouter un bouton dropdown 'Exporter JSON' dans la barre d'outils. Options: 'Template vide' (withData=false) et 'Avec données' (withData=true). Au clic, appeler l'endpoint et déclencher le téléchargement du fichier .json.",
+          "completed": false
+        },
+        {
+          "id": "US-8-003",
+          "description": "Générer le fichier JSON côté client et déclencher le téléchargement.",
+          "prompt": "Dans le handler du bouton export, utiliser Blob pour créer un fichier .json depuis la réponse API. Créer un lien temporaire (a tag) et simuler un clic pour télécharger. Nom du fichier: 'template-[rfpId]-financial.json'.",
+          "completed": false
+        }
+      ]
+    },
+    {
+      "id": "US-9",
+      "title": "Export template en Excel",
+      "priority": "P2",
+      "completed": false,
+      "description": "Exporter le template financier au format Excel avec formules pré-générées.",
+      "tasks": [
+        {
+          "id": "US-9-001",
+          "description": "Installer et configurer la librairie xlsx pour la génération Excel.",
+          "prompt": "Installer la librairie xlsx (ou exceljs) côté backend/Next.js. Créer les utilitaires pour générer des fichiers .xlsx avec: feuilles, colonnes, formules Excel, mise en forme (gras, couleurs, bordures).",
+          "completed": false
+        },
+        {
+          "id": "US-9-002",
+          "description": "Créer l'endpoint API GET /api/rfps/[rfpId]/financial-template/export/excel pour template vide.",
+          "prompt": "Créer l'endpoint pour template vide (contentType=template-only). Générer un fichier .xlsx avec: Feuille 1: structure du template (Code, Nom, Type, Fréquence, Formule, Ordre). Indentation visuelle pour la hiérarchie. Formules Excel =SUM(INDIRECT(...)) pour les sous-totaux. Lignes de sous-totaux en gras.",
+          "completed": false
+        },
+        {
+          "id": "US-9-003",
+          "description": "Créer l'endpoint API GET /api/rfps/[rfpId]/financial-template/export/excel pour avec données.",
+          "prompt": "Créer l'endpoint pour avec données (contentType=with-data). Générer le .xlsx avec: Feuille 1: structure + colonnes dynamiques selon l'état de l'interface (mode, fournisseurs/versions affichés). Valeurs pré-remplies. Feuille 2: tableau de synthèse des totaux. Feuille 3: légende et instructions.",
+          "completed": false
+        },
+        {
+          "id": "US-9-004",
+          "description": "Respecter l'état de l'interface lors de l'export Excel avec données.",
+          "prompt": "Récupérer les préférences utilisateur depuis financial_grid_preferences. Si mode=comparison: exporter tous les fournisseurs avec leurs versions sélectionnés. Si mode=supplier: exporter toutes les versions du supplier sélectionné. Appliquer la période TCO sélectionnée.",
+          "completed": false
+        },
+        {
+          "id": "US-9-005",
+          "description": "Créer le bouton 'Exporter Excel' dans la barre d'outils.",
+          "prompt": "Ajouter un bouton dropdown 'Exporter Excel' dans la barre d'outils. Options: 'Template vide' (contentType=template-only) et 'Avec données' (contentType=with-data). Au clic, appeler l'endpoint et télécharger le fichier .xlsx.",
+          "completed": false
+        }
+      ]
+    },
+    {
+      "id": "US-10",
+      "title": "Import template depuis JSON",
+      "priority": "P2",
+      "completed": false,
+      "description": "Importer un template depuis un fichier JSON existant pour créer rapidement un nouveau template.",
+      "tasks": [
+        {
+          "id": "US-10-001",
+          "description": "Créer le composant ImportJSONModal avec upload de fichier.",
+          "prompt": "Créer la modale d'import JSON. Zone de drag & drop pour upload de fichier .json. Preview du contenu du fichier (nombre de lignes). Toggle: 'Remplacer le template existant' (coché par défaut). Boutons: 'Importer' et 'Annuler'.",
+          "completed": false
+        },
+        {
+          "id": "US-10-002",
+          "description": "Créer l'endpoint API POST /api/rfps/[rfpId]/financial-template/import/json pour importer.",
+          "prompt": "Créer l'endpoint POST /api/rfps/[rfpId]/financial-template/import/json. Body: JSON content. Query param: replace (true|false). Valider la structure JSON: pas de cycles dans la hiérarchie, types valides. Si replace=true: supprimer le template existant et créer nouveau. Si replace=false: ajouter les lignes au template existant.",
+          "completed": false
+        },
+        {
+          "id": "US-10-003",
+          "description": "Valider la structure JSON lors de l'import.",
+          "prompt": "Implémenter la validation: Vérifier que template existe. Vérifier que chaque ligne a: id, line_code, name, line_type, parent_id (optionnel). Valider que parent_id existe dans la liste (pas de cycles). Valider line_type IN ('setup', 'recurrent'). Retourner erreurs détaillées si invalide.",
+          "completed": false
+        },
+        {
+          "id": "US-10-004",
+          "description": "Gérer les erreurs d'import avec transaction rollback.",
+          "prompt": "Si validation échoue, retourner une erreur 400 avec la liste des erreurs. Si insertion échoue, faire un rollback complet (rien n'est importé). Message utilisateur: 'Erreur lors de l'import: [détails]'. Success: 'Template importé avec succès'.",
+          "completed": false
+        }
+      ]
+    }
+  ],
+  "infrastructure_tasks": [
+    {
+      "id": "INF-001",
+      "description": "Créer la table financial_grid_preferences pour persistance de l'état UI.",
+      "prompt": "Créer la migration Supabase pour financial_grid_preferences. Colonnes: id (UUID PK), rfp_id (UUID FK), user_id (UUID FK), ui_mode (VARCHAR default 'comparison', CHECK IN ('comparison', 'supplier')), selected_supplier_id (UUID nullable), displayed_versions (JSONB default '{}'), tco_period_years (INTEGER default 3), expanded_lines (UUID[] default '{}'), show_comments (BOOLEAN default false), updated_at. Unique constraint sur (rfp_id, user_id).",
+      "completed": true
+    },
+    {
+      "id": "INF-002",
+      "description": "Créer les RLS policies pour financial_grid_preferences.",
+      "prompt": "Implémenter les policies RLS pour financial_grid_preferences. Users peuvent SELECT leurs propres préférences (user_id = auth.uid()). Users peuvent INSERT leurs propres préférences. Users peuvent UPDATE leurs propres préférences (user_id = auth.uid()) avec WITH CHECK qui valide aussi que rfp_id appartient à leur organization. Activer RLS.",
+      "completed": true
+    },
+    {
+      "id": "INF-003",
+      "description": "Créer l'endpoint API GET /api/rfps/[rfpId]/financial-grid-preferences.",
+      "prompt": "Créer l'endpoint GET pour récupérer les préférences utilisateur. Retourner les préférences ou valeurs par défaut si inexistantes. Utiliser auth.uid() pour identifier l'utilisateur.",
+      "completed": true
+    },
+    {
+      "id": "INF-004",
+      "description": "Créer l'endpoint API PUT /api/rfps/[rfpId]/financial-grid-preferences.",
+      "prompt": "Créer l'endpoint PUT pour sauvegarder les préférences. Input: ui_mode, selected_supplier_id, displayed_versions, tco_period_years, expanded_lines, show_comments. Upsert (INSERT ON CONFLICT UPDATE) sur la contrainte unique (rfp_id, user_id). Mettre à jour updated_at.",
+      "completed": true
+    },
+    {
+      "id": "INF-005",
+      "description": "Intégrer la grille financière dans la navigation existante (sidebar, dashboard).",
+      "prompt": "Ajouter un onglet 'Grille Financière' dans la page du dashboard RFP (/dashboard/rfp/[rfpId]). Créer le lien dans le sidebar. Vérifier que la navigation fonctionne et que les onglets sont persistants.",
+      "completed": true
+    }
+  ]
+}

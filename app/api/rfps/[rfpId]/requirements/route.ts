@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
 import {
   getRequirements,
+  getRequirementsWithTags,
   buildHierarchy,
   searchRequirements,
 } from "@/lib/supabase/queries";
@@ -14,6 +16,7 @@ import {
  * Query Parameters:
  *   - search: Optional search query to filter requirements by ID or title
  *   - flatten: Optional boolean to return flat list instead of hierarchy
+ *   - includeTags: Optional boolean to include tag names for each requirement (default: false)
  *
  * Response:
  *   - 200: Array of requirements with hierarchical structure
@@ -31,6 +34,7 @@ import {
  *     title: "Domain 1",
  *     level: 1,
  *     parent_id: null,
+ *     tags: ["Fonctionnel", "Technique"],  // Only if includeTags=true
  *     children: [
  *       {
  *         id: "req-2",
@@ -38,6 +42,7 @@ import {
  *         title: "Category 1.1",
  *         level: 2,
  *         parent_id: "req-1",
+ *         tags: ["Backend"],  // Only if includeTags=true
  *         children: [...]
  *       }
  *     ]
@@ -69,54 +74,24 @@ export async function GET(
     }
 
     // Verify user has access to this RFP
-    // Check if user is member of the RFP's organization
-    const { data: rfp, error: rfpError } = await supabase
-      .from("rfps")
-      .select("id, organization_id")
-      .eq("id", rfpId)
-      .maybeSingle();
-
-    if (rfpError) {
-      console.error("Error fetching RFP:", rfpError);
-      return NextResponse.json(
-        { error: "Failed to fetch RFP" },
-        { status: 500 }
-      );
-    }
-
-    if (!rfp) {
-      return NextResponse.json({ error: "RFP not found" }, { status: 404 });
-    }
-
-    // Check if user is member of the organization
-    const { data: userOrg, error: userOrgError } = await supabase
-      .from("user_organizations")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("organization_id", rfp.organization_id)
-      .maybeSingle();
-
-    if (userOrgError) {
-      console.error("Error checking user organization:", userOrgError);
-      return NextResponse.json(
-        { error: "Failed to verify access" },
-        { status: 500 }
-      );
-    }
-
-    if (!userOrg) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    const accessCheckResponse = await verifyRFPAccess(rfpId, user.id);
+    if (accessCheckResponse) {
+      return accessCheckResponse;
     }
 
     // Fetch requirements
     const search = searchParams.get("search");
     const flatten = searchParams.get("flatten") === "true";
+    const includeTags = searchParams.get("includeTags") === "true";
 
     let requirements;
     if (search) {
       requirements = await searchRequirements(rfpId, search);
     } else {
-      requirements = await getRequirements(rfpId);
+      // Use getRequirementsWithTags if includeTags is requested
+      requirements = includeTags
+        ? await getRequirementsWithTags(rfpId)
+        : await getRequirements(rfpId);
     }
 
     // Return flat list or hierarchical structure

@@ -5,6 +5,8 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import type { RFPAccessLevel } from "@/types/user";
+import { canUseAIFeatures } from "@/lib/permissions/ai-permissions";
 
 interface TextEnhancerProps {
   currentText: string;
@@ -12,6 +14,7 @@ interface TextEnhancerProps {
   requirementText: string;
   supplierName: string;
   supplierNames?: string[];
+  userAccessLevel?: RFPAccessLevel;
   onEnhancementComplete: (enhancedText: string) => void;
   className?: string;
   disabled?: boolean;
@@ -23,10 +26,16 @@ export function TextEnhancer({
   requirementText,
   supplierName,
   supplierNames = [],
+  userAccessLevel,
   onEnhancementComplete,
   className,
   disabled = false,
 }: TextEnhancerProps) {
+  // Hide TextEnhancer if user doesn't have AI access
+  const hasAIAccess = canUseAIFeatures(userAccessLevel);
+  if (!hasAIAccess) {
+    return null;
+  }
   const [isProcessing, setIsProcessing] = useState(false);
   const [showRevert, setShowRevert] = useState(false);
   const [originalText, setOriginalText] = useState("");

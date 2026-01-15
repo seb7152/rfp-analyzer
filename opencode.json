@@ -4,10 +4,23 @@
     "supabase": {
       "enabled": true,
       "type": "local",
-      "command": ["npx", "-y", "@supabase/mcp-server-supabase@latest"],
+      "command": [
+        "npx",
+        "-y",
+        "@supabase/mcp-server-supabase@latest"
+      ],
       "environment": {
         "SUPABASE_ACCESS_TOKEN": "sbp_02d9510aeabe768a2c1ae2da3013cc51f85c57ad"
       }
+    },
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "ctx7sk-42f9886b-446e-4d6a-ad54-e7d8814d261f"
+      },
+      "enabled": true
     }
-  }
+  },
+  "agent": {}
 }

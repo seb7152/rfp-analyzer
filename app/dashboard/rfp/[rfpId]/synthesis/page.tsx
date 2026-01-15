@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { WeightConfigurationTable } from "@/components/dashboard/WeightConfigurationTable";
+import { useVersion } from "@/contexts/VersionContext";
 
 interface DashboardData {
   rfp: { title: string };
@@ -27,6 +28,7 @@ interface DashboardData {
       partial: number;
       fail: number;
       pending: number;
+      roadmap: number;
     };
     averageScores: Record<string, number>;
   };
@@ -67,7 +69,7 @@ interface DashboardData {
         title: string;
         currentWeight: number;
         averageScore: number;
-        status: "pass" | "partial" | "fail" | "pending";
+        status: "pass" | "partial" | "fail" | "pending" | "roadmap";
       }>
     >;
   };
@@ -92,6 +94,7 @@ export default function RFPSynthesisPage() {
   const params = useParams();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
+  const { activeVersion } = useVersion();
   const rfpId = params.rfpId as string;
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -111,7 +114,8 @@ export default function RFPSynthesisPage() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const response = await fetch(`/api/rfps/${rfpId}/dashboard`, {
+        const url = `/api/rfps/${rfpId}/dashboard${activeVersion?.id ? `?versionId=${activeVersion.id}` : ""}`;
+        const response = await fetch(url, {
           credentials: "include",
         });
 
@@ -129,7 +133,7 @@ export default function RFPSynthesisPage() {
     };
 
     fetchDashboardData();
-  }, [rfpId]);
+  }, [rfpId, activeVersion?.id]);
 
   const handleWeightsChange = (weights: {
     categories: Record<string, number>;
@@ -221,7 +225,7 @@ export default function RFPSynthesisPage() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={() => {}}>
+            <Button variant="outline" size="sm" onClick={() => { }}>
               Réinitialiser les poids
             </Button>
             <Button
@@ -322,6 +326,13 @@ export default function RFPSynthesisPage() {
                     className="w-full h-2"
                   />
                 </div>
+                <div>
+                  <p className="text-sm font-medium">Roadmap</p>
+                  <Progress
+                    value={globalProgress.statusDistribution.roadmap}
+                    className="w-full h-2"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -329,10 +340,7 @@ export default function RFPSynthesisPage() {
           {/* Section Fournisseurs */}
           {selectedCategory === "suppliers" || selectedCategory === null ? (
             <Card>
-              <CardHeader>
-                <CardTitle>Analyse Comparative des Fournisseurs</CardTitle>
-              </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <p>
                   Fournisseurs analysés:{" "}
                   {suppliersAnalysis.comparisonTable.length}

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useVersion } from "@/contexts/VersionContext";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Select,
@@ -49,6 +50,8 @@ const getStatusColor = (status: string) => {
       return "bg-red-500 hover:bg-red-600 text-white";
     case "partial":
       return "bg-orange-500 hover:bg-orange-600 text-white";
+    case "roadmap":
+      return "bg-purple-500 hover:bg-purple-600 text-white";
     case "pending":
       return "bg-slate-200 hover:bg-slate-300 text-slate-600";
     default:
@@ -76,6 +79,7 @@ export function RequirementsHeatmap({
   rfpId,
   selectedCategoryId,
 }: RequirementsHeatmapProps) {
+  const { activeVersion } = useVersion();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [requirements, setRequirements] = useState<RequirementTreeNode[]>([]);
   const [responses, setResponses] = useState<Response[]>([]);
@@ -88,16 +92,24 @@ export function RequirementsHeatmap({
       try {
         setLoading(true);
 
-        // Fetch suppliers
-        const suppliersRes = await fetch(`/api/rfps/${rfpId}/suppliers`);
+        // Fetch suppliers with versionId if available
+        let suppliersUrl = `/api/rfps/${rfpId}/suppliers`;
+        if (activeVersion?.id) {
+          suppliersUrl += `?versionId=${activeVersion.id}`;
+        }
+        const suppliersRes = await fetch(suppliersUrl);
         const suppliersData = await suppliersRes.json();
 
         // Fetch requirements tree
         const treeRes = await fetch(`/api/rfps/${rfpId}/tree`);
         const treeData = await treeRes.json();
 
-        // Fetch responses
-        const responsesRes = await fetch(`/api/rfps/${rfpId}/responses`);
+        // Fetch responses with versionId if available
+        let responsesUrl = `/api/rfps/${rfpId}/responses`;
+        if (activeVersion?.id) {
+          responsesUrl += `?versionId=${activeVersion.id}`;
+        }
+        const responsesRes = await fetch(responsesUrl);
         const responsesData = await responsesRes.json();
 
         setSuppliers(suppliersData.suppliers || []);
@@ -113,7 +125,7 @@ export function RequirementsHeatmap({
     if (rfpId) {
       fetchData();
     }
-  }, [rfpId]);
+  }, [rfpId, activeVersion?.id]);
 
   // Flatten requirements tree
   const flatRequirements = useMemo(() => {
@@ -509,6 +521,10 @@ export function RequirementsHeatmap({
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded bg-red-500"></div>
                   <span>Non conforme (Fail)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-purple-500"></div>
+                  <span>Roadmap</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded bg-slate-200 border border-slate-300"></div>

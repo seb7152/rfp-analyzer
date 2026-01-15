@@ -6,10 +6,15 @@ import {
   getRFPCompletionPercentage,
   getCategories,
 } from "@/lib/supabase/queries";
+import {
+  getVersionSupplierStatuses,
+  getActiveSupplierIds,
+} from "@/lib/suppliers/status-cache";
 import type { RFP, ResponseWithSupplier } from "@/lib/supabase/types";
 
 interface DashboardResponse {
   rfp: RFP;
+  userAccessLevel: "owner" | "evaluator" | "viewer" | "admin";
   globalProgress: {
     completionPercentage: number;
     totalRequirements: number;
@@ -19,6 +24,7 @@ interface DashboardResponse {
       partial: number;
       fail: number;
       pending: number;
+      roadmap: number;
     };
     averageScores: Record<string, number>;
   };
@@ -59,7 +65,7 @@ interface DashboardResponse {
         title: string;
         currentWeight: number;
         averageScore: number;
-        status: "pass" | "partial" | "fail" | "pending";
+        status: "pass" | "partial" | "fail" | "pending" | "roadmap";
       }>
     >;
   };
@@ -81,11 +87,13 @@ interface DashboardResponse {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { rfpId: string } }
 ) {
   try {
     const { rfpId } = params;
+    const { searchParams } = new URL(request.url);
+    const versionId = searchParams.get("versionId");
 
     if (!rfpId) {
       return NextResponse.json(
@@ -115,15 +123,17 @@ export async function GET(
       return NextResponse.json({ error: "RFP not found" }, { status: 404 });
     }
 
-    // Verify user access to organization
-    const { data: userOrg, error: userOrgError } = await supabase
-      .from("user_organizations")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("organization_id", rfp.organization_id)
-      .single();
+    // Verify user access to RFP and get access level
+    const { checkRFPAccess } = await import("@/lib/permissions/rfp-access");
+    const { hasAccess, accessLevel, error } = await checkRFPAccess(
+      rfpId,
+      user.id
+    );
 
-    if (userOrgError || !userOrg) {
+    if (!hasAccess) {
+      if (error?.includes("not found")) {
+        return NextResponse.json({ error: "RFP not found" }, { status: 404 });
+      }
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
@@ -135,11 +145,16 @@ export async function GET(
     const categories = (await getCategories(rfpId)) as any;
 
     // Fetch all responses
-    const allResponses: ResponseWithSupplier[] =
-      await getResponsesForRFP(rfpId);
+    const allResponses: ResponseWithSupplier[] = await getResponsesForRFP(
+      rfpId,
+      versionId || undefined
+    );
 
     // Calculate global progress
-    const completionPercentage = await getRFPCompletionPercentage(rfpId);
+    const completionPercentage = await getRFPCompletionPercentage(
+      rfpId,
+      versionId || undefined
+    );
     const evaluatedRequirements = Math.round(
       (completionPercentage / 100) * totalRequirements
     );
@@ -150,6 +165,7 @@ export async function GET(
       partial: allResponses.filter((r) => r.status === "partial").length,
       fail: allResponses.filter((r) => r.status === "fail").length,
       pending: allResponses.filter((r) => r.status === "pending").length,
+      roadmap: allResponses.filter((r) => r.status === "roadmap").length,
     };
 
     // Average scores by supplier
@@ -169,14 +185,36 @@ export async function GET(
     });
 
     // Suppliers analysis
-    const suppliers = [...new Set(allResponses.map((r) => r.supplier_id))];
+    let suppliers: string[];
+    let supplierNameMap: Map<string, string> = new Map();
+
+    if (versionId) {
+      // Get active suppliers for this specific version
+      const statuses = await getVersionSupplierStatuses(supabase, versionId);
+      suppliers = Array.from(getActiveSupplierIds(statuses));
+
+      // Build supplier name map from all responses (including removed suppliers for lookup)
+      allResponses.forEach((response) => {
+        if (!supplierNameMap.has(response.supplier_id)) {
+          const supplierName =
+            response.supplier?.name || `Fournisseur ${response.supplier_id}`;
+          supplierNameMap.set(response.supplier_id, supplierName);
+        }
+      });
+    } else {
+      // Get suppliers from responses if no version filter
+      suppliers = [...new Set(allResponses.map((r) => r.supplier_id))];
+    }
+
     const suppliersData = await Promise.all(
       suppliers.map(async (supplierId) => {
         const supplierResponses = allResponses.filter(
           (r) => r.supplier_id === supplierId
         );
         const supplierName =
-          supplierResponses[0]?.supplier.name || `Fournisseur ${supplierId}`;
+          supplierNameMap.get(supplierId) ||
+          supplierResponses[0]?.supplier.name ||
+          `Fournisseur ${supplierId}`;
 
         // Category scores
         const categoryScores: Record<string, number> = {};
@@ -282,7 +320,7 @@ export async function GET(
         title: string;
         currentWeight: number;
         averageScore: number;
-        status: "pass" | "partial" | "fail" | "pending";
+        status: "pass" | "partial" | "fail" | "pending" | "roadmap";
       }>
     > = {};
     categories.forEach((category: any) => {
@@ -300,7 +338,7 @@ export async function GET(
           ) / Math.max(reqResponses.length, 1);
         const checkedCount = reqResponses.filter((r) => r.is_checked).length;
         const totalCount = reqResponses.length;
-        let status: "pass" | "partial" | "fail" | "pending" = "pending";
+        let status: "pass" | "partial" | "fail" | "pending" | "roadmap" = "pending";
         if (checkedCount === totalCount && totalCount > 0) status = "pass";
         else if (checkedCount > 0 && checkedCount < totalCount)
           status = "partial";
@@ -335,6 +373,11 @@ export async function GET(
 
     const response: DashboardResponse = {
       rfp,
+      userAccessLevel: (accessLevel || "viewer") as
+        | "owner"
+        | "evaluator"
+        | "viewer"
+        | "admin",
       globalProgress: {
         completionPercentage,
         totalRequirements,

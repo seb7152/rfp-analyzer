@@ -110,6 +110,7 @@ export async function POST(
       order?: number;
       page_number?: number;
       rf_document_id?: string;
+      tags?: string[]; // Optional: array of tag names
     }>;
 
     if (validRequirements.length === 0) {

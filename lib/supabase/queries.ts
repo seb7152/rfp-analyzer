@@ -1,5 +1,5 @@
 import { createClient as createServerClient } from "./server";
-import type { Requirement, RequirementWithChildren } from "./types";
+import type { Requirement } from "./types";
 
 /**
  * Recursively fetch all requirements for an RFP with hierarchical structure
@@ -44,6 +44,93 @@ export async function getRequirements(rfpId: string): Promise<Requirement[]> {
   }
 
   return (data || []) as Requirement[];
+}
+
+/**
+ * Fetch all requirements for an RFP with their associated tags
+ * This is useful for export operations where you want to include tag names
+ *
+ * Returns requirements with a tags field containing array of tag names
+ */
+export async function getRequirementsWithTags(
+  rfpId: string
+): Promise<Array<Requirement & { tags: string[] }>> {
+  const supabase = await createServerClient();
+
+  // First, fetch all requirements
+  const { data: requirements, error: reqError } = await supabase
+    .from("requirements")
+    .select(
+      `
+      id,
+      rfp_id,
+      requirement_id_external,
+      title,
+      description,
+      context,
+      category_id,
+      parent_id,
+      level,
+      weight,
+      position_in_pdf,
+      rf_document_id,
+      created_at,
+      updated_at,
+      created_by
+    `
+    )
+    .eq("rfp_id", rfpId)
+    .order("level", { ascending: true })
+    .order("requirement_id_external", { ascending: true });
+
+  if (reqError) {
+    console.error("Error fetching requirements:", reqError);
+    throw new Error(`Failed to fetch requirements: ${reqError.message}`);
+  }
+
+  if (!requirements || requirements.length === 0) {
+    return [];
+  }
+
+  // Fetch all tag associations for these requirements with tag details
+  const requirementIds = requirements.map((r) => r.id);
+
+  const { data: tagAssociations, error: tagError } = await supabase
+    .from("requirement_tags")
+    .select(
+      `
+      requirement_id,
+      tag:tags(id, name)
+    `
+    )
+    .in("requirement_id", requirementIds);
+
+  if (tagError) {
+    console.error("Error fetching requirement tags:", tagError);
+    // Continue without tags rather than failing
+  }
+
+  // Build a map of requirement_id -> tag names
+  const tagsByRequirement = new Map<string, string[]>();
+  if (tagAssociations) {
+    for (const assoc of tagAssociations) {
+      const tags = tagsByRequirement.get(assoc.requirement_id) || [];
+      // Handle both single object and array responses from Supabase
+      const tagData = Array.isArray(assoc.tag) ? assoc.tag[0] : assoc.tag;
+      if (tagData && tagData.name) {
+        tags.push(tagData.name);
+      }
+      tagsByRequirement.set(assoc.requirement_id, tags);
+    }
+  }
+
+  // Add tags to each requirement
+  const requirementsWithTags = (requirements as Requirement[]).map((req) => ({
+    ...req,
+    tags: tagsByRequirement.get(req.id) || [],
+  }));
+
+  return requirementsWithTags;
 }
 
 /**
@@ -159,11 +246,14 @@ export async function getRequirementChildren(
  * Build a nested hierarchical structure from flat requirement list
  * Used for tree rendering in the UI
  */
-export function buildHierarchy(
-  requirements: Requirement[]
-): RequirementWithChildren[] {
-  const map = new Map<string, RequirementWithChildren>();
-  const roots: RequirementWithChildren[] = [];
+export function buildHierarchy<T extends Requirement>(
+  requirements: T[]
+): Array<T & { children?: Array<T & { children?: any }> }> {
+  const map = new Map<
+    string,
+    T & { children?: Array<T & { children?: any }> }
+  >();
+  const roots: Array<T & { children?: Array<T & { children?: any }> }> = [];
 
   // First pass: create map of all requirements
   for (const req of requirements) {
@@ -186,7 +276,9 @@ export function buildHierarchy(
   }
 
   // Sort children at each level by requirement_id_external
-  function sortChildren(node: RequirementWithChildren): void {
+  function sortChildren(
+    node: T & { children?: Array<T & { children?: any }> }
+  ): void {
     if (node.children) {
       node.children.sort((a, b) =>
         a.requirement_id_external.localeCompare(b.requirement_id_external)
@@ -404,10 +496,141 @@ export async function getCategories(rfpId: string): Promise<Requirement[]> {
   return (data || []) as unknown as Requirement[];
 }
 
+// ============================================================================
+// TAG MANAGEMENT HELPERS FOR IMPORT
+// ============================================================================
+
+/**
+ * Color palette for automatically creating new tags during import
+ * Colors are applied sequentially and cycle through the palette
+ */
+const TAG_COLOR_PALETTE = [
+  "#3B82F6", // Blue
+  "#8B5CF6", // Purple
+  "#EC4899", // Pink
+  "#F59E0B", // Amber
+  "#10B981", // Green
+  "#06B6D4", // Cyan
+  "#EF4444", // Red
+  "#6366F1", // Indigo
+];
+
+/**
+ * Get or create tags by name. If a tag doesn't exist, create it with a color from the palette.
+ * Returns a Map of tag names to tag IDs for efficient lookup during import.
+ *
+ * @param supabase - Supabase client
+ * @param rfpId - RFP ID
+ * @param tagNames - Array of tag names to get or create
+ * @param userId - User ID for audit trail
+ * @returns Map of tag name to tag ID
+ */
+async function getOrCreateTags(
+  supabase: Awaited<ReturnType<typeof createServerClient>>,
+  rfpId: string,
+  tagNames: string[],
+  userId: string
+): Promise<Map<string, string>> {
+  const tagMap = new Map<string, string>();
+
+  if (tagNames.length === 0) {
+    return tagMap;
+  }
+
+  try {
+    // Step 1: Fetch existing tags
+    const { data: existingTags, error: existingError } = await supabase
+      .from("tags")
+      .select("id, name")
+      .eq("rfp_id", rfpId)
+      .in(
+        "name",
+        tagNames.map((t) => t.trim())
+      );
+
+    if (existingError) {
+      console.error("Error fetching existing tags:", existingError);
+      throw existingError;
+    }
+
+    // Map existing tags
+    const existingTagNames = new Set<string>();
+    if (existingTags) {
+      for (const tag of existingTags) {
+        tagMap.set(tag.name, tag.id);
+        existingTagNames.add(tag.name);
+      }
+    }
+
+    // Step 2: Identify tags that need to be created
+    const tagsToCreate = tagNames.filter(
+      (name) => !existingTagNames.has(name.trim())
+    );
+
+    // Step 3: Create missing tags with colors from palette
+    if (tagsToCreate.length > 0) {
+      const newTags = tagsToCreate.map((name, index) => ({
+        rfp_id: rfpId,
+        name: name.trim(),
+        color: TAG_COLOR_PALETTE[index % TAG_COLOR_PALETTE.length],
+        created_by: userId,
+      }));
+
+      const { data: createdTags, error: createError } = await supabase
+        .from("tags")
+        .insert(newTags)
+        .select("id, name");
+
+      if (createError) {
+        if ((createError as { code?: string }).code === "23505") {
+          console.warn(
+            "Tag creation race condition detected, re-fetching tags..."
+          );
+          const { data: refetchedTags, error: refetchError } = await supabase
+            .from("tags")
+            .select("id, name")
+            .eq("rfp_id", rfpId)
+            .in(
+              "name",
+              tagsToCreate.map((t) => t.trim())
+            );
+
+          if (refetchError) {
+            throw refetchError;
+          }
+
+          if (refetchedTags) {
+            for (const tag of refetchedTags) {
+              if (!tagMap.has(tag.name)) {
+                tagMap.set(tag.name, tag.id);
+              }
+            }
+          }
+        } else {
+          console.error("Error creating tags:", createError);
+          throw createError;
+        }
+      }
+
+      if (createdTags) {
+        for (const tag of createdTags) {
+          tagMap.set(tag.name, tag.id);
+        }
+      }
+    }
+
+    return tagMap;
+  } catch (error) {
+    console.error("Error in getOrCreateTags:", error);
+    throw error;
+  }
+}
+
 /**
  * Import requirements for an RFP
  * Uses UPSERT to replace existing requirements with the same rfp_id and requirement_id_external
  * Links requirements to existing categories by name
+ * Also handles tag creation and linking if tags are provided
  */
 export async function importRequirements(
   rfpId: string,
@@ -424,6 +647,7 @@ export async function importRequirements(
     page_number?: number;
     rf_document_id?: string;
     context?: string;
+    tags?: string[]; // Optional: array of tag names
   }>,
   userId: string,
   options?: {
@@ -444,6 +668,34 @@ export async function importRequirements(
   } = options || {};
 
   try {
+    // STEP 0: Collect all unique tag names and get/create tags
+    const allTagNames = new Set<string>();
+    for (const req of requirements) {
+      if (req.tags && Array.isArray(req.tags)) {
+        req.tags.forEach((tagName) => {
+          const normalized = tagName.trim();
+          if (normalized.length > 0) {
+            allTagNames.add(normalized);
+          }
+        });
+      }
+    }
+
+    // Get or create all tags in one batch operation
+    let tagNameToIdMap = new Map<string, string>();
+    if (allTagNames.size > 0) {
+      try {
+        tagNameToIdMap = await getOrCreateTags(
+          supabase,
+          rfpId,
+          Array.from(allTagNames),
+          userId
+        );
+      } catch (error) {
+        console.warn("Failed to process tags, continuing without tags:", error);
+        tagNameToIdMap = new Map<string, string>();
+      }
+    }
     // First, fetch all categories to map names/codes to IDs
     const { data: categories, error: catError } = await supabase
       .from("categories")
@@ -465,6 +717,7 @@ export async function importRequirements(
     // Auto-increment order for requirements without explicit order
     let currentOrder = 1;
     let upsertedCount = 0;
+    const tagRequests: Array<{ code: string; tags: string[] }> = [];
 
     // If we are NOT importing codes (Update Only mode), we need to know which codes exist
     let existingCodes = new Set<string>();
@@ -504,8 +757,8 @@ export async function importRequirements(
 
       const positionInPdf = req.page_number
         ? {
-            page_number: req.page_number,
-          }
+          page_number: req.page_number,
+        }
         : null;
 
       // Handle partial updates / merging
@@ -613,9 +866,87 @@ export async function importRequirements(
 
       upsertedCount++;
 
+      if (req.tags && Array.isArray(req.tags) && req.tags.length > 0) {
+        const normalizedTags = Array.from(
+          new Set(
+            req.tags
+              .map((tagName) => tagName.trim())
+              .filter((tagName) => tagName.length > 0)
+          )
+        );
+
+        if (normalizedTags.length > 0) {
+          tagRequests.push({ code: req.code, tags: normalizedTags });
+        }
+      }
+
       // Only increment if using auto-increment
       if (req.order === undefined) {
         currentOrder++;
+      }
+    }
+
+    if (tagRequests.length > 0 && tagNameToIdMap.size > 0) {
+      try {
+        const codes = Array.from(new Set(tagRequests.map((req) => req.code)));
+        const { data: taggedRequirements, error: taggedReqError } =
+          await supabase
+            .from("requirements")
+            .select("id, requirement_id_external")
+            .eq("rfp_id", rfpId)
+            .in("requirement_id_external", codes);
+
+        if (taggedReqError) {
+          console.warn("Failed to fetch requirements for tag linking:", taggedReqError);
+        } else {
+          const requirementIdByCode = new Map<string, string>();
+          for (const requirement of taggedRequirements || []) {
+            requirementIdByCode.set(
+              requirement.requirement_id_external,
+              requirement.id
+            );
+          }
+
+          const associations: Array<{
+            requirement_id: string;
+            tag_id: string;
+            created_by: string;
+          }> = [];
+          const associationKeys = new Set<string>();
+
+          for (const request of tagRequests) {
+            const requirementId = requirementIdByCode.get(request.code);
+            if (!requirementId) continue;
+
+            for (const tagName of request.tags) {
+              const tagId = tagNameToIdMap.get(tagName);
+              if (!tagId) continue;
+              const key = `${requirementId}:${tagId}`;
+              if (associationKeys.has(key)) continue;
+              associationKeys.add(key);
+              associations.push({
+                requirement_id: requirementId,
+                tag_id: tagId,
+                created_by: userId,
+              });
+            }
+          }
+
+          if (associations.length > 0) {
+            const { error: linkError } = await supabase
+              .from("requirement_tags")
+              .upsert(associations, {
+                onConflict: "requirement_id,tag_id",
+                ignoreDuplicates: true,
+              });
+
+            if (linkError) {
+              console.warn("Failed to link tags in bulk:", linkError);
+            }
+          }
+        }
+      } catch (tagError) {
+        console.warn("Failed to link tags in bulk:", tagError);
       }
     }
 
@@ -685,15 +1016,22 @@ export async function importSuppliers(
  * Only counts responses for leaf requirements (requirements without children)
  */
 export async function getRFPCompletionPercentage(
-  rfpId: string
+  rfpId: string,
+  versionId?: string
 ): Promise<number> {
   const supabase = await createServerClient();
 
   // Get all responses for leaf requirements only (level 4)
-  const { data, error } = await supabase
+  let query = supabase
     .from("responses")
-    .select("id, is_checked, requirement_id")
+    .select("id, is_checked, requirement_id, supplier_id")
     .eq("rfp_id", rfpId);
+
+  if (versionId) {
+    query = query.eq("version_id", versionId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching responses for completion:", error);
@@ -702,11 +1040,22 @@ export async function getRFPCompletionPercentage(
     );
   }
 
-  const responses = (data || []) as Array<{
+  let responses = (data || []) as Array<{
     id: string;
     is_checked: boolean;
     requirement_id: string;
+    supplier_id: string;
   }>;
+
+  // Filter responses to only include active suppliers of the version
+  if (versionId) {
+    const { getVersionSupplierStatuses, getActiveSupplierIds } = await import(
+      "@/lib/suppliers/status-cache"
+    );
+    const statuses = await getVersionSupplierStatuses(supabase, versionId);
+    const activeSupplierIds = getActiveSupplierIds(statuses);
+    responses = responses.filter((r) => activeSupplierIds.has(r.supplier_id));
+  }
 
   // Get all requirements to identify leaf nodes (requirements without children)
   const { data: requirements, error: reqError } = await supabase
@@ -736,7 +1085,9 @@ export async function getRFPCompletionPercentage(
   );
 
   // Debug logging
-  console.log(`[Completion] RFP ${rfpId}:`);
+  console.log(
+    `[Completion] RFP ${rfpId}${versionId ? ` (v${versionId})` : ""}:`
+  );
   console.log(`  Total responses: ${responses.length}`);
   console.log(`  Total requirements: ${allRequirements.length}`);
   console.log(`  Leaf requirements: ${leafReqIds.size}`);
@@ -762,7 +1113,9 @@ export async function getRFPCompletionPercentage(
   const checked = leafResponses.filter((r) => r.is_checked).length;
   const percentage = Math.round((checked / total) * 100);
 
-  console.log(`  Result: ${percentage}%`);
+  console.log(
+    `  Result: ${percentage}%${versionId ? " (filtered by version)" : ""}`
+  );
   return percentage;
 }
 
@@ -782,7 +1135,7 @@ export async function getResponsesForRequirement(
     ai_score: number | null;
     ai_comment: string | null;
     manual_score: number | null;
-    status: "pending" | "pass" | "partial" | "fail";
+    status: "pending" | "pass" | "partial" | "fail" | "roadmap";
     is_checked: boolean;
     manual_comment: string | null;
     question: string | null;
@@ -861,18 +1214,20 @@ export async function getResponsesForRequirement(
 export async function getResponsesForRFP(
   rfpId: string,
   requirementId?: string,
-  versionId?: string
+  versionId?: string,
+  supplierId?: string
 ): Promise<
   Array<{
     id: string;
     rfp_id: string;
     requirement_id: string;
     supplier_id: string;
+    version_id: string | null;
     response_text: string | null;
     ai_score: number | null;
     ai_comment: string | null;
     manual_score: number | null;
-    status: "pending" | "pass" | "partial" | "fail";
+    status: "pending" | "pass" | "partial" | "fail" | "roadmap";
     is_checked: boolean;
     manual_comment: string | null;
     question: string | null;
@@ -899,6 +1254,7 @@ export async function getResponsesForRFP(
     rfp_id,
     requirement_id,
     supplier_id,
+    version_id,
     response_text,
     ai_score,
     ai_comment,
@@ -933,6 +1289,10 @@ export async function getResponsesForRFP(
     query = query.eq("version_id", versionId);
   }
 
+  if (supplierId) {
+    query = query.eq("supplier_id", supplierId);
+  }
+
   const { data, error } = await query;
 
   if (error) {
@@ -964,7 +1324,7 @@ export async function getResponse(responseId: string): Promise<{
   ai_score: number | null;
   ai_comment: string | null;
   manual_score: number | null;
-  status: "pending" | "pass" | "partial" | "fail";
+  status: "pending" | "pass" | "partial" | "fail" | "roadmap";
   is_checked: boolean;
   manual_comment: string | null;
   question: string | null;

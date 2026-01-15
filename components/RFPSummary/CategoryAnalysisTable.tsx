@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useVersion } from "@/contexts/VersionContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,16 +11,43 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import {
   ChevronDown,
   ChevronRight,
-  Copy,
   Check,
   Sparkles,
   RefreshCw,
+  Maximize2,
+  AlertTriangle,
+  Download,
+  FileText,
+  FileSpreadsheet,
+  FileDown,
 } from "lucide-react";
+import ExcelJS from "exceljs";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Supplier } from "@/types/supplier";
+import { toast } from "sonner";
+import { EditableList } from "./EditableList";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { CategoryAnalysisTableMobile } from "./CategoryAnalysisTableMobile";
+import { ClientOnly } from "../ClientOnly";
 
 // Types
 interface TreeNode {
@@ -38,12 +66,24 @@ interface TreeNode {
 
 interface CategoryAnalysisTableProps {
   rfpId: string;
+  userAccessLevel?: any;
+}
+
+interface SupplierStatus {
+  id: string;
+  shortlist_status: "active" | "shortlisted" | "removed";
+  removal_reason?: string | null;
 }
 
 export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
+  const { activeVersion, versions } = useVersion();
+  const isMobile = useIsMobile();
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [supplierStatuses, setSupplierStatuses] = useState<
+    Record<string, SupplierStatus>
+  >({});
   const [weights, setWeights] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
@@ -53,19 +93,36 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(
     null
   );
+  // Initialize with activeVersion, fallback to first version if available
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
+    null
+  );
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [lastAnalysisId, setLastAnalysisId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [taskIdMap, setTaskIdMap] = useState<Record<string, string>>({});
+  const [analysisIdMap, setAnalysisIdMap] = useState<Record<string, string>>(
+    {}
+  );
 
   const refreshAnalysisResults = async () => {
     try {
       setIsRefreshing(true);
       console.log("[REFRESH] Refreshing analysis results");
 
-      // Reload all analyses from the server
-      const resultsRes = await fetch(
-        `/api/rfps/${rfpId}/analyze-defense/results/latest`
-      );
+      // Reload all analyses from the server (for all suppliers)
+      let resultsUrl = `/api/rfps/${rfpId}/analyze-defense/results/latest`;
+      const params = new URLSearchParams();
+      if (selectedVersionId) {
+        params.append("versionId", selectedVersionId);
+      }
+      // Don't filter by supplierId - load all suppliers' analyses
+      // This allows switching between suppliers without reloading
+      if (params.toString()) {
+        resultsUrl += `?${params.toString()}`;
+      }
+      const resultsRes = await fetch(resultsUrl);
       const resultsData = await resultsRes.json();
 
       const bySupplier: Record<
@@ -75,6 +132,10 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
 
       if (resultsData.analyses && resultsData.analyses.length > 0) {
         console.log("[REFRESH] Got", resultsData.analyses.length, "analyses");
+
+        // Build task ID and analysis ID maps for editing
+        const newTaskIdMap: Record<string, string> = {};
+        const newAnalysisIdMap: Record<string, string> = {};
 
         resultsData.analyses.forEach((task: any) => {
           if (task.category_id && task.result) {
@@ -88,41 +149,62 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
               forces: task.result.forces || [],
               faiblesses: task.result.faiblesses || [],
             };
+
+            // Store task ID for this category (use task_id or id)
+            const taskId = task.task_id || task.id;
+            if (taskId) {
+              newTaskIdMap[task.category_id] = taskId;
+            }
+
+            // Store analysis ID for syncing with defense_analyses table
+            const analysisId = task.defense_analyses?.id;
+            if (analysisId) {
+              newAnalysisIdMap[task.category_id] = analysisId;
+            }
           }
         });
+
+        setTaskIdMap(newTaskIdMap);
+        setAnalysisIdMap(newAnalysisIdMap);
 
         console.log(
           "[REFRESH] Built supplier map with keys:",
           Object.keys(bySupplier)
         );
         setAllAnalysesBySupplier(bySupplier);
+      } else {
+        console.log("[ANALYSIS LOADER] No analyses found");
+        setAllAnalysesBySupplier({});
+        setTaskIdMap({});
+        setAnalysisIdMap({});
+      }
 
-        // Apply for current supplier
-        const analysisMap =
-          selectedSupplierId && bySupplier[selectedSupplierId]
-            ? bySupplier[selectedSupplierId]
-            : {};
+      // Apply for current supplier
+      const analysisMap =
+        selectedSupplierId && bySupplier[selectedSupplierId]
+          ? bySupplier[selectedSupplierId]
+          : {};
 
-        const enrichTree = (nodes: TreeNode[]): TreeNode[] => {
-          return nodes.map((node) => {
-            if (node.type === "category" && analysisMap[node.id]) {
-              return {
-                ...node,
-                analysis: analysisMap[node.id],
-                children: node.children ? enrichTree(node.children) : undefined,
-              };
-            }
+      const enrichTree = (nodes: TreeNode[]): TreeNode[] => {
+        return nodes.map((node) => {
+          if (node.type === "category") {
+            // Always set analysis for categories - either from analysisMap or explicitly undefined
+            // This ensures old values are cleared when switching suppliers
             return {
               ...node,
-              analysis: node.type === "category" ? undefined : node.analysis,
+              analysis: analysisMap[node.id] || undefined,
               children: node.children ? enrichTree(node.children) : undefined,
             };
-          });
-        };
+          }
+          return {
+            ...node,
+            children: node.children ? enrichTree(node.children) : undefined,
+          };
+        });
+      };
 
-        const enrichedTree = enrichTree(tree || []);
-        setTree(enrichedTree);
-      }
+      const enrichedTree = enrichTree(tree || []);
+      setTree(enrichedTree);
     } catch (error) {
       console.error("Error refreshing analysis results:", error);
     } finally {
@@ -136,14 +218,35 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   >({});
 
   // Load analysis results when rfpId or selectedSupplierId changes
-  const loadAnalysisResults = async (supplierId: string | null) => {
+  const loadAnalysisResults = async (
+    supplierId: string | null,
+    versionId: string | null = null
+  ) => {
     try {
-      // First, load all analyses for this RFP if not already loaded
-      if (Object.keys(allAnalysesBySupplier).length === 0) {
-        console.log("[ANALYSIS LOADER] Loading all analyses for RFP");
-        const resultsRes = await fetch(
-          `/api/rfps/${rfpId}/analyze-defense/results/latest`
+      // Check if we need to load analyses for this supplier
+      const needsLoading =
+        Object.keys(allAnalysesBySupplier).length === 0 ||
+        (supplierId && !allAnalysesBySupplier[supplierId]);
+
+      // This will hold the current analyses data (either freshly loaded or from cache)
+      let currentAnalysesBySupplier = allAnalysesBySupplier;
+
+      if (needsLoading) {
+        console.log(
+          "[ANALYSIS LOADER] Loading analyses for supplier:",
+          supplierId
         );
+        let resultsUrl = `/api/rfps/${rfpId}/analyze-defense/results/latest`;
+        const params = new URLSearchParams();
+        if (versionId) {
+          params.append("versionId", versionId);
+        }
+        // Load all suppliers' analyses without filtering by supplierId
+        // This allows switching between suppliers without reloading
+        if (params.toString()) {
+          resultsUrl += `?${params.toString()}`;
+        }
+        const resultsRes = await fetch(resultsUrl);
         const resultsData = await resultsRes.json();
 
         if (resultsData.analyses && resultsData.analyses.length > 0) {
@@ -157,6 +260,10 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
             string,
             Record<string, { forces: string[]; faiblesses: string[] }>
           > = {};
+
+          // Build task ID and analysis ID maps for editing
+          const newTaskIdMap: Record<string, string> = {};
+          const newAnalysisIdMap: Record<string, string> = {};
 
           resultsData.analyses.forEach((task: any) => {
             if (task.category_id && task.result) {
@@ -172,6 +279,18 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                 faiblesses: task.result.faiblesses || [],
               };
 
+              // Store task ID for this category (use task_id or id)
+              const taskId = task.task_id || task.id;
+              if (taskId) {
+                newTaskIdMap[task.category_id] = taskId;
+              }
+
+              // Store analysis ID for syncing with defense_analyses table
+              const analysisId = task.defense_analyses?.id;
+              if (analysisId) {
+                newAnalysisIdMap[task.category_id] = analysisId;
+              }
+
               console.log(
                 `[ANALYSIS LOADER] Task for supplier ${supplierKey}, category ${task.category_id}:`,
                 {
@@ -182,18 +301,31 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
             }
           });
 
+          setTaskIdMap(newTaskIdMap);
+          setAnalysisIdMap(newAnalysisIdMap);
+
           console.log(
             "[ANALYSIS LOADER] Built supplier map with keys:",
             Object.keys(bySupplier)
           );
           setAllAnalysesBySupplier(bySupplier);
+
+          // Use the freshly loaded data immediately (don't wait for state update)
+          currentAnalysesBySupplier = bySupplier;
+        } else {
+          console.log("[ANALYSIS LOADER] No analyses found");
+          setAllAnalysesBySupplier({});
+          setTaskIdMap({});
+          setAnalysisIdMap({});
+          currentAnalysesBySupplier = {};
         }
       }
 
       // Now apply the analyses for the selected supplier to the tree
+      // Use currentAnalysesBySupplier which contains either freshly loaded or cached data
       const analysisMap =
-        supplierId && allAnalysesBySupplier[supplierId]
-          ? allAnalysesBySupplier[supplierId]
+        supplierId && currentAnalysesBySupplier[supplierId]
+          ? currentAnalysesBySupplier[supplierId]
           : {};
 
       console.log(
@@ -207,16 +339,17 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       // Update tree with loaded analyses
       const enrichTree = (nodes: TreeNode[]): TreeNode[] => {
         return nodes.map((node) => {
-          if (node.type === "category" && analysisMap[node.id]) {
+          if (node.type === "category") {
+            // Always set analysis for categories - either from analysisMap or explicitly undefined
+            // This ensures old values are cleared when switching suppliers
             return {
               ...node,
-              analysis: analysisMap[node.id],
+              analysis: analysisMap[node.id] || undefined,
               children: node.children ? enrichTree(node.children) : undefined,
             };
           }
           return {
             ...node,
-            analysis: node.type === "category" ? undefined : node.analysis,
             children: node.children ? enrichTree(node.children) : undefined,
           };
         });
@@ -233,14 +366,35 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
   };
 
   useEffect(() => {
+    console.log(
+      "[CATEGORY ANALYSIS] useEffect triggered! rfpId:",
+      rfpId,
+      "activeVersion:",
+      activeVersion
+    );
+
     async function fetchData() {
       try {
         setLoading(true);
+        console.log("[CATEGORY ANALYSIS] fetchData started, rfpId:", rfpId);
+
+        // Build suppliers URL with versionId if available
+        let suppliersUrl = `/api/rfps/${rfpId}/suppliers`;
+        if (activeVersion?.id) {
+          suppliersUrl += `?versionId=${activeVersion.id}`;
+        }
+
+        // Build responses URL with versionId if available
+        let responsesUrl = `/api/rfps/${rfpId}/responses`;
+        if (activeVersion?.id) {
+          responsesUrl += `?versionId=${activeVersion.id}`;
+        }
+
         const [treeRes, responsesRes, suppliersRes, weightsRes] =
           await Promise.all([
             fetch(`/api/rfps/${rfpId}/tree`),
-            fetch(`/api/rfps/${rfpId}/responses`),
-            fetch(`/api/rfps/${rfpId}/suppliers`),
+            fetch(responsesUrl),
+            fetch(suppliersUrl),
             fetch(`/api/rfps/${rfpId}/weights`),
           ]);
         const treeData = await treeRes.json();
@@ -248,8 +402,69 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         const suppliersData = await suppliersRes.json();
         const weightsData = await weightsRes.json();
 
+        console.log("[CATEGORY ANALYSIS] Responses URL was:", responsesUrl);
+        console.log("[CATEGORY ANALYSIS] Suppliers URL was:", suppliersUrl);
+        console.log(
+          "[CATEGORY ANALYSIS] Responses data received:",
+          responsesData.responses?.length
+        );
+        console.log(
+          "[CATEGORY ANALYSIS] Suppliers data received:",
+          suppliersData.suppliers?.length
+        );
+        if (suppliersData.suppliers && suppliersData.suppliers.length > 0) {
+          console.log("[CATEGORY ANALYSIS] First supplier:", {
+            id: suppliersData.suppliers[0].id,
+            name: suppliersData.suppliers[0].name,
+            shortlist_status: suppliersData.suppliers[0].shortlist_status,
+            removal_reason: suppliersData.suppliers[0].removal_reason,
+          });
+        }
+
         setResponses(responsesData.responses || []);
         setSuppliers(suppliersData.suppliers || []);
+
+        // Build supplier statuses map
+        const statusMap: Record<string, SupplierStatus> = {};
+        if (suppliersData.suppliers) {
+          suppliersData.suppliers.forEach((supplier: any) => {
+            statusMap[supplier.id] = {
+              id: supplier.id,
+              shortlist_status: supplier.shortlist_status || "active",
+              removal_reason: supplier.removal_reason || null,
+            };
+          });
+        }
+
+        console.log(
+          "[CATEGORY ANALYSIS] Status map built, size:",
+          Object.keys(statusMap).length
+        );
+        if (Object.keys(statusMap).length > 0) {
+          const firstKey = Object.keys(statusMap)[0];
+          console.log(
+            "[CATEGORY ANALYSIS] First status entry:",
+            firstKey,
+            statusMap[firstKey]
+          );
+        }
+
+        // Also log for Witco if it exists
+        const witcoId = suppliersData.suppliers?.find((s: any) =>
+          s.name?.includes("Witco")
+        )?.id;
+        if (witcoId) {
+          console.log(
+            "[CATEGORY ANALYSIS] Witco found, id:",
+            witcoId,
+            "status:",
+            statusMap[witcoId]
+          );
+        } else {
+          console.log("[CATEGORY ANALYSIS] Witco NOT found in suppliers list");
+        }
+
+        setSupplierStatuses(statusMap);
 
         // Flatten weights (requirements only)
         const flatWeights: Record<string, number> = {};
@@ -273,7 +488,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
 
         // Load analysis results for the first supplier
         if (firstSupplierId) {
-          await loadAnalysisResults(firstSupplierId);
+          await loadAnalysisResults(firstSupplierId, activeVersion?.id || null);
         }
       } catch (error) {
         console.error("Error fetching category analysis data:", error);
@@ -282,17 +497,43 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       }
     }
 
+    console.log(
+      "[CATEGORY ANALYSIS] About to call fetchData, rfpId check:",
+      !!rfpId
+    );
     if (rfpId) {
       fetchData();
+    } else {
+      console.log("[CATEGORY ANALYSIS] ERROR: rfpId is missing!");
     }
-  }, [rfpId]);
+  }, [rfpId, activeVersion?.id]);
 
-  // Reload analysis results when selected supplier changes
+  // Sync selected version with active version, with fallback to first version
+  useEffect(() => {
+    if (activeVersion?.id) {
+      console.log(
+        "[CategoryAnalysisTable] Setting selectedVersionId from activeVersion:",
+        activeVersion.id
+      );
+      setSelectedVersionId(activeVersion.id);
+    } else if (versions && versions.length > 0) {
+      console.log(
+        "[CategoryAnalysisTable] No activeVersion, using first version:",
+        versions[0].id
+      );
+      setSelectedVersionId(versions[0].id);
+    } else {
+      console.log("[CategoryAnalysisTable] No versions available");
+      setSelectedVersionId(null);
+    }
+  }, [activeVersion?.id, versions]);
+
+  // Reload analysis results when selected supplier or version changes
   useEffect(() => {
     if (selectedSupplierId && rfpId) {
-      loadAnalysisResults(selectedSupplierId);
+      loadAnalysisResults(selectedSupplierId, selectedVersionId);
     }
-  }, [selectedSupplierId, rfpId]);
+  }, [selectedSupplierId, selectedVersionId, rfpId]);
 
   // Poll for completed analysis results and update tree
   useEffect(() => {
@@ -356,6 +597,139 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     const interval = setInterval(pollForResults, 2000);
     return () => clearInterval(interval);
   }, [lastAnalysisId, rfpId]);
+
+  // Update analysis handler for inline editing
+  const updateTreeAnalysis = (
+    nodes: TreeNode[],
+    categoryId: string,
+    updates: { forces?: string[]; faiblesses?: string[] }
+  ): TreeNode[] => {
+    return nodes.map((node) => {
+      if (node.id === categoryId && node.type === "category") {
+        return {
+          ...node,
+          analysis: {
+            ...node.analysis,
+            forces: updates.forces ?? node.analysis?.forces ?? [],
+            faiblesses: updates.faiblesses ?? node.analysis?.faiblesses ?? [],
+          },
+        };
+      }
+      if (node.children) {
+        return {
+          ...node,
+          children: updateTreeAnalysis(node.children, categoryId, updates),
+        };
+      }
+      return node;
+    });
+  };
+
+  const handleUpdateAnalysis = async (
+    categoryId: string,
+    updates: { forces?: string[]; faiblesses?: string[] }
+  ) => {
+    const taskId = taskIdMap[categoryId];
+    const analysisId = analysisIdMap[categoryId];
+
+    if (!taskId) {
+      toast.error("ID de tâche introuvable pour cette catégorie");
+      return;
+    }
+
+    try {
+      // Optimistic UI update
+      setTree((prevTree) => updateTreeAnalysis(prevTree, categoryId, updates));
+
+      // Also update allAnalysesBySupplier for consistency
+      if (selectedSupplierId) {
+        setAllAnalysesBySupplier((prev) => {
+          const supplierKey = selectedSupplierId;
+          const newData = { ...prev };
+          if (newData[supplierKey] && newData[supplierKey][categoryId]) {
+            newData[supplierKey][categoryId] = {
+              ...newData[supplierKey][categoryId],
+              forces: updates.forces ?? newData[supplierKey][categoryId].forces,
+              faiblesses:
+                updates.faiblesses ??
+                newData[supplierKey][categoryId].faiblesses,
+            };
+          }
+          return newData;
+        });
+      }
+
+      // Step 1: Update defense_analysis_tasks via PATCH
+      const response = await fetch(
+        `/api/rfps/${rfpId}/analyze-defense/tasks/${taskId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update analysis");
+      }
+
+      const data = await response.json();
+
+      // Confirm with server response
+      setTree((prevTree) =>
+        updateTreeAnalysis(prevTree, categoryId, {
+          forces: data.result.forces,
+          faiblesses: data.result.faiblesses,
+        })
+      );
+
+      // Also update allAnalysesBySupplier with server data
+      if (selectedSupplierId) {
+        setAllAnalysesBySupplier((prev) => {
+          const supplierKey = selectedSupplierId;
+          const newData = { ...prev };
+          if (!newData[supplierKey]) {
+            newData[supplierKey] = {};
+          }
+          newData[supplierKey][categoryId] = {
+            forces: data.result.forces || [],
+            faiblesses: data.result.faiblesses || [],
+          };
+          return newData;
+        });
+      }
+
+      // Step 2: Sync to defense_analyses.analysis_data if we have analysisId
+      if (analysisId) {
+        console.log(`[EDIT] Syncing analysis ${analysisId} after task update`);
+        const syncResponse = await fetch(
+          `/api/rfps/${rfpId}/analyze-defense/sync`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ analysisId }),
+          }
+        );
+
+        if (!syncResponse.ok) {
+          console.warn(
+            "Warning: Sync to defense_analyses failed, but task was updated:",
+            syncResponse.status
+          );
+          // Don't fail the entire operation, just warn
+        } else {
+          console.log(`[EDIT] Successfully synced analysis ${analysisId}`);
+        }
+      }
+
+      toast.success("Analyse mise à jour avec succès");
+    } catch (error) {
+      // Rollback on error
+      await refreshAnalysisResults();
+      toast.error("Erreur lors de la mise à jour de l'analyse");
+      console.error("Update failed:", error);
+    }
+  };
 
   // Flatten categories for display
   const flatCategories = useMemo(() => {
@@ -621,11 +995,20 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
       const indent = "  ".repeat(category.level);
       const pointsList =
         attentionPoints.length > 0
-          ? attentionPoints.map((p) => `• ${p}`).join("\n")
+          ? attentionPoints.map((p) => `• ${p}`).join(" - ")
           : "";
       const detailList =
         childTitles.length > 0
-          ? childTitles.map((p) => `• ${p}`).join("\n")
+          ? childTitles.map((p) => `• ${p}`).join(" - ")
+          : "";
+
+      const forcesList =
+        category.analysis?.forces && category.analysis.forces.length > 0
+          ? category.analysis.forces.map((f) => `• ${f}`).join(" - ")
+          : "";
+      const faiblessesList =
+        category.analysis?.faiblesses && category.analysis.faiblesses.length > 0
+          ? category.analysis.faiblesses.map((f) => `• ${f}`).join(" - ")
           : "";
 
       const score =
@@ -638,7 +1021,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
           ? `${formatScore(score)} / ${formatScore(averageScore)}`
           : "-";
 
-      markdown += `| ${indent}**${category.code}** - ${category.title} | ${detailList} | ${scoreStr} | | | ${pointsList} |\n`;
+      markdown += `| ${indent}**${category.code}** - ${category.title} | ${detailList} | ${scoreStr} | ${forcesList} | ${faiblessesList} | ${pointsList} |\n`;
     }
 
     return markdown;
@@ -652,7 +1035,21 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         return;
       }
 
+      if (!selectedVersionId) {
+        console.error("No version selected. Available versions:", versions);
+        alert("Please select a version or ensure versions are loaded");
+        return;
+      }
+
       setAnalysisLoading(true);
+
+      const payload = {
+        supplierId: selectedSupplierId,
+        versionId: selectedVersionId,
+      };
+      console.log("[triggerAnalysis] Payload being sent:", payload);
+      console.log("[triggerAnalysis] activeVersion:", activeVersion);
+      console.log("[triggerAnalysis] selectedVersionId is:", selectedVersionId);
 
       // Call backend API to initiate async analysis
       const response = await fetch(`/api/rfps/${rfpId}/analyze-defense`, {
@@ -660,10 +1057,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          supplierId: selectedSupplierId,
-          versionId: null,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -690,6 +1084,214 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     }
   };
 
+  const exportToExcel = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Analyse par Catégorie");
+
+      // Define columns
+      worksheet.columns = [
+        { header: "Catégorie", key: "category", width: 50 },
+        { header: "Détail", key: "detail", width: 40 },
+        { header: "Note", key: "score", width: 20 },
+        { header: "Forces", key: "forces", width: 50 },
+        { header: "Faiblesses", key: "faiblesses", width: 50 },
+        { header: "Points d'attention", key: "attention", width: 60 },
+      ];
+
+      // Style header row
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.getRow(1).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFE2E8F0" },
+      };
+
+      // Add data rows
+      for (const category of flatCategories) {
+        const isExpanded = expandedCategories.has(category.id);
+        const attentionPoints = getAttentionPoints(
+          category.id,
+          selectedSupplierId || undefined,
+          isExpanded
+        );
+        const childTitles = getChildTitles(category.id);
+        const indent = "  ".repeat(category.level);
+
+        const score =
+          selectedSupplierId && selectedSupplierId !== ""
+            ? getCategoryScore(category.id, selectedSupplierId)
+            : null;
+        const averageScore = getAverageCategoryScore(category.id);
+        const scoreStr =
+          score !== null && averageScore !== null
+            ? `${formatScore(score)} / ${formatScore(averageScore)}`
+            : "-";
+
+        const detailBullets =
+          childTitles.length > 0
+            ? childTitles.map((t) => `• ${t}`).join("\n")
+            : "";
+        const forcesBullets =
+          category.analysis?.forces && category.analysis.forces.length > 0
+            ? category.analysis.forces.map((f) => `• ${f}`).join("\n")
+            : "";
+        const faiblessesBullets =
+          category.analysis?.faiblesses &&
+          category.analysis.faiblesses.length > 0
+            ? category.analysis.faiblesses.map((f) => `• ${f}`).join("\n")
+            : "";
+        const attentionBullets =
+          attentionPoints.length > 0
+            ? attentionPoints.map((p) => `• ${p}`).join("\n")
+            : "";
+
+        const row = worksheet.addRow({
+          category: `${indent}${category.code} - ${category.title}`,
+          detail: detailBullets,
+          score: scoreStr,
+          forces: forcesBullets,
+          faiblesses: faiblessesBullets,
+          attention: attentionBullets,
+        });
+
+        // Enable text wrapping for cells with bullet points
+        row.getCell("detail").alignment = { wrapText: true, vertical: "top" };
+        row.getCell("forces").alignment = { wrapText: true, vertical: "top" };
+        row.getCell("faiblesses").alignment = {
+          wrapText: true,
+          vertical: "top",
+        };
+        row.getCell("attention").alignment = {
+          wrapText: true,
+          vertical: "top",
+        };
+      }
+
+      // Enable text wrapping for header row
+      worksheet.getRow(1).alignment = { wrapText: true, vertical: "middle" };
+
+      // Generate buffer and download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+
+      const supplierName =
+        suppliers.find((s) => s.id === selectedSupplierId)?.name || "analyse";
+      const date = new Date().toISOString().split("T")[0];
+      link.download = `analyse-categories-${supplierName}-${date}.xlsx`;
+
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      alert("Erreur lors de l'export Excel");
+    }
+  };
+
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF({ orientation: "landscape" });
+
+      // Title
+      const supplierName =
+        suppliers.find((s) => s.id === selectedSupplierId)?.name || "Analyse";
+      doc.setFontSize(16);
+      doc.text(`Analyse par Catégorie - ${supplierName}`, 14, 15);
+
+      // Prepare table data
+      const tableData = flatCategories.map((category) => {
+        const isExpanded = expandedCategories.has(category.id);
+        const attentionPoints = getAttentionPoints(
+          category.id,
+          selectedSupplierId || undefined,
+          isExpanded
+        );
+        const childTitles = getChildTitles(category.id);
+        const indent = "  ".repeat(category.level);
+
+        const score =
+          selectedSupplierId && selectedSupplierId !== ""
+            ? getCategoryScore(category.id, selectedSupplierId)
+            : null;
+        const averageScore = getAverageCategoryScore(category.id);
+        const scoreStr =
+          score !== null && averageScore !== null
+            ? `${formatScore(score)} / ${formatScore(averageScore)}`
+            : "-";
+
+        const detailBullets =
+          childTitles.length > 0
+            ? childTitles.map((t) => `• ${t}`).join("\n")
+            : "";
+        const forcesBullets =
+          category.analysis?.forces && category.analysis.forces.length > 0
+            ? category.analysis.forces.map((f) => `• ${f}`).join("\n")
+            : "";
+        const faiblessesBullets =
+          category.analysis?.faiblesses &&
+          category.analysis.faiblesses.length > 0
+            ? category.analysis.faiblesses.map((f) => `• ${f}`).join("\n")
+            : "";
+        const attentionBullets =
+          attentionPoints.length > 0
+            ? attentionPoints.map((p) => `• ${p}`).join("\n")
+            : "";
+
+        return [
+          `${indent}${category.code} - ${category.title}`,
+          detailBullets,
+          scoreStr,
+          forcesBullets,
+          faiblessesBullets,
+          attentionBullets,
+        ];
+      });
+
+      // Generate table
+      autoTable(doc, {
+        head: [
+          [
+            "Catégorie",
+            "Détail",
+            "Note",
+            "Forces",
+            "Faiblesses",
+            "Points d'attention",
+          ],
+        ],
+        body: tableData,
+        startY: 25,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: {
+          fillColor: [226, 232, 240],
+          textColor: [0, 0, 0],
+          fontStyle: "bold",
+        },
+        columnStyles: {
+          0: { cellWidth: 50 },
+          1: { cellWidth: 40 },
+          2: { cellWidth: 25 },
+          3: { cellWidth: 50 },
+          4: { cellWidth: 50 },
+          5: { cellWidth: 60 },
+        },
+        margin: { left: 10, right: 10 },
+      });
+
+      // Download
+      const date = new Date().toISOString().split("T")[0];
+      doc.save(`analyse-categories-${supplierName}-${date}.pdf`);
+    } catch (error) {
+      console.error("Error exporting to PDF:", error);
+      alert("Erreur lors de l'export PDF");
+    }
+  };
+
   const copyToClipboard = async () => {
     try {
       const markdown = generateMarkdown();
@@ -701,6 +1303,13 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     }
   };
 
+  console.log(
+    "[CATEGORY ANALYSIS RENDER] Component rendering, loading:",
+    loading,
+    "suppliers:",
+    suppliers?.length
+  );
+
   if (loading) {
     return (
       <div className="py-8 text-center text-slate-500">
@@ -709,89 +1318,196 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     );
   }
 
-  return (
-    <Card className="w-full overflow-hidden mb-8 h-full">
+  const cardContent = (
+    <>
       <CardHeader className="pb-4">
-        <div className="flex flex-row items-center justify-between gap-4">
-          <CardTitle className="text-lg font-medium">
-            Analyse par Catégorie
-          </CardTitle>
-          <div className="flex items-center gap-3">
-            {suppliers.length > 0 && (
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-slate-700">
-                  Soumissionnaire:
-                </label>
-                <Select
-                  value={selectedSupplierId || ""}
-                  onValueChange={setSelectedSupplierId}
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Sélectionner un soumissionnaire" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {suppliers.map((supplier) => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={refreshAnalysisResults}
-              disabled={isRefreshing}
-              className="gap-2"
-              title="Rafraîchir les analyses"
-            >
-              <RefreshCw
-                className={cn("h-4 w-4", isRefreshing && "animate-spin")}
-              />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={triggerAnalysis}
-              disabled={analysisLoading || !selectedSupplierId}
-              className="gap-2"
-            >
-              {analysisLoading ? (
-                <>
-                  <span className="animate-spin">✨</span>
-                  Analyse...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  Analyser
-                </>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-row items-center justify-between gap-4">
+            <CardTitle className="text-lg font-medium">
+              Analyse par Catégorie
+            </CardTitle>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsModalOpen(true)}
+                className="gap-2"
+                title="Agrandir le tableau"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+              {suppliers.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Soumissionnaire:
+                  </label>
+                  <Select
+                    value={selectedSupplierId || ""}
+                    onValueChange={setSelectedSupplierId}
+                  >
+                    <SelectTrigger className="w-64">
+                      <SelectValue placeholder="Sélectionner un soumissionnaire" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {suppliers.map((supplier) => {
+                        const status = supplierStatuses[supplier.id];
+                        if (supplier.name?.includes("Witco")) {
+                          console.log(
+                            "[CATEGORY ANALYSIS RENDER] Witco selectitem - status:",
+                            status
+                          );
+                        }
+                        return (
+                          <SelectItem key={supplier.id} value={supplier.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{supplier.name}</span>
+                              {status &&
+                                status.shortlist_status !== "active" && (
+                                  <Badge
+                                    variant={
+                                      status.shortlist_status === "removed"
+                                        ? "destructive"
+                                        : "secondary"
+                                    }
+                                    className="text-xs"
+                                  >
+                                    {status.shortlist_status === "removed"
+                                      ? "Supprimé"
+                                      : "Sélectionné"}
+                                  </Badge>
+                                )}
+                              {status?.removal_reason && (
+                                <span className="text-xs text-slate-500 ml-2">
+                                  ({status.removal_reason})
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={copyToClipboard}
-              className="gap-2"
-            >
-              {copied ? (
-                <>
-                  <Check className="h-4 w-4" />
-                  Copié!
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4" />
-                  Copier en Markdown
-                </>
-              )}
-            </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refreshAnalysisResults}
+                disabled={isRefreshing}
+                className="gap-2"
+                title="Rafraîchir les analyses"
+              >
+                <RefreshCw
+                  className={cn("h-4 w-4", isRefreshing && "animate-spin")}
+                />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={triggerAnalysis}
+                disabled={analysisLoading || !selectedSupplierId}
+                className="gap-2"
+              >
+                {analysisLoading ? (
+                  <>
+                    <span className="animate-spin">✨</span>
+                    Analyse...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Analyser
+                  </>
+                )}
+              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Exporter
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56" align="end">
+                  <div className="space-y-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={copyToClipboard}
+                      className="w-full justify-start gap-2"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Copié!
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-4 w-4" />
+                          Copier Markdown
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={exportToExcel}
+                      className="w-full justify-start gap-2"
+                    >
+                      <FileSpreadsheet className="h-4 w-4" />
+                      Télécharger Excel
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={exportToPDF}
+                      className="w-full justify-start gap-2"
+                    >
+                      <FileDown className="h-4 w-4" />
+                      Télécharger PDF
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
+          {/* Display supplier status and notes */}
+          {selectedSupplierId &&
+            (() => {
+              const status = supplierStatuses[selectedSupplierId];
+              console.log(
+                "[CATEGORY ANALYSIS ALERT] Selected supplier:",
+                selectedSupplierId,
+                "status:",
+                status
+              );
+              return (
+                status && (
+                  <div className="flex flex-col gap-2">
+                    {status.shortlist_status === "removed" &&
+                      status.removal_reason && (
+                        <Alert variant="destructive">
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertDescription>
+                            <strong>Raison de la suppression:</strong>{" "}
+                            {status.removal_reason}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    {status.shortlist_status === "shortlisted" && (
+                      <Alert>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          Ce fournisseur a été sélectionné pour cette version.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                )
+              );
+            })()}
         </div>
       </CardHeader>
-      <CardContent className="p-0 flex-1 flex flex-col">
+      <CardContent className="p-0 flex-1 flex flex-col min-h-0">
         <div className="relative w-full overflow-auto flex-1 border-t border-slate-200">
           <table className="w-full text-sm text-left border-collapse">
             <thead className="text-xs text-slate-700 uppercase bg-slate-50 sticky top-0 z-20 shadow-sm">
@@ -908,60 +1624,26 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
                       </div>
                     </td>
                     <td className="px-6 py-4 border-r text-slate-600">
-                      {(() => {
-                        console.log(
-                          `[NEW RENDER] ${category.code} (${category.id}):`,
-                          {
-                            has_analysis: !!category.analysis,
-                            forces_count:
-                              category.analysis?.forces?.length || 0,
-                            forces_sample:
-                              category.analysis?.forces?.[0]?.substring(0, 30),
-                          }
-                        );
-                        return category.analysis?.forces &&
-                          category.analysis.forces.length > 0 ? (
-                          <ul className="space-y-1 text-xs">
-                            {category.analysis.forces.map(
-                              (force: string, idx: number) => (
-                                <li
-                                  key={`${category.id}-force-${idx}`}
-                                  className="flex gap-2"
-                                >
-                                  <span className="flex-shrink-0">✓</span>
-                                  <span className="break-words">{force}</span>
-                                </li>
-                              )
-                            )}
-                          </ul>
-                        ) : (
-                          <span className="text-slate-400 italic">
-                            À compléter
-                          </span>
-                        );
-                      })()}
+                      <EditableList
+                        items={category.analysis?.forces || []}
+                        itemType="force"
+                        taskId={taskIdMap[category.id]}
+                        onUpdate={(forces) =>
+                          handleUpdateAnalysis(category.id, { forces })
+                        }
+                        readOnly={!taskIdMap[category.id]}
+                      />
                     </td>
                     <td className="px-6 py-4 border-r text-slate-600">
-                      {category.analysis?.faiblesses &&
-                      category.analysis.faiblesses.length > 0 ? (
-                        <ul className="space-y-1 text-xs">
-                          {category.analysis.faiblesses.map(
-                            (weakness: string, idx: number) => (
-                              <li
-                                key={`${category.id}-weakness-${idx}`}
-                                className="flex gap-2"
-                              >
-                                <span className="flex-shrink-0">✗</span>
-                                <span className="break-words">{weakness}</span>
-                              </li>
-                            )
-                          )}
-                        </ul>
-                      ) : (
-                        <span className="text-slate-400 italic">
-                          À compléter
-                        </span>
-                      )}
+                      <EditableList
+                        items={category.analysis?.faiblesses || []}
+                        itemType="faiblesse"
+                        taskId={taskIdMap[category.id]}
+                        onUpdate={(faiblesses) =>
+                          handleUpdateAnalysis(category.id, { faiblesses })
+                        }
+                        readOnly={!taskIdMap[category.id]}
+                      />
                     </td>
                     <td className="px-6 py-4 text-slate-600">
                       {attentionPoints.length > 0 ? (
@@ -982,6 +1664,48 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
           </table>
         </div>
       </CardContent>
-    </Card>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <ClientOnly>
+        <CategoryAnalysisTableMobile
+          flatCategories={flatCategories}
+          suppliers={suppliers}
+          supplierStatuses={supplierStatuses}
+          selectedSupplierId={selectedSupplierId}
+          onSupplierChange={setSelectedSupplierId}
+          onRefresh={refreshAnalysisResults}
+          onAnalyze={triggerAnalysis}
+          isRefreshing={isRefreshing}
+          analysisLoading={analysisLoading}
+          getCategoryScore={getCategoryScore}
+          getAverageCategoryScore={getAverageCategoryScore}
+          getChildTitles={getChildTitles}
+          getAttentionPoints={getAttentionPoints}
+        />
+      </ClientOnly>
+    );
+  }
+
+  return (
+    <>
+      <Card className="w-full overflow-hidden mb-8 h-full">{cardContent}</Card>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-[95vw] h-[95vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogHeader className="px-6 py-4 border-b border-slate-200 bg-white flex-shrink-0">
+            <DialogTitle>Analyse par Catégorie - Agrandie</DialogTitle>
+            <DialogDescription>
+              Vue agrandie du tableau d'analyse des catégories
+            </DialogDescription>
+          </DialogHeader>
+          <Card className="w-full overflow-hidden flex-1 flex flex-col border-0 rounded-none min-h-0">
+            {cardContent}
+          </Card>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

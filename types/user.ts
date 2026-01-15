@@ -76,7 +76,7 @@ export interface InvitationToken {
 }
 
 export type UserRole = "admin" | "evaluator" | "viewer";
-export type RFPAccessLevel = "owner" | "evaluator" | "viewer";
+export type RFPAccessLevel = "owner" | "evaluator" | "viewer" | "admin";
 export type SubscriptionTier = "free" | "pro" | "enterprise";
 
 export const USER_ROLES = {
@@ -89,6 +89,7 @@ export const RFP_ACCESS_LEVELS = {
   owner: "owner",
   evaluator: "evaluator",
   viewer: "viewer",
+  admin: "admin",
 } as const;
 
 export const SUBSCRIPTION_TIERS = {
@@ -127,6 +128,15 @@ export const ROLE_PERMISSIONS = {
 
 // RFP access level permissions mapping
 export const RFP_ACCESS_PERMISSIONS = {
+  admin: {
+    view_rfp: true,
+    edit_rfp: true,
+    delete_rfp: true,
+    manage_assignments: true,
+    evaluate_responses: true,
+    export_results: true,
+    use_ai: true,
+  },
   owner: {
     view_rfp: true,
     edit_rfp: true,
@@ -134,6 +144,7 @@ export const RFP_ACCESS_PERMISSIONS = {
     manage_assignments: true,
     evaluate_responses: true,
     export_results: true,
+    use_ai: true,
   },
   evaluator: {
     view_rfp: true,
@@ -142,6 +153,7 @@ export const RFP_ACCESS_PERMISSIONS = {
     manage_assignments: false,
     evaluate_responses: true,
     export_results: false,
+    use_ai: false,
   },
   viewer: {
     view_rfp: true,
@@ -150,5 +162,6 @@ export const RFP_ACCESS_PERMISSIONS = {
     manage_assignments: false,
     evaluate_responses: false,
     export_results: false,
+    use_ai: false,
   },
 } as const;

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
 import { getResponse } from "@/lib/supabase/queries";
 
 /**
@@ -24,6 +25,29 @@ export async function GET(
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get the RFP associated with this response to verify access
+    const { data: responseData, error: responseError } = await supabase
+      .from("responses")
+      .select("rfp_id")
+      .eq("id", responseId)
+      .single();
+
+    if (responseError || !responseData) {
+      return NextResponse.json(
+        { error: "Response not found" },
+        { status: 404 }
+      );
+    }
+
+    // Verify user has access to the RFP
+    const accessCheckResponse = await verifyRFPAccess(
+      responseData.rfp_id,
+      user.id
+    );
+    if (accessCheckResponse) {
+      return accessCheckResponse;
     }
 
     // Fetch response with supplier information
@@ -54,7 +78,7 @@ export async function GET(
  *
  * Body: {
  *   manual_score?: number (0-5),
- *   status?: "pending" | "pass" | "partial" | "fail",
+ *   status?: "pending" | "pass" | "partial" | "fail" | "roadmap",
  *   is_checked?: boolean,
  *   manual_comment?: string,
  *   question?: string
@@ -68,6 +92,8 @@ export async function PUT(
 
   try {
     const { responseId } = params;
+    const { searchParams } = new URL(request.url);
+    const versionId = searchParams.get("versionId");
 
     // Verify user is authenticated
     const supabase = await createServerClient();
@@ -99,7 +125,7 @@ export async function PUT(
 
     // Validate status if provided
     if (status !== undefined) {
-      const validStatuses = ["pending", "pass", "partial", "fail"];
+      const validStatuses = ["pending", "pass", "partial", "fail", "roadmap"];
       if (!validStatuses.includes(status)) {
         return NextResponse.json(
           { error: `Status must be one of: ${validStatuses.join(", ")}` },
@@ -145,6 +171,11 @@ export async function PUT(
       last_modified_by: user.id,
       updated_at: new Date().toISOString(),
     };
+
+    // Add version_id if provided
+    if (versionId) {
+      updateData.version_id = versionId;
+    }
 
     if (manual_score !== undefined) updateData.manual_score = manual_score;
     if (status !== undefined) updateData.status = status;

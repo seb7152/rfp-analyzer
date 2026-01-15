@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { RequirementsHeatmap } from "@/components/RFPSummary/RequirementsHeatmap";
 import { CategoryHeatmap } from "@/components/RFPSummary/CategoryHeatmap";
 
@@ -7,9 +7,18 @@ interface AnalysisTabProps {
 }
 
 export function AnalysisTab({ rfpId }: AnalysisTabProps) {
+  const [isMounted, setIsMounted] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null
   );
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <div className="space-y-8">

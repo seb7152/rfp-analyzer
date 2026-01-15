@@ -41,11 +41,7 @@ export default function DashboardPage() {
   } = useOrganization();
   const [copiedCode, setCopiedCode] = useState(false);
   const [showCreateRFP, setShowCreateRFP] = useState(false);
-  const {
-    rfps,
-    isLoading: rfpsLoading,
-    refetch: refetchRFPs,
-  } = useRFPs(currentOrg?.id || null);
+  const { rfps, isLoading: rfpsLoading, refetch: refetchRFPs } = useRFPs();
 
   // Find the most recent RFP in progress, or the most recent RFP overall
   const activeRFP =

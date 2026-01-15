@@ -99,6 +99,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
       loadExistingSuppliers();
     } else if (currentStep === 4) {
       loadExistingRequirements();
+      loadExistingSuppliers(); // Also load suppliers at step 4 for responses import
     }
   }, [currentStep]);
 
@@ -625,6 +626,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
     "description": "Description détaillée",    // Obligatoire
     "weight": 0.8,                             // Obligatoire (0-1)
     "category_name": "Functionnal requirements", // Obligatoire
+    "tags": ["Fonctionnel", "Critique"],       // Optionnel: liste de noms de tags
     "is_mandatory": true,                      // Optionnel (défaut: false)
     "is_optional": false,                      // Optionnel (défaut: false)
     "page_number": 5,                          // Optionnel
@@ -636,6 +638,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
     "description": "Contenu de l'exigence optionnelle",
     "weight": 0.6,
     "category_name": "DOM1",
+    "tags": ["UX"],
     "is_mandatory": false,
     "is_optional": true,
     "page_number": 10
@@ -647,7 +650,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                 size="sm"
                 onClick={() =>
                   handleCopyExample(
-                    `[{"code":"REQ001","title":"Titre de l'exigence 1","description":"Description détaillée de l'exigence","weight":0.8,"category_name":"Functionnal requirements","is_mandatory":true,"is_optional":false,"page_number":5},{"code":"REQ002","title":"Titre de l'exigence 2","description":"Contenu de l'exigence optionnelle","weight":0.6,"category_name":"DOM1","is_mandatory":false,"is_optional":true,"page_number":10}]`
+                    `[{"code":"REQ001","title":"Titre de l'exigence 1","description":"Description détaillée de l'exigence","weight":0.8,"category_name":"Functionnal requirements","tags":["Fonctionnel","Critique"],"is_mandatory":true,"is_optional":false,"page_number":5},{"code":"REQ002","title":"Titre de l'exigence 2","description":"Contenu de l'exigence optionnelle","weight":0.6,"category_name":"DOM1","tags":["UX"],"is_mandatory":false,"is_optional":true,"page_number":10}]`
                   )
                 }
                 className="mt-2 text-xs"
@@ -700,6 +703,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                         <TableHead>Code</TableHead>
                         <TableHead>Titre</TableHead>
                         <TableHead>Catégorie</TableHead>
+                        <TableHead>Tags</TableHead>
                         <TableHead className="text-right">Poids</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -718,6 +722,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                 title: string;
                                 category_name: string;
                                 weight: number;
+                                tags?: string[];
                               },
                               idx: number
                             ) => {
@@ -745,6 +750,23 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
                                         <XCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
                                       )}
                                     </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    {requirement.tags &&
+                                    requirement.tags.length > 0 ? (
+                                      <div className="flex flex-wrap gap-1">
+                                        {requirement.tags.map((tag, tagIdx) => (
+                                          <span
+                                            key={tagIdx}
+                                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                          >
+                                            {tag}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-slate-400">—</span>
+                                    )}
                                   </TableCell>
                                   <TableCell className="text-right">
                                     <span className="inline-flex items-center gap-1 text-sm">

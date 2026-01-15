@@ -1,5 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
+import { NextRequest, NextResponse } from "next/server";
+import {
+  getActiveSupplierIds,
+  getVersionSupplierStatuses,
+} from "@/lib/suppliers/status-cache";
 
 /**
  * GET /api/rfps/[rfpId]/suppliers
@@ -10,17 +15,22 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
  */
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ rfpId: string }> }
+  { params }: { params: { rfpId: string } }
 ) {
   try {
-    const params = await context.params;
-    const { rfpId } = params;
     const { searchParams } = new URL(request.url);
+    const { rfpId } = params;
+
     const includeStats = searchParams.get("includeStats") === "true";
     const versionId = searchParams.get("versionId");
 
-    // Verify user is authenticated
+    if (!rfpId || typeof rfpId !== "string") {
+      return NextResponse.json({ error: "Invalid RFP ID" }, { status: 400 });
+    }
+
     const supabase = await createServerClient();
+
+    // Get authenticated user
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -29,74 +39,67 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch suppliers for this RFP
-    const { data: suppliers, error } = await supabase
-      .from("suppliers")
-      .select("*")
-      .eq("rfp_id", rfpId)
-      .order("name", { ascending: true });
+    // Verify user has access to this RFP
+    const accessCheckResponse = await verifyRFPAccess(rfpId, user.id);
+    if (accessCheckResponse) {
+      return accessCheckResponse;
+    }
 
-    if (error) {
-      console.error("Error fetching suppliers:", error);
+    // Fetch suppliers for this RFP, filtered by version if provided
+    let suppliers, suppliersError;
+
+    if (versionId) {
+      const statuses = await getVersionSupplierStatuses(supabase, versionId);
+      const activeSupplierIds = getActiveSupplierIds(statuses);
+
+      if (activeSupplierIds.size === 0) {
+        suppliers = [];
+        suppliersError = null;
+      } else {
+        const result = await supabase
+          .from("suppliers")
+          .select(
+            "id, name, supplier_id_external, contact_name, contact_email, contact_phone"
+          )
+          .eq("rfp_id", rfpId)
+          .in("id", Array.from(activeSupplierIds))
+          .order("name", { ascending: true });
+
+        suppliers = result.data;
+        suppliersError = result.error;
+      }
+    } else {
+      // Fetch all suppliers if no versionId provided
+      const result = await supabase
+        .from("suppliers")
+        .select(
+          "id, name, supplier_id_external, contact_name, contact_email, contact_phone"
+        )
+        .eq("rfp_id", rfpId)
+        .order("name", { ascending: true });
+
+      suppliers = result.data;
+      suppliersError = result.error;
+    }
+
+    if (suppliersError) {
+      console.error("Error fetching suppliers:", suppliersError);
       return NextResponse.json(
         { error: "Failed to fetch suppliers" },
         { status: 500 }
       );
     }
 
-    // Filter suppliers by version if versionId is provided
-    let suppliersToUse = suppliers || [];
-    if (versionId) {
-      const { data: removedSuppliers } = await supabase
-        .from("version_supplier_status")
-        .select("supplier_id")
-        .eq("version_id", versionId)
-        .eq("shortlist_status", "removed");
-
-      const removedSupplierIds = new Set(
-        (removedSuppliers || []).map((rs) => rs.supplier_id)
-      );
-
-      suppliersToUse = suppliersToUse.filter(
-        (s) => !removedSupplierIds.has(s.id)
-      );
-    }
-
     if (!includeStats) {
       return NextResponse.json({
-        success: true,
-        suppliers: suppliersToUse,
+        suppliers: suppliers || [],
+        count: suppliers?.length || 0,
       });
     }
 
     // --- Stats Calculation ---
 
-    // 1. Fetch all necessary data in parallel
-    // We need to fetch documents first to get their IDs for the join table,
-    // but we can also just fetch all rfp_documents and then fetch the join table.
-    // However, Promise.all runs in parallel.
-    // Let's fetch rfp_documents separately or use a join if Supabase supports it easily.
-    // For simplicity and to avoid complex joins in one query, let's do it in steps or use a slightly different approach.
-
-    // Actually, we can fetch rfp_documents and other things in parallel,
-    // then fetch document_suppliers based on the document IDs.
-    // But to keep it in one Promise.all block for the main data:
-
-    const responsesQuery = versionId
-      ? supabase
-          .from("responses")
-          .select(
-            "id, supplier_id, requirement_id, manual_score, ai_score, is_checked"
-          )
-          .eq("rfp_id", rfpId)
-          .eq("version_id", versionId)
-      : supabase
-          .from("responses")
-          .select(
-            "id, supplier_id, requirement_id, manual_score, ai_score, is_checked"
-          )
-          .eq("rfp_id", rfpId);
-
+    // Fetch all necessary data in parallel
     const [
       { data: categories },
       { data: requirements },
@@ -104,8 +107,17 @@ export async function GET(
       { data: rfpDocuments },
     ] = await Promise.all([
       supabase.from("categories").select("id, weight").eq("rfp_id", rfpId),
-      supabase.from("requirements").select("id, weight").eq("rfp_id", rfpId),
-      responsesQuery,
+      supabase
+        .from("requirements")
+        .select("id, weight, category_id")
+        .eq("rfp_id", rfpId),
+      supabase
+        .from("responses")
+        .select(
+          "id, supplier_id, requirement_id, manual_score, ai_score, is_checked"
+        )
+        .eq("rfp_id", rfpId)
+        .eq("version_id", versionId),
       supabase
         .from("rfp_documents")
         .select("id, filename, original_filename, created_at")
@@ -113,7 +125,7 @@ export async function GET(
         .is("deleted_at", null),
     ]);
 
-    // Now fetch the link between documents and suppliers
+    // Fetch document-suppliers join table
     const docIds = rfpDocuments?.map((d) => d.id) || [];
     let documentSuppliers: any[] = [];
 
@@ -125,23 +137,17 @@ export async function GET(
       documentSuppliers = ds || [];
     }
 
-    // 2. Prepare weights map
+    // Prepare weights map
     const weightsConfig: Record<string, number> = {};
-    let totalWeight = 0;
-
     (categories || []).forEach((cat: any) => {
       if (cat.weight) weightsConfig[cat.id] = cat.weight;
     });
-
     (requirements || []).forEach((req: any) => {
-      if (req.weight) {
-        weightsConfig[req.id] = req.weight;
-        totalWeight += req.weight;
-      }
+      if (req.weight) weightsConfig[req.id] = req.weight;
     });
 
-    // 3. Group data by supplier
-    const suppliersWithStats = suppliersToUse.map((supplier) => {
+    // Calculate stats for each supplier
+    const suppliersWithStats = suppliers?.map((supplier: any) => {
       const supplierResponses =
         responses?.filter((r) => r.supplier_id === supplier.id) || [];
 
@@ -157,24 +163,25 @@ export async function GET(
 
       // --- Score Calculation (Weighted) ---
       let totalWeightedScore = 0;
+      let totalWeight = 0;
 
       supplierResponses.forEach((r) => {
         const score = r.manual_score ?? r.ai_score;
         if (score !== null && score !== undefined) {
           const weight = weightsConfig[r.requirement_id] || 0;
           totalWeightedScore += score * weight;
+          totalWeight += weight;
         }
       });
 
       const maxPossibleScore = 5 * totalWeight;
-      const completionPercentage =
+      const scorePercentage =
         maxPossibleScore > 0
           ? Math.round((totalWeightedScore / maxPossibleScore) * 100)
           : 0;
 
       // --- Response Completion Stats ---
       const totalResponsesCount = supplierResponses.length;
-
       const checkedResponses = supplierResponses.filter(
         (r) => r.is_checked
       ).length;
@@ -183,32 +190,34 @@ export async function GET(
           ? Math.round((checkedResponses / totalResponsesCount) * 100)
           : 0;
 
-      // --- Documents ---
-      const formattedDocs = supplierDocs.map((doc) => ({
-        id: doc.id,
-        name: doc.filename || doc.original_filename || "Document",
-        uploadedAt: doc.created_at || "",
-      }));
-
       return {
-        ...supplier,
-        scorePercentage: Math.min(100, Math.max(0, completionPercentage)),
+        id: supplier.id,
+        name: supplier.name,
+        scorePercentage,
         responseCompletionPercentage,
         checkedResponses,
         totalResponses: totalResponsesCount,
-        documents: formattedDocs,
-        hasDocuments: formattedDocs.length > 0,
+        documents: supplierDocs,
+        hasDocuments: supplierDocs.length > 0,
       };
     });
 
+    // Calculate ranking
+    const rankedSuppliers = [...(suppliersWithStats || [])].sort(
+      (a, b) => b.scorePercentage - a.scorePercentage
+    );
+    rankedSuppliers.forEach((supplier, index) => {
+      (supplier as any).ranking = index + 1;
+    });
+
     return NextResponse.json({
-      success: true,
-      suppliers: suppliersWithStats || [],
+      suppliers: rankedSuppliers || [],
+      count: rankedSuppliers?.length || 0,
     });
   } catch (error) {
-    console.error("Error in GET /api/rfps/[rfpId]/suppliers:", error);
+    console.error("Error in suppliers endpoint:", error);
     return NextResponse.json(
-      { error: "Failed to fetch suppliers" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

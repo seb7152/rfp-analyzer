@@ -45,7 +45,7 @@ import {
   useCategoryRequirements,
   useRequirementsTree,
 } from "@/hooks/use-requirements";
-import { useResponses } from "@/hooks/use-responses";
+import { useResponses, type ResponseWithSupplier } from "@/hooks/use-responses";
 import { useResponseMutation } from "@/hooks/use-response-mutation";
 import { useRequirementDocument } from "@/hooks/use-requirement-document";
 import type { TreeNode } from "@/hooks/use-requirements";
@@ -60,14 +60,16 @@ interface ComparisonViewProps {
   onRequirementChange: (id: string) => void;
   rfpId?: string;
   supplierId?: string;
+  responses?: ResponseWithSupplier[];
   isMobile?: boolean;
+  userAccessLevel?: "owner" | "evaluator" | "viewer" | "admin";
 }
 
 interface ResponseState {
   [responseId: string]: {
     expanded: boolean;
     manualScore: number | undefined;
-    status: "pass" | "partial" | "fail" | "pending";
+    status: "pass" | "partial" | "fail" | "pending" | "roadmap";
     isChecked: boolean;
     manualComment: string;
     question: string;
@@ -78,19 +80,49 @@ interface ResponseState {
   };
 }
 
+type DesktopCardProps = React.ComponentProps<typeof SupplierResponseCard>;
+type MobileCardProps = React.ComponentProps<typeof MobileSupplierCard>;
+
+const MemoizedSupplierResponseCard = React.memo(
+  (props: DesktopCardProps) => <SupplierResponseCard {...props} />
+);
+
+const MemoizedMobileSupplierCard = React.memo((props: MobileCardProps) => (
+  <MobileSupplierCard {...props} />
+));
+
+const getInitialStateFromResponse = (
+  response: ResponseWithSupplier
+): ResponseState[string] => {
+  const statusValue = response.status || "pending";
+
+  return {
+    expanded: false,
+    manualScore: response.manual_score ?? undefined,
+    status: statusValue as "pass" | "partial" | "fail" | "pending" | "roadmap",
+    isChecked: response.is_checked || false,
+    manualComment: response.manual_comment || "",
+    question: response.question || "",
+    isSaving: false,
+    showSaved: false,
+    dirtyFields: new Set(),
+  };
+};
+
 export function ComparisonView({
   selectedRequirementId,
   allRequirements,
   onRequirementChange,
   rfpId,
   supplierId,
+  responses: preloadedResponses,
   isMobile = false,
+  userAccessLevel,
 }: ComparisonViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [contextExpanded, setContextExpanded] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
-  const [responseStates, setResponseStates] = useState<ResponseState>({});
   const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
   const [supplierDocuments, setSupplierDocuments] = useState<PDFDocument[]>([]);
   const [loadingSupplierDocs, setLoadingSupplierDocs] = useState(false);
@@ -108,9 +140,6 @@ export function ComparisonView({
   // Timers for hiding "Saved" indicator
   const savedTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
-  // Ref to always have access to the latest responseStates (avoids stale closures)
-  const responseStatesRef = useRef(responseStates);
-
   // Touch/Swipe tracking for mobile navigation
   const touchStartXRef = useRef<number>(0);
   const touchStartYRef = useRef<number>(0);
@@ -123,19 +152,55 @@ export function ComparisonView({
   // Fetch the tree to determine if selected item is a category
   const { tree } = useRequirementsTree(rfpId || null);
 
-  // Fetch available cahier_charges documents for PDF opening
-  const { availableDocuments } = useRequirementDocument(rfpId || null);
+  // Fetch available cahier_charges documents for PDF opening (deferred)
+  const { availableDocuments, loadDocuments } = useRequirementDocument(
+    rfpId || null,
+    { autoFetch: false }
+  );
+
+  useEffect(() => {
+    if (!rfpId) return;
+
+    let timeoutId: NodeJS.Timeout | null = null;
+    let idleCallbackId: number | null = null;
+
+    const loadDeferredDocuments = () => {
+      loadDocuments().catch((error) =>
+        console.error("[ComparisonView] Failed to load documents lazily", error)
+      );
+    };
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleCallbackId = (window as any).requestIdleCallback(loadDeferredDocuments);
+    } else {
+      timeoutId = setTimeout(loadDeferredDocuments, 500);
+    }
+
+    return () => {
+      if (
+        typeof window !== "undefined" &&
+        idleCallbackId !== null &&
+        "cancelIdleCallback" in window
+      ) {
+        (window as any).cancelIdleCallback(idleCallbackId);
+      }
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [loadDocuments, rfpId]);
 
   // Get the selected requirement object
   const selectedRequirement = useMemo(() => {
     return allRequirements.find((r) => r.id === selectedRequirementId) || null;
   }, [allRequirements, selectedRequirementId]);
 
-  // Fetch responses for the selected requirement
+  const shouldFetchResponses = !preloadedResponses;
+
+  // Fetch responses for the selected requirement (only if not preloaded)
   const { data: responsesData, refetch: refetchResponses } = useResponses(
     rfpId || "",
     selectedRequirementId,
-    activeVersion?.id
+    activeVersion?.id,
+    { enabled: shouldFetchResponses }
   );
 
   // Fetch annotations for the selected requirement
@@ -145,7 +210,14 @@ export function ComparisonView({
   //   deleteAnnotation,
   // } = useRequirementAnnotations(selectedRequirementId);
 
-  const responses: any[] = (responsesData as any)?.responses || [];
+  const responses: ResponseWithSupplier[] = useMemo(() => {
+    if (preloadedResponses) {
+      return preloadedResponses.filter(
+        (response) => response.requirement_id === selectedRequirementId
+      );
+    }
+    return ((responsesData as any)?.responses || []) as ResponseWithSupplier[];
+  }, [preloadedResponses, responsesData, selectedRequirementId]);
   const suppliers = useMemo(() => {
     // Extract unique suppliers from responses
     const supplierMap = new Map();
@@ -167,6 +239,23 @@ export function ComparisonView({
   const supplierNames = useMemo(() => {
     return suppliers.map((s: any) => s.name);
   }, [suppliers]);
+
+  const initialResponseStates = useMemo(() => {
+    const initialState: ResponseState = {};
+
+    responses.forEach((response: any) => {
+      initialState[response.id] = getInitialStateFromResponse(response);
+    });
+
+    return initialState;
+  }, [responses]);
+
+  const [responseStates, setResponseStates] = useState<ResponseState>(
+    () => initialResponseStates
+  );
+
+  // Ref to always have access to the latest responseStates (avoids stale closures)
+  const responseStatesRef = useRef(responseStates);
 
   const isSingleSupplierView = suppliers.length === 1;
 
@@ -214,6 +303,14 @@ export function ComparisonView({
     }
     return all;
   }, [responses, supplierId]);
+
+  const responsesBySupplierId = useMemo(() => {
+    const mapping = new Map<string, ResponseWithSupplier>();
+    requirementResponses.forEach((response: any) => {
+      mapping.set(response.supplier_id, response);
+    });
+    return mapping;
+  }, [requirementResponses]);
 
   // Build breadcrumb path with codes from tree
   const breadcrumbPath = useMemo(() => {
@@ -411,19 +508,7 @@ export function ComparisonView({
 
         if (!state) {
           // First time seeing this response - initialize with full DB data
-          updated[response.id] = {
-            expanded: false,
-            manualScore: response.manual_score ?? undefined,
-            status:
-              (response.status as "pass" | "partial" | "fail" | "pending") ||
-              "pending",
-            isChecked: response.is_checked || false,
-            manualComment: response.manual_comment || "",
-            question: response.question || "",
-            isSaving: false,
-            showSaved: false,
-            dirtyFields: new Set(),
-          };
+          updated[response.id] = getInitialStateFromResponse(response);
           hasChanges = true;
         } else {
           // State already exists - sync with DB values if they changed
@@ -439,11 +524,22 @@ export function ComparisonView({
 
           if (dbChanged) {
             // DB was updated (likely by refetch after save)
+
+            // CRITICAL: If we are currently saving this response, DO NOT sync from responses prop.
+            // This prevents the "revert" bug where refetched data (still stale) overwrites our optimistic local state.
+            if (state.isSaving) {
+              return;
+            }
+
             // Sync local state with fresh data, BUT only for fields not currently being edited
             newState.manualScore = response.manual_score ?? undefined;
             newState.status =
-              (response.status as "pass" | "partial" | "fail" | "pending") ||
-              "pending";
+              (response.status as
+                | "pass"
+                | "partial"
+                | "fail"
+                | "pending"
+                | "roadmap") || "pending";
             newState.isChecked = response.is_checked || false;
 
             // Only sync comment fields if they're not currently being edited
@@ -464,55 +560,58 @@ export function ComparisonView({
     });
   }, [responses]);
 
-  const updateResponseState = (
-    responseId: string,
-    updates: Partial<ResponseState[string]>,
-    immediate: boolean = false
-  ) => {
-    // Track which fields are being edited (mark as dirty)
-    const newDirtyFields = new Set(
-      responseStates[responseId]?.dirtyFields || []
-    );
-    if (updates.manualComment !== undefined && !immediate) {
-      newDirtyFields.add("manualComment");
-    }
-    if (updates.question !== undefined && !immediate) {
-      newDirtyFields.add("question");
-    }
+  const updateResponseState = useCallback(
+    (
+      responseId: string,
+      updates: Partial<ResponseState[string]>,
+      immediate: boolean = false
+    ) => {
+      // Update local state immediately for UI responsiveness
+      setResponseStates((prev) => {
+        const prevState = prev[responseId];
+        const newDirtyFields = new Set(prevState?.dirtyFields || []);
 
-    // Update local state immediately for UI responsiveness
-    setResponseStates((prev) => ({
-      ...prev,
-      [responseId]: {
-        ...prev[responseId],
-        ...updates,
-        dirtyFields: newDirtyFields,
-      },
-    }));
+        if (updates.manualComment !== undefined && !immediate) {
+          newDirtyFields.add("manualComment");
+        }
+        if (updates.question !== undefined && !immediate) {
+          newDirtyFields.add("question");
+        }
 
-    // Persist to database (optimistic update handled by mutation hook)
-    const dbUpdates: Record<string, any> = {};
-    if (updates.manualScore !== undefined)
-      dbUpdates.manual_score = updates.manualScore;
-    if (updates.status !== undefined) dbUpdates.status = updates.status;
-    if (updates.isChecked !== undefined)
-      dbUpdates.is_checked = updates.isChecked;
-    if (updates.manualComment !== undefined)
-      dbUpdates.manual_comment = updates.manualComment;
-    if (updates.question !== undefined) dbUpdates.question = updates.question;
+        return {
+          ...prev,
+          [responseId]: {
+            ...prevState,
+            ...updates,
+            dirtyFields: newDirtyFields,
+          },
+        };
+      });
 
-    // Only call mutation if we have actual DB fields to update
-    if (Object.keys(dbUpdates).length > 0) {
-      // Check if this update includes comment fields
-      const isCommentUpdate =
-        updates.manualComment !== undefined || updates.question !== undefined;
+      // Persist to database (optimistic update handled by mutation hook)
+      const dbUpdates: Record<string, any> = {};
+      if (updates.manualScore !== undefined)
+        dbUpdates.manual_score = updates.manualScore;
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.isChecked !== undefined)
+        dbUpdates.is_checked = updates.isChecked;
+      if (updates.manualComment !== undefined)
+        dbUpdates.manual_comment = updates.manualComment;
+      if (updates.question !== undefined) dbUpdates.question = updates.question;
 
-      // For comment fields, only save on blur (immediate flag)
-      // For other fields (score, status, checkbox), save immediately
-      if (isCommentUpdate && !immediate) {
-        // Don't save on onChange for comments, wait for blur
-        return;
-      } else {
+      // Only call mutation if we have actual DB fields to update
+      if (Object.keys(dbUpdates).length > 0) {
+        // Check if this update includes comment fields
+        const isCommentUpdate =
+          updates.manualComment !== undefined || updates.question !== undefined;
+
+        // For comment fields, only save on blur (immediate flag)
+        // For other fields (score, status, checkbox), save immediately
+        if (isCommentUpdate && !immediate) {
+          // Don't save on onChange for comments, wait for blur
+          return;
+        }
+
         // Immediate update for:
         // - non-comment fields (score, status, checkbox)
         // - comment fields with immediate flag (onBlur)
@@ -599,8 +698,9 @@ export function ComparisonView({
           }
         );
       }
-    }
-  };
+    },
+    [mutation, refetchResponses]
+  );
 
   // Toggle expand/collapse all responses
   const toggleExpandAll = () => {
@@ -658,7 +758,7 @@ export function ComparisonView({
         setLoadingSupplierDocs(false);
       }
     },
-    [rfpId]
+    [isMobile, rfpId]
   );
 
   const handleOpenBookmark = useCallback(
@@ -691,7 +791,7 @@ export function ComparisonView({
         setLoadingSupplierDocs(false);
       }
     },
-    [rfpId]
+    [isMobile, rfpId]
   );
 
   const handleOpenContextPDF = useCallback(async () => {
@@ -720,7 +820,10 @@ export function ComparisonView({
     setLoadingSupplierDocs(true);
     try {
       // Use available documents from hook (already filtered for cahier_charges PDFs)
-      const documents = availableDocuments;
+      const documents =
+        availableDocuments.length > 0
+          ? availableDocuments
+          : await loadDocuments();
 
       // Find the document linked to this requirement
       let targetDocumentId = selectedRequirement.rf_document_id;
@@ -754,7 +857,68 @@ export function ComparisonView({
     } finally {
       setLoadingSupplierDocs(false);
     }
-  }, [rfpId, selectedRequirement]);
+  }, [availableDocuments, loadDocuments, rfpId, selectedRequirement]);
+
+  const buildCardHandlers = useCallback(
+    (responseId: string, supplierId: string) => ({
+      onStatusChange: (status: ResponseState[string]["status"]) =>
+        updateResponseState(responseId, { status }),
+      onCheckChange: (isChecked: boolean) =>
+        updateResponseState(responseId, { isChecked }),
+      onScoreChange: (manualScore: number | undefined) =>
+        updateResponseState(responseId, { manualScore }),
+      onExpandChange: (expanded: boolean) =>
+        updateResponseState(responseId, { expanded }),
+      onCommentChange: (manualComment: string) =>
+        updateResponseState(responseId, { manualComment }),
+      onQuestionChange: (question: string) =>
+        updateResponseState(responseId, { question }),
+      onCommentBlur: () =>
+        updateResponseState(
+          responseId,
+          {
+            manualComment:
+              responseStatesRef.current[responseId]?.manualComment || "",
+          },
+          true
+        ),
+      onQuestionBlur: () =>
+        updateResponseState(
+          responseId,
+          {
+            question: responseStatesRef.current[responseId]?.question || "",
+          },
+          true
+        ),
+      onAICommentUpdate: () => {
+        refetchResponses();
+      },
+      onOpenDocuments: () => handleOpenSupplierDocuments(supplierId),
+      onOpenBookmark: handleOpenBookmark,
+    }),
+    [
+      handleOpenBookmark,
+      handleOpenSupplierDocuments,
+      refetchResponses,
+      updateResponseState,
+    ]
+  );
+
+  const cardHandlersByResponseId = useMemo(() => {
+    const mapping = new Map<string, ReturnType<typeof buildCardHandlers>>();
+
+    suppliers.forEach((supplier) => {
+      const response = responsesBySupplierId.get(supplier.id);
+      if (response) {
+        mapping.set(
+          response.id,
+          buildCardHandlers(response.id, supplier.id)
+        );
+      }
+    });
+
+    return mapping;
+  }, [buildCardHandlers, responsesBySupplierId, suppliers]);
 
   // const handleDeleteBookmark = useCallback(
   //   (bookmark: PDFAnnotation) => {
@@ -976,9 +1140,8 @@ export function ComparisonView({
             {!isMobile && (
               <div className="relative">
                 <p
-                  className={`text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap ${
-                    !descriptionExpanded ? "line-clamp-5" : ""
-                  }`}
+                  className={`text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap ${!descriptionExpanded ? "line-clamp-5" : ""
+                    }`}
                 >
                   {requirement.description}
                 </p>
@@ -993,9 +1156,8 @@ export function ComparisonView({
                       >
                         {descriptionExpanded ? "Voir moins" : "Voir plus"}
                         <ChevronDown
-                          className={`w-3 h-3 transition-transform ${
-                            descriptionExpanded ? "rotate-180" : ""
-                          }`}
+                          className={`w-3 h-3 transition-transform ${descriptionExpanded ? "rotate-180" : ""
+                            }`}
                         />
                       </button>
                     </div>
@@ -1132,9 +1294,8 @@ export function ComparisonView({
                         Contexte du cahier des charges
                       </span>
                       <ChevronDown
-                        className={`w-4 h-4 text-slate-600 dark:text-slate-400 transition-transform ${
-                          contextExpanded ? "rotate-180" : ""
-                        }`}
+                        className={`w-4 h-4 text-slate-600 dark:text-slate-400 transition-transform ${contextExpanded ? "rotate-180" : ""
+                          }`}
                       />
                     </button>
                     {contextExpanded && (
@@ -1204,170 +1365,81 @@ export function ComparisonView({
 
                 <div className="space-y-2">
                   {suppliers.map((supplier) => {
-                    const response = requirementResponses.find(
-                      (r) => r.supplier_id === supplier.id
-                    );
+                    const response = responsesBySupplierId.get(supplier.id);
                     if (!response) return null;
 
-                    const statusValue = response.status || "pending";
-                    const state = responseStates[response.id] || {
-                      expanded: false,
-                      manualScore: response.manual_score ?? undefined,
-                      status: statusValue as
-                        | "pass"
-                        | "partial"
-                        | "fail"
-                        | "pending",
-                      isChecked: response.is_checked || false,
-                      manualComment: response.manual_comment || "",
-                      question: response.question || "",
-                      isSaving: false,
-                      showSaved: false,
-                      dirtyFields: new Set(),
+                    const state =
+                      responseStates[response.id] ||
+                      initialResponseStates[response.id] ||
+                      getInitialStateFromResponse(response);
+
+                    const handlers = cardHandlersByResponseId.get(response.id);
+                    if (!handlers) return null;
+
+                    const commonCardProps = {
+                      key: response.id,
+                      supplierId: supplier.id,
+                      supplierName: supplier.name,
+                      responseId: response.id,
+                      responseText: response.response_text || "",
+                      aiScore: response.ai_score ?? 0,
+                      aiComment: response.ai_comment ?? "",
+                      status: state.status,
+                      isChecked: state.isChecked,
+                      manualScore: state.manualScore,
+                      manualComment: state.manualComment,
+                      questionText: state.question,
+                      isSaving: state.isSaving,
+                      showSaved: state.showSaved,
+                      supplierNames,
+                      userAccessLevel,
+                      rfpId,
                     };
 
                     // Use mobile-optimized card on mobile devices
                     if (isMobile) {
                       return (
-                        <MobileSupplierCard
-                          key={response.id}
-                          supplierId={supplier.id}
-                          supplierName={supplier.name}
-                          responseId={response.id}
-                          responseText={response.response_text || ""}
-                          aiScore={response.ai_score ?? 0}
-                          aiComment={response.ai_comment ?? ""}
-                          status={state.status}
-                          isChecked={state.isChecked}
-                          manualScore={state.manualScore}
-                          manualComment={state.manualComment}
-                          questionText={state.question}
-                          isSaving={state.isSaving}
-                          showSaved={state.showSaved}
+                        <MemoizedMobileSupplierCard
+                          {...commonCardProps}
                           requirementTitle={selectedRequirement?.title || ""}
                           requirementDescription={
                             selectedRequirement?.description || ""
                           }
-                          supplierNames={supplierNames}
-                          onStatusChange={(status) =>
-                            updateResponseState(response.id, { status })
-                          }
-                          onCheckChange={(isChecked) =>
-                            updateResponseState(response.id, { isChecked })
-                          }
-                          onScoreChange={(manualScore) =>
-                            updateResponseState(response.id, { manualScore })
-                          }
-                          onCommentChange={(manualComment) =>
-                            updateResponseState(response.id, { manualComment })
-                          }
-                          onQuestionChange={(question) =>
-                            updateResponseState(response.id, { question })
-                          }
-                          onCommentBlur={() =>
-                            updateResponseState(
-                              response.id,
-                              {
-                                manualComment:
-                                  responseStatesRef.current[response.id]
-                                    ?.manualComment || "",
-                              },
-                              true
-                            )
-                          }
-                          onQuestionBlur={() =>
-                            updateResponseState(
-                              response.id,
-                              {
-                                question:
-                                  responseStatesRef.current[response.id]
-                                    ?.question || "",
-                              },
-                              true
-                            )
-                          }
-                          rfpId={rfpId}
                           requirementId={selectedRequirementId}
-                          onAICommentUpdate={() => {
-                            // Refetch to ensure we have the latest data
-                            refetchResponses();
-                          }}
+                          onStatusChange={handlers.onStatusChange}
+                          onCheckChange={handlers.onCheckChange}
+                          onScoreChange={handlers.onScoreChange}
+                          onCommentChange={handlers.onCommentChange}
+                          onQuestionChange={handlers.onQuestionChange}
+                          onCommentBlur={handlers.onCommentBlur}
+                          onQuestionBlur={handlers.onQuestionBlur}
+                          onAICommentUpdate={handlers.onAICommentUpdate}
                         />
                       );
                     }
 
                     return (
-                      <SupplierResponseCard
-                        key={response.id}
-                        supplierId={supplier.id}
-                        supplierName={supplier.name}
-                        responseId={response.id}
-                        responseText={response.response_text || ""}
-                        aiScore={response.ai_score ?? 0}
-                        aiComment={response.ai_comment ?? ""}
-                        status={state.status}
-                        isChecked={state.isChecked}
-                        manualScore={state.manualScore}
-                        manualComment={state.manualComment}
-                        questionText={state.question}
-                        isSaving={state.isSaving}
-                        showSaved={state.showSaved}
+                      <MemoizedSupplierResponseCard
+                        {...commonCardProps}
                         isExpanded={
                           isSingleSupplierView ? true : state.expanded
                         }
                         collapsible={!isSingleSupplierView}
-                        onExpandChange={(expanded) =>
-                          updateResponseState(response.id, { expanded })
-                        }
-                        onStatusChange={(status) =>
-                          updateResponseState(response.id, { status })
-                        }
-                        onCheckChange={(isChecked) =>
-                          updateResponseState(response.id, { isChecked })
-                        }
-                        onScoreChange={(manualScore) =>
-                          updateResponseState(response.id, { manualScore })
-                        }
-                        onCommentChange={(manualComment) =>
-                          updateResponseState(response.id, { manualComment })
-                        }
-                        onQuestionChange={(question) =>
-                          updateResponseState(response.id, { question })
-                        }
-                        onCommentBlur={() =>
-                          updateResponseState(
-                            response.id,
-                            {
-                              manualComment:
-                                responseStatesRef.current[response.id]
-                                  ?.manualComment || "",
-                            },
-                            true
-                          )
-                        }
-                        onQuestionBlur={() =>
-                          updateResponseState(
-                            response.id,
-                            {
-                              question:
-                                responseStatesRef.current[response.id]
-                                  ?.question || "",
-                            },
-                            true
-                          )
-                        }
-                        onOpenDocuments={handleOpenSupplierDocuments}
+                        onExpandChange={handlers.onExpandChange}
+                        onStatusChange={handlers.onStatusChange}
+                        onCheckChange={handlers.onCheckChange}
+                        onScoreChange={handlers.onScoreChange}
+                        onCommentChange={handlers.onCommentChange}
+                        onQuestionChange={handlers.onQuestionChange}
+                        onCommentBlur={handlers.onCommentBlur}
+                        onQuestionBlur={handlers.onQuestionBlur}
+                        onOpenDocuments={handlers.onOpenDocuments}
                         hasDocuments={response.supplier?.has_documents}
                         requirementId={selectedRequirementId}
                         requirementTitle={requirement?.title || ""}
                         requirementDescription={requirement?.description || ""}
-                        supplierNames={supplierNames}
-                        onOpenBookmark={handleOpenBookmark}
-                        rfpId={rfpId}
-                        onAICommentUpdate={() => {
-                          // Refetch to ensure we have the latest data
-                          refetchResponses();
-                        }}
+                        onOpenBookmark={handlers.onOpenBookmark}
+                        onAICommentUpdate={handlers.onAICommentUpdate}
                       />
                     );
                   })}

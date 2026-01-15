@@ -21,6 +21,7 @@ interface TreeNode {
   description?: string;
   is_mandatory?: boolean;
   is_optional?: boolean;
+  tags?: string[]; // Array of tag names
 }
 
 export default function TreeViewPage() {
@@ -178,7 +179,6 @@ export default function TreeViewPage() {
 
             // Seulement utiliser les poids chargés s'il y en a
             if (Object.keys(loadedWeights).length > 0) {
-              console.log("Poids chargés depuis DB:", loadedWeights);
               setWeights(loadedWeights);
             }
           }
@@ -534,6 +534,10 @@ export default function TreeViewPage() {
                             category_name: parentCategoryCode,
                             is_mandatory: node.is_mandatory,
                             is_optional: node.is_optional,
+                            ...(node.tags &&
+                              node.tags.length > 0 && {
+                                tags: node.tags,
+                              }),
                           });
                         }
                       }

@@ -179,11 +179,12 @@ export interface Response {
   rfp_id: string;
   requirement_id: string;
   supplier_id: string;
+  version_id: string | null;
   response_text: string | null;
   ai_score: number | null; // Now supports decimal values (0.5 increments)
   ai_comment: string | null;
   manual_score: number | null; // Now supports decimal values (0.5 increments)
-  status: "pending" | "pass" | "partial" | "fail";
+  status: "pending" | "pass" | "partial" | "fail" | "roadmap";
   is_checked: boolean;
   manual_comment: string | null;
   question: string | null;
@@ -194,7 +195,7 @@ export interface Response {
 
 export interface ResponseUpdate {
   manual_score?: number | null; // Now supports decimal values (0.5 increments)
-  status?: "pending" | "pass" | "partial" | "fail";
+  status?: "pending" | "pass" | "partial" | "fail" | "roadmap";
   is_checked?: boolean;
   manual_comment?: string | null;
   question?: string | null;
@@ -295,6 +296,7 @@ export interface ImportRequirementPayload {
   is_optional?: boolean;
   page_number?: number;
   rf_document_id?: string;
+  tags?: string[]; // Optional: array of tag names
 }
 
 export interface ImportRequirementsRequest {
@@ -382,11 +384,11 @@ export interface VersionChangesLog {
   version_id: string;
   rfp_id: string;
   action:
-    | "version_created"
-    | "version_activated"
-    | "supplier_removed"
-    | "supplier_restored"
-    | "responses_copied";
+  | "version_created"
+  | "version_activated"
+  | "supplier_removed"
+  | "supplier_restored"
+  | "responses_copied";
   details: Record<string, unknown> | null;
   created_at: string;
   created_by: string;

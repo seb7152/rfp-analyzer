@@ -23,7 +23,15 @@ serve(async (req) => {
 
   try {
     const body = (await req.json()) as AnalyzeDefenseRequest;
-    const { analysisId, rfpId, supplierId, correlationId } = body;
+    const { analysisId, rfpId, supplierId, versionId, correlationId } = body;
+
+    console.log("[analyze-defense] Request received:", {
+      analysisId,
+      rfpId,
+      supplierId,
+      versionId,
+      correlationId,
+    });
 
     if (!analysisId || !rfpId || !supplierId || !correlationId) {
       return new Response(
@@ -45,7 +53,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     console.log(
-      `[analyze-defense] Starting analysis ${analysisId} for RFP ${rfpId}, supplier ${supplierId}`
+      `[analyze-defense] Starting analysis ${analysisId} for RFP ${rfpId}, supplier ${supplierId}, versionId: ${versionId || "null"}`
     );
 
     const { error: statusError } = await supabase
@@ -216,13 +224,19 @@ serve(async (req) => {
         console.log(
           `[analyze-defense-v6] Step 4: Fetching responses for ${requirementIds.length} requirements`
         );
-        const { data: responses, error: respError } = await supabase
+        let responsesQuery = supabase
           .from("responses")
           .select(
             "id, requirement_id, response_text, question, manual_comment, ai_comment, manual_score, ai_score"
           )
           .eq("supplier_id", supplierId)
           .in("requirement_id", requirementIds);
+
+        if (versionId) {
+          responsesQuery = responsesQuery.eq("version_id", versionId);
+        }
+
+        const { data: responses, error: respError } = await responsesQuery;
 
         if (respError) {
           console.error(
@@ -239,11 +253,16 @@ serve(async (req) => {
           `[analyze-defense-v6] ✓ Found ${responses.length} responses`
         );
 
+        // Use provided versionId or extract from responses if available
+        const responseVersionId =
+          versionId || (responses.length > 0 ? responses[0].version_id : null);
+
         const n8nPayload = {
           taskId: task.id,
           correlationId: `${correlationId}-${task.id}`,
           rfpId,
           supplierId,
+          versionId: responseVersionId,
           categoryId: task.category_id,
           categoryCode: category.code,
           categoryName: category.title,
@@ -265,6 +284,10 @@ serve(async (req) => {
           callbackUrl: `${supabaseUrl}/functions/v1/analyze-defense-callback`,
           timestamp: new Date().toISOString(),
         };
+
+        console.log(
+          `[analyze-defense] N8N Payload versionId: ${n8nPayload.versionId || "null"}`
+        );
 
         console.log(
           `[analyze-defense-v6] Step 5: Updating task status to processing for ${task.id}`

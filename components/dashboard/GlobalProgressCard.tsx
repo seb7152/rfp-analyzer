@@ -12,6 +12,7 @@ interface GlobalProgressCardProps {
     partial: number;
     fail: number;
     pending: number;
+    roadmap: number;
   };
   averageScores: Record<string, number>;
 }
@@ -68,9 +69,9 @@ export function GlobalProgressCard({
             <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">
               {Object.values(averageScores).length > 0
                 ? Math.round(
-                    Object.values(averageScores).reduce((a, b) => a + b, 0) /
-                      Object.values(averageScores).length
-                  )
+                  Object.values(averageScores).reduce((a, b) => a + b, 0) /
+                  Object.values(averageScores).length
+                )
                 : 0}
               /5
             </p>
@@ -127,6 +128,18 @@ export function GlobalProgressCard({
             />
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               {statusDistribution.pending}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+              Roadmap
+            </p>
+            <Progress
+              value={statusDistribution.roadmap}
+              className="w-full h-2"
+            />
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              {statusDistribution.roadmap}
             </p>
           </div>
         </div>

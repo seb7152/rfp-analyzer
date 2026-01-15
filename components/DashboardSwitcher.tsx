@@ -3,18 +3,30 @@
 import { usePathname, useParams } from "next/navigation";
 import { OrganizationSwitcher } from "./OrganizationSwitcher";
 import { RFPSwitcher } from "./RFPSwitcher";
+import { VersionSwitcher } from "./VersionSwitcher";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
+import { ClientOnly } from "@/components/ClientOnly";
 
 export function DashboardSwitcher() {
   const pathname = usePathname();
   const params = useParams();
+  const isMobile = useIsMobile();
 
   // Check if we're on an RFP page
   const isRFPPage = pathname.startsWith("/dashboard/rfp/");
   const rfpId = params.rfpId as string | undefined;
 
-  // Show RFP switcher if we're viewing an RFP
+  // Show RFP switcher with Version switcher if we're viewing an RFP
   if (isRFPPage && rfpId) {
-    return <RFPSwitcher />;
+    return (
+      <ClientOnly>
+        <div className={cn("flex items-center", isMobile ? "gap-1" : "gap-3")}>
+          <RFPSwitcher />
+          <VersionSwitcher />
+        </div>
+      </ClientOnly>
+    );
   }
 
   // Otherwise show organization switcher

@@ -1,22 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useRequirements } from "@/hooks/use-requirements";
 import { useRFPCompletion } from "@/hooks/use-completion";
+import { useAllResponses } from "@/hooks/use-all-responses";
 import { Sidebar } from "@/components/Sidebar";
 import { ComparisonView } from "@/components/ComparisonView";
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
-import { VersionSelector } from "@/components/VersionSelector";
 import { AIAnalysisButton } from "@/components/AIAnalysisButton";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
-import { VersionProvider } from "@/contexts/VersionContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft, Loader2, CheckCircle2, FileUp } from "lucide-react";
+import { ChevronLeft, Loader2, CheckCircle2, FileUp, Euro } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useVersion } from "@/contexts/VersionContext";
+import { ClientOnly } from "@/components/ClientOnly";
 import type { RFP } from "@/lib/supabase/types";
 
 interface EvaluatePageProps {
@@ -47,6 +48,9 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
   const [rfpData, setRfpData] = useState<RFP | null>(null);
   const [responsesCount, setResponsesCount] = useState(0);
+  const [userAccessLevel, setUserAccessLevel] = useState<
+    "owner" | "evaluator" | "viewer" | "admin"
+  >("viewer");
   const isMobile = useIsMobile();
 
   const { requirements: allRequirements, isLoading: requirementsLoading } =
@@ -54,6 +58,24 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
 
   const { percentage: completionPercentage, isLoading: completionLoading } =
     useRFPCompletion(params.rfpId);
+
+  // Get active version for filtering responses
+  const { activeVersion } = useVersion();
+
+  // Determine if this is a single supplier view: when supplierId is present in query params
+  const isSingleSupplierView = !!supplierId;
+
+  // Load all responses for filter evaluation (filtered by active version)
+  const responsesQuery = useAllResponses(params.rfpId, activeVersion?.id, {
+    enabled: isSingleSupplierView,
+  });
+  const allResponses = (responsesQuery.data as any)?.responses || [];
+
+  // Filter responses to the current supplier if in single supplier view
+  const filteredResponses = useMemo(() => {
+    if (!isSingleSupplierView) return allResponses;
+    return allResponses.filter((r: any) => r.supplier_id === supplierId);
+  }, [allResponses, supplierId, isSingleSupplierView]);
 
   // Fetch RFP data and responses count
   useEffect(() => {
@@ -64,6 +86,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
           const data = await response.json();
           setRfpData(data.rfp);
           setRfpTitle(data.rfp?.title || `RFP ${params.rfpId.slice(0, 8)}`);
+          setUserAccessLevel(data.userAccessLevel || "viewer");
           // Count total responses
           const total =
             (data.globalProgress?.statusDistribution?.pass || 0) +
@@ -98,7 +121,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   }
 
   return (
-    <VersionProvider rfpId={params.rfpId}>
+    <ClientOnly>
       <div className="flex h-screen flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
         {/* Header */}
         <div className="border-b border-slate-200 bg-white/80 px-4 sm:px-6 py-3 sm:py-4 dark:border-slate-800 dark:bg-slate-900/60">
@@ -121,7 +144,17 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   className="h-8 w-8 p-0"
                   title="Ajouter des documents PDF"
                 >
-                  <FileUp className="h-4 w-4" />
+                </Button>
+
+                {/* Financial Grid Button - icon only */}
+                <Button
+                  onClick={() => router.push(`/dashboard/rfp/${params.rfpId}/financial-grid`)}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  title="Analyse financière"
+                >
+                  <Euro className="h-4 w-4" />
                 </Button>
 
                 {/* AI Analysis Button - icon only */}
@@ -130,6 +163,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                     rfp={rfpData}
                     responsesCount={responsesCount}
                     hasUnanalyzedResponses={completionPercentage < 100}
+                    userAccessLevel={userAccessLevel}
                     onAnalysisStarted={() => {
                       // Optional: refresh data or show toast
                     }}
@@ -175,7 +209,6 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                 {/* Offline Indicator - desktop version */}
                 <OfflineIndicator />
 
-                <VersionSelector />
                 {/* Upload Documents Button */}
                 <Button
                   onClick={() => setIsUploadModalOpen(true)}
@@ -188,12 +221,25 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   <span className="hidden sm:inline">Documents</span>
                 </Button>
 
+                {/* Financial Grid Button */}
+                <Button
+                  onClick={() => router.push(`/dashboard/rfp/${params.rfpId}/financial-grid`)}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  title="Analyse financière"
+                >
+                  <Euro className="h-4 w-4" />
+                  <span className="hidden sm:inline">Analyse financière</span>
+                </Button>
+
                 {/* AI Analysis Button */}
                 {rfpData && (
                   <AIAnalysisButton
                     rfp={rfpData}
                     responsesCount={responsesCount}
                     hasUnanalyzedResponses={completionPercentage < 100}
+                    userAccessLevel={userAccessLevel}
                     onAnalysisStarted={() => {
                       // Optional: refresh data or show toast
                     }}
@@ -231,14 +277,15 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar with Tree */}
           <div
-            className={`${
-              isMobile ? "w-full" : "w-80"
-            } border-r border-slate-200 bg-white/50 dark:border-slate-800 dark:bg-slate-900/40`}
+            className={`${isMobile ? "w-full" : "w-80"
+              } border-r border-slate-200 bg-white/50 dark:border-slate-800 dark:bg-slate-900/40`}
           >
             <Sidebar
               rfpId={params.rfpId}
               selectedRequirementId={selectedRequirementId}
               onSelectRequirement={setSelectedRequirementId}
+              responses={filteredResponses}
+              isSingleSupplier={isSingleSupplierView}
             />
           </div>
 
@@ -272,7 +319,11 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   onRequirementChange={setSelectedRequirementId}
                   rfpId={params.rfpId}
                   supplierId={supplierId || undefined}
+                  responses={
+                    isSingleSupplierView ? filteredResponses : undefined
+                  }
                   isMobile={false}
+                  userAccessLevel={userAccessLevel}
                 />
               )}
             </div>
@@ -302,7 +353,11 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   onRequirementChange={setSelectedRequirementId}
                   rfpId={params.rfpId}
                   supplierId={supplierId || undefined}
+                  responses={
+                    isSingleSupplierView ? filteredResponses : undefined
+                  }
                   isMobile={true}
+                  userAccessLevel={userAccessLevel}
                 />
               ) : null}
             </SheetContent>
@@ -317,6 +372,6 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
           onOpenChange={setIsUploadModalOpen}
         />
       </div>
-    </VersionProvider>
+    </ClientOnly>
   );
 }
