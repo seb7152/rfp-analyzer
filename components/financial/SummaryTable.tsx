@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { FinancialSummaryData } from "@/types/financial-grid";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/financial/calculations";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown } from "lucide-react";
 
 interface SummaryTableProps {
     data: FinancialSummaryData[];
