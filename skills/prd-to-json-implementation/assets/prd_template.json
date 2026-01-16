@@ -1,0 +1,15 @@
+{
+  "feature": "feature-id",
+  "title": "Feature Title",
+  "description": "Brief description of the feature (1-2 sentences)",
+  "reference_document": {
+    "specs": ["specs/[feature-id]/spec.md"],
+    "architecture": ["docs/architecture/[feature-id].md"],
+    "tests": ["specs/[feature-id]/test-plan.md"],
+    "interface": ["designs/[feature-id]/", "mocks/[feature-id]/"],
+    "api": ["docs/api/[feature-id].md"],
+    "database": ["supabase/migrations/[feature-id]_*.sql"],
+    "notes": "Add any important context, constraints, or notes here"
+  },
+  "user_stories": []
+}

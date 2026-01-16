@@ -22,6 +22,7 @@ import { ExportTab } from "@/components/RFPSummary/ExportTab";
 import { VersionsTab } from "@/components/RFPSummary/VersionsTab";
 import { PresentationAnalysisSection } from "@/components/RFPSummary/PresentationAnalysisSection";
 import { SettingsTab } from "@/components/RFPSummary/SettingsTab";
+import { FinancialGridTab } from "@/components/RFPSummary/FinancialGridTab";
 
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
 import { DocxImportModal } from "@/components/DocxImportModal";
@@ -45,6 +46,7 @@ import {
   FileJson,
   Presentation,
   Settings,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AIAnalysisButton } from "@/components/AIAnalysisButton";
@@ -462,7 +464,8 @@ export default function RFPSummaryPage() {
 
                             if (tagsResponse.ok) {
                               const tagsData = await tagsResponse.json();
-                              tagsByRequirement = tagsData.tagsByRequirement || {};
+                              tagsByRequirement =
+                                tagsData.tagsByRequirement || {};
                             } else {
                               console.warn(
                                 "Tags bulk-fetch failed:",
@@ -490,7 +493,10 @@ export default function RFPSummaryPage() {
                                 new Set(
                                   rawTags
                                     .map((tag: any) => tag?.name)
-                                    .filter((name: unknown) => typeof name === "string")
+                                    .filter(
+                                      (name: unknown) =>
+                                        typeof name === "string"
+                                    )
                                 )
                               );
                               exportData.push({
@@ -705,6 +711,17 @@ export default function RFPSummaryPage() {
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline">Export</span>
               </button>
+              <button
+                onClick={() => setActiveTab("financial")}
+                className={`flex items-center gap-2 rounded-none border-b-2 px-0 py-3 text-sm font-medium transition ${
+                  activeTab === "financial"
+                    ? "border-b-slate-900 text-slate-900 dark:border-b-white dark:text-white"
+                    : "border-b-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                }`}
+              >
+                <DollarSign className="h-4 w-4" />
+                <span className="hidden sm:inline">Financier</span>
+              </button>
               <Popover>
                 <PopoverTrigger asChild>
                   <button className="flex items-center gap-1 rounded-none border-b-2 border-b-transparent px-3 py-3 text-sm font-medium text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
@@ -853,6 +870,9 @@ export default function RFPSummaryPage() {
               ) : (
                 <ExportTab rfpId={rfpId} />
               )}
+            </TabsContent>
+            <TabsContent value="financial" className="space-y-6">
+              <FinancialGridTab rfpId={rfpId} />
             </TabsContent>
             <TabsContent value="versions" className="space-y-6">
               <VersionsTab rfpId={rfpId} />

@@ -757,8 +757,8 @@ export async function importRequirements(
 
       const positionInPdf = req.page_number
         ? {
-          page_number: req.page_number,
-        }
+            page_number: req.page_number,
+          }
         : null;
 
       // Handle partial updates / merging
@@ -897,7 +897,10 @@ export async function importRequirements(
             .in("requirement_id_external", codes);
 
         if (taggedReqError) {
-          console.warn("Failed to fetch requirements for tag linking:", taggedReqError);
+          console.warn(
+            "Failed to fetch requirements for tag linking:",
+            taggedReqError
+          );
         } else {
           const requirementIdByCode = new Map<string, string>();
           for (const requirement of taggedRequirements || []) {

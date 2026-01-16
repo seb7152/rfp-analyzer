@@ -83,9 +83,9 @@ interface ResponseState {
 type DesktopCardProps = React.ComponentProps<typeof SupplierResponseCard>;
 type MobileCardProps = React.ComponentProps<typeof MobileSupplierCard>;
 
-const MemoizedSupplierResponseCard = React.memo(
-  (props: DesktopCardProps) => <SupplierResponseCard {...props} />
-);
+const MemoizedSupplierResponseCard = React.memo((props: DesktopCardProps) => (
+  <SupplierResponseCard {...props} />
+));
 
 const MemoizedMobileSupplierCard = React.memo((props: MobileCardProps) => (
   <MobileSupplierCard {...props} />
@@ -171,7 +171,9 @@ export function ComparisonView({
     };
 
     if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      idleCallbackId = (window as any).requestIdleCallback(loadDeferredDocuments);
+      idleCallbackId = (window as any).requestIdleCallback(
+        loadDeferredDocuments
+      );
     } else {
       timeoutId = setTimeout(loadDeferredDocuments, 500);
     }
@@ -910,10 +912,7 @@ export function ComparisonView({
     suppliers.forEach((supplier) => {
       const response = responsesBySupplierId.get(supplier.id);
       if (response) {
-        mapping.set(
-          response.id,
-          buildCardHandlers(response.id, supplier.id)
-        );
+        mapping.set(response.id, buildCardHandlers(response.id, supplier.id));
       }
     });
 
@@ -1140,8 +1139,9 @@ export function ComparisonView({
             {!isMobile && (
               <div className="relative">
                 <p
-                  className={`text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap ${!descriptionExpanded ? "line-clamp-5" : ""
-                    }`}
+                  className={`text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap ${
+                    !descriptionExpanded ? "line-clamp-5" : ""
+                  }`}
                 >
                   {requirement.description}
                 </p>
@@ -1156,8 +1156,9 @@ export function ComparisonView({
                       >
                         {descriptionExpanded ? "Voir moins" : "Voir plus"}
                         <ChevronDown
-                          className={`w-3 h-3 transition-transform ${descriptionExpanded ? "rotate-180" : ""
-                            }`}
+                          className={`w-3 h-3 transition-transform ${
+                            descriptionExpanded ? "rotate-180" : ""
+                          }`}
                         />
                       </button>
                     </div>
@@ -1294,8 +1295,9 @@ export function ComparisonView({
                         Contexte du cahier des charges
                       </span>
                       <ChevronDown
-                        className={`w-4 h-4 text-slate-600 dark:text-slate-400 transition-transform ${contextExpanded ? "rotate-180" : ""
-                          }`}
+                        className={`w-4 h-4 text-slate-600 dark:text-slate-400 transition-transform ${
+                          contextExpanded ? "rotate-180" : ""
+                        }`}
                       />
                     </button>
                     {contextExpanded && (

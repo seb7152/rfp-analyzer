@@ -18,8 +18,9 @@ export async function GET(
   { params }: { params: { rfpId: string } }
 ) {
   try {
-    const { rfpId } = params;
     const { searchParams } = new URL(request.url);
+    const { rfpId } = params;
+
     const includeStats = searchParams.get("includeStats") === "true";
     const versionId = searchParams.get("versionId");
 
