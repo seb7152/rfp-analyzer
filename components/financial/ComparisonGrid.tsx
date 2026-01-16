@@ -74,7 +74,6 @@ export function ComparisonGrid({
   const [expandedLines, setExpandedLines] = useState<Set<string>>(new Set());
   const [editingVersionId, setEditingVersionId] = useState<string | null>(null);
   const [editState, setEditState] = useState<EditState | null>(null);
-
   // Modals
   const [createVersionModal, setCreateVersionModal] = useState<{
     isOpen: boolean;
@@ -275,7 +274,7 @@ export function ComparisonGrid({
         onError: (err: unknown) => {
           toast.error(
             "Erreur lors de la sauvegarde: " +
-              (err instanceof Error ? err.message : "Erreur inconnue")
+            (err instanceof Error ? err.message : "Erreur inconnue")
           );
         },
       }
@@ -556,7 +555,7 @@ function renderRows(
         className={cn(
           "hover:bg-slate-50/50 transition-colors",
           hasChildren &&
-            "bg-slate-50/30 font-semibold text-slate-900 border-l-2 border-l-slate-200"
+          "bg-slate-50/30 font-semibold text-slate-900 border-l-2 border-l-slate-200"
         )}
       >
         <TableCell className="py-2 pl-4">
@@ -610,11 +609,11 @@ function renderRows(
           // Calculate total if parent
           const calculatedTotal = hasChildren
             ? calculateTotal(
-                line,
-                valuesMap,
-                version?.id,
-                line.line_type === "setup" ? "setup" : "recurrent"
-              )
+              line,
+              valuesMap,
+              version?.id,
+              line.line_type === "setup" ? "setup" : "recurrent"
+            )
             : null;
 
           return (
@@ -629,9 +628,9 @@ function renderRows(
                 <div className="text-right text-xs font-bold text-slate-900 px-3">
                   {calculatedTotal !== null
                     ? new Intl.NumberFormat("fr-FR", {
-                        style: "currency",
-                        currency: "EUR",
-                      }).format(calculatedTotal)
+                      style: "currency",
+                      currency: "EUR",
+                    }).format(calculatedTotal)
                     : "-"}
                 </div>
               ) : (
@@ -657,7 +656,7 @@ function renderRows(
                   type="currency"
                   suffix={
                     line.line_type === "recurrent" &&
-                    line.recurrence_type === "monthly"
+                      line.recurrence_type === "monthly"
                       ? "/m"
                       : line.line_type === "recurrent"
                         ? "/a"

@@ -87,7 +87,6 @@ export function SupplierVersionsGrid({
     return sortedVersions.map((version) => {
       let totalSetup = 0;
       let totalRecurrentAnnual = 0;
-
       const versionValues = valuesMap.get(version.id);
       if (versionValues) {
         templateLines.forEach((line) => {
@@ -381,7 +380,7 @@ function renderRows(
         className={cn(
           "hover:bg-slate-50/50 transition-colors",
           hasChildren &&
-            "bg-slate-50/30 font-semibold text-slate-900 border-l-2 border-l-slate-200"
+          "bg-slate-50/30 font-semibold text-slate-900 border-l-2 border-l-slate-200"
         )}
       >
         <TableCell className="py-2 pl-4">
@@ -438,19 +437,19 @@ function renderRows(
           // Calculate total if parent
           const calculatedTotal = hasChildren
             ? calculateTotal(
-                line as LineWithValues,
-                version.id,
-                line.line_type === "setup" ? "setup" : "recurrent"
-              )
+              line as LineWithValues,
+              version.id,
+              line.line_type === "setup" ? "setup" : "recurrent"
+            )
             : null;
 
           const prevCalculatedTotal =
             hasChildren && prevVersion
               ? calculateTotal(
-                  line as LineWithValues,
-                  prevVersion.id,
-                  line.line_type === "setup" ? "setup" : "recurrent"
-                )
+                line as LineWithValues,
+                prevVersion.id,
+                line.line_type === "setup" ? "setup" : "recurrent"
+              )
               : null;
 
           // Get current and previous values for leaf nodes
@@ -469,9 +468,9 @@ function renderRows(
           // Calculate variation
           const variation =
             versionIdx > 0 &&
-            previousValue !== null &&
-            previousValue !== 0 &&
-            currentValue !== null
+              previousValue !== null &&
+              previousValue !== 0 &&
+              currentValue !== null
               ? ((currentValue - previousValue) / previousValue) * 100
               : null;
 
