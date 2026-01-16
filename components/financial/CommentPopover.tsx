@@ -99,16 +99,15 @@ export function CommentPopover({
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <button
-          className={`inline-flex items-center justify-center p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 ${
-            hasComments ? "text-blue-500" : "text-gray-400 dark:text-gray-600"
-          }`}
+          className={`relative inline-flex items-center justify-center p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 ${hasComments ? "text-blue-500" : "text-gray-400 dark:text-gray-600"
+            }`}
           title={
             hasComments ? "Commentaires existants" : "Ajouter un commentaire"
           }
         >
           <MessageCircle size={16} />
           {hasComments && (
-            <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+            <span className="absolute -top-0.5 -right-0.5 bg-blue-500 text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center shadow-sm">
               {comments.length}
             </span>
           )}

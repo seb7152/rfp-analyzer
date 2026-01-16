@@ -11,7 +11,15 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronRight, Save, Undo } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Save,
+  Undo,
+  ChevronsDown,
+  ChevronsUp,
+  Eye,
+} from "lucide-react";
 import {
   FinancialTemplateLine,
   LineWithValues,
@@ -72,6 +80,7 @@ export function ComparisonGrid({
   const selectedVersions = externalSelectedVersions || internalSelectedVersions;
 
   const [expandedLines, setExpandedLines] = useState<Set<string>>(new Set());
+  const [isAnalysisMode, setIsAnalysisMode] = useState(false);
   const [editingVersionId, setEditingVersionId] = useState<string | null>(null);
   const [editState, setEditState] = useState<EditState | null>(null);
   // Modals
@@ -252,6 +261,15 @@ export function ComparisonGrid({
     });
   };
 
+  const expandAll = () => {
+    const allIds = new Set(templateLines.map((l) => l.id));
+    setExpandedLines(allIds);
+  };
+
+  const collapseAll = () => {
+    setExpandedLines(new Set());
+  };
+
   const onSaveConfirm = () => {
     if (!editState) return;
 
@@ -319,11 +337,54 @@ export function ComparisonGrid({
 
   return (
     <div className="relative w-full h-full flex flex-col">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between mb-2 mt-2 px-1">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={expandAll}
+            className="text-xs text-slate-500 hover:text-slate-900 h-8"
+          >
+            <ChevronsDown className="h-3.5 w-3.5 mr-1.5" />
+            Déplier tout
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={collapseAll}
+            className="text-xs text-slate-500 hover:text-slate-900 h-8"
+          >
+            <ChevronsUp className="h-3.5 w-3.5 mr-1.5" />
+            Replier tout
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-2 pr-2">
+          {activeVersions.length > 1 && (
+            <Button
+              variant={isAnalysisMode ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setIsAnalysisMode(!isAnalysisMode)}
+              className={cn(
+                "h-8 text-xs font-medium transition-colors",
+                isAnalysisMode
+                  ? "bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200"
+                  : "text-slate-600 border-slate-200 hover:bg-slate-50"
+              )}
+            >
+              <Eye className="h-3.5 w-3.5 mr-1.5" />
+              {isAnalysisMode ? "Mode Analyse actif" : "Mode Analyse"}
+            </Button>
+          )}
+        </div>
+      </div>
+
       <div className="flex-1 overflow-auto border rounded-md">
         <Table className="relative w-full min-w-[max-content]">
           <TableHeader className="sticky top-0 bg-white z-10 shadow-sm">
             <TableRow>
-              <TableHead className="w-[300px] min-w-[300px] pl-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <TableHead className="w-[300px] min-w-[300px] pl-4 text-xs font-semibold uppercase tracking-wider text-slate-500 bg-slate-50">
                 Ligne de coût
               </TableHead>
               <TableHead className="w-[100px] text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -373,7 +434,8 @@ export function ComparisonGrid({
               calculateLineTotal,
               0,
               currentUserId,
-              rfpId
+              rfpId,
+              isAnalysisMode
             )}
 
             {/* Totals Row */}
@@ -543,12 +605,61 @@ function renderRows(
   ) => number | null,
   depth: number = 0,
   currentUserId: string = "",
-  rfpId: string = ""
+  rfpId: string = "",
+  isAnalysisMode: boolean = false
 ): React.ReactNode[] {
   return lines.flatMap((line) => {
     const isExpanded = expanded.has(line.id);
     const hasChildren = line.children && line.children.length > 0;
 
+    // --- Analysis Logic ---
+    let analysisMetrics = null;
+    let minVersionId: string | null = null;
+    let maxVersionId: string | null = null;
+
+    if (isAnalysisMode && !hasChildren && activeVersions.length > 1) {
+      // Collect values for this line across all active versions
+      const lineValues: { versionId: string; value: number }[] = [];
+
+      activeVersions.forEach(({ version }) => {
+        if (!version) return;
+        const versionVals = valuesMap.get(version.id);
+        const val = versionVals?.get(line.id);
+        if (val) {
+          const cost =
+            line.line_type === "setup"
+              ? Number(val.setup_cost)
+              : Number(val.recurrent_cost);
+
+          if (!isNaN(cost)) {
+            lineValues.push({ versionId: version.id, value: cost });
+          }
+        }
+      });
+
+      if (lineValues.length > 1) {
+        const sorted = [...lineValues].sort((a, b) => a.value - b.value);
+        const min = sorted[0].value;
+        const max = sorted[sorted.length - 1].value;
+
+        // Only show indicators if there is a difference
+        if (min !== max) {
+          const sum = lineValues.reduce((acc, curr) => acc + curr.value, 0);
+          const avg = sum / lineValues.length;
+
+          minVersionId = sorted[0].versionId;
+          maxVersionId = sorted[sorted.length - 1].versionId;
+
+          analysisMetrics = {
+            rowMin: min,
+            rowMax: max,
+            average: avg,
+            // Pre-calculate diffs? No, depend on cell value.
+            // But we need to pass the base metrics.
+          };
+        }
+      }
+    }
     const row = (
       <TableRow
         key={line.id}
@@ -616,6 +727,38 @@ function renderRows(
             )
             : null;
 
+          // Compute cell specific metrics
+          let cellMetrics = undefined;
+          let isMin = false;
+          let isMax = false;
+
+          if (analysisMetrics && version && !hasChildren) {
+            const versionVals = valuesMap.get(version.id);
+            const val = versionVals?.get(line.id);
+            const cost =
+              line.line_type === "setup"
+                ? Number(val?.setup_cost || 0)
+                : Number(val?.recurrent_cost || 0);
+
+            if (version.id === minVersionId) isMin = true;
+            if (version.id === maxVersionId) isMax = true;
+
+            const diffMin =
+              analysisMetrics.rowMin !== 0
+                ? (cost - analysisMetrics.rowMin) / analysisMetrics.rowMin
+                : 0;
+            const diffMax =
+              analysisMetrics.rowMax !== 0
+                ? (cost - analysisMetrics.rowMax) / analysisMetrics.rowMax
+                : 0;
+
+            cellMetrics = {
+              ...analysisMetrics,
+              diffMin,
+              diffMax,
+            };
+          }
+
           return (
             <TableCell
               key={supplier.id}
@@ -663,6 +806,10 @@ function renderRows(
                         : ""
                   }
                   isModified={isModified}
+                  isAnalysisMode={isAnalysisMode}
+                  isMin={isMin}
+                  isMax={isMax}
+                  metrics={cellMetrics}
                 />
               )}
             </TableCell>
@@ -685,7 +832,8 @@ function renderRows(
           calculateTotal,
           depth + 1,
           currentUserId,
-          rfpId
+          rfpId,
+          isAnalysisMode
         ),
       ];
     }

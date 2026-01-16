@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   FinancialGridUIMode,
   FinancialGridPreferences,
-  FinancialSummaryData,
 } from "@/types/financial-grid";
 import { FinancialTemplateLine } from "@/lib/financial/calculations";
 import { ModeSelector } from "./ModeSelector";
@@ -13,7 +12,7 @@ import { SummaryTable } from "./SummaryTable";
 import { SupplierModeContent } from "./SupplierModeContent";
 import { toast } from "sonner";
 import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
-import { useFinancialVersions } from "@/hooks/use-financial-data";
+import { useFinancialVersions, useFinancialSummary } from "@/hooks/use-financial-data";
 import { cn } from "@/lib/utils";
 
 interface FinancialGridProps {
@@ -37,9 +36,12 @@ export function FinancialGrid({
   const [isLoadingPrefs, setIsLoadingPrefs] = useState(true);
   const [preferences, setPreferences] =
     useState<FinancialGridPreferences | null>(null);
-  const [summaryData, setSummaryData] = useState<FinancialSummaryData[]>([]);
-  const [isFetchingSummary, setIsFetchingSummary] = useState(false);
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(true);
+
+  const currentMode = preferences?.ui_mode || "comparison";
+  const effectiveTcoPeriod = Number(
+    preferences?.tco_period_years || templatePeriodYears || 3
+  );
 
   // Initial load of preferences
   useEffect(() => {
@@ -136,45 +138,40 @@ export function FinancialGrid({
     savePreferences({ displayed_versions: newDisplayedVersions });
   };
 
-  // Fetch Summary Data when versions change
-  useEffect(() => {
-    const activeVersionsIds = Array.from(selectedVersionsMap.values());
-    if (activeVersionsIds.length === 0) {
-      setSummaryData([]);
-      return;
+  // Summary Hook
+  const activeVersionsIds = useMemo(
+    () => Array.from(selectedVersionsMap.values()),
+    [selectedVersionsMap]
+  );
+
+  const { data: rawSummaryData = [], isLoading: isFetchingSummary } =
+    useFinancialSummary(rfpId, activeVersionsIds, effectiveTcoPeriod);
+
+  // Sort summary data to match suppliers order
+  const summaryData = useMemo(() => {
+    if (!rawSummaryData || rawSummaryData.length === 0) return [];
+
+    // Create a map for sorting
+    const supplierIndices = new Map(suppliers.map((s, i) => [s.id, i]));
+
+    return [...rawSummaryData].sort((a, b) => {
+      const indexA = supplierIndices.get(a.supplier_id) ?? 999;
+      const indexB = supplierIndices.get(b.supplier_id) ?? 999;
+      return indexA - indexB;
+    });
+  }, [rawSummaryData, suppliers]);
+
+  const [referenceSupplierId, setReferenceSupplierId] = useState<string | null>(
+    null
+  );
+
+  const handleSupplierHeaderClick = (supplierId: string) => {
+    if (referenceSupplierId === supplierId) {
+      setReferenceSupplierId(null);
+    } else {
+      setReferenceSupplierId(supplierId);
     }
-
-    const fetchSummary = async () => {
-      setIsFetchingSummary(true);
-      try {
-        const params = new URLSearchParams();
-        const safeTco = Number(
-          preferences?.tco_period_years || templatePeriodYears || 3
-        );
-        params.set("tcoPeriod", safeTco.toString());
-        params.set("versionIds", activeVersionsIds.join(","));
-
-        const res = await fetch(
-          `/api/rfps/${rfpId}/financial-summary?${params.toString()}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setSummaryData(data.summary || []);
-        }
-      } catch (err) {
-        console.error("Error fetching summary", err);
-      } finally {
-        setIsFetchingSummary(false);
-      }
-    };
-
-    fetchSummary();
-  }, [
-    rfpId,
-    selectedVersionsMap,
-    preferences?.tco_period_years,
-    templatePeriodYears,
-  ]);
+  };
 
   if (isLoadingPrefs)
     return (
@@ -185,11 +182,6 @@ export function FinancialGrid({
         </p>
       </div>
     );
-
-  const currentMode = preferences?.ui_mode || "comparison";
-  const effectiveTcoPeriod = Number(
-    preferences?.tco_period_years || templatePeriodYears || 3
-  );
 
   return (
     <div className="flex flex-col gap-4 p-6 bg-slate-50/50 rounded-2xl border border-slate-200/60 shadow-inner">
@@ -260,6 +252,8 @@ export function FinancialGrid({
                 <SummaryTable
                   data={summaryData}
                   tcoPeriod={effectiveTcoPeriod}
+                  referenceSupplierId={referenceSupplierId}
+                  onSupplierHeaderClick={handleSupplierHeaderClick}
                 />
               </div>
             </div>
