@@ -23,12 +23,13 @@ import {
   useFinancialValues,
   useBatchUpdateFinancialValues,
 } from "@/hooks/use-financial-data";
-import { EditableCell } from "./EditableCell";
+import { CellWithComment } from "./CellWithComment";
 import { SupplierColumnHeader } from "./SupplierColumnHeader";
 import { CreateVersionModal } from "./CreateVersionModal";
 import { SaveVersionModal } from "./SaveVersionModal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 
 interface ComparisonGridProps {
   rfpId: string;
@@ -54,6 +55,10 @@ export function ComparisonGrid({
   selectedVersions: externalSelectedVersions,
   onVersionChange,
 }: ComparisonGridProps) {
+  // Authentication
+  const { user } = useAuth();
+  const currentUserId = user?.id || "";
+
   // Data Fetching
   const { data: versions = [] } = useFinancialVersions(rfpId);
   const { data: remoteValues = [] } = useFinancialValues(rfpId, "comparison");
@@ -69,7 +74,6 @@ export function ComparisonGrid({
   const [expandedLines, setExpandedLines] = useState<Set<string>>(new Set());
   const [editingVersionId, setEditingVersionId] = useState<string | null>(null);
   const [editState, setEditState] = useState<EditState | null>(null);
-
   // Modals
   const [createVersionModal, setCreateVersionModal] = useState<{
     isOpen: boolean;
@@ -270,7 +274,7 @@ export function ComparisonGrid({
         onError: (err: unknown) => {
           toast.error(
             "Erreur lors de la sauvegarde: " +
-              (err instanceof Error ? err.message : "Erreur inconnue")
+            (err instanceof Error ? err.message : "Erreur inconnue")
           );
         },
       }
@@ -366,7 +370,10 @@ export function ComparisonGrid({
               currentValuesMap,
               editingVersionId,
               handleCellValueChange,
-              calculateLineTotal
+              calculateLineTotal,
+              0,
+              currentUserId,
+              rfpId
             )}
 
             {/* Totals Row */}
@@ -534,7 +541,9 @@ function renderRows(
     vid: string | undefined,
     type: "setup" | "recurrent"
   ) => number | null,
-  depth: number = 0
+  depth: number = 0,
+  currentUserId: string = "",
+  rfpId: string = ""
 ): React.ReactNode[] {
   return lines.flatMap((line) => {
     const isExpanded = expanded.has(line.id);
@@ -546,7 +555,7 @@ function renderRows(
         className={cn(
           "hover:bg-slate-50/50 transition-colors",
           hasChildren &&
-            "bg-slate-50/30 font-semibold text-slate-900 border-l-2 border-l-slate-200"
+          "bg-slate-50/30 font-semibold text-slate-900 border-l-2 border-l-slate-200"
         )}
       >
         <TableCell className="py-2 pl-4">
@@ -600,11 +609,11 @@ function renderRows(
           // Calculate total if parent
           const calculatedTotal = hasChildren
             ? calculateTotal(
-                line,
-                valuesMap,
-                version?.id,
-                line.line_type === "setup" ? "setup" : "recurrent"
-              )
+              line,
+              valuesMap,
+              version?.id,
+              line.line_type === "setup" ? "setup" : "recurrent"
+            )
             : null;
 
           return (
@@ -619,13 +628,16 @@ function renderRows(
                 <div className="text-right text-xs font-bold text-slate-900 px-3">
                   {calculatedTotal !== null
                     ? new Intl.NumberFormat("fr-FR", {
-                        style: "currency",
-                        currency: "EUR",
-                      }).format(calculatedTotal)
+                      style: "currency",
+                      currency: "EUR",
+                    }).format(calculatedTotal)
                     : "-"}
                 </div>
               ) : (
-                <EditableCell
+                <CellWithComment
+                  lineId={line.id}
+                  versionId={version?.id}
+                  currentUserId={currentUserId}
                   value={
                     line.line_type === "setup"
                       ? (value?.setup_cost ?? null)
@@ -644,7 +656,7 @@ function renderRows(
                   type="currency"
                   suffix={
                     line.line_type === "recurrent" &&
-                    line.recurrence_type === "monthly"
+                      line.recurrence_type === "monthly"
                       ? "/m"
                       : line.line_type === "recurrent"
                         ? "/a"
@@ -671,7 +683,9 @@ function renderRows(
           editingVersionId,
           onCellChange,
           calculateTotal,
-          depth + 1
+          depth + 1,
+          currentUserId,
+          rfpId
         ),
       ];
     }

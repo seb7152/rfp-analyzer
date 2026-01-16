@@ -26,6 +26,8 @@ import {
 import { FinancialOfferValue, FinancialOfferVersion } from "@/types/financial";
 import { useFinancialValues } from "@/hooks/use-financial-data";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { CommentPopover } from "./CommentPopover";
 
 interface SupplierVersionsGridProps {
   rfpId: string;
@@ -51,6 +53,9 @@ export function SupplierVersionsGrid({
   versions,
   tcoPeriod,
 }: SupplierVersionsGridProps) {
+  const { user } = useAuth();
+  const currentUserId = user?.id || "";
+
   const { data: remoteValues = [] } = useFinancialValues(
     rfpId,
     "supplier",
@@ -82,7 +87,6 @@ export function SupplierVersionsGrid({
     return sortedVersions.map((version) => {
       let totalSetup = 0;
       let totalRecurrentAnnual = 0;
-
       const versionValues = valuesMap.get(version.id);
       if (versionValues) {
         templateLines.forEach((line) => {
@@ -221,7 +225,10 @@ export function SupplierVersionsGrid({
               handleToggleExpand,
               sortedVersions,
               valuesMap,
-              calculateLineTotal
+              calculateLineTotal,
+              0,
+              currentUserId,
+              rfpId
             )}
 
             {/* Totals Row */}
@@ -359,7 +366,9 @@ function renderRows(
     versionId: string,
     type: "setup" | "recurrent"
   ) => number | null,
-  depth: number = 0
+  depth: number = 0,
+  currentUserId: string = "",
+  rfpId: string = ""
 ): React.ReactNode[] {
   return lines.flatMap((line) => {
     const isExpanded = expanded.has(line.id);
@@ -371,7 +380,7 @@ function renderRows(
         className={cn(
           "hover:bg-slate-50/50 transition-colors",
           hasChildren &&
-            "bg-slate-50/30 font-semibold text-slate-900 border-l-2 border-l-slate-200"
+          "bg-slate-50/30 font-semibold text-slate-900 border-l-2 border-l-slate-200"
         )}
       >
         <TableCell className="py-2 pl-4">
@@ -428,19 +437,19 @@ function renderRows(
           // Calculate total if parent
           const calculatedTotal = hasChildren
             ? calculateTotal(
-                line as LineWithValues,
-                version.id,
-                line.line_type === "setup" ? "setup" : "recurrent"
-              )
+              line as LineWithValues,
+              version.id,
+              line.line_type === "setup" ? "setup" : "recurrent"
+            )
             : null;
 
           const prevCalculatedTotal =
             hasChildren && prevVersion
               ? calculateTotal(
-                  line as LineWithValues,
-                  prevVersion.id,
-                  line.line_type === "setup" ? "setup" : "recurrent"
-                )
+                line as LineWithValues,
+                prevVersion.id,
+                line.line_type === "setup" ? "setup" : "recurrent"
+              )
               : null;
 
           // Get current and previous values for leaf nodes
@@ -459,9 +468,9 @@ function renderRows(
           // Calculate variation
           const variation =
             versionIdx > 0 &&
-            previousValue !== null &&
-            previousValue !== 0 &&
-            currentValue !== null
+              previousValue !== null &&
+              previousValue !== 0 &&
+              currentValue !== null
               ? ((currentValue - previousValue) / previousValue) * 100
               : null;
 
@@ -475,9 +484,18 @@ function renderRows(
                       : "-"}
                   </span>
                 ) : (
-                  <span className="text-sm text-slate-700">
-                    {currentValue !== null ? formatCurrency(currentValue) : "-"}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-slate-700">
+                      {currentValue !== null
+                        ? formatCurrency(currentValue)
+                        : "-"}
+                    </span>
+                    <CommentPopover
+                      lineId={line.id}
+                      versionId={version.id}
+                      currentUserId={currentUserId}
+                    />
+                  </div>
                 )}
                 {variation !== null && <VariationBadge variation={variation} />}
               </div>
@@ -497,7 +515,9 @@ function renderRows(
           versions,
           valuesMap,
           calculateTotal,
-          depth + 1
+          depth + 1,
+          currentUserId,
+          rfpId
         ),
       ];
     }

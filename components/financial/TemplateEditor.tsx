@@ -18,6 +18,8 @@ import {
   ChevronDown,
   FolderOpen,
   Folder,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { AddLineModal } from "./AddLineModal";
 import { EditLineModal } from "./EditLineModal";
@@ -34,7 +36,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   FinancialTemplateLine,
-  formatCurrency,
 } from "@/lib/financial/calculations";
 
 interface TemplateEditorProps {
@@ -159,6 +160,88 @@ export function TemplateEditor({
     }
   };
 
+  const handleMoveLine = async (
+    line: FinancialTemplateLine,
+    direction: "up" | "down"
+  ) => {
+    // Find siblings
+    const siblings = lines
+      .filter((l) => l.parent_id === line.parent_id)
+      .sort((a, b) => a.sort_order - b.sort_order);
+
+    const currentIndex = siblings.findIndex((l) => l.id === line.id);
+    if (currentIndex === -1) return;
+
+    const targetIndex =
+      direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= siblings.length) return;
+
+    const targetSibling = siblings[targetIndex];
+
+    // Calculate new sort orders
+    // Default to swap
+    let newOrderCurrent = targetSibling.sort_order;
+    let newOrderTarget = line.sort_order;
+
+    // Handle collision (identical sort_orders)
+    if (newOrderCurrent === newOrderTarget) {
+      if (direction === "up") {
+        // Current needs to be smaller than Target
+        newOrderCurrent = newOrderTarget - 1;
+        // Target can stay same (or we could +1 it to be safe, but let's minimize change)
+      } else {
+        // Current needs to be larger than Target
+        newOrderCurrent = newOrderTarget + 1;
+      }
+    }
+
+    try {
+      const updateCurrent = fetch(`/api/financial-template-lines/${line.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sort_order: newOrderCurrent }),
+      });
+
+      const updateTarget = fetch(
+        `/api/financial-template-lines/${targetSibling.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sort_order: newOrderTarget }),
+        }
+      );
+
+      const [resCurrent, resTarget] = await Promise.all([
+        updateCurrent,
+        updateTarget,
+      ]);
+
+      if (!resCurrent.ok || !resTarget.ok) {
+        throw new Error("Failed to reorder lines");
+      }
+
+      const dataCurrent = await resCurrent.json();
+      const dataTarget = await resTarget.json();
+
+      // Update local state
+      onLineUpdated(dataCurrent.line);
+      onLineUpdated(dataTarget.line);
+
+      toast({
+        title: "Succès",
+        description: "Ordre modifié",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error("Error moving line:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier l'ordre",
+        variant: "destructive",
+      });
+    }
+  };
+
   const expandAll = () => {
     const allIds = new Set(lines.map((line) => line.id));
     setExpandedLines(allIds);
@@ -229,15 +312,42 @@ export function TemplateEditor({
               ` (${node.recurrence_type === "monthly" ? "mensuel" : "annuel"})`}
           </Badge>
 
-          {hasChildren && (
-            <Badge variant="outline" className="text-xs text-slate-600">
-              Sous-total: {formatCurrency(node.subtotal_setup || 0)} /{" "}
-              {formatCurrency(node.subtotal_recurrent || 0)}
-            </Badge>
-          )}
-
           {/* Actions */}
           <div className="flex items-center gap-1">
+            {/* Reordering */}
+            <div className="flex items-center mr-2 bg-gray-50 rounded-md border border-gray-100">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={() => handleMoveLine(node, "up")}
+                disabled={(() => {
+                  const siblings = lines
+                    .filter((l) => l.parent_id === node.parent_id)
+                    .sort((a, b) => a.sort_order - b.sort_order);
+                  return siblings[0]?.id === node.id;
+                })()}
+                title="Monter"
+              >
+                <ArrowUp className="h-3 w-3 text-gray-500" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={() => handleMoveLine(node, "down")}
+                disabled={(() => {
+                  const siblings = lines
+                    .filter((l) => l.parent_id === node.parent_id)
+                    .sort((a, b) => a.sort_order - b.sort_order);
+                  return siblings[siblings.length - 1]?.id === node.id;
+                })()}
+                title="Descendre"
+              >
+                <ArrowDown className="h-3 w-3 text-gray-500" />
+              </Button>
+            </div>
+
             <Button
               variant="ghost"
               size="sm"
@@ -271,6 +381,18 @@ export function TemplateEditor({
           node.children.map((child) => renderLine(child))}
       </div>
     );
+  };
+
+  const handleLineAddedInternal = (line: FinancialTemplateLine) => {
+    onLineAdded(line);
+    // Auto-expand parent if the new line is a child
+    if (line.parent_id) {
+      setExpandedLines((prev) => {
+        const newSet = new Set(prev);
+        newSet.add(line.parent_id!);
+        return newSet;
+      });
+    }
   };
 
   return (
@@ -326,7 +448,7 @@ export function TemplateEditor({
         templateId={templateId}
         parentId={selectedParentId}
         parentLine={selectedParentLine}
-        onLineAdded={onLineAdded}
+        onLineAdded={handleLineAddedInternal}
       />
 
       {/* Edit Line Modal */}
@@ -338,6 +460,7 @@ export function TemplateEditor({
             setSelectedLine(null);
           }}
           line={selectedLine}
+          allLines={lines}
           onLineUpdated={onLineUpdated}
         />
       )}

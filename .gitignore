@@ -58,6 +58,7 @@ Thumbs.db
 .kilocode/
 .keys/
 
+
 # MCP Configuration with secrets
 .mcp.json
-.opencode.json.codex/
+opencode.json
