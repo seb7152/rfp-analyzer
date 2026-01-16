@@ -36,7 +36,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   FinancialTemplateLine,
-  formatCurrency,
 } from "@/lib/financial/calculations";
 
 interface TemplateEditorProps {
