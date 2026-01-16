@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         created_by,
         created_at,
         updated_at,
-        auth_user:created_by(id, email, user_metadata)
+        auth_user:users(id, email, full_name, avatar_url)
       `
       )
       .eq("template_line_id", lineId);
@@ -66,10 +66,11 @@ export async function GET(request: NextRequest) {
       ...comment,
       author: comment.auth_user
         ? {
-            id: comment.auth_user.id,
-            email: comment.auth_user.email,
-            user_metadata: comment.auth_user.user_metadata,
-          }
+          id: comment.auth_user.id,
+          email: comment.auth_user.email,
+          full_name: comment.auth_user.full_name,
+          avatar_url: comment.auth_user.avatar_url,
+        }
         : null,
     }));
 
@@ -173,7 +174,8 @@ export async function POST(request: NextRequest) {
           author: {
             id: user.id,
             email: user.email,
-            user_metadata: user.user_metadata,
+            full_name: user.user_metadata?.full_name,
+            avatar_url: user.user_metadata?.avatar_url,
           },
         },
       },

@@ -28,7 +28,7 @@ export function CellWithComment({
   isModified,
 }: CellWithCommentProps) {
   return (
-    <div className="flex items-stretch gap-1">
+    <div className="flex items-center gap-1">
       <div className="flex-1 relative">
         <EditableCell
           value={value}

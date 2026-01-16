@@ -23,7 +23,7 @@ CREATE POLICY "Users can view comments for RFPs they have access to" ON public.f
             WHERE ftl.id = public.financial_comments.template_line_id
             AND (r.created_by = auth.uid() OR 
                  EXISTS (
-                     SELECT 1 FROM public.organization_members om
+                     SELECT 1 FROM public.user_organizations om
                      WHERE om.organization_id = r.organization_id
                      AND om.user_id = auth.uid()
                  )
@@ -41,7 +41,7 @@ CREATE POLICY "Users can create comments for RFPs they have access to" ON public
             WHERE ftl.id = public.financial_comments.template_line_id
             AND (r.created_by = auth.uid() OR 
                  EXISTS (
-                     SELECT 1 FROM public.organization_members om
+                     SELECT 1 FROM public.user_organizations om
                      WHERE om.organization_id = r.organization_id
                      AND om.user_id = auth.uid()
                  )
