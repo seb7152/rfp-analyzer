@@ -20,6 +20,7 @@ import {
   Folder,
   ArrowUp,
   ArrowDown,
+  Copy,
 } from "lucide-react";
 import { AddLineModal } from "./AddLineModal";
 import { EditLineModal } from "./EditLineModal";
@@ -65,6 +66,8 @@ export function TemplateEditor({
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
   const [selectedParentLine, setSelectedParentLine] =
     useState<FinancialTemplateLine | null>(null);
+  const [duplicateLine, setDuplicateLine] =
+    useState<FinancialTemplateLine | null>(null);
   const [expandedLines, setExpandedLines] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [lineToDelete, setLineToDelete] = useState<string | null>(null);
@@ -109,6 +112,18 @@ export function TemplateEditor({
   const handleAddChildLine = (parentId: string) => {
     const parentLine = lines.find((l) => l.id === parentId) || null;
     setSelectedParentId(parentId);
+    setSelectedParentLine(parentLine);
+    setIsAddModalOpen(true);
+  };
+
+  const handleDuplicateLine = (line: FinancialTemplateLine) => {
+    // Determine parent for duplication (should belong to same parent)
+    const parentLine = line.parent_id
+      ? lines.find((l) => l.id === line.parent_id) || null
+      : null;
+
+    setDuplicateLine(line);
+    setSelectedParentId(line.parent_id);
     setSelectedParentLine(parentLine);
     setIsAddModalOpen(true);
   };
@@ -359,6 +374,14 @@ export function TemplateEditor({
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => handleDuplicateLine(node)}
+              title="Dupliquer"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => handleEditLine(node)}
               title="Modifier"
             >
@@ -444,10 +467,12 @@ export function TemplateEditor({
           setIsAddModalOpen(false);
           setSelectedParentId(null);
           setSelectedParentLine(null);
+          setDuplicateLine(null);
         }}
         templateId={templateId}
         parentId={selectedParentId}
         parentLine={selectedParentLine}
+        duplicateLine={duplicateLine}
         onLineAdded={handleLineAddedInternal}
       />
 

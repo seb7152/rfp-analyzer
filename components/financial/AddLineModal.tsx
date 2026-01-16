@@ -31,6 +31,7 @@ interface AddLineModalProps {
   templateId: string;
   parentId: string | null;
   parentLine?: FinancialTemplateLine | null;
+  duplicateLine?: FinancialTemplateLine | null;
   onLineAdded: (line: any) => void;
 }
 
@@ -40,6 +41,7 @@ export function AddLineModal({
   templateId,
   parentId,
   parentLine,
+  duplicateLine,
   onLineAdded,
 }: AddLineModalProps) {
   const [lineCode, setLineCode] = useState("");
@@ -52,21 +54,34 @@ export function AddLineModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  // Inherit parameters from parent line when modal opens
+  // Inherit parameters from parent line or duplicate line when modal opens
   useEffect(() => {
-    if (isOpen && parentLine) {
-      if (parentLine.line_type) {
-        setLineType(parentLine.line_type);
+    if (isOpen) {
+      if (duplicateLine) {
+        // Pre-fill from duplicate source
+        setLineCode(duplicateLine.line_code + "-COPY");
+        setName(duplicateLine.name + " (Copie)");
+        setLineType(duplicateLine.line_type);
+        setRecurrenceType(
+          (duplicateLine.recurrence_type as "monthly" | "yearly") || "monthly"
+        );
+        setCustomFormula(duplicateLine.custom_formula || "");
+      } else if (parentLine) {
+        // Inherit from parent
+        setLineCode(parentLine.line_code); // Pre-fill code with parent code
+        if (parentLine.line_type) {
+          setLineType(parentLine.line_type);
+        }
+        if (parentLine.recurrence_type) {
+          setRecurrenceType(parentLine.recurrence_type as "monthly" | "yearly");
+        }
+      } else if (!parentId) {
+        // Default for root lines
+        setLineType("setup");
+        setRecurrenceType("monthly");
       }
-      if (parentLine.recurrence_type) {
-        setRecurrenceType(parentLine.recurrence_type as "monthly" | "yearly");
-      }
-    } else if (isOpen && !parentId) {
-      // Default for root lines
-      setLineType("setup");
-      setRecurrenceType("monthly");
     }
-  }, [isOpen, parentLine, parentId]);
+  }, [isOpen, parentLine, parentId, duplicateLine]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
