@@ -464,7 +464,8 @@ export default function RFPSummaryPage() {
 
                             if (tagsResponse.ok) {
                               const tagsData = await tagsResponse.json();
-                              tagsByRequirement = tagsData.tagsByRequirement || {};
+                              tagsByRequirement =
+                                tagsData.tagsByRequirement || {};
                             } else {
                               console.warn(
                                 "Tags bulk-fetch failed:",
@@ -492,7 +493,10 @@ export default function RFPSummaryPage() {
                                 new Set(
                                   rawTags
                                     .map((tag: any) => tag?.name)
-                                    .filter((name: unknown) => typeof name === "string")
+                                    .filter(
+                                      (name: unknown) =>
+                                        typeof name === "string"
+                                    )
                                 )
                               );
                               exportData.push({

@@ -143,12 +143,13 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   size="sm"
                   className="h-8 w-8 p-0"
                   title="Ajouter des documents PDF"
-                >
-                </Button>
+                ></Button>
 
                 {/* Financial Grid Button - icon only */}
                 <Button
-                  onClick={() => router.push(`/dashboard/rfp/${params.rfpId}/financial-grid`)}
+                  onClick={() =>
+                    router.push(`/dashboard/rfp/${params.rfpId}/financial-grid`)
+                  }
                   variant="outline"
                   size="sm"
                   className="h-8 w-8 p-0"
@@ -223,7 +224,9 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
 
                 {/* Financial Grid Button */}
                 <Button
-                  onClick={() => router.push(`/dashboard/rfp/${params.rfpId}/financial-grid`)}
+                  onClick={() =>
+                    router.push(`/dashboard/rfp/${params.rfpId}/financial-grid`)
+                  }
                   variant="outline"
                   size="sm"
                   className="gap-2"
@@ -277,8 +280,9 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar with Tree */}
           <div
-            className={`${isMobile ? "w-full" : "w-80"
-              } border-r border-slate-200 bg-white/50 dark:border-slate-800 dark:bg-slate-900/40`}
+            className={`${
+              isMobile ? "w-full" : "w-80"
+            } border-r border-slate-200 bg-white/50 dark:border-slate-800 dark:bg-slate-900/40`}
           >
             <Sidebar
               rfpId={params.rfpId}

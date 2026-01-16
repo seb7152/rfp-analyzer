@@ -82,5 +82,10 @@ export interface ResponseStats {
   completion_percentage: number;
 }
 
-export type ResponseStatus = "pending" | "pass" | "partial" | "fail" | "roadmap";
+export type ResponseStatus =
+  | "pending"
+  | "pass"
+  | "partial"
+  | "fail"
+  | "roadmap";
 export type ScoreSource = "manual" | "ai" | null;

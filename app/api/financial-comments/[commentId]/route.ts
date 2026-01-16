@@ -38,10 +38,7 @@ export async function PUT(
       .single();
 
     if (fetchError || !comment) {
-      return NextResponse.json(
-        { error: "Comment not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Comment not found" }, { status: 404 });
     }
 
     // Verify user is the author
@@ -119,10 +116,7 @@ export async function DELETE(
       .single();
 
     if (fetchError || !comment) {
-      return NextResponse.json(
-        { error: "Comment not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Comment not found" }, { status: 404 });
     }
 
     // Verify user is the author

@@ -43,7 +43,9 @@ export interface MobileSupplierCardProps {
   requirementTitle?: string;
   requirementDescription?: string;
   supplierNames?: string[];
-  onStatusChange?: (status: "pending" | "pass" | "partial" | "fail" | "roadmap") => void;
+  onStatusChange?: (
+    status: "pending" | "pass" | "partial" | "fail" | "roadmap"
+  ) => void;
   onCheckChange?: (checked: boolean) => void;
   onScoreChange?: (score: number) => void;
   onCommentChange?: (comment: string) => void;
@@ -436,10 +438,11 @@ export function MobileSupplierCard({
                   <button
                     onClick={handleReanalyzeResponse}
                     disabled={analyzeResponse.isPending}
-                    className={`p-1.5 rounded transition-colors ${analyzeResponse.isPending
+                    className={`p-1.5 rounded transition-colors ${
+                      analyzeResponse.isPending
                         ? "opacity-50 cursor-not-allowed"
                         : "hover:bg-slate-200 dark:hover:bg-slate-800"
-                      }`}
+                    }`}
                     title="Relancer l'analyse IA"
                   >
                     {analyzeResponse.isPending ? (

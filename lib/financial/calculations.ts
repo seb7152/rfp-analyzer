@@ -232,7 +232,8 @@ function evaluateArithmeticExpression(expression: string): number {
     "-": 1,
   };
 
-  const isOperator = (token: string) => ["+", "-", "*", "/", "u-"].includes(token);
+  const isOperator = (token: string) =>
+    ["+", "-", "*", "/", "u-"].includes(token);
 
   tokens.forEach((token, index) => {
     if (typeof token === "number") {

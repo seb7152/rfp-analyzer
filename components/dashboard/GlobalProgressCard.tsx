@@ -69,9 +69,9 @@ export function GlobalProgressCard({
             <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">
               {Object.values(averageScores).length > 0
                 ? Math.round(
-                  Object.values(averageScores).reduce((a, b) => a + b, 0) /
-                  Object.values(averageScores).length
-                )
+                    Object.values(averageScores).reduce((a, b) => a + b, 0) /
+                      Object.values(averageScores).length
+                  )
                 : 0}
               /5
             </p>

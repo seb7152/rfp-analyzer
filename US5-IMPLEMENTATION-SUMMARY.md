@@ -11,6 +11,7 @@ Implémentation complète du système de commentaires pour la grille financière
 ## Fichiers créés
 
 ### API Endpoints
+
 - **`/app/api/financial-comments/route.ts`**
   - `GET /api/financial-comments` - Récupérer les commentaires pour une ligne
   - `POST /api/financial-comments` - Créer un nouveau commentaire
@@ -20,6 +21,7 @@ Implémentation complète du système de commentaires pour la grille financière
   - `DELETE /api/financial-comments/[commentId]` - Supprimer un commentaire
 
 ### Hooks React
+
 - **`/hooks/use-financial-comments.ts`**
   - `useFinancialComments()` - Hook pour fetcher les commentaires
   - `useCreateFinancialComment()` - Mutation pour créer un commentaire
@@ -27,6 +29,7 @@ Implémentation complète du système de commentaires pour la grille financière
   - `useDeleteFinancialComment()` - Mutation pour supprimer un commentaire
 
 ### Composants UI
+
 - **`/components/financial/CommentPopover.tsx`**
   - Composant Popover affichant et gérant les commentaires
   - Affiche une liste des commentaires existants
@@ -38,6 +41,7 @@ Implémentation complète du système de commentaires pour la grille financière
   - Utilisé dans le mode de comparaison inter-fournisseurs
 
 ### Types TypeScript
+
 - **`/types/financial.ts`** (modifié)
   - `FinancialComment` - Modèle de commentaire
   - `FinancialCommentWithAuthor` - Commentaire avec infos auteur
@@ -45,6 +49,7 @@ Implémentation complète du système de commentaires pour la grille financière
   - `UpdateFinancialCommentInput` - Input pour modifier un commentaire
 
 ### Composants modifiés
+
 - **`/components/financial/ComparisonGrid.tsx`**
   - Intégration de `CellWithComment` dans la grille inter-fournisseurs
   - Récupération de l'utilisateur courant via `useAuth()`
@@ -57,17 +62,20 @@ Implémentation complète du système de commentaires pour la grille financière
 ## Fonctionnalités implémentées
 
 ### ✅ US-5-001 à US-5-006: Endpoints API
+
 - Tous les endpoints créés avec gestion complète des erreurs
 - Validation des inputs
 - Vérification de propriété (seul l'auteur peut modifier/supprimer)
 - Accès sécurisé via RLS (à configurer dans la migration SQL)
 
 ### ✅ US-5-007: Icône de commentaire
+
 - Icône de bulle de dialogue grise (pas de commentaire) ou bleue (avec commentaire)
 - Affichage du nombre de commentaires via badge
 - Position cohérente dans chaque cellule
 
 ### ✅ US-5-008: Composant CommentPopover
+
 - Popover affichant liste complète des commentaires
 - Informations auteur avec avatar/email
 - Date relative en français
@@ -78,6 +86,7 @@ Implémentation complète du système de commentaires pour la grille financière
 ## Architecture
 
 ### Flux de données
+
 ```
 CommentPopover
 ├── useFinancialComments (fetch)
@@ -88,12 +97,14 @@ CommentPopover
 ```
 
 ### Sécurité
+
 - ✅ Authentification vérifée sur tous les endpoints
 - ✅ Validation des inputs
 - ✅ Propriété des commentaires vérifiée
 - ⏳ RLS policies à configurer (migration SQL)
 
 ### Optimisation
+
 - React Query avec invalidation automatique
 - Formatage de dates relatif en français
 - Pagination des commentaires si > 15
@@ -132,6 +143,7 @@ ALTER TABLE financial_comments ENABLE ROW LEVEL SECURITY;
 ## Testing
 
 ### Cas d'usage
+
 1. ✅ Ajouter un commentaire sur une cellule
 2. ✅ Afficher la liste des commentaires existants
 3. ✅ Modifier son propre commentaire
@@ -140,6 +152,7 @@ ALTER TABLE financial_comments ENABLE ROW LEVEL SECURITY;
 6. ✅ Voir auteur et date relative
 
 ### À tester après migration
+
 - [ ] Vérifier que les RLS policies sont correctement appliquées
 - [ ] Tester cross-organization isolation
 - [ ] Vérifier les permissions (seul auteur peut modifier/supprimer)

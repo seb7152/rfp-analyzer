@@ -4,7 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, Loader2, Plus } from "lucide-react";
 import { CreateTemplateModal } from "@/components/financial/CreateTemplateModal";
@@ -12,8 +18,6 @@ import { TemplateEditor } from "@/components/financial/TemplateEditor";
 import { FinancialGrid } from "@/components/financial/FinancialGrid";
 import { FinancialTemplateLine } from "@/lib/financial/calculations";
 import { useSuppliers } from "@/hooks/use-financial-data";
-
-
 
 interface FinancialTemplate {
   id: string;
@@ -27,14 +31,18 @@ interface FinancialTemplate {
 export default function FinancialGridPage() {
   const router = useRouter();
   const params = useParams();
-  const rfpId = (Array.isArray(params.rfpId) ? params.rfpId[0] : params.rfpId) as string;
+  const rfpId = (
+    Array.isArray(params.rfpId) ? params.rfpId[0] : params.rfpId
+  ) as string;
   const { user, isLoading: authLoading } = useAuth();
   const [template, setTemplate] = useState<FinancialTemplate | null>(null);
   const [lines, setLines] = useState<FinancialTemplateLine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
-  const [viewMode, setViewMode] = useState<"template-definition" | "comparison">("comparison");
+  const [viewMode, setViewMode] = useState<
+    "template-definition" | "comparison"
+  >("comparison");
 
   // Fetch Suppliers
   // Using useParams hook for reliability in Client Components
@@ -69,7 +77,7 @@ export default function FinancialGridPage() {
           const data = await response.json();
           setTemplate(data.template);
           setLines(data.lines || []);
-          // If we have a template, default to comparison view if we have suppliers? 
+          // If we have a template, default to comparison view if we have suppliers?
           // Or stick to default.
         } else if (response.status === 404 || response.status === 200) {
           // No template exists yet
@@ -98,13 +106,13 @@ export default function FinancialGridPage() {
   };
 
   const handleLineAdded = (line: FinancialTemplateLine) => {
-    setLines((prev) => [...prev, line].sort((a, b) => a.sort_order - b.sort_order));
+    setLines((prev) =>
+      [...prev, line].sort((a, b) => a.sort_order - b.sort_order)
+    );
   };
 
   const handleLineUpdated = (line: FinancialTemplateLine) => {
-    setLines((prev) =>
-      prev.map((l) => (l.id === line.id ? line : l))
-    );
+    setLines((prev) => prev.map((l) => (l.id === line.id ? line : l)));
   };
 
   const handleLineDeleted = (lineId: string) => {
@@ -139,17 +147,27 @@ export default function FinancialGridPage() {
               Retour
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Grille Financière</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Grille Financière
+              </h1>
               <p className="text-sm text-gray-600">{rfpTitle}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             {template && (
-              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-[400px] mr-4">
+              <Tabs
+                value={viewMode}
+                onValueChange={(v) => setViewMode(v as any)}
+                className="w-[400px] mr-4"
+              >
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="comparison">Comparaison & Saisie</TabsTrigger>
-                  <TabsTrigger value="template-definition">Définition Template</TabsTrigger>
+                  <TabsTrigger value="comparison">
+                    Comparaison & Saisie
+                  </TabsTrigger>
+                  <TabsTrigger value="template-definition">
+                    Définition Template
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
             )}
@@ -175,8 +193,8 @@ export default function FinancialGridPage() {
             <CardHeader>
               <CardTitle>Créer un template financier</CardTitle>
               <CardDescription>
-                Commencez par créer un template financier pour définir la structure des coûts
-                à comparer entre les fournisseurs.
+                Commencez par créer un template financier pour définir la
+                structure des coûts à comparer entre les fournisseurs.
               </CardDescription>
             </CardHeader>
             <CardContent>

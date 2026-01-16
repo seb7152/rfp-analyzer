@@ -29,6 +29,7 @@ interface EditLineModalProps {
   isOpen: boolean;
   onClose: () => void;
   line: FinancialTemplateLine;
+  allLines?: FinancialTemplateLine[];
   onLineUpdated: (line: FinancialTemplateLine) => void;
 }
 
@@ -36,15 +37,21 @@ export function EditLineModal({
   isOpen,
   onClose,
   line,
+  allLines = [],
   onLineUpdated,
 }: EditLineModalProps) {
   const [lineCode, setLineCode] = useState(line.line_code);
   const [name, setName] = useState(line.name);
-  const [lineType, setLineType] = useState<"setup" | "recurrent">(line.line_type);
+  const [lineType, setLineType] = useState<"setup" | "recurrent">(
+    line.line_type
+  );
   const [recurrenceType, setRecurrenceType] = useState<"monthly" | "yearly">(
     line.recurrence_type || "monthly"
   );
   const [customFormula, setCustomFormula] = useState(line.custom_formula || "");
+  const [parentId, setParentId] = useState<string | "root">(
+    line.parent_id || "root"
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -55,7 +62,42 @@ export function EditLineModal({
     setLineType(line.line_type);
     setRecurrenceType(line.recurrence_type || "monthly");
     setCustomFormula(line.custom_formula || "");
+    setParentId(line.parent_id || "root");
   }, [line]);
+
+  // Helper to identify invalid parents (self and descendants) to prevent cycles
+  const getStatusForLine = (
+    candidateId: string
+  ): { disabled: boolean; reason?: string } => {
+    if (candidateId === line.id)
+      return {
+        disabled: true,
+        reason: "Impossible de définir la ligne comme son propre parent",
+      };
+
+    // Check if candidate is a descendant
+    let current = allLines.find((l) => l.id === candidateId);
+    // Simple iterative check up the tree from candidate to see if we hit 'line.id'
+    // While this is "is ancestor" check, here we want to avoid reparenting TO a descendant.
+    // So if 'line.id' is an ancestor of 'candidateId', then 'candidateId' is a descendant of 'line.id'.
+    // We walk up from candidate.
+    let isDescendant = false;
+    while (current?.parent_id) {
+      if (current.parent_id === line.id) {
+        isDescendant = true;
+        break;
+      }
+      current = allLines.find((l) => l.id === current?.parent_id);
+    }
+
+    if (isDescendant)
+      return {
+        disabled: true,
+        reason: "Impossible de déplacer vers une ligne enfant (cycle)",
+      };
+
+    return { disabled: false };
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,6 +134,7 @@ export function EditLineModal({
           line_type: lineType,
           recurrence_type: lineType === "recurrent" ? recurrenceType : null,
           custom_formula: customFormula.trim() || null,
+          parent_id: parentId === "root" ? null : parentId,
         }),
       });
 
@@ -112,7 +155,10 @@ export function EditLineModal({
       console.error("Error updating line:", error);
       toast({
         title: "Erreur",
-        description: error instanceof Error ? error.message : "Échec de la modification de la ligne",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Échec de la modification de la ligne",
         variant: "destructive",
       });
     } finally {
@@ -126,7 +172,7 @@ export function EditLineModal({
         <DialogHeader>
           <DialogTitle>Modifier la ligne</DialogTitle>
           <DialogDescription>
-            Modifiez les propriétés de cette ligne de coût.
+            Modifiez les propriétés de cette ligne de coût ou déplacez-la.
           </DialogDescription>
         </DialogHeader>
 
@@ -158,10 +204,56 @@ export function EditLineModal({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="parent">Ligne Parente</Label>
+            <Select
+              value={parentId}
+              onValueChange={setParentId}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger id="parent">
+                <SelectValue placeholder="Sélectionnez un parent" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                <SelectItem value="root">-- Aucune (Racine) --</SelectItem>
+                {allLines
+                  .filter((l) => l.id !== line.id) // Basic filter, UI disabling for complex logic
+                  .sort((a, b) => a.line_code.localeCompare(b.line_code))
+                  .map((l) => {
+                    const status = getStatusForLine(l.id);
+                    return (
+                      <SelectItem
+                        key={l.id}
+                        value={l.id}
+                        disabled={status.disabled}
+                        className={
+                          status.disabled ? "opacity-50 cursor-not-allowed" : ""
+                        }
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-muted-foreground mr-1">
+                            {l.line_code}
+                          </span>
+                          {l.name}
+                          {status.disabled && (
+                            <span className="text-xs text-red-400 italic ml-2">
+                              ({status.reason})
+                            </span>
+                          )}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label>Type de coût *</Label>
             <RadioGroup
               value={lineType}
-              onValueChange={(value) => setLineType(value as "setup" | "recurrent")}
+              onValueChange={(value) =>
+                setLineType(value as "setup" | "recurrent")
+              }
               disabled={isSubmitting}
             >
               <div className="flex items-center space-x-2">
@@ -184,7 +276,9 @@ export function EditLineModal({
               <Label htmlFor="recurrence">Fréquence *</Label>
               <Select
                 value={recurrenceType}
-                onValueChange={(value) => setRecurrenceType(value as "monthly" | "yearly")}
+                onValueChange={(value) =>
+                  setRecurrenceType(value as "monthly" | "yearly")
+                }
                 disabled={isSubmitting}
               >
                 <SelectTrigger id="recurrence">
@@ -199,7 +293,9 @@ export function EditLineModal({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="customFormula">Formule personnalisée (optionnel)</Label>
+            <Label htmlFor="customFormula">
+              Formule personnalisée (optionnel)
+            </Label>
             <Textarea
               id="customFormula"
               placeholder="Ex: {setup_cost} * {quantity}"
@@ -209,8 +305,8 @@ export function EditLineModal({
               rows={3}
             />
             <p className="text-xs text-gray-500">
-              Variables disponibles: {"{setup_cost}"}, {"{recurrent_cost}"}, {"{quantity}"},{" "}
-              {"{total_period_years}"}
+              Variables disponibles: {"{setup_cost}"}, {"{recurrent_cost}"},{" "}
+              {"{quantity}"}, {"{total_period_years}"}
             </p>
           </div>
 
@@ -224,7 +320,9 @@ export function EditLineModal({
               Annuler
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Enregistrer
             </Button>
           </DialogFooter>

@@ -55,7 +55,11 @@ export function useCreateFinancialComment() {
     onSuccess: (_data, input) => {
       // Invalidate and refetch comments for this line/version
       queryClient.invalidateQueries({
-        queryKey: ["financial-comments", input.template_line_id, input.version_id],
+        queryKey: [
+          "financial-comments",
+          input.template_line_id,
+          input.version_id,
+        ],
       });
     },
   });

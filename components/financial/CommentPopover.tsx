@@ -1,10 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Trash2, Edit2, Plus } from "lucide-react";
-import { useFinancialComments, useCreateFinancialComment, useUpdateFinancialComment, useDeleteFinancialComment } from "@/hooks/use-financial-comments";
+import {
+  useFinancialComments,
+  useCreateFinancialComment,
+  useUpdateFinancialComment,
+  useDeleteFinancialComment,
+} from "@/hooks/use-financial-comments";
 import { FinancialCommentWithAuthor } from "@/types/financial";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -26,10 +35,7 @@ export function CommentPopover({
   const [editingText, setEditingText] = useState("");
 
   // Data fetching
-  const { data: commentsData, error } = useFinancialComments(
-    lineId,
-    versionId
-  );
+  const { data: commentsData, error } = useFinancialComments(lineId, versionId);
   const comments: FinancialCommentWithAuthor[] = commentsData || [];
 
   // Mutations
@@ -94,11 +100,11 @@ export function CommentPopover({
       <PopoverTrigger asChild>
         <button
           className={`inline-flex items-center justify-center p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 ${
-            hasComments
-              ? "text-blue-500"
-              : "text-gray-400 dark:text-gray-600"
+            hasComments ? "text-blue-500" : "text-gray-400 dark:text-gray-600"
           }`}
-          title={hasComments ? "Commentaires existants" : "Ajouter un commentaire"}
+          title={
+            hasComments ? "Commentaires existants" : "Ajouter un commentaire"
+          }
         >
           <MessageCircle size={16} />
           {hasComments && (
@@ -176,13 +182,10 @@ export function CommentPopover({
                               "Inconnu"}
                           </p>
                           <p>
-                            {formatDistanceToNow(
-                              new Date(comment.created_at),
-                              {
-                                addSuffix: true,
-                                locale: fr,
-                              }
-                            )}
+                            {formatDistanceToNow(new Date(comment.created_at), {
+                              addSuffix: true,
+                              locale: fr,
+                            })}
                           </p>
                         </div>
 
@@ -242,7 +245,8 @@ export function CommentPopover({
           {/* Error message */}
           {error && (
             <div className="text-xs text-red-500 bg-red-50 dark:bg-red-900 p-2 rounded">
-              Erreur : {error instanceof Error ? error.message : "Erreur inconnue"}
+              Erreur :{" "}
+              {error instanceof Error ? error.message : "Erreur inconnue"}
             </div>
           )}
         </div>
