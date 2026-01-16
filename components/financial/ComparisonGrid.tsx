@@ -30,6 +30,7 @@ import {
   useFinancialVersions,
   useFinancialValues,
   useBatchUpdateFinancialValues,
+  useCreateFinancialVersion,
 } from "@/hooks/use-financial-data";
 import { CellWithComment } from "./CellWithComment";
 import { SupplierColumnHeader } from "./SupplierColumnHeader";
@@ -98,6 +99,8 @@ export function ComparisonGrid({
   // Mutations
   const { mutate: batchUpdate, isLoading: isSaving } =
     useBatchUpdateFinancialValues();
+  const { mutate: createVersion, isLoading: isCreating } =
+    useCreateFinancialVersion(rfpId);
 
   // Initialize selected versions (most recent by default)
   useEffect(() => {
@@ -270,7 +273,7 @@ export function ComparisonGrid({
     setExpandedLines(new Set());
   };
 
-  const onSaveConfirm = () => {
+  const onSaveConfirm = (versionName: string, mode: "new" | "replace") => {
     if (!editState) return;
 
     const valuesToSave = Array.from(editState.values.entries()).map(
@@ -280,23 +283,116 @@ export function ComparisonGrid({
       })
     );
 
-    batchUpdate(
-      { versionId: editingVersionId!, values: valuesToSave },
-      {
-        onSuccess: () => {
-          toast.success("Modifications sauvegardées");
-          setEditingVersionId(null);
-          setEditState(null);
-          setSaveModalOpen(false);
-        },
-        onError: (err: unknown) => {
-          toast.error(
-            "Erreur lors de la sauvegarde: " +
-            (err instanceof Error ? err.message : "Erreur inconnue")
-          );
-        },
+    if (valuesToSave.length === 0) {
+      toast.info("Aucune modification à sauvegarder");
+      setEditingVersionId(null);
+      setEditState(null);
+      setSaveModalOpen(false);
+      return;
+    }
+
+    const handleBatchUpdate = (targetVersionId: string) => {
+      batchUpdate(
+        { versionId: targetVersionId, values: valuesToSave },
+        {
+          onSuccess: () => {
+            toast.success("Modifications sauvegardées");
+            setEditingVersionId(null);
+            setEditState(null);
+            setSaveModalOpen(false);
+          },
+          onError: (err: unknown) => {
+            toast.error(
+              "Erreur lors de la sauvegarde: " +
+              (err instanceof Error ? err.message : "Erreur inconnue")
+            );
+          },
+        }
+      );
+    };
+
+    if (mode === "new") {
+      // Find current supplier
+      const currentVersion = versions.find((v) => v.id === editingVersionId);
+      if (!currentVersion) {
+        toast.error("Impossible de retrouver la version source");
+        return;
       }
-    );
+
+      createVersion(
+        {
+          supplierId: currentVersion.supplier_id,
+          versionName: versionName,
+          versionDate: new Date().toISOString(),
+        },
+        {
+          onSuccess: (response) => {
+            // response.version is the new version object
+            const newVersionId = response.version.id;
+
+            // Auto-select the new version in the grid
+            if (onVersionChange) {
+              onVersionChange(currentVersion.supplier_id, newVersionId);
+            }
+            // Update internal state as fallback
+            setInternalSelectedVersions(prev => {
+              const map = new Map(prev);
+              map.set(currentVersion.supplier_id, newVersionId);
+              return map;
+            });
+
+            // Proceed to save values to this new version
+            // Merge existing values (from source version) with new edits
+            const sourceValues = remoteValues.filter(v => v.version_id === editingVersionId);
+            const mergedValuesMap = new Map<string, Partial<FinancialOfferValue>>();
+
+            // 1. Populate with existing source values
+            sourceValues.forEach(v => {
+              mergedValuesMap.set(v.template_line_id, {
+                setup_cost: v.setup_cost,
+                recurrent_cost: v.recurrent_cost,
+                quantity: v.quantity
+              });
+            });
+
+            // 2. Overwrite with edits
+            if (editState) {
+              editState.values.forEach((val, lineId) => {
+                const existing = mergedValuesMap.get(lineId) || {};
+                mergedValuesMap.set(lineId, { ...existing, ...val });
+              });
+            }
+
+            const fullValuesToSave = Array.from(mergedValuesMap.entries()).map(([lineId, val]) => ({
+              template_line_id: lineId,
+              ...val
+            }));
+
+            // Use batchUpdate to save the FULL set of values to the new version
+            batchUpdate(
+              { versionId: newVersionId, values: fullValuesToSave },
+              {
+                onSuccess: () => {
+                  toast.success("Version créée avec copie des valeurs");
+                  setEditingVersionId(null);
+                  setEditState(null);
+                  setSaveModalOpen(false);
+                },
+                onError: (err: unknown) => {
+                  toast.error("Erreur lors de la copie des valeurs: " + (err instanceof Error ? err.message : "Erreur inconnue"));
+                }
+              }
+            );
+          },
+          onError: (err: any) => {
+            toast.error("Erreur lors de la création de la version: " + err.message);
+          },
+        }
+      );
+    } else {
+      // Replace mode
+      handleBatchUpdate(editingVersionId!);
+    }
   };
 
   // Helper to calculate total value recursively for a line (setup or recurrent)
@@ -512,7 +608,7 @@ export function ComparisonGrid({
                         </span>
                       </div>
                       <div className="flex justify-between items-center text-[13px] font-bold text-slate-900 pt-1">
-                        <span>TCO ({safeTcoPeriod} ans):</span>
+                        <span>TCO :</span>
                         <span className="text-emerald-600">
                           {new Intl.NumberFormat("fr-FR", {
                             style: "currency",
@@ -575,11 +671,12 @@ export function ComparisonGrid({
         isOpen={saveModalOpen}
         onClose={() => setSaveModalOpen(false)}
         onSave={onSaveConfirm}
-        isLoading={isSaving}
+        isLoading={isSaving || isCreating}
         defaultName={
           versions.find((v) => v.id === editingVersionId)?.version_name || ""
         }
       />
+
     </div>
   );
 }

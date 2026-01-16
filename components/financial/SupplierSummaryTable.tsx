@@ -18,11 +18,12 @@ interface SupplierSummaryTableProps {
   data: VersionSummary[];
   tcoPeriod: number;
   supplierName: string;
+  referenceVersionId?: string | null;
 }
 
-function calculateVariation(current: number, previous: number): number | null {
-  if (previous === 0) return null;
-  return ((current - previous) / previous) * 100;
+function calculateVariation(current: number, reference: number): number | null {
+  if (reference === 0) return null;
+  return ((current - reference) / reference) * 100;
 }
 
 function VariationCell({ variation }: { variation: number | null }) {
@@ -64,11 +65,17 @@ export function SupplierSummaryTable({
   data,
   tcoPeriod,
   supplierName,
+  referenceVersionId,
 }: SupplierSummaryTableProps) {
   if (data.length === 0) return null;
 
   // Find best TCO (lowest)
   const minTco = Math.min(...data.map((d) => d.tco));
+
+  // Find reference version
+  const referenceItem = referenceVersionId
+    ? data.find((d) => d.versionId === referenceVersionId)
+    : data[0];
 
   return (
     <Card className="overflow-hidden border border-slate-200 shadow-sm dark:border-slate-800">
@@ -77,7 +84,7 @@ export function SupplierSummaryTable({
           Évolution des Versions - {supplierName}
         </h4>
         <p className="text-xs text-slate-500 mt-0.5">
-          Comparaison des coûts entre les différentes versions de l'offre
+          Comparaison par rapport à : <span className="font-medium text-slate-900">{referenceItem?.versionName || "Version initiale"}</span>
         </p>
       </div>
       <div className="overflow-x-auto">
@@ -105,22 +112,23 @@ export function SupplierSummaryTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {data.map((item, idx) => {
-              const prevItem = idx > 0 ? data[idx - 1] : null;
-              const tcoVariation = prevItem
-                ? calculateVariation(item.tco, prevItem.tco)
+            {data.map((item) => {
+              const isReference = referenceItem && item.versionId === referenceItem.versionId;
+
+              const tcoVariation = referenceItem && !isReference
+                ? calculateVariation(item.tco, referenceItem.tco)
                 : null;
-              const setupVariation = prevItem
-                ? calculateVariation(item.totalSetup, prevItem.totalSetup)
+              const setupVariation = referenceItem && !isReference
+                ? calculateVariation(item.totalSetup, referenceItem.totalSetup)
                 : null;
-              const recurrentVariation = prevItem
+              const recurrentVariation = referenceItem && !isReference
                 ? calculateVariation(
-                    item.totalRecurrentAnnual,
-                    prevItem.totalRecurrentAnnual
-                  )
+                  item.totalRecurrentAnnual,
+                  referenceItem.totalRecurrentAnnual
+                )
                 : null;
+
               const isBest = item.tco === minTco && data.length > 1;
-              const isFirst = idx === 0;
 
               return (
                 <tr
@@ -128,20 +136,21 @@ export function SupplierSummaryTable({
                   className={cn(
                     "group transition-colors",
                     isBest && "bg-emerald-50/30",
-                    !isBest && "hover:bg-slate-50/50 dark:hover:bg-slate-900/30"
+                    isReference && !isBest && "bg-blue-50/40",
+                    !isBest && !isReference && "hover:bg-slate-50/50 dark:hover:bg-slate-900/30"
                   )}
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-slate-900 dark:text-slate-100">
+                      <span className={cn("font-medium", isReference ? "text-blue-700" : "text-slate-900 dark:text-slate-100")}>
                         {item.versionName}
                       </span>
-                      {isFirst && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded font-medium">
+                      {isReference && (
+                        <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-medium border border-blue-200">
                           Réf
                         </span>
                       )}
-                      {isBest && !isFirst && (
+                      {isBest && !isReference && (
                         <span className="text-[10px] px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded font-medium">
                           Meilleur
                         </span>

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   _: NextRequest,
   { params }: { params: { rfpId: string } }
@@ -18,12 +20,28 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch versions linked to suppliers of this RFP
-    // We filter by supplier.rfp_id using inner join
+    // First, get all supplier IDs for this RFP to avoid complex !inner join RLS issues
+    const { data: suppliers, error: suppliersError } = await supabase
+      .from("suppliers")
+      .select("id, name")
+      .eq("rfp_id", rfpId);
+
+    if (suppliersError) {
+      console.error("Error fetching suppliers for versions:", suppliersError);
+      return NextResponse.json({ error: suppliersError.message }, { status: 500 });
+    }
+
+    const supplierIds = suppliers.map((s) => s.id);
+
+    if (supplierIds.length === 0) {
+      return NextResponse.json({ versions: [] });
+    }
+
+    // Now fetch versions for these suppliers
     const { data, error } = await supabase
       .from("financial_offer_versions")
-      .select("*, supplier:suppliers!inner(id, name, rfp_id)")
-      .eq("supplier.rfp_id", rfpId)
+      .select("*, supplier:suppliers(id, name, rfp_id)")
+      .in("supplier_id", supplierIds)
       .eq("is_active", true)
       .order("version_date", { ascending: false });
 
@@ -75,7 +93,7 @@ export async function POST(
     // Verify supplier belongs to RFP and user has access (via RLS on suppliers)
     const { data: supplier, error: supplierError } = await supabase
       .from("suppliers")
-      .select("id")
+      .select("id, name")
       .eq("id", supplier_id)
       .eq("rfp_id", rfpId)
       .single();

@@ -45,13 +45,13 @@ export function CellWithComment({
   return (
     <div className="flex items-center gap-1 relative group">
       {isAnalysisMode && (isMin || isMax) && metrics && (
-        <div className="absolute -left-2 top-1/2 -translate-y-1/2 z-10">
+        <div className="absolute left-1 top-1/2 -translate-y-1/2 z-10">
           <HoverCard openDelay={0}>
             <HoverCardTrigger asChild>
               <div
                 className={cn(
-                  "w-2 h-2 rounded-full cursor-help shadow-sm ring-1 ring-white",
-                  isMin ? "bg-green-500" : "bg-red-500"
+                  "w-2 h-2 rounded-full cursor-help shadow-sm ring-1 ring-white/50",
+                  isMin ? "bg-emerald-300" : "bg-rose-300"
                 )}
               />
             </HoverCardTrigger>
