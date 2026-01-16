@@ -140,29 +140,29 @@ export function useResponseMutation(): UseMutationResult<
           const updatedResponses = old.responses.map((response) =>
             response.id === responseId
               ? {
-                ...response,
-                manual_score:
-                  variables.manual_score !== undefined
-                    ? variables.manual_score
-                    : response.manual_score,
-                status:
-                  variables.status !== undefined
-                    ? variables.status
-                    : response.status,
-                is_checked:
-                  variables.is_checked !== undefined
-                    ? variables.is_checked
-                    : response.is_checked,
-                manual_comment:
-                  variables.manual_comment !== undefined
-                    ? variables.manual_comment
-                    : response.manual_comment,
-                question:
-                  variables.question !== undefined
-                    ? variables.question
-                    : response.question,
-                updated_at: new Date().toISOString(),
-              }
+                  ...response,
+                  manual_score:
+                    variables.manual_score !== undefined
+                      ? variables.manual_score
+                      : response.manual_score,
+                  status:
+                    variables.status !== undefined
+                      ? variables.status
+                      : response.status,
+                  is_checked:
+                    variables.is_checked !== undefined
+                      ? variables.is_checked
+                      : response.is_checked,
+                  manual_comment:
+                    variables.manual_comment !== undefined
+                      ? variables.manual_comment
+                      : response.manual_comment,
+                  question:
+                    variables.question !== undefined
+                      ? variables.question
+                      : response.question,
+                  updated_at: new Date().toISOString(),
+                }
               : response
           );
 
@@ -199,29 +199,29 @@ export function useResponseMutation(): UseMutationResult<
           const updatedResponses = old.responses.map((response: any) =>
             response.id === responseId
               ? {
-                ...response,
-                manual_score:
-                  variables.manual_score !== undefined
-                    ? variables.manual_score
-                    : response.manual_score,
-                status:
-                  variables.status !== undefined
-                    ? variables.status
-                    : response.status,
-                is_checked:
-                  variables.is_checked !== undefined
-                    ? variables.is_checked
-                    : response.is_checked,
-                manual_comment:
-                  variables.manual_comment !== undefined
-                    ? variables.manual_comment
-                    : response.manual_comment,
-                question:
-                  variables.question !== undefined
-                    ? variables.question
-                    : response.question,
-                updated_at: new Date().toISOString(),
-              }
+                  ...response,
+                  manual_score:
+                    variables.manual_score !== undefined
+                      ? variables.manual_score
+                      : response.manual_score,
+                  status:
+                    variables.status !== undefined
+                      ? variables.status
+                      : response.status,
+                  is_checked:
+                    variables.is_checked !== undefined
+                      ? variables.is_checked
+                      : response.is_checked,
+                  manual_comment:
+                    variables.manual_comment !== undefined
+                      ? variables.manual_comment
+                      : response.manual_comment,
+                  question:
+                    variables.question !== undefined
+                      ? variables.question
+                      : response.question,
+                  updated_at: new Date().toISOString(),
+                }
               : response
           );
 
@@ -233,7 +233,11 @@ export function useResponseMutation(): UseMutationResult<
       });
 
       // Return context with snapshots for rollback
-      return { previousResponse, previousResponsesLists, previousAllResponsesLists };
+      return {
+        previousResponse,
+        previousResponsesLists,
+        previousAllResponsesLists,
+      };
     },
 
     // On error, rollback to the previous values

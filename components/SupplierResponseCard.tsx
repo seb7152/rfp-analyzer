@@ -49,7 +49,9 @@ export interface SupplierResponseCardProps {
   isSaving?: boolean;
   showSaved?: boolean;
   userAccessLevel?: RFPAccessLevel;
-  onStatusChange?: (status: "pending" | "pass" | "partial" | "fail" | "roadmap") => void;
+  onStatusChange?: (
+    status: "pending" | "pass" | "partial" | "fail" | "roadmap"
+  ) => void;
   onCheckChange?: (checked: boolean) => void;
   onScoreChange?: (score: number) => void;
   onCommentChange?: (comment: string) => void;

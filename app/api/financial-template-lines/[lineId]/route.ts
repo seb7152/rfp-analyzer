@@ -125,9 +125,15 @@ export async function PUT(
     if (recurrence_type !== undefined) {
       const finalLineType = line_type || existingLine.line_type;
       if (finalLineType === "recurrent") {
-        if (!recurrence_type || ["monthly", "yearly"].indexOf(recurrence_type) === -1) {
+        if (
+          !recurrence_type ||
+          ["monthly", "yearly"].indexOf(recurrence_type) === -1
+        ) {
           return NextResponse.json(
-            { error: "recurrence_type must be 'monthly' or 'yearly' for recurrent lines" },
+            {
+              error:
+                "recurrence_type must be 'monthly' or 'yearly' for recurrent lines",
+            },
             { status: 400 }
           );
         }
@@ -165,7 +171,6 @@ export async function PUT(
             { status: 404 }
           );
         }
-
       }
       updateData.parent_id = parent_id || null;
     }
@@ -186,7 +191,10 @@ export async function PUT(
       console.error("Error updating template line:", updateError);
       if (updateError.message?.includes("Circular reference detected")) {
         return NextResponse.json(
-          { error: "Cannot set parent_id to a descendant line (would create a cycle)" },
+          {
+            error:
+              "Cannot set parent_id to a descendant line (would create a cycle)",
+          },
           { status: 400 }
         );
       }
@@ -205,7 +213,10 @@ export async function PUT(
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error in PUT /api/financial-template-lines/[lineId]:", error);
+    console.error(
+      "Error in PUT /api/financial-template-lines/[lineId]:",
+      error
+    );
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Internal server error",
@@ -363,7 +374,10 @@ export async function DELETE(
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error in DELETE /api/financial-template-lines/[lineId]:", error);
+    console.error(
+      "Error in DELETE /api/financial-template-lines/[lineId]:",
+      error
+    );
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Internal server error",

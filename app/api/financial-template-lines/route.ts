@@ -41,7 +41,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!line_code || typeof line_code !== "string" || line_code.trim().length === 0) {
+    if (
+      !line_code ||
+      typeof line_code !== "string" ||
+      line_code.trim().length === 0
+    ) {
       return NextResponse.json(
         { error: "line_code is required" },
         { status: 400 }
@@ -49,10 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!name || typeof name !== "string" || name.trim().length === 0) {
-      return NextResponse.json(
-        { error: "name is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "name is required" }, { status: 400 });
     }
 
     if (!line_type || ["setup", "recurrent"].indexOf(line_type) === -1) {
@@ -64,9 +65,15 @@ export async function POST(request: NextRequest) {
 
     // Validate recurrence_type for recurrent lines
     if (line_type === "recurrent") {
-      if (!recurrence_type || ["monthly", "yearly"].indexOf(recurrence_type) === -1) {
+      if (
+        !recurrence_type ||
+        ["monthly", "yearly"].indexOf(recurrence_type) === -1
+      ) {
         return NextResponse.json(
-          { error: "recurrence_type must be 'monthly' or 'yearly' for recurrent lines" },
+          {
+            error:
+              "recurrence_type must be 'monthly' or 'yearly' for recurrent lines",
+          },
           { status: 400 }
         );
       }

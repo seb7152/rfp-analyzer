@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Plus, DollarSign, PenBox, Grid } from "lucide-react";
 import { CreateTemplateModal } from "@/components/financial/CreateTemplateModal";
@@ -33,7 +39,8 @@ export function FinancialGridTab({ rfpId }: FinancialGridTabProps) {
   const [isEditingTemplate, setIsEditingTemplate] = useState(false);
 
   // US-3: Fetch suppliers for the grid
-  const { data: suppliers = [], isLoading: isLoadingSuppliers } = useSuppliers(rfpId);
+  const { data: suppliers = [], isLoading: isLoadingSuppliers } =
+    useSuppliers(rfpId);
 
   // Fetch financial template
   useEffect(() => {
@@ -70,13 +77,13 @@ export function FinancialGridTab({ rfpId }: FinancialGridTabProps) {
   };
 
   const handleLineAdded = (line: FinancialTemplateLine) => {
-    setLines((prev) => [...prev, line].sort((a, b) => a.sort_order - b.sort_order));
+    setLines((prev) =>
+      [...prev, line].sort((a, b) => a.sort_order - b.sort_order)
+    );
   };
 
   const handleLineUpdated = (line: FinancialTemplateLine) => {
-    setLines((prev) =>
-      prev.map((l) => (l.id === line.id ? line : l))
-    );
+    setLines((prev) => prev.map((l) => (l.id === line.id ? line : l)));
   };
 
   const handleLineDeleted = (lineId: string) => {
@@ -196,7 +203,8 @@ export function FinancialGridTab({ rfpId }: FinancialGridTabProps) {
             templatePeriodYears={template.total_period_years}
             suppliers={suppliers.map((s: any) => ({
               id: s.id,
-              name: s.company_name || s.contact_name || s.email || "Fournisseur"
+              name:
+                s.company_name || s.contact_name || s.email || "Fournisseur",
             }))}
           />
         </div>

@@ -225,7 +225,7 @@ export default function RFPSynthesisPage() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={() => { }}>
+            <Button variant="outline" size="sm" onClick={() => {}}>
               Réinitialiser les poids
             </Button>
             <Button

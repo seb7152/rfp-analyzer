@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -26,7 +32,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FinancialTemplateLine, formatCurrency } from "@/lib/financial/calculations";
+import {
+  FinancialTemplateLine,
+  formatCurrency,
+} from "@/lib/financial/calculations";
 
 interface TemplateEditorProps {
   templateId: string;
@@ -50,9 +59,11 @@ export function TemplateEditor({
 }: TemplateEditorProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedLine, setSelectedLine] = useState<FinancialTemplateLine | null>(null);
+  const [selectedLine, setSelectedLine] =
+    useState<FinancialTemplateLine | null>(null);
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
-  const [selectedParentLine, setSelectedParentLine] = useState<FinancialTemplateLine | null>(null);
+  const [selectedParentLine, setSelectedParentLine] =
+    useState<FinancialTemplateLine | null>(null);
   const [expandedLines, setExpandedLines] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [lineToDelete, setLineToDelete] = useState<string | null>(null);
@@ -95,7 +106,7 @@ export function TemplateEditor({
   };
 
   const handleAddChildLine = (parentId: string) => {
-    const parentLine = lines.find(l => l.id === parentId) || null;
+    const parentLine = lines.find((l) => l.id === parentId) || null;
     setSelectedParentId(parentId);
     setSelectedParentLine(parentLine);
     setIsAddModalOpen(true);
@@ -115,9 +126,12 @@ export function TemplateEditor({
     if (!lineToDelete) return;
 
     try {
-      const response = await fetch(`/api/financial-template-lines/${lineToDelete}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/financial-template-lines/${lineToDelete}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       const data = await response.json();
 
@@ -135,7 +149,8 @@ export function TemplateEditor({
       console.error("Error deleting line:", error);
       toast({
         title: "Erreur",
-        description: error instanceof Error ? error.message : "Échec de la suppression",
+        description:
+          error instanceof Error ? error.message : "Échec de la suppression",
         variant: "destructive",
       });
     } finally {
@@ -194,7 +209,9 @@ export function TemplateEditor({
           </div>
 
           {/* Line code */}
-          <code className="text-sm font-mono text-gray-600 w-32">{node.line_code}</code>
+          <code className="text-sm font-mono text-gray-600 w-32">
+            {node.line_code}
+          </code>
 
           {/* Line name */}
           <div className="flex-1 font-medium">{node.name}</div>
@@ -208,7 +225,8 @@ export function TemplateEditor({
             }
           >
             {node.line_type === "setup" ? "Setup" : "Récurrent"}
-            {node.recurrence_type && ` (${node.recurrence_type === "monthly" ? "mensuel" : "annuel"})`}
+            {node.recurrence_type &&
+              ` (${node.recurrence_type === "monthly" ? "mensuel" : "annuel"})`}
           </Badge>
 
           {hasChildren && (
@@ -248,7 +266,9 @@ export function TemplateEditor({
         </div>
 
         {/* Render children if expanded */}
-        {hasChildren && isExpanded && node.children.map((child) => renderLine(child))}
+        {hasChildren &&
+          isExpanded &&
+          node.children.map((child) => renderLine(child))}
       </div>
     );
   };
@@ -328,8 +348,9 @@ export function TemplateEditor({
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer cette ligne ? Si la ligne a des enfants ou des valeurs associées,
-              elle sera désactivée (soft delete). Sinon, elle sera définitivement supprimée.
+              Êtes-vous sûr de vouloir supprimer cette ligne ? Si la ligne a des
+              enfants ou des valeurs associées, elle sera désactivée (soft
+              delete). Sinon, elle sera définitivement supprimée.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

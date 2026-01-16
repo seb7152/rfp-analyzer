@@ -4,7 +4,9 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface StatusSwitchProps {
   value?: "pass" | "partial" | "fail" | "pending" | "roadmap";
-  onChange?: (value: "pass" | "partial" | "fail" | "pending" | "roadmap") => void;
+  onChange?: (
+    value: "pass" | "partial" | "fail" | "pending" | "roadmap"
+  ) => void;
   disabled?: boolean;
 }
 
@@ -27,7 +29,9 @@ export function StatusSwitch({
       value={value}
       onValueChange={(newValue) => {
         if (newValue) {
-          onChange?.(newValue as "pass" | "partial" | "fail" | "pending" | "roadmap");
+          onChange?.(
+            newValue as "pass" | "partial" | "fail" | "pending" | "roadmap"
+          );
         }
       }}
       disabled={disabled}

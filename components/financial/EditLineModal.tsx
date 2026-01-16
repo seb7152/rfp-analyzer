@@ -40,7 +40,9 @@ export function EditLineModal({
 }: EditLineModalProps) {
   const [lineCode, setLineCode] = useState(line.line_code);
   const [name, setName] = useState(line.name);
-  const [lineType, setLineType] = useState<"setup" | "recurrent">(line.line_type);
+  const [lineType, setLineType] = useState<"setup" | "recurrent">(
+    line.line_type
+  );
   const [recurrenceType, setRecurrenceType] = useState<"monthly" | "yearly">(
     line.recurrence_type || "monthly"
   );
@@ -112,7 +114,10 @@ export function EditLineModal({
       console.error("Error updating line:", error);
       toast({
         title: "Erreur",
-        description: error instanceof Error ? error.message : "Échec de la modification de la ligne",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Échec de la modification de la ligne",
         variant: "destructive",
       });
     } finally {
@@ -161,7 +166,9 @@ export function EditLineModal({
             <Label>Type de coût *</Label>
             <RadioGroup
               value={lineType}
-              onValueChange={(value) => setLineType(value as "setup" | "recurrent")}
+              onValueChange={(value) =>
+                setLineType(value as "setup" | "recurrent")
+              }
               disabled={isSubmitting}
             >
               <div className="flex items-center space-x-2">
@@ -184,7 +191,9 @@ export function EditLineModal({
               <Label htmlFor="recurrence">Fréquence *</Label>
               <Select
                 value={recurrenceType}
-                onValueChange={(value) => setRecurrenceType(value as "monthly" | "yearly")}
+                onValueChange={(value) =>
+                  setRecurrenceType(value as "monthly" | "yearly")
+                }
                 disabled={isSubmitting}
               >
                 <SelectTrigger id="recurrence">
@@ -199,7 +208,9 @@ export function EditLineModal({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="customFormula">Formule personnalisée (optionnel)</Label>
+            <Label htmlFor="customFormula">
+              Formule personnalisée (optionnel)
+            </Label>
             <Textarea
               id="customFormula"
               placeholder="Ex: {setup_cost} * {quantity}"
@@ -209,8 +220,8 @@ export function EditLineModal({
               rows={3}
             />
             <p className="text-xs text-gray-500">
-              Variables disponibles: {"{setup_cost}"}, {"{recurrent_cost}"}, {"{quantity}"},{" "}
-              {"{total_period_years}"}
+              Variables disponibles: {"{setup_cost}"}, {"{recurrent_cost}"},{" "}
+              {"{quantity}"}, {"{total_period_years}"}
             </p>
           </div>
 
@@ -224,7 +235,9 @@ export function EditLineModal({
               Annuler
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Enregistrer
             </Button>
           </DialogFooter>

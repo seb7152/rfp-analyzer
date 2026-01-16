@@ -84,7 +84,10 @@ export function CreateTemplateModal({
       console.error("Error creating template:", error);
       toast({
         title: "Erreur",
-        description: error instanceof Error ? error.message : "Échec de la création du template",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Échec de la création du template",
         variant: "destructive",
       });
     } finally {
@@ -98,7 +101,8 @@ export function CreateTemplateModal({
         <DialogHeader>
           <DialogTitle>Créer un template financier</DialogTitle>
           <DialogDescription>
-            Définissez le nom et la période de calcul TCO pour votre template financier.
+            Définissez le nom et la période de calcul TCO pour votre template
+            financier.
           </DialogDescription>
         </DialogHeader>
 
@@ -143,7 +147,9 @@ export function CreateTemplateModal({
               Annuler
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Créer
             </Button>
           </DialogFooter>
