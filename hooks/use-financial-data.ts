@@ -3,11 +3,18 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FinancialOfferVersion, FinancialOfferValue } from "@/types/financial";
 
-export function useSuppliers(rfpId: string) {
+export function useSuppliers(rfpId: string, versionId?: string) {
   return useQuery({
-    queryKey: ["suppliers", rfpId],
+    queryKey: ["suppliers", rfpId, versionId],
     queryFn: async () => {
-      const response = await fetch(`/api/rfps/${rfpId}/suppliers`);
+      const params = new URLSearchParams();
+      if (versionId) {
+        params.append("versionId", versionId);
+      }
+
+      const response = await fetch(
+        `/api/rfps/${rfpId}/suppliers?${params.toString()}`
+      );
       if (!response.ok) {
         throw new Error("Failed to fetch suppliers");
       }
