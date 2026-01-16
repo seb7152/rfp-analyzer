@@ -18,6 +18,7 @@ import { TemplateEditor } from "@/components/financial/TemplateEditor";
 import { FinancialGrid } from "@/components/financial/FinancialGrid";
 import { FinancialTemplateLine } from "@/lib/financial/calculations";
 import { useSuppliers } from "@/hooks/use-financial-data";
+import { useVersion } from "@/contexts/VersionContext";
 
 interface FinancialTemplate {
   id: string;
@@ -46,7 +47,11 @@ export default function FinancialGridPage() {
 
   // Fetch Suppliers
   // Using useParams hook for reliability in Client Components
-  const { data: suppliers = [] } = useSuppliers(rfpId);
+  const { activeVersion } = useVersion();
+
+  // Fetch Suppliers
+  // Using useParams hook for reliability in Client Components
+  const { data: suppliers = [] } = useSuppliers(rfpId, activeVersion?.id);
 
   // Fetch RFP data
   useEffect(() => {
