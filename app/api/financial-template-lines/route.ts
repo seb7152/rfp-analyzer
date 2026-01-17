@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
       recurrence_type,
       custom_formula,
       sort_order,
+      description,
     } = body;
 
     // Validate required inputs
@@ -153,6 +154,7 @@ export async function POST(request: NextRequest) {
         recurrence_type: line_type === "recurrent" ? recurrence_type : null,
         custom_formula: custom_formula || null,
         sort_order: finalSortOrder,
+        description: description || null,
         is_active: true,
       })
       .select()

@@ -42,6 +42,7 @@ export async function PUT(
       custom_formula,
       parent_id,
       sort_order,
+      description,
     } = body;
 
     // Get the existing line to verify access and check template_id
@@ -177,6 +178,10 @@ export async function PUT(
 
     if (sort_order !== undefined) {
       updateData.sort_order = sort_order;
+    }
+
+    if (description !== undefined) {
+      updateData.description = description || null;
     }
 
     // Update the line

@@ -134,10 +134,37 @@ export function useBatchUpdateFinancialValues() {
       return await response.json();
     },
     onSuccess: () => {
-      // We don't have rfpId here easily to invalidate strict keys, but we can invalidate all values
-      // ideally we pass rfpId or return it.
-      // For now, simple invalidation.
+      // Invalidate values
       queryClient.invalidateQueries({ queryKey: ["financial-values"] });
+      // Invalidate summary
+      queryClient.invalidateQueries({ queryKey: ["financial-summary"] });
     },
+  });
+}
+
+export function useFinancialSummary(
+  rfpId: string,
+  versionIds: string[],
+  tcoPeriod: number
+) {
+  return useQuery({
+    queryKey: ["financial-summary", rfpId, { versionIds, tcoPeriod }],
+    queryFn: async () => {
+      if (versionIds.length === 0) return [];
+
+      const params = new URLSearchParams();
+      params.set("tcoPeriod", tcoPeriod.toString());
+      params.set("versionIds", versionIds.join(","));
+
+      const response = await fetch(
+        `/api/rfps/${rfpId}/financial-summary?${params.toString()}`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch summary");
+      }
+      const data = await response.json();
+      return data.summary as import("@/types/financial-grid").FinancialSummaryData[];
+    },
+    enabled: !!rfpId && versionIds.length > 0,
   });
 }

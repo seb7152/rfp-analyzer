@@ -7,7 +7,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Trash2, Edit2, Plus } from "lucide-react";
+import {
+  MessageCircle,
+  Trash2,
+  Edit2,
+  Plus,
+  AlertTriangle,
+  HelpingHand,
+  Info,
+} from "lucide-react";
 import {
   useFinancialComments,
   useCreateFinancialComment,
@@ -31,8 +39,37 @@ export function CommentPopover({
 }: CommentPopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [newComment, setNewComment] = useState("");
+  const [newCommentType, setNewCommentType] = useState<
+    "comment" | "warning" | "negotiation"
+  >("comment");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
+  const [editingType, setEditingType] = useState<
+    "comment" | "warning" | "negotiation"
+  >("comment");
+
+  // Type definition helpers
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case "negotiation":
+        return "text-fuchsia-600 bg-fuchsia-50 border-fuchsia-200";
+      case "warning":
+        return "text-amber-600 bg-amber-50 border-amber-200";
+      default:
+        return "text-blue-600 bg-blue-50 border-blue-200";
+    }
+  };
+
+  const getTypeIcon = (type: string, size = 14) => {
+    switch (type) {
+      case "negotiation":
+        return <HelpingHand size={size} className="text-fuchsia-600" />;
+      case "warning":
+        return <AlertTriangle size={size} className="text-amber-600" />;
+      default:
+        return <Info size={size} className="text-blue-600" />;
+    }
+  };
 
   // Data fetching
   const { data: commentsData, error } = useFinancialComments(lineId, versionId);
@@ -58,10 +95,12 @@ export function CommentPopover({
         template_line_id: lineId,
         version_id: versionId || null,
         comment: newComment,
+        type: newCommentType,
       },
       {
         onSuccess: () => {
           setNewComment("");
+          setNewCommentType("comment");
         },
       }
     );
@@ -70,6 +109,7 @@ export function CommentPopover({
   const handleStartEdit = (comment: FinancialCommentWithAuthor) => {
     setEditingId(comment.id);
     setEditingText(comment.comment);
+    setEditingType(comment.type || "comment");
   };
 
   const handleSaveEdit = () => {
@@ -78,12 +118,16 @@ export function CommentPopover({
     updateComment(
       {
         commentId: editingId,
-        input: { comment: editingText },
+        input: {
+          comment: editingText,
+          type: editingType
+        },
       },
       {
         onSuccess: () => {
           setEditingId(null);
           setEditingText("");
+          setEditingType("comment");
         },
       }
     );
@@ -95,20 +139,39 @@ export function CommentPopover({
     }
   };
 
+  // Determine main indicator color based on priority
+  // Priority: Negotiation > Warning > Comment
+  const hasNegotiation = comments.some(c => c.type === "negotiation");
+  const hasWarning = comments.some(c => c.type === "warning");
+
+  let triggerColorClass = "text-gray-400 dark:text-gray-600";
+  let badgeColorClass = "bg-blue-500";
+
+  if (hasComments) {
+    if (hasNegotiation) {
+      triggerColorClass = "text-fuchsia-600";
+      badgeColorClass = "bg-fuchsia-600";
+    } else if (hasWarning) {
+      triggerColorClass = "text-amber-500";
+      badgeColorClass = "bg-amber-500";
+    } else {
+      triggerColorClass = "text-blue-500";
+      badgeColorClass = "bg-blue-500";
+    }
+  }
+
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <button
-          className={`inline-flex items-center justify-center p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 ${
-            hasComments ? "text-blue-500" : "text-gray-400 dark:text-gray-600"
-          }`}
+          className={`relative inline-flex items-center justify-center p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 ${triggerColorClass}`}
           title={
             hasComments ? "Commentaires existants" : "Ajouter un commentaire"
           }
         >
-          <MessageCircle size={16} />
+          {hasNegotiation ? <HelpingHand size={16} /> : hasWarning ? <AlertTriangle size={16} /> : <MessageCircle size={16} />}
           {hasComments && (
-            <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+            <span className={`absolute -top-0.5 -right-0.5 text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center shadow-sm ${badgeColorClass}`}>
               {comments.length}
             </span>
           )}
@@ -145,6 +208,29 @@ export function CommentPopover({
                         className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-sm dark:bg-gray-800 dark:text-white"
                         rows={3}
                       />
+                      <div className="flex gap-2">
+                        {(["comment", "warning", "negotiation"] as const).map(
+                          (t) => (
+                            <button
+                              key={t}
+                              onClick={() => setEditingType(t)}
+                              className={`p-1.5 rounded-full border ${editingType === t
+                                ? getTypeColor(t)
+                                : "bg-gray-50 border-gray-200 text-gray-400"
+                                }`}
+                              title={
+                                t === "negotiation"
+                                  ? "Axe de négociation"
+                                  : t === "warning"
+                                    ? "Point d'attention"
+                                    : "Commentaire"
+                              }
+                            >
+                              {getTypeIcon(t, 14)}
+                            </button>
+                          )
+                        )}
+                      </div>
                       <div className="flex gap-2 justify-end">
                         <Button
                           size="sm"
@@ -169,9 +255,14 @@ export function CommentPopover({
                   ) : (
                     <>
                       {/* Comment content */}
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        {comment.comment}
-                      </p>
+                      <div className={`flex gap-2 items-start ${comment.type !== 'comment' ? 'p-2 rounded bg-opacity-50 ' + getTypeColor(comment.type || 'comment').split(' ')[1] : ''}`}>
+                        <div className="mt-0.5 shrink-0">
+                          {getTypeIcon(comment.type || "comment", 14)}
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {comment.comment}
+                        </p>
+                      </div>
 
                       {/* Metadata */}
                       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
@@ -223,11 +314,44 @@ export function CommentPopover({
             <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
               Ajouter un commentaire
             </label>
+            <div className="flex gap-2 mb-2">
+              {(["comment", "warning", "negotiation"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setNewCommentType(t)}
+                  className={`p-1.5 rounded-full border transition-all ${newCommentType === t
+                    ? getTypeColor(t) + " ring-2 ring-offset-1 ring-offset-white dark:ring-offset-gray-900 " + getTypeColor(t).split(' ')[0].replace('text-', 'ring-')
+                    : "bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100"
+                    }`}
+                  title={
+                    t === "negotiation"
+                      ? "Axe de négociation"
+                      : t === "warning"
+                        ? "Point d'attention"
+                        : "Commentaire"
+                  }
+                >
+                  {getTypeIcon(t, 16)}
+                </button>
+              ))}
+              <span className="text-xs text-gray-400 self-center ml-2">
+                {newCommentType === "negotiation"
+                  ? "Axe de négociation"
+                  : newCommentType === "warning"
+                    ? "Point d'attention"
+                    : "Commentaire simple"}
+              </span>
+            </div>
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Saisissez votre commentaire..."
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-sm resize-none dark:bg-gray-800 dark:text-white"
+              className={`w-full p-2 border rounded text-sm resize-none dark:bg-gray-800 dark:text-white ${newCommentType !== "comment"
+                ? getTypeColor(newCommentType).split(" ")[2] +
+                " " +
+                getTypeColor(newCommentType).split(" ")[1] + " bg-opacity-20"
+                : "border-gray-300 dark:border-gray-600"
+                }`}
               rows={3}
               disabled={isCreating}
             />

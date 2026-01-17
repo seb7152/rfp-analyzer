@@ -49,6 +49,7 @@ export function EditLineModal({
     line.recurrence_type || "monthly"
   );
   const [customFormula, setCustomFormula] = useState(line.custom_formula || "");
+  const [description, setDescription] = useState(line.description || "");
   const [parentId, setParentId] = useState<string | "root">(
     line.parent_id || "root"
   );
@@ -62,6 +63,7 @@ export function EditLineModal({
     setLineType(line.line_type);
     setRecurrenceType(line.recurrence_type || "monthly");
     setCustomFormula(line.custom_formula || "");
+    setDescription(line.description || "");
     setParentId(line.parent_id || "root");
   }, [line]);
 
@@ -134,6 +136,7 @@ export function EditLineModal({
           line_type: lineType,
           recurrence_type: lineType === "recurrent" ? recurrenceType : null,
           custom_formula: customFormula.trim() || null,
+          description: description.trim() || null,
           parent_id: parentId === "root" ? null : parentId,
         }),
       });
@@ -308,6 +311,18 @@ export function EditLineModal({
               Variables disponibles: {"{setup_cost}"}, {"{recurrent_cost}"},{" "}
               {"{quantity}"}, {"{total_period_years}"}
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description / Aide (optionnel)</Label>
+            <Textarea
+              id="description"
+              placeholder="Ajoutez une description ou une aide contextuelle pour cette ligne..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={isSubmitting}
+              rows={2}
+            />
           </div>
 
           <DialogFooter>

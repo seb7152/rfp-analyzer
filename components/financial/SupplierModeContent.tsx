@@ -1,13 +1,20 @@
 "use client";
 
-import { useMemo } from "react";
-import { Grid } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Grid, GitCompare } from "lucide-react";
 import { FinancialTemplateLine } from "@/lib/financial/calculations";
 import { FinancialOfferVersion, FinancialOfferValue } from "@/types/financial";
 import { useFinancialValues } from "@/hooks/use-financial-data";
 import { SupplierSelector } from "./SupplierSelector";
 import { SupplierVersionsGrid } from "./SupplierVersionsGrid";
 import { SupplierSummaryTable } from "./SupplierSummaryTable";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SupplierModeContentProps {
   rfpId: string;
@@ -37,6 +44,11 @@ export function SupplierModeContent({
   onSupplierChange,
   tcoPeriod,
 }: SupplierModeContentProps) {
+  // State for reference version
+  const [referenceVersionId, setReferenceVersionId] = useState<string | null>(
+    null
+  );
+
   // Effective supplier ID (default to first if not set)
   const effectiveSupplierId =
     selectedSupplierId || (suppliers.length > 0 ? suppliers[0].id : null);
@@ -60,6 +72,17 @@ export function SupplierModeContent({
       return dateA - dateB;
     });
   }, [supplierVersions]);
+
+  // Determine effective reference version (default to oldest if not set)
+  const effectiveReferenceId = useMemo(() => {
+    if (
+      referenceVersionId &&
+      sortedVersions.some((v) => v.id === referenceVersionId)
+    ) {
+      return referenceVersionId;
+    }
+    return sortedVersions[0]?.id || null;
+  }, [referenceVersionId, sortedVersions]);
 
   // Build values map: versionId -> templateLineId -> Value
   const valuesMap = useMemo(() => {
@@ -116,13 +139,45 @@ export function SupplierModeContent({
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
-      {/* Supplier Selector */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+      {/* Supplier and Reference Selector */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-6 items-center">
         <SupplierSelector
           suppliers={suppliers}
           selectedSupplierId={effectiveSupplierId}
           onChange={onSupplierChange}
         />
+
+        {effectiveSupplierId && sortedVersions.length > 0 && (
+          <div className="flex items-center gap-3 animate-in fade-in slide-in-from-left-4">
+            <div className="h-8 w-px bg-slate-200 hidden sm:block" />
+            <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
+              <GitCompare className="h-4 w-4 text-slate-500" />
+              Référence :
+            </label>
+            <Select
+              value={effectiveReferenceId || ""}
+              onValueChange={setReferenceVersionId}
+            >
+              <SelectTrigger className="w-[200px] bg-white border-slate-200 text-sm shadow-sm">
+                <SelectValue placeholder="Choisir une version" />
+              </SelectTrigger>
+              <SelectContent>
+                {sortedVersions.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    <span className="font-medium">
+                      {v.version_name || "Sans nom"}
+                    </span>
+                    <span className="text-slate-400 ml-2 text-xs">
+                      {v.version_date
+                        ? new Date(v.version_date).toLocaleDateString()
+                        : "-"}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       {effectiveSupplierId && selectedSupplier && (
@@ -138,6 +193,7 @@ export function SupplierModeContent({
               data={versionTotals}
               tcoPeriod={tcoPeriod}
               supplierName={selectedSupplier.name}
+              referenceVersionId={effectiveReferenceId}
             />
           </div>
 
