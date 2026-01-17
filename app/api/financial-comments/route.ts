@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
         template_line_id,
         version_id,
         comment,
+        type,
         created_by,
         created_at,
         updated_at,
@@ -144,6 +145,7 @@ export async function POST(request: NextRequest) {
         template_line_id: body.template_line_id,
         version_id: body.version_id || null,
         comment: body.comment,
+        type: body.type || "comment",
         created_by: user.id,
       })
       .select(
@@ -152,6 +154,7 @@ export async function POST(request: NextRequest) {
         template_line_id,
         version_id,
         comment,
+        type,
         created_by,
         created_at,
         updated_at

@@ -21,7 +21,13 @@ import {
   ArrowUp,
   ArrowDown,
   Copy,
+  Info,
 } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { AddLineModal } from "./AddLineModal";
 import { EditLineModal } from "./EditLineModal";
 import { useToast } from "@/hooks/use-toast";
@@ -312,7 +318,30 @@ export function TemplateEditor({
           </code>
 
           {/* Line name */}
-          <div className="flex-1 font-medium">{node.name}</div>
+          <div className="flex-1 font-medium flex items-center gap-2">
+            {node.name}
+            {node.description && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="focus:outline-none">
+                    <Info className="h-4 w-4 text-slate-400 hover:text-slate-600 cursor-pointer shrink-0" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  side="right"
+                  align="start"
+                  className="w-80 p-3 text-xs bg-white/95 backdrop-blur shadow-lg border-slate-200 z-[100]"
+                >
+                  <p className="font-mono text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    [{node.line_code}]
+                  </p>
+                  <p className="text-slate-600 leading-relaxed">
+                    {node.description}
+                  </p>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
 
           {/* Line type badge */}
           <Badge

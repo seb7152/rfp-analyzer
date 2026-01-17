@@ -33,6 +33,7 @@ export interface FinancialComment {
   template_line_id: string;
   version_id: string | null;
   comment: string;
+  type: "comment" | "warning" | "negotiation";
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -53,8 +54,10 @@ export interface CreateFinancialCommentInput {
   template_line_id: string;
   version_id?: string | null;
   comment: string;
+  type?: "comment" | "warning" | "negotiation";
 }
 
 export interface UpdateFinancialCommentInput {
-  comment: string;
+  comment?: string;
+  type?: "comment" | "warning" | "negotiation";
 }

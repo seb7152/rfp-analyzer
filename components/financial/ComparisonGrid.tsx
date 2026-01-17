@@ -19,7 +19,13 @@ import {
   ChevronsDown,
   ChevronsUp,
   Eye,
+  Info,
 } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   FinancialTemplateLine,
   LineWithValues,
@@ -789,7 +795,30 @@ function renderRows(
               <span className="text-[10px] font-mono font-bold text-slate-400 uppercase leading-none mb-1">
                 {line.line_code}
               </span>
-              <span className="text-sm truncate font-medium">{line.name}</span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-sm truncate font-medium">{line.name}</span>
+                {line.description && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="focus:outline-none">
+                        <Info className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600 cursor-pointer shrink-0" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      side="right"
+                      align="start"
+                      className="w-80 p-3 text-xs bg-white/95 backdrop-blur shadow-lg border-slate-200 z-[100]"
+                    >
+                      <p className="font-mono text-[10px] font-bold text-slate-400 uppercase mb-1">
+                        [{line.line_code}]
+                      </p>
+                      <p className="text-slate-600 leading-relaxed">
+                        {line.description}
+                      </p>
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </div>
             </div>
           </div>
         </TableCell>

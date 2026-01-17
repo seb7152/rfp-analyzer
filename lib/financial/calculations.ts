@@ -13,6 +13,7 @@ export interface FinancialTemplateLine {
   recurrence_type: "monthly" | "yearly" | null;
   custom_formula: string | null;
   sort_order: number;
+  description: string | null;
   is_active: boolean;
   subtotal_setup?: number;
   subtotal_recurrent?: number;
