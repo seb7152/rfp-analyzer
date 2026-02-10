@@ -34,6 +34,7 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [weights, setWeights] = useState<Record<string, number>>({});
+  const [localWeights, setLocalWeights] = useState<Record<string, number>>({}); // NEW: Store local weights independently
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{
     type: "success" | "error";
@@ -89,6 +90,7 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
         setWeights(defaultWeights);
 
         // Try to load existing weights from database
+        let loadedWeights: Record<string, number> = {};
         try {
           const weightsResponse = await fetch(`/api/rfps/${rfpId}/weights`, {
             cache: "no-store",
@@ -96,7 +98,6 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
 
           if (weightsResponse.ok) {
             const weightsData = await weightsResponse.json();
-            const loadedWeights: Record<string, number> = {};
 
             // Load only REQUIREMENT weights from database (categories are calculated bottom-up)
             // The database stores global/effective weights
@@ -119,6 +120,21 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
         } catch (err) {
           console.error("Error loading weights:", err);
         }
+
+        // Initialize local weights from effective weights
+        const initialEffective = computeEffectiveWeights(result || [], { ...defaultWeights, ...loadedWeights });
+        const initialLocal: Record<string, number> = {};
+        const calculateInitialLocal = (nodes: TreeNode[], parentEff: number) => {
+          for (const node of nodes) {
+            const eff = initialEffective[node.id] || 0;
+            initialLocal[node.id] = parentEff > 0 ? (eff / parentEff) * 100 : 0;
+            if (node.children) {
+              calculateInitialLocal(node.children, eff || 1);
+            }
+          }
+        };
+        calculateInitialLocal(result || [], 1.0);
+        setLocalWeights(initialLocal);
       } catch (err) {
         console.error("Error loading data:", err);
         setError(err instanceof Error ? err.message : "Error loading data");
@@ -199,83 +215,35 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
     return effective;
   };
 
-  const effectiveWeights = computeEffectiveWeights(data, weights);
+  // NEW: Compute effective weights from local percentages (top-down)
+  const computeEffectiveFromLocal = (nodes: TreeNode[], locals: Record<string, number>): Record<string, number> => {
+    const effective: Record<string, number> = {};
 
-  const handleWeightChange = (nodeId: string, newLocalWeight: number) => {
-    // Find the node and its parent
-    let targetNode: TreeNode | undefined;
-    let parentNode: TreeNode | undefined;
+    const traverse = (nodeList: TreeNode[], parentEffective: number) => {
+      for (const node of nodeList) {
+        const localPercent = locals[node.id] || 0;
+        // Effective = local% × parentEffective
+        effective[node.id] = (localPercent / 100) * parentEffective;
 
-    const findNodeAndParent = (nodes: TreeNode[], parent?: TreeNode) => {
-      for (const node of nodes) {
-        if (node.id === nodeId) {
-          targetNode = node;
-          parentNode = parent;
-          return;
+        if (node.children && node.children.length > 0) {
+          traverse(node.children, effective[node.id]);
         }
-        if (node.children) findNodeAndParent(node.children, node);
       }
     };
-    findNodeAndParent(data);
 
-    if (!targetNode) return;
+    traverse(nodes, 1.0); // Start with base 1.0 for root
+    return effective;
+  };
 
-    const newWeights = { ...weights };
+  // Use localWeights to compute effective weights for display and saving
+  const effectiveWeights = computeEffectiveFromLocal(data, localWeights);
 
-    // Calculate the real/global weight from the local percentage
-    let newRealWeight = 0;
-
-    if (!parentNode) {
-      // Root node: local weight is the absolute global weight percentage
-      // User inputs "5.5" means 5.5% global weight -> 0.055 absolute
-      newRealWeight = newLocalWeight / 100;
-      if (newRealWeight < 0) newRealWeight = 0;
-    } else {
-      // Child node: convert local % to real weight based on parent's effective weight
-      const parentEffectiveWeight = effectiveWeights[parentNode.id] || 0;
-      newRealWeight = (newLocalWeight / 100) * parentEffectiveWeight;
-    }
-
-    // Update the weight based on node type
-    if (targetNode.children && targetNode.children.length > 0) {
-      // It's a category: we need to scale all its leaf descendants
-      const currentEffective = effectiveWeights[nodeId] || 0;
-
-      if (currentEffective === 0) {
-        // If currently 0, distribute the new weight equally among all leaves
-        const distributeWeight = (nodes: TreeNode[], totalToDistribute: number) => {
-          const count = nodes.length;
-          if (count === 0) return;
-          const perChild = totalToDistribute / count;
-          for (const node of nodes) {
-            if (node.children && node.children.length > 0) {
-              distributeWeight(node.children, perChild);
-            } else {
-              newWeights[node.id] = perChild;
-            }
-          }
-        };
-        distributeWeight(targetNode.children, newRealWeight);
-      } else {
-        // Scale existing weights proportionally
-        const ratio = newRealWeight / currentEffective;
-        const scaleLeaves = (nodes: TreeNode[]) => {
-          for (const node of nodes) {
-            if (node.children && node.children.length > 0) {
-              scaleLeaves(node.children);
-            } else {
-              newWeights[node.id] = (newWeights[node.id] || 0) * ratio;
-            }
-          }
-        };
-        scaleLeaves(targetNode.children);
-      }
-    } else {
-      // Leaf node: directly update the weight
-      newWeights[nodeId] = newRealWeight;
-    }
-
-    setWeights(newWeights);
+  const handleWeightChange = (nodeId: string, newLocalWeight: number) => {
+    // Simply update the local weight - siblings remain unchanged!
+    setLocalWeights(prev => ({
+      ...prev,
+      [nodeId]: newLocalWeight
+    }));
   };
 
   const handleEquidistribute = (
@@ -456,31 +424,7 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
 
   const stats = calculateRequirementStats();
 
-  // Traverse tree to calculate local percentages for DISPLAY using EFFECTIVE weights
-
-
-  // Traverse tree to calculate local percentages for DISPLAY using EFFECTIVE weights
-  const localWeights: Record<string, number> = {};
-
-  const calculateLocalWeights = (nodes: TreeNode[], parentEffectiveWeight: number) => {
-    for (const node of nodes) {
-      const effective = effectiveWeights[node.id] || 0;
-      let local = 0;
-      if (parentEffectiveWeight > 0.000001) {
-        local = (effective / parentEffectiveWeight) * 100;
-      }
-      localWeights[node.id] = local;
-
-      if (node.children) {
-        calculateLocalWeights(node.children, effective);
-      }
-    }
-  };
-
-  // Root level effective total
-  // We use 1 as the Base for Root nodes. This ensures that "Local %" for root nodes 
-  // is actually their Absolute Global Weight (e.g. 0.0141 -> 1.41%).
-  calculateLocalWeights(data, 1);
+  // localWeights is now stored in state and initialized at load time
 
 
 
