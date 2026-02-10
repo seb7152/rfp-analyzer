@@ -98,58 +98,22 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
             const weightsData = await weightsResponse.json();
             const loadedWeights: Record<string, number> = {};
 
-            const allRealWeights = new Map<string, number>();
-            for (const [id, weight] of Object.entries(
-              weightsData.categories || {}
-            )) {
-              allRealWeights.set(id as string, (weight as number) * 100);
-            }
+            // Load only REQUIREMENT weights from database (categories are calculated bottom-up)
+            // The database stores global/effective weights
             for (const [id, weight] of Object.entries(
               weightsData.requirements || {}
             )) {
-              allRealWeights.set(id as string, (weight as number) * 100);
-            }
-
-            function assignLoadedWeights(
-              nodes: TreeNode[],
-              parentRealWeight: number = 100
-            ) {
-              let calculatedParentWeight = 0;
-              for (const node of nodes) {
-                const realWeight = allRealWeights.get(node.id);
-                if (realWeight !== undefined && realWeight !== null) {
-                  calculatedParentWeight += realWeight;
-                }
-              }
-
-              const effectiveParentWeight =
-                calculatedParentWeight > 0
-                  ? calculatedParentWeight
-                  : parentRealWeight;
-
-              for (const node of nodes) {
-                const realWeight = allRealWeights.get(node.id);
-
-                if (realWeight !== undefined && realWeight !== null) {
-                  const localWeight =
-                    effectiveParentWeight > 0
-                      ? (realWeight / effectiveParentWeight) * 100
-                      : 0;
-                  loadedWeights[node.id] = Math.round(localWeight * 100) / 100;
-
-                  if (node.children) {
-                    assignLoadedWeights(node.children, realWeight);
-                  }
-                } else if (node.children) {
-                  assignLoadedWeights(node.children, parentRealWeight);
-                }
+              if (weight !== null && weight !== undefined) {
+                loadedWeights[id] = Number(weight);
               }
             }
 
-            assignLoadedWeights(result || []);
-
+            // Merge loaded weights with defaults
             if (Object.keys(loadedWeights).length > 0) {
-              setWeights(loadedWeights);
+              setWeights((prev) => ({
+                ...prev,
+                ...loadedWeights,
+              }));
             }
           }
         } catch (err) {
@@ -204,73 +168,217 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
     setSelectedRequirementId(id);
   };
 
-  const handleWeightChange = (nodeId: string, weight: number) => {
-    setWeights((prev) => ({
-      ...prev,
-      [nodeId]: weight,
-    }));
+  // Helper to compute effective global weights (Bottom-Up)
+  // Leaf = stored weight
+  // Category = sum of children's effective weights
+  const computeEffectiveWeights = (nodes: TreeNode[], currentWeights: Record<string, number>): Record<string, number> => {
+    const effective: Record<string, number> = {};
+
+    const traverse = (nodeList: TreeNode[]) => {
+      for (const node of nodeList) {
+        if (node.children && node.children.length > 0) {
+          traverse(node.children);
+          // Sum children for category
+          let sum = 0;
+          for (const child of node.children) {
+            sum += effective[child.id] || 0;
+          }
+          effective[node.id] = sum;
+        } else {
+          // Leaf (or empty category): use stored weight
+          if (node.type === "category") {
+            effective[node.id] = 0;
+          } else {
+            effective[node.id] = currentWeights[node.id] || 0;
+          }
+        }
+      }
+    };
+
+    traverse(nodes);
+    return effective;
   };
 
-  const handleEquidistribute = (
-    _parentId: string | null,
-    childrenIds: string[]
-  ) => {
-    if (childrenIds.length === 0) return;
+  const effectiveWeights = computeEffectiveWeights(data, weights);
 
-    const weightPerChild = 100 / childrenIds.length;
+  const handleWeightChange = (nodeId: string, newLocalWeight: number) => {
+    // Find the node and its parent
+    let targetNode: TreeNode | undefined;
+    let parentNode: TreeNode | undefined;
+
+    const findNodeAndParent = (nodes: TreeNode[], parent?: TreeNode) => {
+      for (const node of nodes) {
+        if (node.id === nodeId) {
+          targetNode = node;
+          parentNode = parent;
+          return;
+        }
+        if (node.children) findNodeAndParent(node.children, node);
+      }
+    };
+    findNodeAndParent(data);
+
+    if (!targetNode) return;
+
     const newWeights = { ...weights };
 
-    childrenIds.forEach((childId) => {
-      newWeights[childId] = Math.round(weightPerChild * 100) / 100;
-    });
+    // Calculate the real/global weight from the local percentage
+    let newRealWeight = 0;
+
+    if (!parentNode) {
+      // Root node: local weight is the absolute global weight percentage
+      // User inputs "5.5" means 5.5% global weight -> 0.055 absolute
+      newRealWeight = newLocalWeight / 100;
+      if (newRealWeight < 0) newRealWeight = 0;
+    } else {
+      // Child node: convert local % to real weight based on parent's effective weight
+      const parentEffectiveWeight = effectiveWeights[parentNode.id] || 0;
+      newRealWeight = (newLocalWeight / 100) * parentEffectiveWeight;
+    }
+
+    // Update the weight based on node type
+    if (targetNode.children && targetNode.children.length > 0) {
+      // It's a category: we need to scale all its leaf descendants
+      const currentEffective = effectiveWeights[nodeId] || 0;
+
+      if (currentEffective === 0) {
+        // If currently 0, distribute the new weight equally among all leaves
+        const distributeWeight = (nodes: TreeNode[], totalToDistribute: number) => {
+          const count = nodes.length;
+          if (count === 0) return;
+          const perChild = totalToDistribute / count;
+          for (const node of nodes) {
+            if (node.children && node.children.length > 0) {
+              distributeWeight(node.children, perChild);
+            } else {
+              newWeights[node.id] = perChild;
+            }
+          }
+        };
+        distributeWeight(targetNode.children, newRealWeight);
+      } else {
+        // Scale existing weights proportionally
+        const ratio = newRealWeight / currentEffective;
+        const scaleLeaves = (nodes: TreeNode[]) => {
+          for (const node of nodes) {
+            if (node.children && node.children.length > 0) {
+              scaleLeaves(node.children);
+            } else {
+              newWeights[node.id] = (newWeights[node.id] || 0) * ratio;
+            }
+          }
+        };
+        scaleLeaves(targetNode.children);
+      }
+    } else {
+      // Leaf node: directly update the weight
+      newWeights[nodeId] = newRealWeight;
+    }
 
     setWeights(newWeights);
   };
 
-  // Helper function to find parent of a node
-  const getParentId = (
-    targetId: string,
-    nodes: TreeNode[],
-    parentId: string | null = null
-  ): string | null => {
-    for (const node of nodes) {
-      if (node.id === targetId) return parentId;
-      if (node.children) {
-        const found = getParentId(targetId, node.children, node.id);
-        if (found !== null) return found;
-      }
+  const handleEquidistribute = (
+    parentId: string | null,
+    childrenIds: string[]
+  ) => {
+    if (childrenIds.length === 0) return;
+
+    // Distribute equally: each child gets Total/N.
+    // We need to determine "Total". 
+    // If strict bottom-up, "Total" is the sum of current effective, 
+    // OR it's the Parent's effective (which is the same).
+
+    let totalToDistribute = 0;
+    if (parentId) {
+      totalToDistribute = effectiveWeights[parentId] || 0;
+    } else {
+      totalToDistribute = childrenIds.reduce((sum, id) => sum + (effectiveWeights[id] || 0), 0);
     }
-    return null;
-  };
 
-  const calculateRealWeight = (
-    nodeId: string,
-    nodes: TreeNode[] = data,
-    parentId: string | null = null
-  ): number => {
-    const localWeight = weights[nodeId] || 0;
-    if (!parentId) return localWeight;
+    if (totalToDistribute === 0) return;
 
-    const parentParentId = getParentId(parentId, nodes);
-    const parentRealWeight = calculateRealWeight(
-      parentId,
-      nodes,
-      parentParentId
-    );
-    return (localWeight * parentRealWeight) / 100;
+    const perChild = totalToDistribute / childrenIds.length;
+    const newWeights = { ...weights };
+
+    // We need to set each child so that its effective weight becomes `perChild`.
+    // If child is leaf: set weights[child] = perChild.
+    // If child is category: scale its descendants so their sum = perChild.
+
+    const updateNodeTotal = (id: string, targetWeight: number) => {
+      const current = effectiveWeights[id] || 0;
+      if (current === 0) {
+        // If 0, distribute evenly to leaves? 
+        // We need to find the node to get its children.
+        const findNode = (nodes: TreeNode[]): TreeNode | undefined => {
+          for (const n of nodes) {
+            if (n.id === id) return n;
+            if (n.children) {
+              const found = findNode(n.children);
+              if (found) return found;
+            }
+          }
+        };
+        const node = findNode(data);
+        if (node && node.children) {
+          // Distribute to all primitive descendants (leaves)
+          const leaves: string[] = [];
+          const collectLeaves = (n: TreeNode) => {
+            if (n.children && n.children.length > 0) {
+              n.children.forEach(collectLeaves);
+            } else {
+              leaves.push(n.id);
+            }
+          };
+          collectLeaves(node);
+          if (leaves.length > 0) {
+            const val = targetWeight / leaves.length;
+            leaves.forEach(lId => newWeights[lId] = val);
+          }
+        } else {
+          newWeights[id] = targetWeight;
+        }
+      } else {
+        const ratio = targetWeight / current;
+        // Scale descendants
+        const findNode = (nodes: TreeNode[]): TreeNode | undefined => {
+          for (const n of nodes) {
+            if (n.id === id) return n;
+            if (n.children) {
+              const found = findNode(n.children);
+              if (found) return found;
+            }
+          }
+        };
+        const node = findNode(data);
+        if (node) {
+          const scale = (n: TreeNode) => {
+            if (n.children && n.children.length > 0) {
+              n.children.forEach(scale);
+            } else {
+              newWeights[n.id] = (newWeights[n.id] || 0) * ratio;
+            }
+          };
+          scale(node);
+        }
+      }
+    };
+
+    childrenIds.forEach(id => updateNodeTotal(id, perChild));
+    setWeights(newWeights);
   };
 
   const calculateRequirementStats = () => {
     const requirements: Array<{ code: string; weight: number }> = [];
 
-    function traverse(nodes: TreeNode[], parentId: string | null = null) {
+    function traverse(nodes: TreeNode[]) {
       for (const node of nodes) {
         if (node.type === "requirement") {
-          const realWeight = calculateRealWeight(node.id, data, parentId);
-          requirements.push({ code: node.code, weight: realWeight });
+          const globalWeight = effectiveWeights[node.id] || 0;
+          requirements.push({ code: node.code, weight: globalWeight });
         }
         if (node.children) {
-          traverse(node.children, node.id);
+          traverse(node.children);
         }
       }
     }
@@ -278,48 +386,38 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
     traverse(data);
 
     if (requirements.length === 0) {
-      return {
-        average: 0,
-        max: null,
-        min: null,
-      };
+      return { average: 0, max: null, min: null };
     }
 
     const sum = requirements.reduce((acc, r) => acc + r.weight, 0);
     const average = sum / requirements.length;
-
-    const max = requirements.reduce((prev, current) =>
-      current.weight > prev.weight ? current : prev
-    );
-
-    const min = requirements.reduce((prev, current) =>
-      current.weight < prev.weight ? current : prev
-    );
+    const max = requirements.reduce((prev, current) => current.weight > prev.weight ? current : prev);
+    const min = requirements.reduce((prev, current) => current.weight < prev.weight ? current : prev);
 
     return {
-      average: Math.round(average * 100) / 100,
-      max,
-      min,
+      average: Math.round(average * 100 * 100) / 100,
+      max: { ...max, weight: Math.round(max.weight * 100 * 100) / 100 },
+      min: { ...min, weight: Math.round(min.weight * 100 * 100) / 100 },
     };
   };
 
-  const collectRealWeights = () => {
+  const collectWeights = () => {
     const categories: Record<string, number> = {};
     const requirements: Record<string, number> = {};
 
-    function traverse(nodes: TreeNode[], parentId: string | null = null) {
+    function traverse(nodes: TreeNode[]) {
       for (const node of nodes) {
-        const realWeight = calculateRealWeight(node.id, data, parentId);
-        const decimalWeight = Math.round((realWeight / 100) * 10000) / 10000;
+        // Use EFFECTIVE weights for saving
+        const globalWeight = effectiveWeights[node.id] || 0;
 
         if (node.type === "category") {
-          categories[node.id] = decimalWeight;
+          categories[node.id] = globalWeight;
         } else if (node.type === "requirement") {
-          requirements[node.id] = decimalWeight;
+          requirements[node.id] = globalWeight;
         }
 
         if (node.children) {
-          traverse(node.children, node.id);
+          traverse(node.children);
         }
       }
     }
@@ -333,17 +431,12 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
       setSaving(true);
       setSaveMessage(null);
 
-      const { categories, requirements } = collectRealWeights();
+      const { categories, requirements } = collectWeights();
 
       const response = await fetch(`/api/rfps/${rfpId}/weights`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          categories,
-          requirements,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categories, requirements }),
       });
 
       if (!response.ok) {
@@ -351,23 +444,45 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
         throw new Error(errorData.error || "Error saving weights");
       }
 
-      setSaveMessage({
-        type: "success",
-        text: "Weights saved successfully!",
-      });
+      setSaveMessage({ type: "success", text: "Weights saved successfully!" });
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (err) {
       console.error("Error saving weights:", err);
-      setSaveMessage({
-        type: "error",
-        text: err instanceof Error ? err.message : "Error saving weights",
-      });
+      setSaveMessage({ type: "error", text: err instanceof Error ? err.message : "Error saving weights" });
     } finally {
       setSaving(false);
     }
   };
 
   const stats = calculateRequirementStats();
+
+  // Traverse tree to calculate local percentages for DISPLAY using EFFECTIVE weights
+
+
+  // Traverse tree to calculate local percentages for DISPLAY using EFFECTIVE weights
+  const localWeights: Record<string, number> = {};
+
+  const calculateLocalWeights = (nodes: TreeNode[], parentEffectiveWeight: number) => {
+    for (const node of nodes) {
+      const effective = effectiveWeights[node.id] || 0;
+      let local = 0;
+      if (parentEffectiveWeight > 0.000001) {
+        local = (effective / parentEffectiveWeight) * 100;
+      }
+      localWeights[node.id] = local;
+
+      if (node.children) {
+        calculateLocalWeights(node.children, effective);
+      }
+    }
+  };
+
+  // Root level effective total
+  // We use 1 as the Base for Root nodes. This ensures that "Local %" for root nodes 
+  // is actually their Absolute Global Weight (e.g. 0.0141 -> 1.41%).
+  calculateLocalWeights(data, 1);
+
+
 
   if (loading) {
     return (
@@ -388,11 +503,10 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
       {/* Success/Error Message */}
       {saveMessage && (
         <div
-          className={`p-4 rounded-lg ${
-            saveMessage.type === "success"
-              ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-200"
-              : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200"
-          }`}
+          className={`p-4 rounded-lg ${saveMessage.type === "success"
+            ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-200"
+            : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200"
+            }`}
         >
           {saveMessage.text}
         </div>
@@ -475,7 +589,7 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
         data={data}
         expandedNodeIds={expandedNodeIds}
         onToggleNode={handleToggleNode}
-        weights={weights}
+        weights={localWeights}
         onWeightChange={handleWeightChange}
         onSelectRequirement={handleSelectRequirement}
         selectedRequirementId={selectedRequirementId}
