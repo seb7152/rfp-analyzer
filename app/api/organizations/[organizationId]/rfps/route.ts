@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import type { RFP } from "@/lib/supabase/types";
 
 export async function GET(
   request: NextRequest,
@@ -31,7 +32,7 @@ export async function GET(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    let rfps = [];
+    let rfps: RFP[] = [];
     let rfpsError: { message: string } | null = null;
 
     const canReadAll = userOrg.role === "admin" && scope !== "assigned";
@@ -67,7 +68,9 @@ export async function GET(
       if (assignmentsResult.error) {
         rfpsError = assignmentsResult.error;
       } else {
-        const rfpIds = assignmentsResult.data?.map((a: any) => a.rfp_id) || [];
+        const rfpIds: string[] =
+          assignmentsResult.data?.map((a: { rfp_id: string }) => a.rfp_id) ||
+          [];
 
         if (rfpIds.length === 0) {
           rfps = [];
