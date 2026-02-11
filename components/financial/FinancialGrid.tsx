@@ -12,7 +12,10 @@ import { SummaryTable } from "./SummaryTable";
 import { SupplierModeContent } from "./SupplierModeContent";
 import { toast } from "sonner";
 import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
-import { useFinancialVersions, useFinancialSummary } from "@/hooks/use-financial-data";
+import {
+  useFinancialVersions,
+  useFinancialSummary,
+} from "@/hooks/use-financial-data";
 import { cn } from "@/lib/utils";
 
 interface FinancialGridProps {

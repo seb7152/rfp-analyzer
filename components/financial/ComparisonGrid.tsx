@@ -310,7 +310,7 @@ export function ComparisonGrid({
           onError: (err: unknown) => {
             toast.error(
               "Erreur lors de la sauvegarde: " +
-              (err instanceof Error ? err.message : "Erreur inconnue")
+                (err instanceof Error ? err.message : "Erreur inconnue")
             );
           },
         }
@@ -341,7 +341,7 @@ export function ComparisonGrid({
               onVersionChange(currentVersion.supplier_id, newVersionId);
             }
             // Update internal state as fallback
-            setInternalSelectedVersions(prev => {
+            setInternalSelectedVersions((prev) => {
               const map = new Map(prev);
               map.set(currentVersion.supplier_id, newVersionId);
               return map;
@@ -349,15 +349,20 @@ export function ComparisonGrid({
 
             // Proceed to save values to this new version
             // Merge existing values (from source version) with new edits
-            const sourceValues = remoteValues.filter(v => v.version_id === editingVersionId);
-            const mergedValuesMap = new Map<string, Partial<FinancialOfferValue>>();
+            const sourceValues = remoteValues.filter(
+              (v) => v.version_id === editingVersionId
+            );
+            const mergedValuesMap = new Map<
+              string,
+              Partial<FinancialOfferValue>
+            >();
 
             // 1. Populate with existing source values
-            sourceValues.forEach(v => {
+            sourceValues.forEach((v) => {
               mergedValuesMap.set(v.template_line_id, {
                 setup_cost: v.setup_cost,
                 recurrent_cost: v.recurrent_cost,
-                quantity: v.quantity
+                quantity: v.quantity,
               });
             });
 
@@ -369,10 +374,12 @@ export function ComparisonGrid({
               });
             }
 
-            const fullValuesToSave = Array.from(mergedValuesMap.entries()).map(([lineId, val]) => ({
-              template_line_id: lineId,
-              ...val
-            }));
+            const fullValuesToSave = Array.from(mergedValuesMap.entries()).map(
+              ([lineId, val]) => ({
+                template_line_id: lineId,
+                ...val,
+              })
+            );
 
             // Use batchUpdate to save the FULL set of values to the new version
             batchUpdate(
@@ -385,13 +392,18 @@ export function ComparisonGrid({
                   setSaveModalOpen(false);
                 },
                 onError: (err: unknown) => {
-                  toast.error("Erreur lors de la copie des valeurs: " + (err instanceof Error ? err.message : "Erreur inconnue"));
-                }
+                  toast.error(
+                    "Erreur lors de la copie des valeurs: " +
+                      (err instanceof Error ? err.message : "Erreur inconnue")
+                  );
+                },
               }
             );
           },
           onError: (err: any) => {
-            toast.error("Erreur lors de la création de la version: " + err.message);
+            toast.error(
+              "Erreur lors de la création de la version: " + err.message
+            );
           },
         }
       );
@@ -682,7 +694,6 @@ export function ComparisonGrid({
           versions.find((v) => v.id === editingVersionId)?.version_name || ""
         }
       />
-
     </div>
   );
 }
@@ -769,7 +780,7 @@ function renderRows(
         className={cn(
           "hover:bg-slate-50/50 transition-colors",
           hasChildren &&
-          "bg-slate-50/30 font-semibold text-slate-900 border-l-2 border-l-slate-200"
+            "bg-slate-50/30 font-semibold text-slate-900 border-l-2 border-l-slate-200"
         )}
       >
         <TableCell className="py-2 pl-4">
@@ -796,7 +807,9 @@ function renderRows(
                 {line.line_code}
               </span>
               <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-sm truncate font-medium">{line.name}</span>
+                <span className="text-sm truncate font-medium">
+                  {line.name}
+                </span>
                 {line.description && (
                   <Popover>
                     <PopoverTrigger asChild>
@@ -846,11 +859,11 @@ function renderRows(
           // Calculate total if parent
           const calculatedTotal = hasChildren
             ? calculateTotal(
-              line,
-              valuesMap,
-              version?.id,
-              line.line_type === "setup" ? "setup" : "recurrent"
-            )
+                line,
+                valuesMap,
+                version?.id,
+                line.line_type === "setup" ? "setup" : "recurrent"
+              )
             : null;
 
           // Compute cell specific metrics
@@ -897,9 +910,9 @@ function renderRows(
                 <div className="text-right text-xs font-bold text-slate-900 px-3">
                   {calculatedTotal !== null
                     ? new Intl.NumberFormat("fr-FR", {
-                      style: "currency",
-                      currency: "EUR",
-                    }).format(calculatedTotal)
+                        style: "currency",
+                        currency: "EUR",
+                      }).format(calculatedTotal)
                     : "-"}
                 </div>
               ) : (
@@ -925,7 +938,7 @@ function renderRows(
                   type="currency"
                   suffix={
                     line.line_type === "recurrent" &&
-                      line.recurrence_type === "monthly"
+                    line.recurrence_type === "monthly"
                       ? "/m"
                       : line.line_type === "recurrent"
                         ? "/a"

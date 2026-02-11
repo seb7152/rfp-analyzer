@@ -67,11 +67,11 @@ export async function GET(request: NextRequest) {
       ...comment,
       author: comment.auth_user
         ? {
-          id: comment.auth_user.id,
-          email: comment.auth_user.email,
-          full_name: comment.auth_user.full_name,
-          avatar_url: comment.auth_user.avatar_url,
-        }
+            id: comment.auth_user.id,
+            email: comment.auth_user.email,
+            full_name: comment.auth_user.full_name,
+            avatar_url: comment.auth_user.avatar_url,
+          }
         : null,
     }));
 

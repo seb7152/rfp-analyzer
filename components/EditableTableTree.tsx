@@ -51,6 +51,76 @@ interface EditableTableTreeProps {
   onEquidistribute?: (parentId: string | null, childrenIds: string[]) => void;
 }
 
+// Internal component to handle input state gracefully
+function WeightInput({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (val: number) => void;
+}) {
+  const [localValue, setLocalValue] = React.useState(value.toString());
+
+  // Sync with prop value if it changes significantly from what we have
+  // (e.g. external update), but avoid overriding while typing if compatible.
+  React.useEffect(() => {
+    const numericLocal = parseFloat(localValue);
+    // If the prop value is different from our current parsed local value,
+    // we should update. BUT we need to be careful not to kill "1." type inputs.
+    // Simple heuristic: if diff is > 0.001, assume external change.
+    if (Math.abs(numericLocal - value) > 0.001 || isNaN(numericLocal)) {
+      setLocalValue(value === 0 && localValue === "" ? "" : value.toString());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const strVal = e.target.value;
+    setLocalValue(strVal);
+    // Don't call onChange here to avoid triggering global logic while typing
+  };
+
+  const handleBlur = () => {
+    // On blur, format nicely and commit
+    if (localValue === "") {
+      setLocalValue("0");
+      onChange(0);
+      return;
+    }
+
+    const num = parseFloat(localValue);
+    if (isNaN(num)) {
+      setLocalValue("0");
+      onChange(0);
+    } else {
+      // Keep string simple, sync with prop logic eventually
+      setLocalValue(num.toString());
+      onChange(num);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.currentTarget.blur();
+    }
+  };
+
+
+  return (
+    <Input
+      type="number"
+      min="0"
+      max="100"
+      step="0.01"
+      value={localValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      className="w-20 h-8 text-sm text-right"
+    />
+  );
+}
+
 export function EditableTableTree({
   data,
   expandedNodeIds,
@@ -293,20 +363,9 @@ export function EditableTableTree({
           {/* Colonne: Pondération locale (éditable) */}
           <TableCell className="w-[140px]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-1">
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
+              <WeightInput
                 value={localWeight}
-                onChange={(e) => {
-                  const value = Math.max(
-                    0,
-                    Math.min(100, parseFloat(e.target.value) || 0)
-                  );
-                  onWeightChange(item.id, value);
-                }}
-                className="w-20 h-8 text-sm text-right"
+                onChange={(val) => onWeightChange(item.id, val)}
               />
               <span className="text-sm font-medium">%</span>
             </div>

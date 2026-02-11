@@ -112,10 +112,7 @@ export function SummaryTable({
                     {formatCurrency(item.total_setup)}
                     {referenceData &&
                       item.supplier_id !== referenceSupplierId &&
-                      renderDiff(
-                        item.total_setup,
-                        referenceData.total_setup
-                      )}
+                      renderDiff(item.total_setup, referenceData.total_setup)}
                   </div>
                 </td>
               ))}
