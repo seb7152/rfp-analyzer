@@ -1,4 +1,8 @@
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
 import { EditableCell } from "./EditableCell";
 import { CommentPopover } from "./CommentPopover";
@@ -79,9 +83,9 @@ export function CellWithComment({
                     {metrics.diffMin === 0
                       ? "-"
                       : `+${new Intl.NumberFormat("fr-FR", {
-                        style: "percent",
-                        maximumFractionDigits: 1,
-                      }).format(metrics.diffMin)}`}
+                          style: "percent",
+                          maximumFractionDigits: 1,
+                        }).format(metrics.diffMin)}`}
                   </span>
 
                   <span className="text-slate-500">Écart / Max:</span>
@@ -94,9 +98,9 @@ export function CellWithComment({
                     {metrics.diffMax === 0
                       ? "-"
                       : `${new Intl.NumberFormat("fr-FR", {
-                        style: "percent",
-                        maximumFractionDigits: 1,
-                      }).format(metrics.diffMax)}`}
+                          style: "percent",
+                          maximumFractionDigits: 1,
+                        }).format(metrics.diffMax)}`}
                   </span>
                 </div>
               </div>

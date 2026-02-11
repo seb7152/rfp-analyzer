@@ -84,7 +84,10 @@ export function SupplierSummaryTable({
           Évolution des Versions - {supplierName}
         </h4>
         <p className="text-xs text-slate-500 mt-0.5">
-          Comparaison par rapport à : <span className="font-medium text-slate-900">{referenceItem?.versionName || "Version initiale"}</span>
+          Comparaison par rapport à :{" "}
+          <span className="font-medium text-slate-900">
+            {referenceItem?.versionName || "Version initiale"}
+          </span>
         </p>
       </div>
       <div className="overflow-x-auto">
@@ -113,20 +116,27 @@ export function SupplierSummaryTable({
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {data.map((item) => {
-              const isReference = referenceItem && item.versionId === referenceItem.versionId;
+              const isReference =
+                referenceItem && item.versionId === referenceItem.versionId;
 
-              const tcoVariation = referenceItem && !isReference
-                ? calculateVariation(item.tco, referenceItem.tco)
-                : null;
-              const setupVariation = referenceItem && !isReference
-                ? calculateVariation(item.totalSetup, referenceItem.totalSetup)
-                : null;
-              const recurrentVariation = referenceItem && !isReference
-                ? calculateVariation(
-                  item.totalRecurrentAnnual,
-                  referenceItem.totalRecurrentAnnual
-                )
-                : null;
+              const tcoVariation =
+                referenceItem && !isReference
+                  ? calculateVariation(item.tco, referenceItem.tco)
+                  : null;
+              const setupVariation =
+                referenceItem && !isReference
+                  ? calculateVariation(
+                      item.totalSetup,
+                      referenceItem.totalSetup
+                    )
+                  : null;
+              const recurrentVariation =
+                referenceItem && !isReference
+                  ? calculateVariation(
+                      item.totalRecurrentAnnual,
+                      referenceItem.totalRecurrentAnnual
+                    )
+                  : null;
 
               const isBest = item.tco === minTco && data.length > 1;
 
@@ -137,12 +147,21 @@ export function SupplierSummaryTable({
                     "group transition-colors",
                     isBest && "bg-emerald-50/30",
                     isReference && !isBest && "bg-blue-50/40",
-                    !isBest && !isReference && "hover:bg-slate-50/50 dark:hover:bg-slate-900/30"
+                    !isBest &&
+                      !isReference &&
+                      "hover:bg-slate-50/50 dark:hover:bg-slate-900/30"
                   )}
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <span className={cn("font-medium", isReference ? "text-blue-700" : "text-slate-900 dark:text-slate-100")}>
+                      <span
+                        className={cn(
+                          "font-medium",
+                          isReference
+                            ? "text-blue-700"
+                            : "text-slate-900 dark:text-slate-100"
+                        )}
+                      >
                         {item.versionName}
                       </span>
                       {isReference && (

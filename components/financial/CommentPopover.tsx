@@ -120,7 +120,7 @@ export function CommentPopover({
         commentId: editingId,
         input: {
           comment: editingText,
-          type: editingType
+          type: editingType,
         },
       },
       {
@@ -141,8 +141,8 @@ export function CommentPopover({
 
   // Determine main indicator color based on priority
   // Priority: Negotiation > Warning > Comment
-  const hasNegotiation = comments.some(c => c.type === "negotiation");
-  const hasWarning = comments.some(c => c.type === "warning");
+  const hasNegotiation = comments.some((c) => c.type === "negotiation");
+  const hasWarning = comments.some((c) => c.type === "warning");
 
   let triggerColorClass = "text-gray-400 dark:text-gray-600";
   let badgeColorClass = "bg-blue-500";
@@ -169,9 +169,17 @@ export function CommentPopover({
             hasComments ? "Commentaires existants" : "Ajouter un commentaire"
           }
         >
-          {hasNegotiation ? <HelpingHand size={16} /> : hasWarning ? <AlertTriangle size={16} /> : <MessageCircle size={16} />}
+          {hasNegotiation ? (
+            <HelpingHand size={16} />
+          ) : hasWarning ? (
+            <AlertTriangle size={16} />
+          ) : (
+            <MessageCircle size={16} />
+          )}
           {hasComments && (
-            <span className={`absolute -top-0.5 -right-0.5 text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center shadow-sm ${badgeColorClass}`}>
+            <span
+              className={`absolute -top-0.5 -right-0.5 text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center shadow-sm ${badgeColorClass}`}
+            >
               {comments.length}
             </span>
           )}
@@ -214,10 +222,11 @@ export function CommentPopover({
                             <button
                               key={t}
                               onClick={() => setEditingType(t)}
-                              className={`p-1.5 rounded-full border ${editingType === t
-                                ? getTypeColor(t)
-                                : "bg-gray-50 border-gray-200 text-gray-400"
-                                }`}
+                              className={`p-1.5 rounded-full border ${
+                                editingType === t
+                                  ? getTypeColor(t)
+                                  : "bg-gray-50 border-gray-200 text-gray-400"
+                              }`}
                               title={
                                 t === "negotiation"
                                   ? "Axe de négociation"
@@ -255,7 +264,9 @@ export function CommentPopover({
                   ) : (
                     <>
                       {/* Comment content */}
-                      <div className={`flex gap-2 items-start ${comment.type !== 'comment' ? 'p-2 rounded bg-opacity-50 ' + getTypeColor(comment.type || 'comment').split(' ')[1] : ''}`}>
+                      <div
+                        className={`flex gap-2 items-start ${comment.type !== "comment" ? "p-2 rounded bg-opacity-50 " + getTypeColor(comment.type || "comment").split(" ")[1] : ""}`}
+                      >
                         <div className="mt-0.5 shrink-0">
                           {getTypeIcon(comment.type || "comment", 14)}
                         </div>
@@ -319,10 +330,13 @@ export function CommentPopover({
                 <button
                   key={t}
                   onClick={() => setNewCommentType(t)}
-                  className={`p-1.5 rounded-full border transition-all ${newCommentType === t
-                    ? getTypeColor(t) + " ring-2 ring-offset-1 ring-offset-white dark:ring-offset-gray-900 " + getTypeColor(t).split(' ')[0].replace('text-', 'ring-')
-                    : "bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100"
-                    }`}
+                  className={`p-1.5 rounded-full border transition-all ${
+                    newCommentType === t
+                      ? getTypeColor(t) +
+                        " ring-2 ring-offset-1 ring-offset-white dark:ring-offset-gray-900 " +
+                        getTypeColor(t).split(" ")[0].replace("text-", "ring-")
+                      : "bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100"
+                  }`}
                   title={
                     t === "negotiation"
                       ? "Axe de négociation"
@@ -346,12 +360,14 @@ export function CommentPopover({
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Saisissez votre commentaire..."
-              className={`w-full p-2 border rounded text-sm resize-none dark:bg-gray-800 dark:text-white ${newCommentType !== "comment"
-                ? getTypeColor(newCommentType).split(" ")[2] +
-                " " +
-                getTypeColor(newCommentType).split(" ")[1] + " bg-opacity-20"
-                : "border-gray-300 dark:border-gray-600"
-                }`}
+              className={`w-full p-2 border rounded text-sm resize-none dark:bg-gray-800 dark:text-white ${
+                newCommentType !== "comment"
+                  ? getTypeColor(newCommentType).split(" ")[2] +
+                    " " +
+                    getTypeColor(newCommentType).split(" ")[1] +
+                    " bg-opacity-20"
+                  : "border-gray-300 dark:border-gray-600"
+              }`}
               rows={3}
               disabled={isCreating}
             />

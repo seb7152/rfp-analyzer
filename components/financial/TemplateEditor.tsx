@@ -41,9 +41,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  FinancialTemplateLine,
-} from "@/lib/financial/calculations";
+import { FinancialTemplateLine } from "@/lib/financial/calculations";
 
 interface TemplateEditorProps {
   templateId: string;

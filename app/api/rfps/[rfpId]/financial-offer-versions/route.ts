@@ -28,7 +28,10 @@ export async function GET(
 
     if (suppliersError) {
       console.error("Error fetching suppliers for versions:", suppliersError);
-      return NextResponse.json({ error: suppliersError.message }, { status: 500 });
+      return NextResponse.json(
+        { error: suppliersError.message },
+        { status: 500 }
+      );
     }
 
     const supplierIds = suppliers.map((s) => s.id);

@@ -386,7 +386,7 @@ function renderRows(
         className={cn(
           "hover:bg-slate-50/50 transition-colors",
           hasChildren &&
-          "bg-slate-50/30 font-semibold text-slate-900 border-l-2 border-l-slate-200"
+            "bg-slate-50/30 font-semibold text-slate-900 border-l-2 border-l-slate-200"
         )}
       >
         <TableCell className="py-2 pl-4">
@@ -413,7 +413,9 @@ function renderRows(
                 {line.line_code}
               </span>
               <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-sm truncate font-medium">{line.name}</span>
+                <span className="text-sm truncate font-medium">
+                  {line.name}
+                </span>
                 {line.description && (
                   <Popover>
                     <PopoverTrigger asChild>
@@ -466,19 +468,19 @@ function renderRows(
           // Calculate total if parent
           const calculatedTotal = hasChildren
             ? calculateTotal(
-              line as LineWithValues,
-              version.id,
-              line.line_type === "setup" ? "setup" : "recurrent"
-            )
+                line as LineWithValues,
+                version.id,
+                line.line_type === "setup" ? "setup" : "recurrent"
+              )
             : null;
 
           const prevCalculatedTotal =
             hasChildren && prevVersion
               ? calculateTotal(
-                line as LineWithValues,
-                prevVersion.id,
-                line.line_type === "setup" ? "setup" : "recurrent"
-              )
+                  line as LineWithValues,
+                  prevVersion.id,
+                  line.line_type === "setup" ? "setup" : "recurrent"
+                )
               : null;
 
           // Get current and previous values for leaf nodes
@@ -497,9 +499,9 @@ function renderRows(
           // Calculate variation
           const variation =
             versionIdx > 0 &&
-              previousValue !== null &&
-              previousValue !== 0 &&
-              currentValue !== null
+            previousValue !== null &&
+            previousValue !== 0 &&
+            currentValue !== null
               ? ((currentValue - previousValue) / previousValue) * 100
               : null;
 
