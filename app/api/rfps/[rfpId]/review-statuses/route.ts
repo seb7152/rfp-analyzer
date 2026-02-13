@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
 
 export async function GET(
@@ -41,7 +42,11 @@ export async function GET(
       return accessError;
     }
 
-    const { data: statuses, error: statusError } = await supabase
+    // Service client — access already validated above, RLS SELECT uses
+    // auth.jwt() ->> 'organization_id' which is not a configured custom claim
+    const adminSupabase = createServiceClient();
+
+    const { data: statuses, error: statusError } = await adminSupabase
       .from("requirement_review_status")
       .select(
         "id, requirement_id, version_id, status, submitted_by, submitted_at, reviewed_by, reviewed_at, rejection_comment, created_at, updated_at"
