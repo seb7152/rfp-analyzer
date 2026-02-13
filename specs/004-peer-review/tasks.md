@@ -17,9 +17,9 @@
 
 **Purpose**: Nouveaux types TypeScript et migration DB — bloquants pour tout le reste.
 
-- [ ] T001 Créer le fichier de types `types/peer-review.ts` avec `PeerReviewStatus`, `RequirementReviewStatus`, `UpdateReviewStatusRequest`
-- [ ] T002 Créer la migration Supabase `supabase/migrations/20260213_add_peer_review.sql` : colonne `rfps.peer_review_enabled BOOLEAN DEFAULT false` + table `requirement_review_status` + index + trigger `updated_at` + RLS policies (SELECT membres org, INSERT/UPDATE membres assignés)
-- [ ] T003 Mettre à jour `lib/supabase/types.ts` : ajouter `peer_review_enabled` sur le type `rfps`, ajouter les types `requirement_review_status` (insert, update, row)
+- [x] T001 Créer le fichier de types `types/peer-review.ts` avec `PeerReviewStatus`, `RequirementReviewStatus`, `UpdateReviewStatusRequest`
+- [x] T002 Créer la migration Supabase `supabase/migrations/20260213_add_peer_review.sql` : colonne `rfps.peer_review_enabled BOOLEAN DEFAULT false` + table `requirement_review_status` + index + trigger `updated_at` + RLS policies (SELECT membres org, INSERT/UPDATE membres assignés)
+- [x] T003 Mettre à jour `lib/supabase/types.ts` : ajouter `peer_review_enabled` sur le type `rfps`, ajouter les types `requirement_review_status` (insert, update, row)
 
 ---
 
