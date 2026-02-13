@@ -29,10 +29,10 @@
 
 **⚠️ CRITIQUE** : Les phases US1–US4 ne peuvent pas démarrer tant que cette phase n'est pas terminée.
 
-- [ ] T004 Étendre le handler PATCH `app/api/rfps/[rfpId]/route.ts` : ajouter `peer_review_enabled` à la whitelist des champs patchables, restreindre cette modification aux `access_level IN ('owner', 'admin')` via `checkRFPAccess`
-- [ ] T005 Créer le handler GET `app/api/rfps/[rfpId]/review-statuses/route.ts` : récupérer tous les `requirement_review_status` d'un RFP pour un `versionId` donné (query param requis), retourner `{ statuses: RequirementReviewStatus[] }`, contrôle d'accès `viewer+`
-- [ ] T006 Créer le handler PATCH `app/api/rfps/[rfpId]/requirements/[requirementId]/review-status/route.ts` : implémenter la matrice de transitions (`draft→submitted` pour evaluator/owner, `submitted→approved` pour owner/admin, `submitted→rejected→draft` pour owner/admin), valider que `peer_review_enabled` est actif sur le RFP, upsert dans `requirement_review_status`, retourner `{ review_status }` ou `400` si transition invalide
-- [ ] T007 [P] Créer le hook React Query `hooks/use-peer-review.ts` : `usePeerReviewStatuses(rfpId, versionId)` → fetch `GET /review-statuses`, retourner un `Map<requirementId, RequirementReviewStatus>` + `isLoading` + `error` ; `usePeerReviewMutation(rfpId)` → PATCH `/review-status`, invalidation du cache tanstack-query sur succès
+- [x] T004 Étendre le handler PATCH `app/api/rfps/[rfpId]/route.ts` : ajouter `peer_review_enabled` à la whitelist des champs patchables, restreindre cette modification aux `access_level IN ('owner', 'admin')` via `checkRFPAccess`
+- [x] T005 Créer le handler GET `app/api/rfps/[rfpId]/review-statuses/route.ts` : récupérer tous les `requirement_review_status` d'un RFP pour un `versionId` donné (query param requis), retourner `{ statuses: RequirementReviewStatus[] }`, contrôle d'accès `viewer+`
+- [x] T006 Créer le handler PATCH `app/api/rfps/[rfpId]/requirements/[requirementId]/review-status/route.ts` : implémenter la matrice de transitions (`draft→submitted` pour evaluator/owner, `submitted→approved` pour owner/admin, `submitted→rejected→draft` pour owner/admin), valider que `peer_review_enabled` est actif sur le RFP, upsert dans `requirement_review_status`, retourner `{ review_status }` ou `400` si transition invalide
+- [x] T007 [P] Créer le hook React Query `hooks/use-peer-review.ts` : `usePeerReviewStatuses(rfpId, versionId)` → fetch `GET /review-statuses`, retourner un `Map<requirementId, RequirementReviewStatus>` + `isLoading` + `error` ; `usePeerReviewMutation(rfpId)` → PATCH `/review-status`, invalidation du cache tanstack-query sur succès
 
 **Checkpoint** : API + hook prêts — les stories US1–US4 peuvent démarrer en parallèle.
 
