@@ -19,7 +19,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AlertCircle, Building2 } from "lucide-react";
+import { AlertCircle, Building2, Users } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface Organization {
   id: string;
@@ -30,11 +31,15 @@ interface Organization {
 interface SettingsTabProps {
   rfpId: string;
   currentOrganizationId: string;
+  peerReviewEnabled?: boolean;
+  userAccessLevel?: "owner" | "evaluator" | "viewer" | "admin";
 }
 
 export function SettingsTab({
   rfpId,
   currentOrganizationId,
+  peerReviewEnabled = false,
+  userAccessLevel = "viewer",
 }: SettingsTabProps) {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
@@ -43,6 +48,14 @@ export function SettingsTab({
   const [error, setError] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isChanging, setIsChanging] = useState(false);
+
+  // Peer review toggle state
+  const [isPeerReviewEnabled, setIsPeerReviewEnabled] =
+    useState(peerReviewEnabled);
+  const [isPeerReviewSaving, setIsPeerReviewSaving] = useState(false);
+  const [peerReviewError, setPeerReviewError] = useState<string | null>(null);
+  const canTogglePeerReview =
+    userAccessLevel === "owner" || userAccessLevel === "admin";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,6 +95,32 @@ export function SettingsTab({
 
   const selectedOrg = organizations.find((org) => org.id === selectedOrgId);
   const hasChanges = selectedOrgId !== currentOrganizationId;
+
+  const handleTogglePeerReview = async (enabled: boolean) => {
+    if (!canTogglePeerReview) return;
+    try {
+      setIsPeerReviewSaving(true);
+      setPeerReviewError(null);
+      const response = await fetch(`/api/rfps/${rfpId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ peer_review_enabled: enabled }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Erreur lors de la mise à jour");
+      }
+      setIsPeerReviewEnabled(enabled);
+    } catch (err) {
+      setPeerReviewError(
+        err instanceof Error ? err.message : "Erreur lors de la mise à jour"
+      );
+      // revert optimistic update
+      setIsPeerReviewEnabled(!enabled);
+    } finally {
+      setIsPeerReviewSaving(false);
+    }
+  };
 
   const handleChangeOrganization = async () => {
     if (!selectedOrgId || selectedOrgId === currentOrganizationId) {
@@ -146,6 +185,46 @@ export function SettingsTab({
           <span>{error}</span>
         </div>
       )}
+
+      {/* Peer Review Section */}
+      <Card className="p-6">
+        <div className="flex items-start gap-2 mb-4">
+          <Users className="h-5 w-5 text-slate-600 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="font-semibold text-lg">Peer Review</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Permet aux évaluateurs de soumettre leurs analyses pour validation
+              par un responsable avant finalisation.
+            </p>
+          </div>
+        </div>
+
+        {peerReviewError && (
+          <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200 text-sm flex items-start gap-2 mb-4">
+            <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            <span>{peerReviewError}</span>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+              {isPeerReviewEnabled ? "Activé" : "Désactivé"}
+            </p>
+            {!canTogglePeerReview && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Réservé aux owners et admins
+              </p>
+            )}
+          </div>
+          <Switch
+            checked={isPeerReviewEnabled}
+            onCheckedChange={handleTogglePeerReview}
+            disabled={!canTogglePeerReview || isPeerReviewSaving}
+            aria-label="Activer le peer review"
+          />
+        </div>
+      </Card>
 
       <Card className="p-6">
         <div className="space-y-6">

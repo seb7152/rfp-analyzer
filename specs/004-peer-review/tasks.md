@@ -44,10 +44,10 @@
 
 **Independent Test**: Activer le toggle sur un RFP → ouvrir `/evaluate` → vérifier que les badges `draft` apparaissent sur les exigences.
 
-- [ ] T008 [US1] Créer le composant `components/PeerReviewBadge.tsx` : badge coloré selon statut (`draft`=gris, `submitted`=bleu, `approved`=vert, `rejected`=rouge), props `{ status: PeerReviewStatus, className? }`, label FR par statut ("En cours" / "En attente" / "Validé" / "Rejeté")
-- [ ] T009 [US1] Ajouter le toggle "Peer Review" dans la page ou composant de paramètres RFP existant (vérifier `app/dashboard/rfp/[rfpId]/` pour trouver le composant de settings) : switch activable par owner/admin uniquement, appel `PATCH /api/rfps/{rfpId}` avec `{ peer_review_enabled }`, feedback visuel (toast succès/erreur)
-- [ ] T010 [US1] Modifier `app/dashboard/rfp/[rfpId]/evaluate/page.tsx` : récupérer `rfp.peer_review_enabled` et la version active, conditionner le rendu des badges peer review, passer `peerReviewEnabled`, `reviewStatuses` et `userAccessLevel` aux composants enfants
-- [ ] T011 [US1] Modifier `components/ComparisonView.tsx` : dans le header de l'exigence sélectionnée, afficher `<PeerReviewBadge>` conditionné à `peerReviewEnabled`, positionné à côté du titre de l'exigence
+- [x] T008 [US1] Créer le composant `components/PeerReviewBadge.tsx` : badge coloré selon statut (`draft`=gris, `submitted`=bleu, `approved`=vert, `rejected`=rouge), props `{ status: PeerReviewStatus, className? }`, label FR par statut ("En cours" / "En attente" / "Validé" / "Rejeté")
+- [x] T009 [US1] Ajouter le toggle "Peer Review" dans la page ou composant de paramètres RFP existant (vérifier `app/dashboard/rfp/[rfpId]/` pour trouver le composant de settings) : switch activable par owner/admin uniquement, appel `PATCH /api/rfps/{rfpId}` avec `{ peer_review_enabled }`, feedback visuel (toast succès/erreur)
+- [x] T010 [US1] Modifier `app/dashboard/rfp/[rfpId]/evaluate/page.tsx` : récupérer `rfp.peer_review_enabled` et la version active, conditionner le rendu des badges peer review, passer `peerReviewEnabled`, `reviewStatuses` et `userAccessLevel` aux composants enfants
+- [x] T011 [US1] Modifier `components/ComparisonView.tsx` : dans le header de l'exigence sélectionnée, afficher `<PeerReviewBadge>` conditionné à `peerReviewEnabled`, positionné à côté du titre de l'exigence
 
 ---
 

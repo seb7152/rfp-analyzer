@@ -884,6 +884,8 @@ export default function RFPSummaryPage() {
                 <SettingsTab
                   rfpId={rfpId}
                   currentOrganizationId={data.rfp.organization_id}
+                  peerReviewEnabled={(data.rfp as any).peer_review_enabled ?? false}
+                  userAccessLevel={data.userAccessLevel}
                 />
               ) : null}
             </TabsContent>

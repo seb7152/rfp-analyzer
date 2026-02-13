@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRequirements } from "@/hooks/use-requirements";
 import { useRFPCompletion } from "@/hooks/use-completion";
 import { useAllResponses } from "@/hooks/use-all-responses";
+import { usePeerReviewStatuses } from "@/hooks/use-peer-review";
 import { Sidebar } from "@/components/Sidebar";
 import { ComparisonView } from "@/components/ComparisonView";
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
@@ -51,6 +52,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   const [userAccessLevel, setUserAccessLevel] = useState<
     "owner" | "evaluator" | "viewer" | "admin"
   >("viewer");
+  const [peerReviewEnabled, setPeerReviewEnabled] = useState(false);
   const isMobile = useIsMobile();
 
   const { requirements: allRequirements, isLoading: requirementsLoading } =
@@ -61,6 +63,12 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
 
   // Get active version for filtering responses
   const { activeVersion } = useVersion();
+
+  // Peer review statuses (only fetched when peer review is enabled)
+  const { statuses: reviewStatuses } = usePeerReviewStatuses(
+    peerReviewEnabled ? params.rfpId : undefined,
+    peerReviewEnabled ? activeVersion?.id : undefined
+  );
 
   // Determine if this is a single supplier view: when supplierId is present in query params
   const isSingleSupplierView = !!supplierId;
@@ -87,6 +95,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
           setRfpData(data.rfp);
           setRfpTitle(data.rfp?.title || `RFP ${params.rfpId.slice(0, 8)}`);
           setUserAccessLevel(data.userAccessLevel || "viewer");
+          setPeerReviewEnabled(data.rfp?.peer_review_enabled ?? false);
           // Count total responses
           const total =
             (data.globalProgress?.statusDistribution?.pass || 0) +
@@ -290,6 +299,8 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
               onSelectRequirement={setSelectedRequirementId}
               responses={filteredResponses}
               isSingleSupplier={isSingleSupplierView}
+              peerReviewEnabled={peerReviewEnabled}
+              reviewStatuses={reviewStatuses}
             />
           </div>
 
@@ -328,6 +339,8 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   }
                   isMobile={false}
                   userAccessLevel={userAccessLevel}
+                  peerReviewEnabled={peerReviewEnabled}
+                  reviewStatuses={reviewStatuses}
                 />
               )}
             </div>
@@ -362,6 +375,8 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   }
                   isMobile={true}
                   userAccessLevel={userAccessLevel}
+                  peerReviewEnabled={peerReviewEnabled}
+                  reviewStatuses={reviewStatuses}
                 />
               ) : null}
             </SheetContent>

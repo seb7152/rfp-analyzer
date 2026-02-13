@@ -53,6 +53,8 @@ import type { Requirement } from "@/lib/supabase/types";
 import { getRequirementById } from "@/lib/fake-data";
 import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
 import { useVersion } from "@/contexts/VersionContext";
+import { PeerReviewBadge } from "@/components/PeerReviewBadge";
+import type { RequirementReviewStatus } from "@/types/peer-review";
 
 interface ComparisonViewProps {
   selectedRequirementId: string;
@@ -63,6 +65,8 @@ interface ComparisonViewProps {
   responses?: ResponseWithSupplier[];
   isMobile?: boolean;
   userAccessLevel?: "owner" | "evaluator" | "viewer" | "admin";
+  peerReviewEnabled?: boolean;
+  reviewStatuses?: Map<string, RequirementReviewStatus>;
 }
 
 interface ResponseState {
@@ -118,6 +122,8 @@ export function ComparisonView({
   responses: preloadedResponses,
   isMobile = false,
   userAccessLevel,
+  peerReviewEnabled = false,
+  reviewStatuses,
 }: ComparisonViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1134,6 +1140,13 @@ export function ComparisonView({
                 >
                   <Clock className="w-4 h-4" />
                 </Badge>
+              )}
+              {peerReviewEnabled && (
+                <PeerReviewBadge
+                  status={
+                    reviewStatuses?.get(requirement.id)?.status ?? "draft"
+                  }
+                />
               )}
             </div>
             {!isMobile && (
