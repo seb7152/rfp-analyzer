@@ -36,8 +36,8 @@ export function Sidebar({
   className = "",
   responses = [],
   isSingleSupplier = false,
-  peerReviewEnabled = false,
-  reviewStatuses,
+  peerReviewEnabled: _peerReviewEnabled = false,
+  reviewStatuses: _reviewStatuses,
 }: SidebarProps) {
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
