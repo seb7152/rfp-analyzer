@@ -54,6 +54,7 @@ import { getRequirementById } from "@/lib/fake-data";
 import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
 import { useVersion } from "@/contexts/VersionContext";
 import { PeerReviewBadge } from "@/components/PeerReviewBadge";
+import { PeerReviewActionButton } from "@/components/PeerReviewActionButton";
 import type { RequirementReviewStatus } from "@/types/peer-review";
 
 interface ComparisonViewProps {
@@ -1146,6 +1147,15 @@ export function ComparisonView({
                   status={
                     reviewStatuses?.get(requirement.id)?.status ?? "draft"
                   }
+                />
+              )}
+              {peerReviewEnabled && rfpId && activeVersion && userAccessLevel && (
+                <PeerReviewActionButton
+                  requirementId={requirement.id}
+                  rfpId={rfpId}
+                  versionId={activeVersion.id}
+                  status={reviewStatuses?.get(requirement.id)?.status ?? "draft"}
+                  userAccessLevel={userAccessLevel}
                 />
               )}
             </div>

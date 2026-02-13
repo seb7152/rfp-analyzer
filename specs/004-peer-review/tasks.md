@@ -59,9 +59,9 @@
 
 **Dépend de**: US1 (badge), Phase 2 (endpoint PATCH review-status, hook mutation)
 
-- [ ] T012 [US2] Créer le composant `components/PeerReviewConfirmDialog.tsx` : modale de confirmation générique pour toute action peer review, props `{ open, onConfirm, onCancel, title, description, showCommentField?, commentLabel?, isLoading }`, champ commentaire textarea affiché conditionnellement (pour rejet)
-- [ ] T013 [US2] Créer le composant `components/PeerReviewActionButton.tsx` : bouton contextuel selon `{ status, userAccessLevel }` → rendu null si aucune action disponible ; cas evaluator+`draft` → bouton "Soumettre pour validation" ; cas evaluator+`rejected` → bouton "Soumettre à nouveau" ; cas owner+`submitted` → boutons "Valider" + "Rejeter" ; ouvre `PeerReviewConfirmDialog` avec contenu adapté, appelle `usePeerReviewMutation` à la confirmation
-- [ ] T014 [US2] Modifier `components/ComparisonView.tsx` : intégrer `<PeerReviewActionButton>` dans le header de l'exigence, à côté du `PeerReviewBadge`, passer `status`, `userAccessLevel`, `requirementId`, `versionId`
+- [x] T012 [US2] Créer le composant `components/PeerReviewConfirmDialog.tsx` : modale de confirmation générique pour toute action peer review, props `{ open, onConfirm, onCancel, title, description, showCommentField?, commentLabel?, isLoading }`, champ commentaire textarea affiché conditionnellement (pour rejet)
+- [x] T013 [US2] Créer le composant `components/PeerReviewActionButton.tsx` : bouton contextuel selon `{ status, userAccessLevel }` → rendu null si aucune action disponible ; cas evaluator+`draft` → bouton "Soumettre pour validation" ; cas evaluator+`rejected` → bouton "Soumettre à nouveau" ; cas owner+`submitted` → boutons "Valider" + "Rejeter" ; ouvre `PeerReviewConfirmDialog` avec contenu adapté, appelle `usePeerReviewMutation` à la confirmation
+- [x] T014 [US2] Modifier `components/ComparisonView.tsx` : intégrer `<PeerReviewActionButton>` dans le header de l'exigence, à côté du `PeerReviewBadge`, passer `status`, `userAccessLevel`, `requirementId`, `versionId`
 
 ---
 
@@ -73,8 +73,8 @@
 
 **Dépend de**: US1 (badge), US2 (PeerReviewActionButton + PeerReviewConfirmDialog déjà créés)
 
-- [ ] T015 [US3] Vérifier et compléter `components/PeerReviewActionButton.tsx` : s'assurer que le cas owner/admin + `submitted` déclenche bien les deux boutons "Valider" et "Rejeter", que la modale rejet affiche le champ commentaire, que le commentaire est passé dans le body du PATCH
-- [ ] T016 [US3] Vérifier le handler `app/api/rfps/[rfpId]/requirements/[requirementId]/review-status/route.ts` : tester manuellement la transition `submitted → rejected` avec `rejection_comment`, s'assurer que le statut repasse bien à `draft` (pas `rejected` comme statut final) selon la spécification — corriger si nécessaire
+- [x] T015 [US3] Vérifier et compléter `components/PeerReviewActionButton.tsx` : s'assurer que le cas owner/admin + `submitted` déclenche bien les deux boutons "Valider" et "Rejeter", que la modale rejet affiche le champ commentaire, que le commentaire est passé dans le body du PATCH
+- [x] T016 [US3] Vérifier le handler `app/api/rfps/[rfpId]/requirements/[requirementId]/review-status/route.ts` : tester manuellement la transition `submitted → rejected` avec `rejection_comment`, s'assurer que le statut repasse bien à `draft` (pas `rejected` comme statut final) selon la spécification — corriger si nécessaire
 
 ---
 
