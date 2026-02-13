@@ -73,7 +73,10 @@ export function PeerReviewActionButton({
     return null;
   }
 
-  const dialogConfig = {
+  const dialogConfig: Record<
+    "submit" | "approve" | "reject",
+    { title: string; description: string; showCommentField: boolean; commentLabel?: string }
+  > = {
     submit: {
       title: "Soumettre pour validation",
       description:
@@ -142,8 +145,8 @@ export function PeerReviewActionButton({
           onCancel={handleCancel}
           title={currentConfig.title}
           description={currentConfig.description}
-          showCommentField={"showCommentField" in currentConfig ? currentConfig.showCommentField : false}
-          commentLabel={"commentLabel" in currentConfig ? currentConfig.commentLabel : undefined}
+          showCommentField={currentConfig.showCommentField}
+          commentLabel={currentConfig.commentLabel}
           isLoading={mutation.isPending}
         />
       )}
