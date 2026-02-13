@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { checkRFPAccess } from "@/lib/permissions/rfp-access";
 import type { PeerReviewStatus } from "@/types/peer-review";
 
@@ -65,11 +66,14 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check access
+    // Check access (user-scoped client — respects RLS for auth checks)
     const { hasAccess, accessLevel } = await checkRFPAccess(rfpId, user.id);
     if (!hasAccess) {
       return NextResponse.json({ error: "RFP not found" }, { status: 404 });
     }
+
+    // Service client for writes — permissions already validated above
+    const adminSupabase = createServiceClient();
 
     // Parse body
     const body = await request.json();
@@ -98,7 +102,7 @@ export async function PATCH(
     }
 
     // Verify peer review is enabled on this RFP
-    const { data: rfp, error: rfpError } = await supabase
+    const { data: rfp, error: rfpError } = await adminSupabase
       .from("rfps")
       .select("peer_review_enabled")
       .eq("id", rfpId)
@@ -116,7 +120,7 @@ export async function PATCH(
     }
 
     // Verify requirement belongs to this RFP
-    const { data: requirement, error: reqError } = await supabase
+    const { data: requirement, error: reqError } = await adminSupabase
       .from("requirements")
       .select("id")
       .eq("id", requirementId)
@@ -131,7 +135,7 @@ export async function PATCH(
     }
 
     // Get current review status (if any)
-    const { data: existing } = await supabase
+    const { data: existing } = await adminSupabase
       .from("requirement_review_status")
       .select("id, status")
       .eq("requirement_id", requirementId)
@@ -177,8 +181,8 @@ export async function PATCH(
       // Per spec: rejected resets to draft on next submission, but DB stores 'rejected' temporarily
     }
 
-    // Upsert
-    const { data: reviewStatus, error: upsertError } = await supabase
+    // Upsert (service client — RLS bypassed, permissions validated above)
+    const { data: reviewStatus, error: upsertError } = await adminSupabase
       .from("requirement_review_status")
       .upsert(updatePayload, {
         onConflict: "requirement_id,version_id",
