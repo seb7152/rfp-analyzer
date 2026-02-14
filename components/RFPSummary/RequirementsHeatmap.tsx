@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Info, Search, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PeerReviewBadge } from "@/components/PeerReviewBadge";
+import { usePeerReviewStatuses } from "@/hooks/use-peer-review";
 
 import { Supplier } from "@/types/supplier";
 import { Response } from "@/types/response";
@@ -39,6 +41,7 @@ interface RequirementTreeNode {
 interface RequirementsHeatmapProps {
   rfpId: string;
   selectedCategoryId?: string | null;
+  peerReviewEnabled?: boolean;
 }
 
 // Helper functions for colors
@@ -78,8 +81,14 @@ const formatScore = (score: number | null) => {
 export function RequirementsHeatmap({
   rfpId,
   selectedCategoryId,
+  peerReviewEnabled = false,
 }: RequirementsHeatmapProps) {
   const { activeVersion } = useVersion();
+
+  const { statuses: reviewStatuses } = usePeerReviewStatuses(
+    peerReviewEnabled ? rfpId : undefined,
+    peerReviewEnabled ? activeVersion?.id : undefined
+  );
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [requirements, setRequirements] = useState<RequirementTreeNode[]>([]);
   const [responses, setResponses] = useState<Response[]>([]);
@@ -382,6 +391,13 @@ export function RequirementsHeatmap({
                           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200 flex-shrink-0">
                             O
                           </span>
+                        )}
+                        {peerReviewEnabled && (
+                          <PeerReviewBadge
+                            status={reviewStatuses.get(req.id)?.status ?? "draft"}
+                            size="sm"
+                            className="flex-shrink-0"
+                          />
                         )}
                       </div>
                     </td>

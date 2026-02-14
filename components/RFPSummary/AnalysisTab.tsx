@@ -4,9 +4,10 @@ import { CategoryHeatmap } from "@/components/RFPSummary/CategoryHeatmap";
 
 interface AnalysisTabProps {
   rfpId: string;
+  peerReviewEnabled?: boolean;
 }
 
-export function AnalysisTab({ rfpId }: AnalysisTabProps) {
+export function AnalysisTab({ rfpId, peerReviewEnabled = false }: AnalysisTabProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null
@@ -30,6 +31,7 @@ export function AnalysisTab({ rfpId }: AnalysisTabProps) {
       <RequirementsHeatmap
         rfpId={rfpId}
         selectedCategoryId={selectedCategoryId}
+        peerReviewEnabled={peerReviewEnabled}
       />
     </div>
   );

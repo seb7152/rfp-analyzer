@@ -853,7 +853,10 @@ export default function RFPSummaryPage() {
               {loading ? (
                 <Skeleton className="h-64 rounded-2xl" />
               ) : (
-                <AnalysisTab rfpId={rfpId} />
+                <AnalysisTab
+                  rfpId={rfpId}
+                  peerReviewEnabled={(data?.rfp as any)?.peer_review_enabled ?? false}
+                />
               )}
             </TabsContent>
 
