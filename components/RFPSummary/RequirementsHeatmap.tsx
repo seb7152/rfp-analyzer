@@ -286,18 +286,16 @@ export function RequirementsHeatmap({
             />
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {onRefresh && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onRefresh}
-                className="gap-2"
-                title="Actualiser les tableaux"
-              >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-                Actualiser
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onRefresh?.()}
+              className="gap-2"
+              title="Actualiser les tableaux"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+              Actualiser
+            </Button>
             <span className="text-sm font-medium text-slate-700">
               Mode d'affichage :
             </span>
