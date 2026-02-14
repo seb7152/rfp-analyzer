@@ -217,6 +217,44 @@ export async function PATCH(
       return NextResponse.json({ rfp: updatedRfp }, { status: 200 });
     }
 
+    // Status update — requires owner or admin access
+    if ("status" in requestBody) {
+      const validStatuses = ["in_progress", "completed", "archived"];
+      if (!validStatuses.includes(requestBody.status)) {
+        return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
+      }
+
+      const { checkRFPAccess } = await import("@/lib/permissions/rfp-access");
+      const { hasAccess, accessLevel } = await checkRFPAccess(rfpId, user.id);
+
+      if (!hasAccess) {
+        return NextResponse.json({ error: "RFP not found" }, { status: 404 });
+      }
+
+      if (accessLevel !== "owner" && accessLevel !== "admin") {
+        return NextResponse.json(
+          { error: "Access denied. Only owners and admins can change the status." },
+          { status: 403 }
+        );
+      }
+
+      const { data: updatedRfp, error: updateError } = await supabase
+        .from("rfps")
+        .update({ status: requestBody.status, updated_at: new Date().toISOString() })
+        .eq("id", rfpId)
+        .select("id, title, description, status, organization_id, created_by, created_at, updated_at")
+        .single();
+
+      if (updateError) {
+        return NextResponse.json(
+          { error: `Failed to update RFP status: ${updateError.message}` },
+          { status: 400 }
+        );
+      }
+
+      return NextResponse.json({ rfp: updatedRfp }, { status: 200 });
+    }
+
     // Legacy: organization transfer — requires admin in both orgs
     const { organization_id: newOrganizationId } = requestBody;
 

@@ -57,6 +57,7 @@ interface RFPSummaryData {
     id: string;
     title: string;
     description: string | null;
+    status: "in_progress" | "completed" | "archived";
     organization_id: string;
     created_at: string;
     updated_at: string;
@@ -891,6 +892,7 @@ export default function RFPSummaryPage() {
                 <SettingsTab
                   rfpId={rfpId}
                   currentOrganizationId={data.rfp.organization_id}
+                  currentStatus={data.rfp.status}
                   peerReviewEnabled={(data.rfp as any).peer_review_enabled ?? false}
                   userAccessLevel={data.userAccessLevel}
                 />

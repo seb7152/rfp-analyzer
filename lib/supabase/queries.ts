@@ -1024,14 +1024,28 @@ export async function getRFPCompletionPercentage(
 ): Promise<number> {
   const supabase = await createServerClient();
 
+  // If no versionId provided, use the active version for this RFP
+  let resolvedVersionId = versionId;
+  if (!resolvedVersionId) {
+    const { data: activeVersion } = await supabase
+      .from("evaluation_versions")
+      .select("id")
+      .eq("rfp_id", rfpId)
+      .eq("is_active", true)
+      .single();
+    if (activeVersion) {
+      resolvedVersionId = activeVersion.id;
+    }
+  }
+
   // Get all responses for leaf requirements only (level 4)
   let query = supabase
     .from("responses")
     .select("id, is_checked, requirement_id, supplier_id")
     .eq("rfp_id", rfpId);
 
-  if (versionId) {
-    query = query.eq("version_id", versionId);
+  if (resolvedVersionId) {
+    query = query.eq("version_id", resolvedVersionId);
   }
 
   const { data, error } = await query;
@@ -1051,11 +1065,11 @@ export async function getRFPCompletionPercentage(
   }>;
 
   // Filter responses to only include active suppliers of the version
-  if (versionId) {
+  if (resolvedVersionId) {
     const { getVersionSupplierStatuses, getActiveSupplierIds } = await import(
       "@/lib/suppliers/status-cache"
     );
-    const statuses = await getVersionSupplierStatuses(supabase, versionId);
+    const statuses = await getVersionSupplierStatuses(supabase, resolvedVersionId);
     const activeSupplierIds = getActiveSupplierIds(statuses);
     responses = responses.filter((r) => activeSupplierIds.has(r.supplier_id));
   }
@@ -1089,7 +1103,7 @@ export async function getRFPCompletionPercentage(
 
   // Debug logging
   console.log(
-    `[Completion] RFP ${rfpId}${versionId ? ` (v${versionId})` : ""}:`
+    `[Completion] RFP ${rfpId}${resolvedVersionId ? ` (v${resolvedVersionId})` : ""}:`
   );
   console.log(`  Total responses: ${responses.length}`);
   console.log(`  Total requirements: ${allRequirements.length}`);
@@ -1117,7 +1131,7 @@ export async function getRFPCompletionPercentage(
   const percentage = Math.round((checked / total) * 100);
 
   console.log(
-    `  Result: ${percentage}%${versionId ? " (filtered by version)" : ""}`
+    `  Result: ${percentage}%${resolvedVersionId ? " (filtered by version)" : ""}`
   );
   return percentage;
 }
