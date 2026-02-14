@@ -36,16 +36,34 @@ const STATUS_CONFIG: Record<PeerReviewStatus, StatusConfig> = {
 interface PeerReviewBadgeProps {
   status: PeerReviewStatus;
   size?: "sm" | "md";
+  iconOnly?: boolean;
   className?: string;
 }
 
 export function PeerReviewBadge({
   status,
   size = "md",
+  iconOnly = false,
   className,
 }: PeerReviewBadgeProps) {
   const config = STATUS_CONFIG[status];
   const Icon = config.icon;
+
+  if (iconOnly) {
+    return (
+      <span
+        title={config.label}
+        className={cn(
+          "inline-flex items-center justify-center rounded-full flex-shrink-0",
+          size === "sm" ? "w-4 h-4" : "w-5 h-5",
+          config.className,
+          className
+        )}
+      >
+        <Icon className={size === "sm" ? "w-2.5 h-2.5" : "w-3 h-3"} />
+      </span>
+    );
+  }
 
   return (
     <span

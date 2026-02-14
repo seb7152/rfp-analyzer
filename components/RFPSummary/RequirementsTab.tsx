@@ -915,6 +915,13 @@ export function RequirementsTab({ rfpId, peerReviewEnabled = false, versionId }:
             <span className="font-mono text-sm text-slate-600 dark:text-slate-400">
               {node.code}
             </span>
+            {node.type === "requirement" && peerReviewEnabled && (
+              <PeerReviewBadge
+                status={reviewStatuses.get(node.id)?.status ?? "draft"}
+                size="sm"
+                iconOnly
+              />
+            )}
             <span className="font-medium">{node.title}</span>
             {node.type === "requirement" && node.description && (
               <Popover>
@@ -938,13 +945,6 @@ export function RequirementsTab({ rfpId, peerReviewEnabled = false, versionId }:
                   </div>
                 </PopoverContent>
               </Popover>
-            )}
-            {node.type === "requirement" && peerReviewEnabled && (
-              <PeerReviewBadge
-                status={reviewStatuses.get(node.id)?.status ?? "draft"}
-                size="sm"
-                className="ml-1 flex-shrink-0"
-              />
             )}
           </div>
         </TableCell>

@@ -335,6 +335,13 @@ export function RequirementsHeatmap({
                         <span className="font-mono text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded flex-shrink-0">
                           {req.code}
                         </span>
+                        {peerReviewEnabled && (
+                          <PeerReviewBadge
+                            status={reviewStatuses.get(req.id)?.status ?? "draft"}
+                            size="sm"
+                            iconOnly
+                          />
+                        )}
                         <span
                           className="truncate max-w-[200px]"
                           title={req.title}
@@ -391,13 +398,6 @@ export function RequirementsHeatmap({
                           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200 flex-shrink-0">
                             O
                           </span>
-                        )}
-                        {peerReviewEnabled && (
-                          <PeerReviewBadge
-                            status={reviewStatuses.get(req.id)?.status ?? "draft"}
-                            size="sm"
-                            className="flex-shrink-0"
-                          />
                         )}
                       </div>
                     </td>
