@@ -18,8 +18,11 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Info, Search, ExternalLink } from "lucide-react";
+import { Info, Search, ExternalLink, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PeerReviewBadge } from "@/components/PeerReviewBadge";
+import { usePeerReviewStatuses, peerReviewKeys } from "@/hooks/use-peer-review";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { Supplier } from "@/types/supplier";
 import { Response } from "@/types/response";
@@ -39,6 +42,10 @@ interface RequirementTreeNode {
 interface RequirementsHeatmapProps {
   rfpId: string;
   selectedCategoryId?: string | null;
+  peerReviewEnabled?: boolean;
+  refreshKey?: number;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 // Helper functions for colors
@@ -78,8 +85,27 @@ const formatScore = (score: number | null) => {
 export function RequirementsHeatmap({
   rfpId,
   selectedCategoryId,
+  peerReviewEnabled = false,
+  refreshKey = 0,
+  onRefresh,
+  isRefreshing = false,
 }: RequirementsHeatmapProps) {
   const { activeVersion } = useVersion();
+  const queryClient = useQueryClient();
+
+  const { statuses: reviewStatuses } = usePeerReviewStatuses(
+    peerReviewEnabled ? rfpId : undefined,
+    peerReviewEnabled ? activeVersion?.id : undefined
+  );
+
+  // Re-fetch peer review statuses when refreshKey changes
+  useEffect(() => {
+    if (peerReviewEnabled && refreshKey > 0) {
+      queryClient.invalidateQueries({
+        queryKey: peerReviewKeys.statuses(rfpId, activeVersion?.id ?? ""),
+      });
+    }
+  }, [refreshKey]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [requirements, setRequirements] = useState<RequirementTreeNode[]>([]);
   const [responses, setResponses] = useState<Response[]>([]);
@@ -125,7 +151,7 @@ export function RequirementsHeatmap({
     if (rfpId) {
       fetchData();
     }
-  }, [rfpId, activeVersion?.id]);
+  }, [rfpId, activeVersion?.id, refreshKey]);
 
   // Flatten requirements tree
   const flatRequirements = useMemo(() => {
@@ -260,6 +286,16 @@ export function RequirementsHeatmap({
             />
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onRefresh?.()}
+              className="gap-2"
+              title="Actualiser les tableaux"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+              Actualiser
+            </Button>
             <span className="text-sm font-medium text-slate-700">
               Mode d'affichage :
             </span>
@@ -326,6 +362,13 @@ export function RequirementsHeatmap({
                         <span className="font-mono text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded flex-shrink-0">
                           {req.code}
                         </span>
+                        {peerReviewEnabled && (
+                          <PeerReviewBadge
+                            status={reviewStatuses.get(req.id)?.status ?? "draft"}
+                            size="sm"
+                            iconOnly
+                          />
+                        )}
                         <span
                           className="truncate max-w-[200px]"
                           title={req.title}
