@@ -4,19 +4,25 @@ import { useQuery } from "@tanstack/react-query";
 import type { RFP } from "@/lib/supabase/types";
 import { useOrganization } from "./use-organization";
 
-export function useRFPs() {
-  const { currentOrgId } = useOrganization();
+type RFPListScope = "assigned" | "all";
+
+export function useRFPs(scope?: RFPListScope) {
+  const { currentOrgId, isAdmin } = useOrganization();
+  const effectiveScope = scope ?? (isAdmin ? "all" : "assigned");
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["rfps", currentOrgId],
+    queryKey: ["rfps", currentOrgId, effectiveScope],
     queryFn: async () => {
       if (!currentOrgId) {
         return [];
       }
 
-      const response = await fetch(`/api/organizations/${currentOrgId}/rfps`, {
-        credentials: "include",
-      });
+      const response = await fetch(
+        `/api/organizations/${currentOrgId}/rfps?scope=${effectiveScope}`,
+        {
+          credentials: "include",
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch RFPs: ${response.statusText}`);
