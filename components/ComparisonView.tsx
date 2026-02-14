@@ -1078,42 +1078,66 @@ export function ComparisonView({
                           (() => {
                             const prStatus =
                               reviewStatuses?.get(req.id)?.status ?? "draft";
-                            if (
-                              prStatus === "approved" ||
-                              prStatus === "submitted" ||
-                              prStatus === "rejected"
-                            )
-                              return <PeerReviewBadge status={prStatus} />;
+                            if (prStatus === "approved")
+                              return (
+                                <Badge className="bg-green-500 text-white px-3 py-1.5 text-sm font-medium">
+                                  <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                                  Validé
+                                </Badge>
+                              );
+                            if (prStatus === "rejected")
+                              return (
+                                <Badge className="bg-red-500 text-white px-3 py-1.5 text-sm font-medium">
+                                  <AlertTriangle className="w-4 h-4 mr-1.5" />
+                                  Rejeté
+                                </Badge>
+                              );
+                            if (prStatus === "submitted")
+                              return (
+                                <Badge className="bg-blue-500 text-white px-3 py-1.5 text-sm font-medium">
+                                  <Clock className="w-4 h-4 mr-1.5" />
+                                  À valider
+                                </Badge>
+                              );
                             // draft — distinguish by completion
                             if (req.status === "pending")
                               return (
-                                <span className="inline-flex items-center rounded-full border font-medium px-2.5 py-0.5 text-xs bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
+                                <Badge
+                                  variant="outline"
+                                  className="px-3 py-1.5 text-sm font-medium text-slate-400"
+                                >
                                   Non initié
-                                </span>
+                                </Badge>
                               );
                             return (
-                              <span className="inline-flex items-center rounded-full border font-medium px-2.5 py-0.5 text-xs bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800">
+                              <Badge className="bg-amber-500 text-white px-3 py-1.5 text-sm font-medium">
+                                <Clock className="w-4 h-4 mr-1.5" />
                                 En cours
-                              </span>
+                              </Badge>
                             );
                           })()
                         ) : (
                           <>
                             {req.status === "pass" && (
-                              <span className="inline-flex items-center rounded-full border font-medium px-2.5 py-0.5 text-xs bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800">
+                              <Badge className="bg-green-500 text-white px-3 py-1.5 text-sm font-medium">
+                                <CheckCircle2 className="w-4 h-4 mr-1.5" />
                                 Validé
-                              </span>
+                              </Badge>
                             )}
                             {(req.status === "partial" ||
                               req.status === "fail") && (
-                              <span className="inline-flex items-center rounded-full border font-medium px-2.5 py-0.5 text-xs bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800">
+                              <Badge className="bg-amber-500 text-white px-3 py-1.5 text-sm font-medium">
+                                <Clock className="w-4 h-4 mr-1.5" />
                                 En cours
-                              </span>
+                              </Badge>
                             )}
                             {req.status === "pending" && (
-                              <span className="inline-flex items-center rounded-full border font-medium px-2.5 py-0.5 text-xs bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
+                              <Badge
+                                variant="outline"
+                                className="px-3 py-1.5 text-sm font-medium text-slate-400"
+                              >
                                 Non initié
-                              </span>
+                              </Badge>
                             )}
                           </>
                         )}

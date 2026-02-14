@@ -1,31 +1,35 @@
 "use client";
 
+import { CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import type { PeerReviewStatus } from "@/types/peer-review";
 import { cn } from "@/lib/utils";
 
-const STATUS_CONFIG: Record<
-  PeerReviewStatus,
-  { label: string; className: string }
-> = {
+type StatusConfig = {
+  label: string;
+  icon: React.ElementType;
+  className: string;
+};
+
+const STATUS_CONFIG: Record<PeerReviewStatus, StatusConfig> = {
   draft: {
     label: "En cours",
-    className:
-      "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700",
+    icon: Clock,
+    className: "bg-amber-500 text-white",
   },
   submitted: {
     label: "À valider",
-    className:
-      "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800",
+    icon: Clock,
+    className: "bg-blue-500 text-white",
   },
   approved: {
     label: "Validé",
-    className:
-      "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800",
+    icon: CheckCircle2,
+    className: "bg-green-500 text-white",
   },
   rejected: {
     label: "Rejeté",
-    className:
-      "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800",
+    icon: AlertTriangle,
+    className: "bg-red-500 text-white",
   },
 };
 
@@ -41,16 +45,22 @@ export function PeerReviewBadge({
   className,
 }: PeerReviewBadgeProps) {
   const config = STATUS_CONFIG[status];
+  const Icon = config.icon;
 
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border font-medium",
-        size === "sm" ? "px-1.5 py-0.5 text-xs" : "px-2.5 py-0.5 text-xs",
+        "inline-flex items-center rounded-full font-medium",
+        size === "sm"
+          ? "px-2 py-0.5 text-xs"
+          : "px-3 py-1.5 text-sm",
         config.className,
         className
       )}
     >
+      <Icon
+        className={cn("mr-1.5", size === "sm" ? "w-3 h-3" : "w-4 h-4")}
+      />
       {config.label}
     </span>
   );
