@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AlertCircle, Building2, Users } from "lucide-react";
+import { AlertCircle, Building2, Users, Activity } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 interface Organization {
@@ -28,9 +28,12 @@ interface Organization {
   role: "admin" | "evaluator" | "viewer";
 }
 
+type RFPStatus = "in_progress" | "completed" | "archived";
+
 interface SettingsTabProps {
   rfpId: string;
   currentOrganizationId: string;
+  currentStatus?: RFPStatus;
   peerReviewEnabled?: boolean;
   userAccessLevel?: "owner" | "evaluator" | "viewer" | "admin";
 }
@@ -38,6 +41,7 @@ interface SettingsTabProps {
 export function SettingsTab({
   rfpId,
   currentOrganizationId,
+  currentStatus = "in_progress",
   peerReviewEnabled = false,
   userAccessLevel = "viewer",
 }: SettingsTabProps) {
@@ -48,6 +52,13 @@ export function SettingsTab({
   const [error, setError] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isChanging, setIsChanging] = useState(false);
+
+  // Status state
+  const [status, setStatus] = useState<RFPStatus>(currentStatus);
+  const [isStatusSaving, setIsStatusSaving] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [statusSuccess, setStatusSuccess] = useState(false);
+  const canEditStatus = userAccessLevel === "owner" || userAccessLevel === "admin";
 
   // Peer review toggle state
   const [isPeerReviewEnabled, setIsPeerReviewEnabled] =
@@ -92,6 +103,33 @@ export function SettingsTab({
 
     fetchData();
   }, [currentOrganizationId]);
+
+  const handleSaveStatus = async () => {
+    if (!canEditStatus) return;
+    try {
+      setIsStatusSaving(true);
+      setStatusError(null);
+      setStatusSuccess(false);
+      const response = await fetch(`/api/rfps/${rfpId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Erreur lors de la mise à jour");
+      }
+      setStatusSuccess(true);
+      setTimeout(() => setStatusSuccess(false), 3000);
+    } catch (err) {
+      setStatusError(
+        err instanceof Error ? err.message : "Erreur lors de la mise à jour"
+      );
+      setStatus(currentStatus);
+    } finally {
+      setIsStatusSaving(false);
+    }
+  };
 
   const selectedOrg = organizations.find((org) => org.id === selectedOrgId);
   const hasChanges = selectedOrgId !== currentOrganizationId;
@@ -185,6 +223,61 @@ export function SettingsTab({
           <span>{error}</span>
         </div>
       )}
+
+      {/* Status Section */}
+      <Card className="p-6">
+        <div className="flex items-start gap-2 mb-4">
+          <Activity className="h-5 w-5 text-slate-600 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-lg">Statut</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Modifiez le statut d'avancement de ce RFP.
+            </p>
+          </div>
+        </div>
+
+        {statusError && (
+          <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200 text-sm flex items-start gap-2 mb-4">
+            <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            <span>{statusError}</span>
+          </div>
+        )}
+
+        {statusSuccess && (
+          <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-200 text-sm mb-4">
+            Statut mis à jour avec succès.
+          </div>
+        )}
+
+        <div className="flex items-center gap-3">
+          <Select
+            value={status}
+            onValueChange={(v) => setStatus(v as RFPStatus)}
+            disabled={!canEditStatus || isStatusSaving}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="in_progress">En cours</SelectItem>
+              <SelectItem value="completed">Terminé</SelectItem>
+              <SelectItem value="archived">Archivé</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            onClick={handleSaveStatus}
+            disabled={!canEditStatus || isStatusSaving || status === currentStatus}
+            size="sm"
+          >
+            {isStatusSaving ? "Enregistrement..." : "Enregistrer"}
+          </Button>
+          {!canEditStatus && (
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Réservé aux owners et admins
+            </p>
+          )}
+        </div>
+      </Card>
 
       {/* Peer Review Section */}
       <Card className="p-6">

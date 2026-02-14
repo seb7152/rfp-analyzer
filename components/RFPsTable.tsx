@@ -125,7 +125,7 @@ export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
             <thead className="border-b border-slate-200 text-xs uppercase text-slate-600 dark:border-slate-700 dark:text-slate-400">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Title</th>
-                <th className="px-4 py-3 text-left font-medium">Status</th>
+                <th className="px-4 py-3 text-left font-medium">Statut</th>
                 <th className="px-4 py-3 text-center font-medium">Avancement</th>
                 <th className="px-4 py-3 text-left font-medium">Created</th>
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
