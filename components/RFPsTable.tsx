@@ -141,7 +141,7 @@ export function RFPsTable({ rfps, isLoading, onDelete, onRefresh }: RFPsTablePro
   return (
     <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
       <CardHeader>
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex w-full items-center justify-between gap-3">
           <div>
             <CardTitle>RFPs</CardTitle>
             <CardDescription className="text-slate-500 dark:text-slate-400 mt-1">
