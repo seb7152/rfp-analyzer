@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronDown,
   CheckCircle2,
+  Circle,
   Clock,
   Loader2,
   AlertTriangle,
@@ -1095,8 +1096,7 @@ export function ComparisonView({
                             if (prStatus === "submitted")
                               return (
                                 <Badge className="bg-blue-500 text-white px-3 py-1.5 text-sm font-medium">
-                                  <Clock className="w-4 h-4 mr-1.5" />
-                                  À valider
+                                  <Clock className="w-4 h-4 mr-1.5" />À valider
                                 </Badge>
                               );
                             // draft — distinguish by completion
@@ -1106,6 +1106,7 @@ export function ComparisonView({
                                   variant="outline"
                                   className="px-3 py-1.5 text-sm font-medium text-slate-400"
                                 >
+                                  <Circle className="w-4 h-4 mr-1.5" />
                                   Non initié
                                 </Badge>
                               );
@@ -1136,6 +1137,7 @@ export function ComparisonView({
                                 variant="outline"
                                 className="px-3 py-1.5 text-sm font-medium text-slate-400"
                               >
+                                <Circle className="w-4 h-4 mr-1.5" />
                                 Non initié
                               </Badge>
                             )}
