@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { RequirementsHeatmap } from "@/components/RFPSummary/RequirementsHeatmap";
 import { CategoryHeatmap } from "@/components/RFPSummary/CategoryHeatmap";
-import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
 
 interface AnalysisTabProps {
   rfpId: string;
@@ -31,17 +29,6 @@ export function AnalysisTab({ rfpId, peerReviewEnabled = false }: AnalysisTabPro
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          className="gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-          Actualiser
-        </Button>
-      </div>
       <CategoryHeatmap
         rfpId={rfpId}
         onCategorySelect={setSelectedCategoryId}
@@ -53,6 +40,8 @@ export function AnalysisTab({ rfpId, peerReviewEnabled = false }: AnalysisTabPro
         selectedCategoryId={selectedCategoryId}
         peerReviewEnabled={peerReviewEnabled}
         refreshKey={refreshKey}
+        onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
       />
     </div>
   );

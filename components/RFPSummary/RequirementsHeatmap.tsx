@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Info, Search, ExternalLink } from "lucide-react";
+import { Info, Search, ExternalLink, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PeerReviewBadge } from "@/components/PeerReviewBadge";
 import { usePeerReviewStatuses, peerReviewKeys } from "@/hooks/use-peer-review";
@@ -44,6 +44,8 @@ interface RequirementsHeatmapProps {
   selectedCategoryId?: string | null;
   peerReviewEnabled?: boolean;
   refreshKey?: number;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 // Helper functions for colors
@@ -85,6 +87,8 @@ export function RequirementsHeatmap({
   selectedCategoryId,
   peerReviewEnabled = false,
   refreshKey = 0,
+  onRefresh,
+  isRefreshing = false,
 }: RequirementsHeatmapProps) {
   const { activeVersion } = useVersion();
   const queryClient = useQueryClient();
@@ -282,6 +286,18 @@ export function RequirementsHeatmap({
             />
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            {onRefresh && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRefresh}
+                className="gap-2"
+                title="Actualiser les tableaux"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                Actualiser
+              </Button>
+            )}
             <span className="text-sm font-medium text-slate-700">
               Mode d'affichage :
             </span>
