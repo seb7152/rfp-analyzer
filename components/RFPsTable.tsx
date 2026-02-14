@@ -22,25 +22,10 @@ function RFPProgressCell({ rfpId }: { rfpId: string }) {
     return <Skeleton className="h-4 w-24 bg-slate-200 dark:bg-slate-700" />;
   }
 
-  const color =
-    percentage === 100
-      ? "bg-green-500"
-      : percentage >= 50
-        ? "bg-blue-500"
-        : "bg-slate-400";
-
   return (
-    <div className="flex items-center gap-2 min-w-[120px]">
-      <div className="flex-1 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all ${color}`}
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-      <span className="text-xs font-medium tabular-nums w-9 text-right text-slate-600 dark:text-slate-400">
-        {percentage}%
-      </span>
-    </div>
+    <span className="text-sm font-medium tabular-nums text-slate-600 dark:text-slate-400">
+      {percentage}%
+    </span>
   );
 }
 
