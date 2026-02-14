@@ -126,7 +126,7 @@ export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Title</th>
                 <th className="px-4 py-3 text-left font-medium">Status</th>
-                <th className="px-4 py-3 text-left font-medium">Avancement</th>
+                <th className="px-4 py-3 text-center font-medium">Avancement</th>
                 <th className="px-4 py-3 text-left font-medium">Created</th>
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
@@ -153,7 +153,7 @@ export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
                     </div>
                   </td>
                   <td className="px-4 py-3">{getStatusBadge(rfp.status)}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 text-center">
                     <RFPProgressCell rfpId={rfp.id} />
                   </td>
                   <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
