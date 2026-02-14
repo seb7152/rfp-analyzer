@@ -4,6 +4,9 @@ Auto-generated from all feature plans. Last updated: 2025-11-06
 
 ## Active Technologies
 
+- TypeScript 5.x + Next.js 14, React 18, Supabase (PostgreSQL + Auth), Tanstack Query v5, Tailwind CSS (004-peer-review)
+- PostgreSQL via Supabase — table `requirement_review_status` + colonne `rfps.peer_review_enabled` (004-peer-review)
+
 - TypeScript 5.x / JavaScript ES2022+ with Next.js 14 (React 18) (001-rfp-analyzer-platform)
 
 ## Project Structure
@@ -22,6 +25,8 @@ npm test && npm run lint
 TypeScript 5.x / JavaScript ES2022+ with Next.js 14 (React 18): Follow standard conventions
 
 ## Recent Changes
+
+- 004-peer-review: Added TypeScript 5.x + Next.js 14, React 18, Supabase (PostgreSQL + Auth), Tanstack Query v5, Tailwind CSS
 
 - 001-rfp-analyzer-platform: Added TypeScript 5.x / JavaScript ES2022+ with Next.js 14 (React 18)
 

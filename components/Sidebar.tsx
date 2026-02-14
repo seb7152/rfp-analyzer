@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { ClientOnly } from "@/components/ClientOnly";
 import type { TreeNode } from "@/hooks/use-requirements";
 import type { ResponseWithSupplier } from "@/hooks/use-responses";
+import type { RequirementReviewStatus } from "@/types/peer-review";
 
 interface SidebarProps {
   rfpId: string | null;
@@ -24,6 +25,8 @@ interface SidebarProps {
   className?: string;
   responses?: ResponseWithSupplier[];
   isSingleSupplier?: boolean;
+  peerReviewEnabled?: boolean;
+  reviewStatuses?: Map<string, RequirementReviewStatus>;
 }
 
 export function Sidebar({
@@ -33,6 +36,8 @@ export function Sidebar({
   className = "",
   responses = [],
   isSingleSupplier = false,
+  peerReviewEnabled: _peerReviewEnabled = false,
+  reviewStatuses: _reviewStatuses,
 }: SidebarProps) {
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");

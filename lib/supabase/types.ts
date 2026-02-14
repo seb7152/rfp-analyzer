@@ -62,6 +62,7 @@ export interface RFP {
   updated_at: string;
   created_by: string;
   analysis_settings?: Record<string, unknown> | null;
+  peer_review_enabled: boolean;
 }
 
 export interface RFPUserAssignment {
@@ -454,4 +455,44 @@ export interface ApiError {
   error: string;
   message: string;
   details?: Record<string, unknown>;
+}
+
+// ============================================================================
+// PEER REVIEW TYPES
+// ============================================================================
+
+export type PeerReviewStatus = "draft" | "submitted" | "approved" | "rejected";
+
+export interface RequirementReviewStatusRow {
+  id: string;
+  requirement_id: string;
+  version_id: string;
+  status: PeerReviewStatus;
+  submitted_by: string | null;
+  submitted_at: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  rejection_comment: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RequirementReviewStatusInsert {
+  requirement_id: string;
+  version_id: string;
+  status?: PeerReviewStatus;
+  submitted_by?: string | null;
+  submitted_at?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  rejection_comment?: string | null;
+}
+
+export interface RequirementReviewStatusUpdate {
+  status?: PeerReviewStatus;
+  submitted_by?: string | null;
+  submitted_at?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  rejection_comment?: string | null;
 }

@@ -177,6 +177,47 @@ export async function PATCH(
     }
 
     const requestBody = await request.json();
+
+    // Determine which operation to perform based on request body
+    if ("peer_review_enabled" in requestBody) {
+      // Peer review toggle — requires owner or admin access
+      const { checkRFPAccess } = await import("@/lib/permissions/rfp-access");
+      const { hasAccess, accessLevel } = await checkRFPAccess(rfpId, user.id);
+
+      if (!hasAccess) {
+        return NextResponse.json({ error: "RFP not found" }, { status: 404 });
+      }
+
+      if (accessLevel !== "owner" && accessLevel !== "admin") {
+        return NextResponse.json(
+          { error: "Access denied. Only owners and admins can toggle peer review." },
+          { status: 403 }
+        );
+      }
+
+      const { data: updatedRfp, error: updateError } = await supabase
+        .from("rfps")
+        .update({
+          peer_review_enabled: requestBody.peer_review_enabled,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", rfpId)
+        .select(
+          "id, title, description, organization_id, created_by, created_at, updated_at, peer_review_enabled"
+        )
+        .single();
+
+      if (updateError) {
+        return NextResponse.json(
+          { error: `Failed to update RFP: ${updateError.message}` },
+          { status: 400 }
+        );
+      }
+
+      return NextResponse.json({ rfp: updatedRfp }, { status: 200 });
+    }
+
+    // Legacy: organization transfer — requires admin in both orgs
     const { organization_id: newOrganizationId } = requestBody;
 
     if (!newOrganizationId) {

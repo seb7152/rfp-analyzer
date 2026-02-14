@@ -162,21 +162,27 @@ export function flattenRequirementTree(
  */
 export function useCategoryRequirements(
   rfpId: string | null,
-  categoryId: string | null
+  categoryId: string | null,
+  versionId?: string | null
 ) {
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["category-requirements", rfpId, categoryId],
+    queryKey: ["category-requirements", rfpId, categoryId, versionId ?? null],
     queryFn: async () => {
       if (!rfpId || !categoryId) {
         return [];
       }
 
-      const response = await fetch(
+      const url = new URL(
         `/api/rfps/${rfpId}/categories/${categoryId}/requirements`,
-        {
-          credentials: "include",
-        }
+        window.location.origin
       );
+      if (versionId) {
+        url.searchParams.set("versionId", versionId);
+      }
+
+      const response = await fetch(url.toString(), {
+        credentials: "include",
+      });
 
       if (!response.ok) {
         throw new Error(
