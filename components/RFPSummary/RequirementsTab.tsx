@@ -939,9 +939,9 @@ export function RequirementsTab({ rfpId, peerReviewEnabled = false, versionId }:
                 </PopoverContent>
               </Popover>
             )}
-            {node.type === "requirement" && peerReviewEnabled && reviewStatuses.has(node.id) && (
+            {node.type === "requirement" && peerReviewEnabled && (
               <PeerReviewBadge
-                status={reviewStatuses.get(node.id)!.status}
+                status={reviewStatuses.get(node.id)?.status ?? "draft"}
                 size="sm"
                 className="ml-1 flex-shrink-0"
               />
