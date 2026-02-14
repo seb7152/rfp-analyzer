@@ -71,25 +71,38 @@ export async function POST(
 
     const body = await request.json();
 
-    // Récupérer l'organization_id de l'utilisateur
-    const { data: orgMember } = await supabase
+    // Récupérer l'organisation du document ciblé
+    const { data: document, error: documentError } = await supabase
+      .from("rfp_documents")
+      .select("organization_id")
+      .eq("id", params.documentId)
+      .is("deleted_at", null)
+      .single();
+
+    if (documentError || !document) {
+      return NextResponse.json(
+        { error: "Document non trouvé" },
+        { status: 404 }
+      );
+    }
+
+    // Vérifier que l'utilisateur appartient à l'organisation du document
+    const { data: orgMember, error: orgError } = await supabase
       .from("user_organizations")
       .select("organization_id")
       .eq("user_id", user.id)
+      .eq("organization_id", document.organization_id)
       .single();
 
-    if (!orgMember) {
-      return NextResponse.json(
-        { error: "Organisation non trouvée" },
-        { status: 404 }
-      );
+    if (orgError || !orgMember) {
+      return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
 
     // Créer l'annotation via la fonction RPC
     const { data, error } = await supabase.rpc(
       "create_annotation_with_context",
       {
-        p_organization_id: orgMember.organization_id,
+        p_organization_id: document.organization_id,
         p_document_id: params.documentId,
         p_requirement_id: body.requirementId || null,
         p_annotation_type: body.annotationType,
