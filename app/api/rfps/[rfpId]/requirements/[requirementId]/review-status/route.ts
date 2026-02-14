@@ -16,12 +16,14 @@ const ALLOWED_TRANSITIONS: Record<
       target: "submitted",
       minLevels: ["evaluator", "owner", "admin"],
     },
+    { target: "approved", minLevels: ["owner", "admin"] },
   ],
   rejected: [
     {
       target: "submitted",
       minLevels: ["evaluator", "owner", "admin"],
     },
+    { target: "approved", minLevels: ["owner", "admin"] },
   ],
   submitted: [
     { target: "approved", minLevels: ["owner", "admin"] },
@@ -96,7 +98,10 @@ export async function PATCH(
 
     if (!["submitted", "approved", "rejected"].includes(targetStatus)) {
       return NextResponse.json(
-        { error: "Invalid target status. Must be submitted, approved, or rejected." },
+        {
+          error:
+            "Invalid target status. Must be submitted, approved, or rejected.",
+        },
         { status: 400 }
       );
     }

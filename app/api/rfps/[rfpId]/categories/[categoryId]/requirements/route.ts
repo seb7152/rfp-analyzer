@@ -25,12 +25,13 @@ import { createClient } from "@/lib/supabase/server";
  * ]
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ rfpId: string; categoryId: string }> }
 ) {
   try {
     const params = await context.params;
     const { rfpId, categoryId } = params;
+    const versionId = request.nextUrl.searchParams.get("versionId");
 
     // Validate parameters
     if (!rfpId || rfpId.trim().length === 0) {
@@ -148,6 +149,27 @@ export async function GET(
 
     const descendantCategoryIds = getDescendantIds(categoryId);
 
+    // Resolve active supplier IDs for the given version (if any)
+    let activeSupplierIds: Set<string> | null = null;
+    if (versionId) {
+      const { data: vss } = await supabase
+        .from("version_supplier_status")
+        .select("supplier_id, shortlist_status, is_active")
+        .eq("version_id", versionId);
+
+      if (vss) {
+        activeSupplierIds = new Set(
+          vss
+            .filter(
+              (s) =>
+                (s.is_active ?? true) &&
+                (s.shortlist_status ?? "active") !== "removed"
+            )
+            .map((s) => s.supplier_id)
+        );
+      }
+    }
+
     // Fetch requirements for this category and all descendants with their status
     const { data: requirements, error: requirementsError } = await supabase
       .from("requirements")
@@ -159,6 +181,7 @@ export async function GET(
         description,
         category_id,
         responses (
+          supplier_id,
           status,
           is_checked
         )
@@ -178,7 +201,12 @@ export async function GET(
 
     // Calculate treatment status for each requirement (based on is_checked)
     const requirementsWithStatus = requirements.map((req: any) => {
-      const responses = req.responses || [];
+      const allResponses: any[] = req.responses || [];
+
+      // Filter to active suppliers only when a version is provided
+      const responses = activeSupplierIds
+        ? allResponses.filter((r) => activeSupplierIds!.has(r.supplier_id))
+        : allResponses;
 
       // If no responses, status is pending
       if (responses.length === 0) {

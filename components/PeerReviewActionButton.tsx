@@ -18,7 +18,7 @@ interface PeerReviewActionButtonProps {
 
 interface DialogState {
   open: boolean;
-  action: "submit" | "approve" | "reject" | null;
+  action: "approve" | "reject" | null;
 }
 
 export function PeerReviewActionButton({
@@ -28,7 +28,10 @@ export function PeerReviewActionButton({
   status,
   userAccessLevel,
 }: PeerReviewActionButtonProps) {
-  const [dialog, setDialog] = useState<DialogState>({ open: false, action: null });
+  const [dialog, setDialog] = useState<DialogState>({
+    open: false,
+    action: null,
+  });
 
   const mutation = usePeerReviewMutation({ rfpId, versionId });
 
@@ -36,11 +39,7 @@ export function PeerReviewActionButton({
     if (!dialog.action) return;
 
     const targetStatus: Exclude<PeerReviewStatus, "draft"> =
-      dialog.action === "submit"
-        ? "submitted"
-        : dialog.action === "approve"
-          ? "approved"
-          : "rejected";
+      dialog.action === "approve" ? "approved" : "rejected";
 
     mutation.mutate(
       {
@@ -57,34 +56,25 @@ export function PeerReviewActionButton({
 
   const handleCancel = () => setDialog({ open: false, action: null });
 
-  const isEvaluator =
-    userAccessLevel === "evaluator" ||
-    userAccessLevel === "owner" ||
-    userAccessLevel === "admin";
   const isOwnerOrAdmin =
     userAccessLevel === "owner" || userAccessLevel === "admin";
 
-  // Determine which actions are available
-  const canSubmit = isEvaluator && (status === "draft" || status === "rejected");
   const canApprove = isOwnerOrAdmin && status === "submitted";
   const canReject = isOwnerOrAdmin && status === "submitted";
 
-  if (!canSubmit && !canApprove && !canReject) {
+  if (!canApprove && !canReject) {
     return null;
   }
 
   const dialogConfig: Record<
-    "submit" | "approve" | "reject",
-    { title: string; description: string; showCommentField: boolean; commentLabel?: string }
+    "approve" | "reject",
+    {
+      title: string;
+      description: string;
+      showCommentField: boolean;
+      commentLabel?: string;
+    }
   > = {
-    submit: {
-      title: "Soumettre pour validation",
-      description:
-        status === "rejected"
-          ? "Soumettre à nouveau cette exigence pour validation par l'owner ?"
-          : "Soumettre cette exigence pour validation par l'owner ?",
-      showCommentField: false,
-    },
     approve: {
       title: "Valider l'exigence",
       description: "Confirmer la validation de cette exigence ?",
@@ -104,16 +94,6 @@ export function PeerReviewActionButton({
   return (
     <>
       <div className="flex items-center gap-2">
-        {canSubmit && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDialog({ open: true, action: "submit" })}
-            disabled={mutation.isPending}
-          >
-            {status === "rejected" ? "Soumettre à nouveau" : "Soumettre pour validation"}
-          </Button>
-        )}
         {canApprove && (
           <Button
             variant="outline"

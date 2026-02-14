@@ -55,6 +55,7 @@ import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
 import { useVersion } from "@/contexts/VersionContext";
 import { PeerReviewBadge } from "@/components/PeerReviewBadge";
 import { PeerReviewActionButton } from "@/components/PeerReviewActionButton";
+import { usePeerReviewMutation } from "@/hooks/use-peer-review";
 import type { RequirementReviewStatus } from "@/types/peer-review";
 
 interface ComparisonViewProps {
@@ -143,6 +144,18 @@ export function ComparisonView({
 
   // Get version context to filter removed suppliers
   const { activeVersion } = useVersion();
+
+  // Peer review auto-trigger mutation
+  const peerReviewMutation = usePeerReviewMutation({
+    rfpId: rfpId ?? "",
+    versionId: activeVersion?.id ?? "",
+  });
+
+  // Ref to detect false → true transition of allResponsesChecked without re-triggering on navigation
+  const autoReviewStateRef = useRef<{
+    requirementId: string | null;
+    prevAllChecked: boolean;
+  }>({ requirementId: null, prevAllChecked: false });
 
   // Timers for hiding "Saved" indicator
   const savedTimers = useRef<Record<string, NodeJS.Timeout>>({});
@@ -296,7 +309,8 @@ export function ComparisonView({
     error: categoryError,
   } = useCategoryRequirements(
     rfpId || null,
-    isCategory ? selectedRequirementId : null
+    isCategory ? selectedRequirementId : null,
+    activeVersion?.id ?? null
   );
 
   const requirement = getRequirementById(
@@ -744,6 +758,46 @@ export function ComparisonView({
     requirementResponses.length > 0 &&
     requirementResponses.every((r) => responseStates[r.id]?.isChecked ?? false);
 
+  // Auto-trigger peer review when all responses become checked
+  useEffect(() => {
+    if (
+      !peerReviewEnabled ||
+      !rfpId ||
+      !activeVersion?.id ||
+      !userAccessLevel ||
+      !requirement?.id
+    )
+      return;
+
+    const { requirementId: prevReqId, prevAllChecked } =
+      autoReviewStateRef.current;
+    const requirementChanged = prevReqId !== requirement.id;
+
+    autoReviewStateRef.current = {
+      requirementId: requirement.id,
+      prevAllChecked: allResponsesChecked,
+    };
+
+    // Reset without triggering on requirement navigation
+    if (requirementChanged) return;
+
+    // Only trigger on false → true transition
+    if (!allResponsesChecked || prevAllChecked) return;
+
+    const currentStatus =
+      reviewStatuses?.get(requirement.id)?.status ?? "draft";
+    if (currentStatus !== "draft" && currentStatus !== "rejected") return;
+
+    const isOwnerOrAdmin =
+      userAccessLevel === "owner" || userAccessLevel === "admin";
+    peerReviewMutation.mutate({
+      requirementId: requirement.id,
+      status: isOwnerOrAdmin ? "approved" : "submitted",
+      version_id: activeVersion.id,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allResponsesChecked, requirement?.id]);
+
   // Handle opening supplier documents in PDF viewer
   const handleOpenSupplierDocuments = useCallback(
     async (supplierId: string) => {
@@ -1020,32 +1074,48 @@ export function ComparisonView({
                         </div>
                       </TableCell>
                       <TableCell>
-                        {req.status === "pass" && (
-                          <Badge className="bg-green-500 text-white px-3 py-1.5 text-sm font-medium">
-                            <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                            Validé
-                          </Badge>
-                        )}
-                        {req.status === "partial" && (
-                          <Badge className="bg-amber-500 text-white px-3 py-1.5 text-sm font-medium">
-                            <Clock className="w-4 h-4 mr-1.5" />
-                            Partiel
-                          </Badge>
-                        )}
-                        {req.status === "fail" && (
-                          <Badge className="bg-red-500 text-white px-3 py-1.5 text-sm font-medium">
-                            <AlertTriangle className="w-4 h-4 mr-1.5" />
-                            Échoué
-                          </Badge>
-                        )}
-                        {req.status === "pending" && (
-                          <Badge
-                            variant="outline"
-                            className="px-3 py-1.5 text-sm font-medium"
-                          >
-                            <Clock className="w-4 h-4 mr-1.5" />
-                            En attente
-                          </Badge>
+                        {peerReviewEnabled ? (
+                          (() => {
+                            const prStatus =
+                              reviewStatuses?.get(req.id)?.status ?? "draft";
+                            if (
+                              prStatus === "approved" ||
+                              prStatus === "submitted" ||
+                              prStatus === "rejected"
+                            )
+                              return <PeerReviewBadge status={prStatus} />;
+                            // draft — distinguish by completion
+                            if (req.status === "pending")
+                              return (
+                                <span className="inline-flex items-center rounded-full border font-medium px-2.5 py-0.5 text-xs bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
+                                  Non initié
+                                </span>
+                              );
+                            return (
+                              <span className="inline-flex items-center rounded-full border font-medium px-2.5 py-0.5 text-xs bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800">
+                                En cours
+                              </span>
+                            );
+                          })()
+                        ) : (
+                          <>
+                            {req.status === "pass" && (
+                              <span className="inline-flex items-center rounded-full border font-medium px-2.5 py-0.5 text-xs bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800">
+                                Validé
+                              </span>
+                            )}
+                            {(req.status === "partial" ||
+                              req.status === "fail") && (
+                              <span className="inline-flex items-center rounded-full border font-medium px-2.5 py-0.5 text-xs bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800">
+                                En cours
+                              </span>
+                            )}
+                            {req.status === "pending" && (
+                              <span className="inline-flex items-center rounded-full border font-medium px-2.5 py-0.5 text-xs bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
+                                Non initié
+                              </span>
+                            )}
+                          </>
                         )}
                       </TableCell>
                       <TableCell>
@@ -1130,7 +1200,13 @@ export function ComparisonView({
               >
                 {requirement.title}
               </h2>
-              {allResponsesChecked ? (
+              {peerReviewEnabled ? (
+                <PeerReviewBadge
+                  status={
+                    reviewStatuses?.get(requirement.id)?.status ?? "draft"
+                  }
+                />
+              ) : allResponsesChecked ? (
                 <Badge className="bg-green-500 px-2 py-1">
                   <CheckCircle2 className="w-4 h-4" />
                 </Badge>
@@ -1142,22 +1218,20 @@ export function ComparisonView({
                   <Clock className="w-4 h-4" />
                 </Badge>
               )}
-              {peerReviewEnabled && (
-                <PeerReviewBadge
-                  status={
-                    reviewStatuses?.get(requirement.id)?.status ?? "draft"
-                  }
-                />
-              )}
-              {peerReviewEnabled && rfpId && activeVersion && userAccessLevel && (
-                <PeerReviewActionButton
-                  requirementId={requirement.id}
-                  rfpId={rfpId}
-                  versionId={activeVersion.id}
-                  status={reviewStatuses?.get(requirement.id)?.status ?? "draft"}
-                  userAccessLevel={userAccessLevel}
-                />
-              )}
+              {peerReviewEnabled &&
+                rfpId &&
+                activeVersion &&
+                userAccessLevel && (
+                  <PeerReviewActionButton
+                    requirementId={requirement.id}
+                    rfpId={rfpId}
+                    versionId={activeVersion.id}
+                    status={
+                      reviewStatuses?.get(requirement.id)?.status ?? "draft"
+                    }
+                    userAccessLevel={userAccessLevel}
+                  />
+                )}
             </div>
             {!isMobile && (
               <div className="relative">
