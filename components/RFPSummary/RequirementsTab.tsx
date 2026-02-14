@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MoveToDialog } from "@/components/RFPSummary/MoveToDialog";
+import { PeerReviewBadge } from "@/components/PeerReviewBadge";
+import { usePeerReviewStatuses } from "@/hooks/use-peer-review";
 import { v4 as uuidv4 } from "uuid";
 import {
   ChevronDown,
@@ -82,6 +84,8 @@ interface RequirementMetadata {
 
 interface RequirementsTabProps {
   rfpId: string;
+  peerReviewEnabled?: boolean;
+  versionId?: string;
 }
 
 const DEFAULT_TAGS = [
@@ -195,7 +199,7 @@ function CategoryTagDialog({ node, tags, onApply }: CategoryTagDialogProps) {
   );
 }
 
-export function RequirementsTab({ rfpId }: RequirementsTabProps) {
+export function RequirementsTab({ rfpId, peerReviewEnabled = false, versionId }: RequirementsTabProps) {
   const [data, setData] = useState<TreeNode[]>([]);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
     new Set()
@@ -227,6 +231,12 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
   const [moveTargetNodeIds, setMoveTargetNodeIds] = useState<string[]>([]);
+
+  // Peer review statuses — only fetched when peer review is enabled
+  const { statuses: reviewStatuses } = usePeerReviewStatuses(
+    peerReviewEnabled ? rfpId : undefined,
+    peerReviewEnabled ? versionId : undefined
+  );
 
   // Check for unsaved changes
   const hasChanges = (): boolean => {
@@ -928,6 +938,13 @@ export function RequirementsTab({ rfpId }: RequirementsTabProps) {
                   </div>
                 </PopoverContent>
               </Popover>
+            )}
+            {node.type === "requirement" && peerReviewEnabled && reviewStatuses.has(node.id) && (
+              <PeerReviewBadge
+                status={reviewStatuses.get(node.id)!.status}
+                size="sm"
+                className="ml-1 flex-shrink-0"
+              />
             )}
           </div>
         </TableCell>
