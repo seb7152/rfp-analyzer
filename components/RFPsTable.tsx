@@ -13,6 +13,36 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, Eye, Trash2 } from "lucide-react";
 import type { RFP } from "@/lib/supabase/types";
+import { useRFPCompletion } from "@/hooks/use-completion";
+
+function RFPProgressCell({ rfpId }: { rfpId: string }) {
+  const { percentage, isLoading } = useRFPCompletion(rfpId);
+
+  if (isLoading) {
+    return <Skeleton className="h-4 w-24 bg-slate-200 dark:bg-slate-700" />;
+  }
+
+  const color =
+    percentage === 100
+      ? "bg-green-500"
+      : percentage >= 50
+        ? "bg-blue-500"
+        : "bg-slate-400";
+
+  return (
+    <div className="flex items-center gap-2 min-w-[120px]">
+      <div className="flex-1 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all ${color}`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+      <span className="text-xs font-medium tabular-nums w-9 text-right text-slate-600 dark:text-slate-400">
+        {percentage}%
+      </span>
+    </div>
+  );
+}
 
 interface RFPsTableProps {
   rfps: RFP[];
@@ -111,6 +141,7 @@ export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Title</th>
                 <th className="px-4 py-3 text-left font-medium">Status</th>
+                <th className="px-4 py-3 text-left font-medium">Avancement</th>
                 <th className="px-4 py-3 text-left font-medium">Created</th>
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
@@ -137,6 +168,9 @@ export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
                     </div>
                   </td>
                   <td className="px-4 py-3">{getStatusBadge(rfp.status)}</td>
+                  <td className="px-4 py-3">
+                    <RFPProgressCell rfpId={rfp.id} />
+                  </td>
                   <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                     {formatDate(rfp.created_at)}
                   </td>
