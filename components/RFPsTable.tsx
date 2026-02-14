@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -11,7 +12,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, Eye, Trash2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FileText, Eye, Trash2, RefreshCw } from "lucide-react";
 import type { RFP } from "@/lib/supabase/types";
 import { useRFPCompletion } from "@/hooks/use-completion";
 
@@ -29,14 +37,33 @@ function RFPProgressCell({ rfpId }: { rfpId: string }) {
   );
 }
 
+type StatusFilter = "all" | "in_progress" | "completed" | "archived";
+
 interface RFPsTableProps {
   rfps: RFP[];
   isLoading: boolean;
   onDelete?: (rfpId: string) => Promise<void> | void;
+  onRefresh?: () => void;
 }
 
-export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
+export function RFPsTable({ rfps, isLoading, onDelete, onRefresh }: RFPsTableProps) {
   const router = useRouter();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+
+  const handleRefresh = async () => {
+    if (!onRefresh || isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
+  const filteredRfps = statusFilter === "all"
+    ? rfps
+    : rfps.filter((rfp) => rfp.status === statusFilter);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { bg: string; text: string }> = {
@@ -57,7 +84,7 @@ export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
     const variant = variants[status] || variants.in_progress;
     return (
       <Badge className={`${variant.bg} border-none ${variant.text}`}>
-        {status === "in_progress" ? "In Progress" : status}
+        {status === "in_progress" ? "En cours" : status === "completed" ? "Terminé" : "Archivé"}
       </Badge>
     );
   };
@@ -114,25 +141,63 @@ export function RFPsTable({ rfps, isLoading, onDelete }: RFPsTableProps) {
   return (
     <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
       <CardHeader>
-        <CardTitle>RFPs</CardTitle>
-        <CardDescription className="text-slate-500 dark:text-slate-400">
-          {rfps.length} RFP{rfps.length > 1 ? "s" : ""} in your organization
-        </CardDescription>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <CardTitle>RFPs</CardTitle>
+            <CardDescription className="text-slate-500 dark:text-slate-400 mt-1">
+              {filteredRfps.length !== rfps.length
+                ? `${filteredRfps.length} / ${rfps.length} RFP${rfps.length > 1 ? "s" : ""}`
+                : `${rfps.length} RFP${rfps.length > 1 ? "s" : ""}`}{" "}
+              dans votre organisation
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+              <SelectTrigger className="h-8 w-36 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="in_progress">En cours</SelectItem>
+                <SelectItem value="completed">Terminé</SelectItem>
+                <SelectItem value="archived">Archivé</SelectItem>
+              </SelectContent>
+            </Select>
+            {onRefresh && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="h-8 w-8 p-0"
+                title="Rafraîchir"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+              </Button>
+            )}
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-slate-700 dark:text-slate-300">
             <thead className="border-b border-slate-200 text-xs uppercase text-slate-600 dark:border-slate-700 dark:text-slate-400">
               <tr>
-                <th className="px-4 py-3 text-left font-medium">Title</th>
+                <th className="px-4 py-3 text-left font-medium">Titre</th>
                 <th className="px-4 py-3 text-left font-medium">Statut</th>
                 <th className="px-4 py-3 text-center font-medium">Avancement</th>
-                <th className="px-4 py-3 text-left font-medium">Created</th>
+                <th className="px-4 py-3 text-left font-medium">Créé le</th>
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-              {rfps.map((rfp) => (
+              {filteredRfps.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400 text-sm">
+                    Aucun RFP ne correspond au filtre sélectionné.
+                  </td>
+                </tr>
+              ) : filteredRfps.map((rfp) => (
                 <tr
                   key={rfp.id}
                   className="hover:bg-slate-100/50 transition-colors dark:hover:bg-slate-800/50 cursor-pointer"

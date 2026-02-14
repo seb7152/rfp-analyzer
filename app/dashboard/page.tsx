@@ -260,6 +260,7 @@ export default function DashboardPage() {
           <RFPsTable
             rfps={rfps}
             isLoading={rfpsLoading}
+            onRefresh={refetchRFPs}
             onDelete={async (rfpId) => {
               if (
                 !confirm(
