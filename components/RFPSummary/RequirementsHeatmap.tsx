@@ -21,7 +21,8 @@ import { Input } from "@/components/ui/input";
 import { Info, Search, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PeerReviewBadge } from "@/components/PeerReviewBadge";
-import { usePeerReviewStatuses } from "@/hooks/use-peer-review";
+import { usePeerReviewStatuses, peerReviewKeys } from "@/hooks/use-peer-review";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { Supplier } from "@/types/supplier";
 import { Response } from "@/types/response";
@@ -42,6 +43,7 @@ interface RequirementsHeatmapProps {
   rfpId: string;
   selectedCategoryId?: string | null;
   peerReviewEnabled?: boolean;
+  refreshKey?: number;
 }
 
 // Helper functions for colors
@@ -82,13 +84,24 @@ export function RequirementsHeatmap({
   rfpId,
   selectedCategoryId,
   peerReviewEnabled = false,
+  refreshKey = 0,
 }: RequirementsHeatmapProps) {
   const { activeVersion } = useVersion();
+  const queryClient = useQueryClient();
 
   const { statuses: reviewStatuses } = usePeerReviewStatuses(
     peerReviewEnabled ? rfpId : undefined,
     peerReviewEnabled ? activeVersion?.id : undefined
   );
+
+  // Re-fetch peer review statuses when refreshKey changes
+  useEffect(() => {
+    if (peerReviewEnabled && refreshKey > 0) {
+      queryClient.invalidateQueries({
+        queryKey: peerReviewKeys.statuses(rfpId, activeVersion?.id ?? ""),
+      });
+    }
+  }, [refreshKey]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [requirements, setRequirements] = useState<RequirementTreeNode[]>([]);
   const [responses, setResponses] = useState<Response[]>([]);
@@ -134,7 +147,7 @@ export function RequirementsHeatmap({
     if (rfpId) {
       fetchData();
     }
-  }, [rfpId, activeVersion?.id]);
+  }, [rfpId, activeVersion?.id, refreshKey]);
 
   // Flatten requirements tree
   const flatRequirements = useMemo(() => {

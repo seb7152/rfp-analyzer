@@ -27,6 +27,7 @@ interface CategoryHeatmapProps {
   rfpId: string;
   onCategorySelect?: (categoryId: string | null) => void;
   selectedCategoryId?: string | null;
+  refreshKey?: number;
 }
 
 // Helper functions for colors (reused/adapted from RequirementsHeatmap)
@@ -50,6 +51,7 @@ export function CategoryHeatmap({
   rfpId,
   onCategorySelect,
   selectedCategoryId,
+  refreshKey = 0,
 }: CategoryHeatmapProps) {
   const { activeVersion } = useVersion();
   const isMobile = useIsMobile();
@@ -116,7 +118,7 @@ export function CategoryHeatmap({
     if (rfpId) {
       fetchData();
     }
-  }, [rfpId, activeVersion?.id]);
+  }, [rfpId, activeVersion?.id, refreshKey]);
 
   // Process data to calculate category scores
   const categoryScores = useMemo(() => {
