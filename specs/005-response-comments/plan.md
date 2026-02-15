@@ -60,45 +60,50 @@ Dans la vue de comparaison (`ComparisonView`), chaque carte de réponse fourniss
 - **Bouton [+]** : créer un nouveau thread directement
 - Clic sur le badge → ouvre le **panneau latéral de discussion**
 
-### 2.2 Panneau latéral de discussion (Sheet/Drawer)
+### 2.2 Panneau latéral de discussion — réutilisation du pattern PDFViewerSheet
 
-Un panneau glissant depuis la droite (réutilisation du pattern `Sheet` existant) affiche tous les threads d'une réponse :
+Le panneau de discussion **réutilise l'architecture exacte de `PDFViewerSheet`** :
+- Même pattern `fixed top-0 right-0 bottom-0` avec `transition-transform duration-300`
+- Même z-index (z-40 content, z-30 overlay, z-50 minimized)
+- Même bouton minimize/restore en bas à droite
+- **Largeur : `w-[30%]`** (au lieu de `w-1/2` pour le PDF viewer) — le panneau est plus compact car le contenu est textuel
+
+> **Implémentation** : Extraire un composant `SidePanel` partagé depuis `PDFViewerSheet` avec une prop `width` (`"30%" | "50%"`), puis les deux panels (PDF et threads) l'utilisent. Alternative : dupliquer le pattern fixe dans `ThreadPanel` pour éviter de refactorer PDFViewerSheet.
+
+**Cohabitation avec le PDF viewer** : Les deux panels ne s'ouvrent pas en même temps. Si le PDF viewer est ouvert, un clic sur un thread le minimise et ouvre le panneau discussions (et inversement). Un seul panel actif à la fois.
 
 ```
-┌────────────────────────────────────────┐
-│  Discussion — Fournisseur A            │
-│  Exigence: REQ-042                     │
-│  ──────────────────────────────────── │
-│                                        │
-│  [Filtres]  Tous | Ouverts | Résolus   │
-│  [Tri]  Récents | Priorité             │
-│                                        │
-│  ┌────────────────────────────────┐    │
-│  │ 🔴 BLOQUANT                    │    │
-│  │ "Conformité RGPD non démontrée"│    │
-│  │                                │    │
-│  │  👤 Marie L. · il y a 2h       │    │
-│  │  La réponse ne mentionne pas   │    │
-│  │  le DPO ni les mesures...      │    │
-│  │                                │    │
-│  │  👤 Jean D. · il y a 1h        │    │
-│  │  J'ai vérifié l'annexe 3,     │    │
-│  │  le DPO est mentionné p.12    │    │
-│  │                                │    │
-│  │  [Répondre...]                 │    │
-│  │  [✓ Marquer comme résolu]      │    │
-│  └────────────────────────────────┘    │
-│                                        │
-│  ┌────────────────────────────────┐    │
-│  │ ✅ RÉSOLU                       │    │
-│  │ "Score IA trop généreux"        │    │
-│  │  2 messages · résolu par Jean  │    │
-│  │  ▶ Déplier                     │    │
-│  └────────────────────────────────┘    │
-│                                        │
-│  ──────────────────────────────────── │
-│  [+ Nouveau point de discussion]       │
-└────────────────────────────────────────┘
+                         ┌── 30% ──────────────┐
+                         │ Discussion           │
+                         │ Fournisseur A        │
+                         │ REQ-042              │
+                         │ ──────────────────── │
+                         │                      │
+                         │ Tous|Ouverts|Résolus │
+                         │                      │
+                         │ ┌──────────────────┐ │
+                         │ │ 🔴 BLOQUANT       │ │
+                         │ │ "Conformité RGPD" │ │
+                         │ │                   │ │
+                         │ │ Marie · 2h        │ │
+                         │ │ La réponse ne     │ │
+                         │ │ mentionne pas...  │ │
+                         │ │                   │ │
+                         │ │ Jean · 1h         │ │
+                         │ │ Annexe 3, p.12    │ │
+                         │ │                   │ │
+                         │ │ [Répondre...]     │ │
+                         │ │ [✓ Résolu]        │ │
+                         │ └──────────────────┘ │
+                         │                      │
+                         │ ┌──────────────────┐ │
+                         │ │ ✅ RÉSOLU         │ │
+                         │ │ "Score IA trop…"  │ │
+                         │ │ 2 msg · ▶ Voir   │ │
+                         │ └──────────────────┘ │
+                         │                      │
+                         │ [+ Nouveau point]    │
+                         └──────────────────────┘
 ```
 
 **Comportements clés** :
@@ -112,46 +117,77 @@ Un panneau glissant depuis la droite (réutilisation du pattern `Sheet` existant
 | Supprimer | Uniquement ses propres messages, pas le thread entier (sauf si vide) |
 | Éditer | Uniquement ses propres messages, indicateur "modifié" visible |
 
-### 2.3 Vue globale des discussions (page-level)
+### 2.3 Filtrage — extension des filtres existants
 
-Un onglet ou bouton dans la barre d'outils de `/evaluate` ouvre une **vue consolidée** de tous les threads du RFP :
+Plutôt que créer un système de filtres dédié, on **étend les mécanismes déjà en place** :
+
+#### A. Extension de `EvaluationFilters` (filtre réponses)
+
+Le composant `EvaluationFilters` filtre déjà les réponses par statut, score, questions, commentaires manuels. On ajoute une section "Discussions" :
 
 ```
-┌──────────────────────────────────────────────────────┐
-│  Points de discussion — RFP "Infra Cloud 2026"       │
-│  ────────────────────────────────────────────────── │
-│                                                      │
-│  Filtres : [Statut ▼] [Priorité ▼] [Fournisseur ▼]  │
-│            [Catégorie ▼] [Auteur ▼]                  │
-│                                                      │
-│  12 ouverts · 3 bloquants · 24 résolus               │
-│                                                      │
-│  ┌ REQ-012 — Disponibilité 99.9%                     │
-│  │  Fournisseur B · 🔴 Bloquant                      │
-│  │  "SLA insuffisant — demander clarification"       │
-│  │  3 messages · ouvert · Marie L.                    │
-│  │  Dernier message: il y a 30min                     │
-│  └──────────────────────────── [Voir →]              │
-│                                                      │
-│  ┌ REQ-045 — Chiffrement au repos                    │
-│  │  Fournisseur A · 🟡 Important                     │
-│  │  "AES-256 confirmé mais pas certifié"             │
-│  │  5 messages · ouvert · Jean D.                     │
-│  │  Dernier message: il y a 2h                        │
-│  └──────────────────────────── [Voir →]              │
-└──────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│  Filtres                                │
+│  ─────────────────────────────────────  │
+│  Statut         [✓ Pass] [✓ Partial]... │  ← existant
+│  Score          [Min ▼] [Max ▼]         │  ← existant
+│  Questions      [Avec] [Sans]           │  ← existant
+│  Commentaires   [Avec] [Sans]           │  ← existant
+│  ─────────────────────────────────────  │
+│  Discussions                        NEW │
+│  [Avec threads] [Sans threads]          │
+│  [Pts ouverts] [Pts bloquants]          │
+│  ─────────────────────────────────────  │
+│  [Appliquer]           [Réinitialiser]  │
+└─────────────────────────────────────────┘
 ```
 
-**Filtres disponibles** :
+**Nouveaux champs dans `EvaluationFilterState`** :
 
-| Filtre | Options |
-|--------|---------|
-| Statut | Tous / Ouverts / Résolus |
-| Priorité | Tous / Bloquant / Important / Normal |
-| Fournisseur | Multi-select parmi les fournisseurs du RFP |
-| Catégorie | Arbre des catégories d'exigences |
-| Auteur | Multi-select parmi les membres de l'équipe |
-| Mes discussions | Toggle pour ne voir que les threads où je participe |
+```typescript
+// Extension de l'interface existante
+interface EvaluationFilterState {
+  // ... champs existants ...
+  hasThreads: boolean | null;        // null=tous, true=avec threads, false=sans
+  hasOpenThreads: boolean | null;    // null=tous, true=avec ouverts
+  hasBlockingThreads: boolean | null; // null=tous, true=avec bloquants
+}
+```
+
+#### B. Intégration avec le filtre mono-fournisseur (`?supplierId=`)
+
+Le filtre mono-fournisseur existant (URL param `?supplierId=xxx`) s'applique **automatiquement** aux threads : quand on est en vue mono-fournisseur, seuls les threads de ce fournisseur sont visibles (le hook `useResponseThreads` reçoit déjà le `supplier_id` en paramètre).
+
+Pas de nouveau filtre fournisseur à créer — on réutilise le mécanisme de navigation existant.
+
+#### C. Vue globale avec filtres inline
+
+La vue globale des discussions (accessible via un bouton dans la toolbar) affiche tous les threads du RFP dans le même panneau latéral 30%, avec des **filtres inline légers** (toggle buttons, pas un popover) :
+
+```
+┌── 30% ──────────────────┐
+│ Points de discussion     │
+│ RFP "Infra Cloud 2026"  │
+│ ──────────────────────── │
+│                          │
+│ Ouverts|Résolus|Tous     │  ← SegmentedControl
+│ 🔴 3  🟡 5  ● 12        │  ← compteurs par priorité
+│                          │
+│ ┌──────────────────────┐ │
+│ │ REQ-012 · Fourn. B   │ │
+│ │ 🔴 "SLA insuffisant" │ │
+│ │ 3 msg · Marie · 30m  │ │
+│ └─────────── [Voir →]  │ │
+│                          │
+│ ┌──────────────────────┐ │
+│ │ REQ-045 · Fourn. A   │ │
+│ │ 🟡 "AES-256 pas cert"│ │
+│ │ 5 msg · Jean · 2h    │ │
+│ └─────────── [Voir →]  │ │
+└──────────────────────────┘
+```
+
+Le clic sur "Voir" navigue vers l'exigence correspondante dans le sidebar et ouvre le panneau discussion pour cette réponse spécifique.
 
 ### 2.4 Indicateurs dans le Sidebar
 
@@ -448,37 +484,65 @@ useDeleteComment(rfpId, threadId)
 components/
 ├── response-threads/
 │   ├── ThreadIndicator.tsx        # Badge compteur sur SupplierResponseCard
-│   ├── ThreadSheet.tsx            # Panneau latéral (Sheet) par réponse
-│   ├── ThreadList.tsx             # Liste de threads avec filtres
+│   ├── ThreadPanel.tsx            # Panneau fixe 30% (même pattern que PDFViewerSheet)
+│   ├── ThreadList.tsx             # Liste de threads avec filtres inline
 │   ├── ThreadCard.tsx             # Un thread avec ses messages
 │   ├── ThreadCreateForm.tsx       # Formulaire de création de thread
 │   ├── CommentItem.tsx            # Un message dans un thread
 │   ├── CommentInput.tsx           # Textarea de réponse
-│   ├── ThreadFilters.tsx          # Barre de filtres
-│   ├── ThreadGlobalView.tsx       # Vue consolidée RFP-level
 │   └── ThreadPriorityBadge.tsx    # Badge priorité (normal/important/blocking)
+│
+├── EvaluationFilters.tsx          # MODIFIÉ — ajout section "Discussions"
+├── SupplierResponseCard.tsx       # MODIFIÉ — ajout ThreadIndicator
+└── PDFViewerSheet.tsx             # INCHANGÉ (ou refactoré en SidePanel partagé)
+```
+
+**`ThreadPanel.tsx`** — Pattern identique à `PDFViewerSheet` :
+
+```typescript
+// Architecture calquée sur PDFViewerSheet
+interface ThreadPanelProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  rfpId: string;
+  // Mode "réponse spécifique" ou "vue globale"
+  responseId?: string;           // Si set → threads de cette réponse
+  supplierName?: string;
+  requirementTitle?: string;
+  // Vue globale
+  globalView?: boolean;          // Si true → tous les threads du RFP
+}
+
+// Rendu : fixed top-0 right-0 bottom-0 w-[30%] z-40
+// Overlay : z-30, cliquable → minimize
+// Minimize button : z-50, bottom-right
 ```
 
 **Hiérarchie des composants** :
 
 ```
-ComparisonView
- └── SupplierResponseCard
-      └── ThreadIndicator          ← badge "💬 3 · 🔴"
-           └── ThreadSheet         ← panneau latéral
-                ├── ThreadFilters  ← open/resolved, priorité
-                ├── ThreadList
-                │   └── ThreadCard (×N)
-                │        ├── ThreadPriorityBadge
-                │        ├── CommentItem (×N)
-                │        └── CommentInput
-                └── ThreadCreateForm
+EvaluatePage
+ ├── PDFViewerSheet               ← existant (w-1/2, z-40)
+ ├── ThreadPanel                  ← NOUVEAU (w-[30%], z-40, mutex avec PDF)
+ │    ├── Header (titre + minimize + close)
+ │    ├── SegmentedControl (Ouverts | Résolus | Tous)
+ │    ├── ThreadList
+ │    │    └── ThreadCard (×N)
+ │    │         ├── ThreadPriorityBadge
+ │    │         ├── CommentItem (×N)
+ │    │         └── CommentInput
+ │    └── ThreadCreateForm
+ │
+ └── ComparisonView
+      └── SupplierResponseCard
+           └── ThreadIndicator     ← badge "💬 3 · 🔴", clic → ouvre ThreadPanel
 
-EvaluatePage (toolbar)
- └── ThreadGlobalView             ← vue consolidée
-      ├── ThreadFilters
-      └── ThreadList (même composant, données différentes)
+State management (EvaluatePage) :
+ - activePanel: 'none' | 'pdf' | 'threads'
+ - threadPanelContext: { responseId, supplierName, requirementTitle } | { globalView: true }
 ```
+
+**Mutex PDF / Threads** : Un seul panneau actif à la fois. L'état `activePanel` vit dans `EvaluatePage` et contrôle les deux. Ouvrir un panneau minimise l'autre automatiquement.
 
 ### 3.5 Supabase Realtime (optionnel, Phase 2)
 
@@ -536,33 +600,34 @@ Phase 1 : polling via TanStack Query (staleTime: 15s), cohérent avec le reste d
 | T10 | `ThreadCard` (thread + messages + réponse) | `components/response-threads/ThreadCard.tsx` |
 | T11 | `ThreadCreateForm` | `components/response-threads/ThreadCreateForm.tsx` |
 
-### Phase 3 — Intégration dans ComparisonView
+### Phase 3 — Panneau + Intégration
 
 | # | Tâche | Fichiers |
 |---|-------|----------|
 | T12 | `ThreadIndicator` sur SupplierResponseCard | `components/response-threads/ThreadIndicator.tsx` |
-| T13 | `ThreadSheet` (panneau latéral) | `components/response-threads/ThreadSheet.tsx` |
-| T14 | `ThreadFilters` | `components/response-threads/ThreadFilters.tsx` |
-| T15 | `ThreadList` (assemblage filtres + cards) | `components/response-threads/ThreadList.tsx` |
-| T16 | Intégration dans `SupplierResponseCard` | `components/SupplierResponseCard.tsx` (modification) |
+| T13 | `ThreadPanel` (fixed right 30%, pattern PDFViewerSheet) | `components/response-threads/ThreadPanel.tsx` |
+| T14 | `ThreadList` avec filtres inline (SegmentedControl) | `components/response-threads/ThreadList.tsx` |
+| T15 | Intégration dans `SupplierResponseCard` | `components/SupplierResponseCard.tsx` (modification) |
+| T16 | State `activePanel` mutex PDF/threads dans evaluate | `app/dashboard/rfp/[rfpId]/evaluate/page.tsx` (modification) |
 
-### Phase 4 — Vue globale + Sidebar
+### Phase 4 — Extension des filtres + Sidebar
 
 | # | Tâche | Fichiers |
 |---|-------|----------|
-| T17 | `ThreadGlobalView` (page-level) | `components/response-threads/ThreadGlobalView.tsx` |
-| T18 | Bouton d'accès dans la toolbar evaluate | `app/dashboard/rfp/[rfpId]/evaluate/page.tsx` (modification) |
-| T19 | Indicateur threads dans le Sidebar tree | `components/Sidebar.tsx` (modification) |
-| T20 | Hook compteurs agrégés par exigence | `hooks/use-response-threads.ts` (extension) |
+| T17 | Extension `EvaluationFilters` (section Discussions) | `components/EvaluationFilters.tsx` (modification) |
+| T18 | Vue globale dans `ThreadPanel` (mode `globalView`) | `components/response-threads/ThreadPanel.tsx` (extension) |
+| T19 | Bouton "Discussions" dans la toolbar evaluate | `app/dashboard/rfp/[rfpId]/evaluate/page.tsx` (modification) |
+| T20 | Indicateur threads dans le Sidebar tree | `components/Sidebar.tsx` (modification) |
+| T21 | Hook compteurs agrégés par exigence | `hooks/use-response-threads.ts` (extension) |
 
 ### Phase 5 — Realtime + Polish
 
 | # | Tâche | Fichiers |
 |---|-------|----------|
-| T21 | Supabase Realtime subscription | `hooks/use-response-threads.ts` (extension) |
-| T22 | Optimistic updates sur création de commentaire | idem |
-| T23 | Accessibilité (keyboard nav, aria labels) | tous les composants |
-| T24 | Tests unitaires hooks + API | `tests/` |
+| T22 | Supabase Realtime subscription | `hooks/use-response-threads.ts` (extension) |
+| T23 | Optimistic updates sur création de commentaire | idem |
+| T24 | Accessibilité (keyboard nav, aria labels) | tous les composants |
+| T25 | Tests unitaires hooks + API | `tests/` |
 
 ---
 
@@ -582,8 +647,11 @@ Phase 1 : polling via TanStack Query (staleTime: 15s), cohérent avec le reste d
 
 ### Cohérence avec l'existant
 
+- **Panneau latéral** : même architecture que `PDFViewerSheet` (fixed positioning, slide animation, minimize, z-index) — juste en `w-[30%]` au lieu de `w-1/2`
+- **Filtres** : extension de `EvaluationFilters` existant plutôt que nouveau composant — les filtres discussions vivent au même endroit que les filtres statut/score
+- **Filtre fournisseur** : réutilisation du mécanisme `?supplierId=` existant, pas de nouveau filtre mono-fournisseur à créer
 - Pattern identique à `financial_comments` pour les hooks TanStack Query
-- Réutilisation des composants UI existants (`Sheet`, `Badge`, `Button`, `Popover`)
+- Réutilisation des composants UI existants (`Badge`, `Button`, `ScrollArea`)
 - Même convention de nommage SQL et TypeScript
 - Stale time aligné avec le peer review (15-30s)
 - Interface en français, cohérent avec le reste de l'application
