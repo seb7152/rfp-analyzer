@@ -1231,6 +1231,7 @@ export function ComparisonView({
                   status={
                     reviewStatuses?.get(requirement.id)?.status ?? "draft"
                   }
+                  iconOnly={isMobile}
                 />
               ) : allResponsesChecked ? (
                 <Badge className="bg-green-500 px-2 py-1">
