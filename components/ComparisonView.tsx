@@ -70,6 +70,7 @@ interface ComparisonViewProps {
   userAccessLevel?: "owner" | "evaluator" | "viewer" | "admin";
   peerReviewEnabled?: boolean;
   reviewStatuses?: Map<string, RequirementReviewStatus>;
+  onOpenThreadPanel?: (responseId: string, supplierName: string, requirementTitle: string) => void;
 }
 
 interface ResponseState {
@@ -127,6 +128,7 @@ export function ComparisonView({
   userAccessLevel,
   peerReviewEnabled = false,
   reviewStatuses,
+  onOpenThreadPanel,
 }: ComparisonViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1565,6 +1567,16 @@ export function ComparisonView({
                         requirementDescription={requirement?.description || ""}
                         onOpenBookmark={handlers.onOpenBookmark}
                         onAICommentUpdate={handlers.onAICommentUpdate}
+                        onOpenThreadPanel={
+                          onOpenThreadPanel
+                            ? () =>
+                                onOpenThreadPanel(
+                                  response.id,
+                                  supplier.name,
+                                  requirement?.title || ""
+                                )
+                            : undefined
+                        }
                       />
                     );
                   })}

@@ -27,6 +27,7 @@ interface SidebarProps {
   isSingleSupplier?: boolean;
   peerReviewEnabled?: boolean;
   reviewStatuses?: Map<string, RequirementReviewStatus>;
+  threadCounts?: Map<string, { open: number; hasBlocking: boolean }>;
 }
 
 export function Sidebar({
@@ -38,6 +39,7 @@ export function Sidebar({
   isSingleSupplier = false,
   peerReviewEnabled: _peerReviewEnabled = false,
   reviewStatuses: _reviewStatuses,
+  threadCounts,
 }: SidebarProps) {
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,6 +53,9 @@ export function Sidebar({
     hasQuestions: null,
     hasManualComments: null,
     hasManualScore: null,
+    hasThreads: null,
+    hasOpenThreads: null,
+    hasBlockingThreads: null,
   });
   const [appliedFilters, setAppliedFilters] = useState<EvaluationFilterState>({
     status: [],
@@ -58,6 +63,9 @@ export function Sidebar({
     hasQuestions: null,
     hasManualComments: null,
     hasManualScore: null,
+    hasThreads: null,
+    hasOpenThreads: null,
+    hasBlockingThreads: null,
   });
 
   // Use the new tree hook that includes categories + requirements
@@ -375,6 +383,7 @@ export function Sidebar({
                   expandedNodeIds={displayedExpandedNodeIds}
                   onSelectNode={onSelectRequirement}
                   onToggleNode={handleToggleNode}
+                  threadCounts={threadCounts}
                 />
               </div>
             </ScrollArea>

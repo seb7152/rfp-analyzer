@@ -24,6 +24,10 @@ export interface EvaluationFilterState {
   hasQuestions: boolean | null;
   hasManualComments: boolean | null;
   hasManualScore: boolean | null;
+  // Thread discussion filters
+  hasThreads: boolean | null;
+  hasOpenThreads: boolean | null;
+  hasBlockingThreads: boolean | null;
 }
 
 interface EvaluationFiltersProps {
@@ -79,6 +83,16 @@ export function EvaluationFilters({
     });
   };
 
+  const handleThreadFilterChange = (
+    field: "hasThreads" | "hasOpenThreads" | "hasBlockingThreads",
+    checked: boolean | null
+  ) => {
+    onFiltersChange({
+      ...filters,
+      [field]: checked,
+    });
+  };
+
   const resetFilters = () => {
     onFiltersChange({
       status: [],
@@ -86,6 +100,9 @@ export function EvaluationFilters({
       hasQuestions: null,
       hasManualComments: null,
       hasManualScore: null,
+      hasThreads: null,
+      hasOpenThreads: null,
+      hasBlockingThreads: null,
     });
   };
 
@@ -94,7 +111,10 @@ export function EvaluationFilters({
     filters.scoreRange.min > 0 ||
     filters.scoreRange.max < 5 ||
     filters.hasQuestions !== null ||
-    filters.hasManualComments !== null;
+    filters.hasManualComments !== null ||
+    filters.hasThreads !== null ||
+    filters.hasOpenThreads !== null ||
+    filters.hasBlockingThreads !== null;
 
   return (
     <ClientOnly>
@@ -286,6 +306,75 @@ export function EvaluationFilters({
                     handleCheckboxChange(
                       "hasManualComments",
                       filters.hasManualComments === false ? null : false
+                    )
+                  }
+                >
+                  Sans
+                </Button>
+              </div>
+            </div>
+
+            {/* Discussions Filter */}
+            <div className="space-y-2 border-t border-slate-200 dark:border-slate-700 pt-3">
+              <Label className="text-xs font-semibold">Discussions</Label>
+              <div className="flex gap-2">
+                <Button
+                  variant={
+                    filters.hasOpenThreads === true ? "secondary" : "outline"
+                  }
+                  size="sm"
+                  className="flex-1 text-xs"
+                  onClick={() =>
+                    handleThreadFilterChange(
+                      "hasOpenThreads",
+                      filters.hasOpenThreads === true ? null : true
+                    )
+                  }
+                >
+                  Pts ouverts
+                </Button>
+                <Button
+                  variant={
+                    filters.hasBlockingThreads === true ? "secondary" : "outline"
+                  }
+                  size="sm"
+                  className="flex-1 text-xs"
+                  onClick={() =>
+                    handleThreadFilterChange(
+                      "hasBlockingThreads",
+                      filters.hasBlockingThreads === true ? null : true
+                    )
+                  }
+                >
+                  Bloquants
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant={
+                    filters.hasThreads === true ? "secondary" : "outline"
+                  }
+                  size="sm"
+                  className="flex-1 text-xs"
+                  onClick={() =>
+                    handleThreadFilterChange(
+                      "hasThreads",
+                      filters.hasThreads === true ? null : true
+                    )
+                  }
+                >
+                  Avec discussions
+                </Button>
+                <Button
+                  variant={
+                    filters.hasThreads === false ? "secondary" : "outline"
+                  }
+                  size="sm"
+                  className="flex-1 text-xs"
+                  onClick={() =>
+                    handleThreadFilterChange(
+                      "hasThreads",
+                      filters.hasThreads === false ? null : false
                     )
                   }
                 >
