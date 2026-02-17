@@ -1543,6 +1543,19 @@ export function ComparisonView({
                           onCommentBlur={handlers.onCommentBlur}
                           onQuestionBlur={handlers.onQuestionBlur}
                           onAICommentUpdate={handlers.onAICommentUpdate}
+                          threadCount={threadStatsByResponseId?.get(response.id)?.total ?? 0}
+                          openThreadCount={threadStatsByResponseId?.get(response.id)?.open ?? 0}
+                          hasBlockingThread={threadStatsByResponseId?.get(response.id)?.hasBlocking ?? false}
+                          onOpenThreadPanel={
+                            onOpenThreadPanel
+                              ? () =>
+                                  onOpenThreadPanel(
+                                    response.id,
+                                    supplier.name,
+                                    requirement?.title || ""
+                                  )
+                              : undefined
+                          }
                         />
                       );
                     }

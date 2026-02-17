@@ -11,6 +11,8 @@ import {
   Copy,
   Sparkles,
   Map,
+  MessageCircle,
+  AlertOctagon,
 } from "lucide-react";
 import { AudioRecorder } from "@/components/AudioRecorder";
 import { TextEnhancer } from "@/components/TextEnhancer";
@@ -55,6 +57,10 @@ export interface MobileSupplierCardProps {
   rfpId?: string;
   requirementId?: string;
   onAICommentUpdate?: () => void;
+  threadCount?: number;
+  openThreadCount?: number;
+  hasBlockingThread?: boolean;
+  onOpenThreadPanel?: () => void;
 }
 
 export function MobileSupplierCard({
@@ -85,6 +91,10 @@ export function MobileSupplierCard({
   rfpId,
   requirementId,
   onAICommentUpdate,
+  threadCount = 0,
+  openThreadCount = 0,
+  hasBlockingThread = false,
+  onOpenThreadPanel,
 }: MobileSupplierCardProps) {
   const [commentTab, setCommentTab] = useState<"manual" | "ai">("manual");
   const [localAIComment, setLocalAIComment] = useState(aiComment);
@@ -254,6 +264,32 @@ export function MobileSupplierCard({
           />
           <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
             <span>{supplierName}</span>
+            {onOpenThreadPanel && (
+              <button
+                onClick={onOpenThreadPanel}
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium transition-colors ${
+                  hasBlockingThread
+                    ? "text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950 dark:hover:bg-red-900"
+                    : openThreadCount > 0
+                      ? "text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900"
+                      : threadCount > 0
+                        ? "text-green-600 bg-green-50 hover:bg-green-100 dark:bg-green-950 dark:hover:bg-green-900"
+                        : "text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-300 dark:hover:bg-gray-800"
+                }`}
+                title={
+                  openThreadCount > 0
+                    ? `${openThreadCount} point${openThreadCount > 1 ? "s" : ""} ouvert${openThreadCount > 1 ? "s" : ""}${hasBlockingThread ? " (bloquant)" : ""}`
+                    : threadCount > 0
+                      ? `${threadCount} point${threadCount > 1 ? "s" : ""} (tous résolus)`
+                      : "Ouvrir une discussion"
+                }
+              >
+                {hasBlockingThread ? <AlertOctagon size={14} /> : <MessageCircle size={14} />}
+                {threadCount > 0 && (
+                  <span>{openThreadCount > 0 ? openThreadCount : threadCount}</span>
+                )}
+              </button>
+            )}
             {/* Save status indicator */}
             {isSaving && (
               <span className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">

@@ -24,6 +24,7 @@ interface AIAnalysisButtonProps {
   hasUnanalyzedResponses?: boolean;
   userAccessLevel?: RFPAccessLevel;
   onAnalysisStarted?: () => void;
+  compact?: boolean;
 }
 
 /**
@@ -42,6 +43,7 @@ export function AIAnalysisButton({
   hasUnanalyzedResponses = false,
   userAccessLevel,
   onAnalysisStarted,
+  compact = false,
 }: AIAnalysisButtonProps) {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState("");
@@ -108,16 +110,22 @@ export function AIAnalysisButton({
         size="sm"
         onClick={() => setShowConfirmation(true)}
         disabled={isAnalysisInProgress}
-        className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        className={`bg-purple-600 hover:bg-purple-700 text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${compact ? "h-8 w-8 p-0" : ""}`}
         title={
           isAnalysisInProgress ? "Analysis in progress..." : "Analyze with AI"
         }
       >
         {isAnalyzing || isAnalysisInProgress ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            Analyzing...
-          </>
+          compact ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Analyzing...
+            </>
+          )
+        ) : compact ? (
+          <Bot className="h-4 w-4" />
         ) : (
           <>
             <Bot className="h-4 w-4 mr-2" />
@@ -127,7 +135,7 @@ export function AIAnalysisButton({
       </Button>
 
       {/* T143: Processing status badge */}
-      {analysisStatus?.status === "processing" && (
+      {!compact && analysisStatus?.status === "processing" && (
         <Badge
           variant="outline"
           className="ml-2 border-purple-200 text-purple-600 dark:border-purple-800 dark:text-purple-400 gap-1"
@@ -138,7 +146,7 @@ export function AIAnalysisButton({
         </Badge>
       )}
 
-      {analysisStatus?.status === "completed" && (
+      {!compact && analysisStatus?.status === "completed" && (
         <Badge
           variant="outline"
           className="ml-2 border-green-200 text-green-600 dark:border-green-800 dark:text-green-400 gap-1"
@@ -148,7 +156,7 @@ export function AIAnalysisButton({
         </Badge>
       )}
 
-      {analysisStatus?.status === "failed" && (
+      {!compact && analysisStatus?.status === "failed" && (
         <Badge
           variant="outline"
           className="ml-2 border-red-200 text-red-600 dark:border-red-800 dark:text-red-400 gap-1"
