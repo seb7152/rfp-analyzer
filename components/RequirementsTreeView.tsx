@@ -1,9 +1,14 @@
 "use client";
 
 import React from "react";
-import { ChevronRight, ChevronDown, Folder, FileText } from "lucide-react";
+import { ChevronRight, ChevronDown, Folder, FileText, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { TreeNode } from "@/hooks/use-requirements";
+
+export interface RequirementThreadCount {
+  open: number;
+  hasBlocking: boolean;
+}
 
 interface TreeViewProps {
   nodes: TreeNode[];
@@ -12,6 +17,8 @@ interface TreeViewProps {
   onSelectNode: (id: string) => void;
   onToggleNode: (nodeId: string) => void;
   level?: number;
+  /** Map of requirementId -> thread counts (for sidebar indicators) */
+  threadCounts?: Map<string, RequirementThreadCount>;
 }
 
 export function RequirementsTreeView({
@@ -21,6 +28,7 @@ export function RequirementsTreeView({
   onSelectNode,
   onToggleNode,
   level = 0,
+  threadCounts,
 }: TreeViewProps) {
   return (
     <div className="space-y-1">
@@ -106,6 +114,23 @@ export function RequirementsTreeView({
                     >
                       {node.title}
                     </span>
+                    {/* Thread indicator */}
+                    {threadCounts && node.type === "requirement" && (() => {
+                      const tc = threadCounts.get(node.id);
+                      if (!tc || tc.open === 0) return null;
+                      return (
+                        <span
+                          className={`ml-auto flex-shrink-0 inline-flex items-center gap-0.5 text-[10px] font-medium rounded px-1 ${
+                            tc.hasBlocking
+                              ? "text-red-600 bg-red-100 dark:bg-red-900/50"
+                              : "text-blue-600 bg-blue-100 dark:bg-blue-900/50"
+                          }`}
+                        >
+                          <MessageCircle size={10} />
+                          {tc.open}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -120,6 +145,7 @@ export function RequirementsTreeView({
                 onSelectNode={onSelectNode}
                 onToggleNode={onToggleNode}
                 level={level + 1}
+                threadCounts={threadCounts}
               />
             )}
           </div>

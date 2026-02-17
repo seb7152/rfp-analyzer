@@ -14,7 +14,10 @@ import { AIAnalysisButton } from "@/components/AIAnalysisButton";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft, Loader2, CheckCircle2, FileUp, Euro } from "lucide-react";
+import { ChevronLeft, Loader2, CheckCircle2, FileUp, Euro, MessageSquare } from "lucide-react";
+import { ThreadPanel } from "@/components/response-threads/ThreadPanel";
+import type { ThreadPanelContext } from "@/components/response-threads/ThreadPanel";
+import { useResponseThreads } from "@/hooks/use-response-threads";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useVersion } from "@/contexts/VersionContext";
@@ -54,6 +57,64 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   >("viewer");
   const [peerReviewEnabled, setPeerReviewEnabled] = useState(false);
   const isMobile = useIsMobile();
+
+  // Thread panel state
+  const [threadPanelOpen, setThreadPanelOpen] = useState(false);
+  const [threadPanelContext, setThreadPanelContext] =
+    useState<ThreadPanelContext | null>(null);
+
+  // Global thread counts for toolbar badge + sidebar indicators
+  const { threads: allThreads, counts: globalThreadCounts } = useResponseThreads(params.rfpId);
+
+  // Compute thread counts per requirement for sidebar indicators
+  const threadCountsByRequirement = useMemo(() => {
+    const map = new Map<string, { open: number; hasBlocking: boolean }>();
+    for (const thread of allThreads) {
+      const reqId = thread.requirement_id;
+      if (!reqId) continue;
+      const existing = map.get(reqId) || { open: 0, hasBlocking: false };
+      if (thread.status === "open") {
+        existing.open++;
+        if (thread.priority === "blocking") existing.hasBlocking = true;
+      }
+      map.set(reqId, existing);
+    }
+    return map;
+  }, [allThreads]);
+
+  const threadStatsByResponseId = useMemo(() => {
+    const map = new Map<string, { total: number; open: number; hasBlocking: boolean }>();
+
+    for (const thread of allThreads) {
+      const responseId = thread.response_id;
+      if (!responseId) continue;
+
+      const existing = map.get(responseId) || {
+        total: 0,
+        open: 0,
+        hasBlocking: false,
+      };
+
+      existing.total += 1;
+      if (thread.status === "open") {
+        existing.open += 1;
+        if (thread.priority === "blocking") existing.hasBlocking = true;
+      }
+
+      map.set(responseId, existing);
+    }
+
+    return map;
+  }, [allThreads]);
+
+  const openThreadPanel = (context: ThreadPanelContext) => {
+    setThreadPanelContext(context);
+    setThreadPanelOpen(true);
+  };
+
+  const closeThreadPanel = () => {
+    setThreadPanelOpen(false);
+  };
 
   const { requirements: allRequirements, isLoading: requirementsLoading } =
     useRequirements(params.rfpId);
@@ -152,7 +213,9 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   size="sm"
                   className="h-8 w-8 p-0"
                   title="Ajouter des documents PDF"
-                ></Button>
+                >
+                  <FileUp className="h-4 w-4" />
+                </Button>
 
                 {/* Financial Grid Button - icon only */}
                 <Button
@@ -167,6 +230,24 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   <Euro className="h-4 w-4" />
                 </Button>
 
+
+                {/* Discussions Button - icon only */}
+                <Button
+                  onClick={() => openThreadPanel({ globalView: true })}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0 relative"
+                  title="Points de discussion"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  {globalThreadCounts.open > 0 && (
+                    <span className={`absolute -top-1.5 -right-1.5 text-white text-[10px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1 ${
+                      globalThreadCounts.blocking > 0 ? "bg-red-500" : "bg-blue-500"
+                    }`}>
+                      {globalThreadCounts.open}
+                    </span>
+                  )}
+                </Button>
                 {/* AI Analysis Button - icon only */}
                 {rfpData && (
                   <AIAnalysisButton
@@ -174,6 +255,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                     responsesCount={responsesCount}
                     hasUnanalyzedResponses={completionPercentage < 100}
                     userAccessLevel={userAccessLevel}
+                    compact
                     onAnalysisStarted={() => {
                       // Optional: refresh data or show toast
                     }}
@@ -245,6 +327,27 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   <span className="hidden sm:inline">Analyse financière</span>
                 </Button>
 
+                {/* Discussions Button */}
+                <Button
+                  onClick={() =>
+                    openThreadPanel({ globalView: true })
+                  }
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 relative"
+                  title="Points de discussion"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  <span className="hidden sm:inline">Discussions</span>
+                  {globalThreadCounts.open > 0 && (
+                    <span className={`absolute -top-1.5 -right-1.5 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 ${
+                      globalThreadCounts.blocking > 0 ? "bg-red-500" : "bg-blue-500"
+                    }`}>
+                      {globalThreadCounts.open}
+                    </span>
+                  )}
+                </Button>
+
                 {/* AI Analysis Button */}
                 {rfpData && (
                   <AIAnalysisButton
@@ -301,6 +404,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
               isSingleSupplier={isSingleSupplierView}
               peerReviewEnabled={peerReviewEnabled}
               reviewStatuses={reviewStatuses}
+              threadCounts={threadCountsByRequirement}
             />
           </div>
 
@@ -341,6 +445,14 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   userAccessLevel={userAccessLevel}
                   peerReviewEnabled={peerReviewEnabled}
                   reviewStatuses={reviewStatuses}
+                  onOpenThreadPanel={(responseId, supplierName, requirementTitle) =>
+                    openThreadPanel({
+                      responseId,
+                      supplierName,
+                      requirementTitle,
+                    })
+                  }
+                  threadStatsByResponseId={threadStatsByResponseId}
                 />
               )}
             </div>
@@ -377,6 +489,14 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   userAccessLevel={userAccessLevel}
                   peerReviewEnabled={peerReviewEnabled}
                   reviewStatuses={reviewStatuses}
+                  onOpenThreadPanel={(responseId, supplierName, requirementTitle) =>
+                    openThreadPanel({
+                      responseId,
+                      supplierName,
+                      requirementTitle,
+                    })
+                  }
+                  threadStatsByResponseId={threadStatsByResponseId}
                 />
               ) : null}
             </SheetContent>
@@ -390,6 +510,21 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
           isOpen={isUploadModalOpen}
           onOpenChange={setIsUploadModalOpen}
         />
+
+        {/* Thread Discussion Panel */}
+        {threadPanelContext && (
+          <ThreadPanel
+            isOpen={threadPanelOpen}
+            onOpenChange={closeThreadPanel}
+            rfpId={params.rfpId}
+            context={threadPanelContext}
+            currentUserId={user?.id || ""}
+            onNavigateToThread={(requirementId) => {
+              setSelectedRequirementId(requirementId);
+              setThreadPanelOpen(false);
+            }}
+          />
+        )}
       </div>
     </ClientOnly>
   );

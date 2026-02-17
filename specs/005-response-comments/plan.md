@@ -1,0 +1,665 @@
+# Plan : Fils de commentaires par réponse fournisseur
+
+**Feature Branch** : `005-response-comments`
+**Date** : 2026-02-15
+**Statut** : Proposition
+
+---
+
+## Contexte
+
+Le peer review actuel (004) fonctionne sur un modèle de validation binaire (approved/rejected) avec un unique champ `rejection_comment`. Il manque un espace de **discussion structurée** par réponse fournisseur permettant aux évaluateurs et owners de :
+
+- Ouvrir des points de discussion ciblés sur une réponse spécifique
+- Suivre et clôturer chaque point
+- Filtrer les discussions ouvertes pour prioriser le travail restant
+
+Le système de commentaires financiers (`financial_comments`) existe mais est **flat** (pas de threads, pas de résolution, pas de fil de discussion).
+
+---
+
+## 1. Modèle conceptuel
+
+```
+RFP
+ └── Requirement (exigence)
+      └── Response (réponse d'un fournisseur)
+           └── Thread (point de discussion)
+                ├── status: open | resolved
+                ├── priority: normal | important | blocking
+                └── Comments (messages du fil)
+                     ├── Comment 1 (auteur, contenu, date)
+                     ├── Comment 2 (réponse)
+                     └── ...
+```
+
+**Granularité** : un thread est rattaché à une **réponse** (= intersection exigence × fournisseur), pas à l'exigence seule. Cela permet des discussions ciblées par fournisseur sur la même exigence.
+
+---
+
+## 2. Design UX
+
+### 2.1 Point d'entrée : indicateur dans ComparisonView
+
+Dans la vue de comparaison (`ComparisonView`), chaque carte de réponse fournisseur (`SupplierResponseCard`) affiche un indicateur de commentaires :
+
+```
+┌─────────────────────────────────────────────┐
+│  Fournisseur A          Score: 4/5          │
+│  ─────────────────────────────────────────  │
+│  Réponse du fournisseur...                  │
+│                                             │
+│  [Score IA] [Score Manuel] [Statut]         │
+│                                             │
+│  💬 3 points · 1 bloquant · 1 résolu    [+] │
+│     ↑ cliquable → ouvre le panneau          │
+└─────────────────────────────────────────────┘
+```
+
+- **Badge compteur** : nombre de threads ouverts, avec indicateur de priorité si un thread est `blocking`
+- **Bouton [+]** : créer un nouveau thread directement
+- Clic sur le badge → ouvre le **panneau latéral de discussion**
+
+### 2.2 Panneau latéral de discussion — réutilisation du pattern PDFViewerSheet
+
+Le panneau de discussion **réutilise l'architecture exacte de `PDFViewerSheet`** :
+- Même pattern `fixed top-0 right-0 bottom-0` avec `transition-transform duration-300`
+- Même z-index (z-40 content, z-30 overlay, z-50 minimized)
+- Même bouton minimize/restore en bas à droite
+- **Largeur : `w-[30%]`** (au lieu de `w-1/2` pour le PDF viewer) — le panneau est plus compact car le contenu est textuel
+
+> **Implémentation** : Extraire un composant `SidePanel` partagé depuis `PDFViewerSheet` avec une prop `width` (`"30%" | "50%"`), puis les deux panels (PDF et threads) l'utilisent. Alternative : dupliquer le pattern fixe dans `ThreadPanel` pour éviter de refactorer PDFViewerSheet.
+
+**Cohabitation avec le PDF viewer** : Les deux panels ne s'ouvrent pas en même temps. Si le PDF viewer est ouvert, un clic sur un thread le minimise et ouvre le panneau discussions (et inversement). Un seul panel actif à la fois.
+
+```
+                         ┌── 30% ──────────────┐
+                         │ Discussion           │
+                         │ Fournisseur A        │
+                         │ REQ-042              │
+                         │ ──────────────────── │
+                         │                      │
+                         │ Tous|Ouverts|Résolus │
+                         │                      │
+                         │ ┌──────────────────┐ │
+                         │ │ 🔴 BLOQUANT       │ │
+                         │ │ "Conformité RGPD" │ │
+                         │ │                   │ │
+                         │ │ Marie · 2h        │ │
+                         │ │ La réponse ne     │ │
+                         │ │ mentionne pas...  │ │
+                         │ │                   │ │
+                         │ │ Jean · 1h         │ │
+                         │ │ Annexe 3, p.12    │ │
+                         │ │                   │ │
+                         │ │ [Répondre...]     │ │
+                         │ │ [✓ Résolu]        │ │
+                         │ └──────────────────┘ │
+                         │                      │
+                         │ ┌──────────────────┐ │
+                         │ │ ✅ RÉSOLU         │ │
+                         │ │ "Score IA trop…"  │ │
+                         │ │ 2 msg · ▶ Voir   │ │
+                         │ └──────────────────┘ │
+                         │                      │
+                         │ [+ Nouveau point]    │
+                         └──────────────────────┘
+```
+
+**Comportements clés** :
+
+| Action | Comportement |
+|--------|-------------|
+| Créer un thread | Formulaire inline : titre (optionnel) + premier message + priorité |
+| Répondre | Textarea sous le dernier message du thread |
+| Résoudre | Bouton sur le thread → statut passe à `resolved`, thread se replie |
+| Rouvrir | Bouton sur un thread résolu → repasse à `open` |
+| Supprimer | Uniquement ses propres messages, pas le thread entier (sauf si vide) |
+| Éditer | Uniquement ses propres messages, indicateur "modifié" visible |
+
+### 2.3 Filtrage — extension des filtres existants
+
+Plutôt que créer un système de filtres dédié, on **étend les mécanismes déjà en place** :
+
+#### A. Extension de `EvaluationFilters` (filtre réponses)
+
+Le composant `EvaluationFilters` filtre déjà les réponses par statut, score, questions, commentaires manuels. On ajoute une section "Discussions" :
+
+```
+┌─────────────────────────────────────────┐
+│  Filtres                                │
+│  ─────────────────────────────────────  │
+│  Statut         [✓ Pass] [✓ Partial]... │  ← existant
+│  Score          [Min ▼] [Max ▼]         │  ← existant
+│  Questions      [Avec] [Sans]           │  ← existant
+│  Commentaires   [Avec] [Sans]           │  ← existant
+│  ─────────────────────────────────────  │
+│  Discussions                        NEW │
+│  [Avec threads] [Sans threads]          │
+│  [Pts ouverts] [Pts bloquants]          │
+│  ─────────────────────────────────────  │
+│  [Appliquer]           [Réinitialiser]  │
+└─────────────────────────────────────────┘
+```
+
+**Nouveaux champs dans `EvaluationFilterState`** :
+
+```typescript
+// Extension de l'interface existante
+interface EvaluationFilterState {
+  // ... champs existants ...
+  hasThreads: boolean | null;        // null=tous, true=avec threads, false=sans
+  hasOpenThreads: boolean | null;    // null=tous, true=avec ouverts
+  hasBlockingThreads: boolean | null; // null=tous, true=avec bloquants
+}
+```
+
+#### B. Intégration avec le filtre mono-fournisseur (`?supplierId=`)
+
+Le filtre mono-fournisseur existant (URL param `?supplierId=xxx`) s'applique **automatiquement** aux threads : quand on est en vue mono-fournisseur, seuls les threads de ce fournisseur sont visibles (le hook `useResponseThreads` reçoit déjà le `supplier_id` en paramètre).
+
+Pas de nouveau filtre fournisseur à créer — on réutilise le mécanisme de navigation existant.
+
+#### C. Vue globale avec filtres inline
+
+La vue globale des discussions (accessible via un bouton dans la toolbar) affiche tous les threads du RFP dans le même panneau latéral 30%, avec des **filtres inline légers** (toggle buttons, pas un popover) :
+
+```
+┌── 30% ──────────────────┐
+│ Points de discussion     │
+│ RFP "Infra Cloud 2026"  │
+│ ──────────────────────── │
+│                          │
+│ Ouverts|Résolus|Tous     │  ← SegmentedControl
+│ 🔴 3  🟡 5  ● 12        │  ← compteurs par priorité
+│                          │
+│ ┌──────────────────────┐ │
+│ │ REQ-012 · Fourn. B   │ │
+│ │ 🔴 "SLA insuffisant" │ │
+│ │ 3 msg · Marie · 30m  │ │
+│ └─────────── [Voir →]  │ │
+│                          │
+│ ┌──────────────────────┐ │
+│ │ REQ-045 · Fourn. A   │ │
+│ │ 🟡 "AES-256 pas cert"│ │
+│ │ 5 msg · Jean · 2h    │ │
+│ └─────────── [Voir →]  │ │
+└──────────────────────────┘
+```
+
+Le clic sur "Voir" navigue vers l'exigence correspondante dans le sidebar et ouvre le panneau discussion pour cette réponse spécifique.
+
+### 2.4 Indicateurs dans le Sidebar
+
+Le sidebar tree existant peut afficher un petit indicateur à côté de chaque exigence ayant des threads ouverts :
+
+```
+├── Infrastructure
+│   ├── REQ-012 Disponibilité  💬2 🔴
+│   ├── REQ-013 Backup
+│   └── REQ-014 Monitoring    💬1
+```
+
+- Nombre de threads ouverts
+- Point rouge si un thread est `blocking`
+
+### 2.5 Lien avec le peer review
+
+Les threads sont **indépendants** du workflow de peer review mais **complémentaires** :
+
+- Un owner peut rejeter une exigence et ouvrir un thread `blocking` expliquant pourquoi
+- Les threads restent visibles même après approbation (traçabilité)
+- La vue globale permet de vérifier que tous les points bloquants sont résolus avant validation
+
+---
+
+## 3. Design technique
+
+### 3.1 Modèle de données
+
+#### Table `response_threads`
+
+```sql
+CREATE TABLE public.response_threads (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    response_id UUID NOT NULL REFERENCES public.responses(id) ON DELETE CASCADE,
+    title TEXT,  -- titre optionnel du point de discussion
+    status VARCHAR(20) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'resolved')),
+    priority VARCHAR(20) NOT NULL DEFAULT 'normal' CHECK (priority IN ('normal', 'important', 'blocking')),
+    created_by UUID NOT NULL REFERENCES auth.users(id) ON DELETE SET NULL,
+    resolved_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    resolved_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- Index pour le fetch par response (cas d'usage principal)
+CREATE INDEX idx_response_threads_response ON response_threads(response_id);
+-- Index pour la vue globale (tous les threads d'un RFP)
+CREATE INDEX idx_response_threads_status ON response_threads(status);
+-- Index composé pour les filtres
+CREATE INDEX idx_response_threads_response_status ON response_threads(response_id, status);
+```
+
+#### Table `thread_comments`
+
+```sql
+CREATE TABLE public.thread_comments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    thread_id UUID NOT NULL REFERENCES public.response_threads(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    author_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE SET NULL,
+    edited_at TIMESTAMPTZ,  -- NULL = jamais édité
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_thread_comments_thread ON thread_comments(thread_id);
+CREATE INDEX idx_thread_comments_author ON thread_comments(author_id);
+```
+
+#### Politiques RLS
+
+```sql
+-- response_threads : lecture pour tous les membres de l'organisation
+CREATE POLICY "org_members_select_threads" ON response_threads FOR SELECT
+USING (
+    EXISTS (
+        SELECT 1 FROM responses r
+        JOIN rfps rfp ON r.rfp_id = rfp.id
+        JOIN user_organizations uo ON uo.organization_id = rfp.organization_id
+        WHERE r.id = response_threads.response_id
+        AND uo.user_id = auth.uid()
+    )
+);
+
+-- response_threads : création pour evaluator+
+CREATE POLICY "assigned_users_insert_threads" ON response_threads FOR INSERT
+WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM responses r
+        JOIN rfp_user_assignments rua ON rua.rfp_id = r.rfp_id
+        WHERE r.id = response_threads.response_id
+        AND rua.user_id = auth.uid()
+        AND rua.access_level IN ('evaluator', 'owner', 'admin')
+    )
+);
+
+-- response_threads : modification du statut (résolution) pour evaluator+
+CREATE POLICY "assigned_users_update_threads" ON response_threads FOR UPDATE
+USING (
+    EXISTS (
+        SELECT 1 FROM responses r
+        JOIN rfp_user_assignments rua ON rua.rfp_id = r.rfp_id
+        WHERE r.id = response_threads.response_id
+        AND rua.user_id = auth.uid()
+        AND rua.access_level IN ('evaluator', 'owner', 'admin')
+    )
+);
+
+-- thread_comments : même pattern pour lecture
+-- thread_comments : création limitée aux evaluator+
+-- thread_comments : modification/suppression limitée à l'auteur
+```
+
+### 3.2 API Routes
+
+#### `GET /api/rfps/[rfpId]/response-threads`
+
+Récupère tous les threads du RFP avec compteurs, pour la vue globale et les indicateurs sidebar.
+
+```typescript
+// Query params
+interface ThreadsQueryParams {
+    response_id?: string;       // Filtrer par réponse spécifique
+    status?: 'open' | 'resolved';
+    priority?: 'normal' | 'important' | 'blocking';
+    supplier_id?: string;       // Filtrer par fournisseur
+    created_by?: string;        // Filtrer par auteur
+    include_comments?: boolean; // Inclure les commentaires (défaut: false)
+    include_counts?: boolean;   // Inclure les compteurs (défaut: true)
+}
+
+// Response
+interface ThreadsResponse {
+    threads: ResponseThread[];
+    counts: {
+        total: number;
+        open: number;
+        resolved: number;
+        blocking: number;
+    };
+}
+
+interface ResponseThread {
+    id: string;
+    response_id: string;
+    title: string | null;
+    status: 'open' | 'resolved';
+    priority: 'normal' | 'important' | 'blocking';
+    created_by: string;
+    creator: { email: string; display_name: string | null };
+    resolved_by: string | null;
+    resolver: { email: string; display_name: string | null } | null;
+    resolved_at: string | null;
+    created_at: string;
+    updated_at: string;
+    comment_count: number;
+    last_comment_at: string | null;
+    // Dénormalisé pour la vue globale
+    requirement_title?: string;
+    requirement_id_external?: string;
+    supplier_name?: string;
+    // Commentaires inclus si include_comments=true
+    comments?: ThreadComment[];
+}
+```
+
+**Requête SQL optimisée** (pas de N+1) :
+
+```sql
+SELECT
+    rt.*,
+    COUNT(tc.id) AS comment_count,
+    MAX(tc.created_at) AS last_comment_at,
+    -- Dénormalisation
+    req.title AS requirement_title,
+    req.requirement_id_external,
+    s.name AS supplier_name,
+    -- Creator info
+    creator.raw_user_meta_data->>'display_name' AS creator_display_name,
+    creator.email AS creator_email
+FROM response_threads rt
+JOIN responses r ON rt.response_id = r.id
+JOIN requirements req ON r.requirement_id = req.id
+JOIN suppliers s ON r.supplier_id = s.id
+LEFT JOIN thread_comments tc ON tc.thread_id = rt.id
+LEFT JOIN auth.users creator ON rt.created_by = creator.id
+WHERE r.rfp_id = $1
+GROUP BY rt.id, req.title, req.requirement_id_external, s.name,
+         creator.raw_user_meta_data, creator.email
+ORDER BY
+    CASE rt.priority WHEN 'blocking' THEN 0 WHEN 'important' THEN 1 ELSE 2 END,
+    rt.created_at DESC;
+```
+
+#### `POST /api/rfps/[rfpId]/response-threads`
+
+Crée un nouveau thread avec son premier commentaire.
+
+```typescript
+interface CreateThreadRequest {
+    response_id: string;
+    title?: string;
+    priority?: 'normal' | 'important' | 'blocking';
+    content: string; // Premier commentaire
+}
+```
+
+#### `PATCH /api/rfps/[rfpId]/response-threads/[threadId]`
+
+Met à jour le statut ou la priorité d'un thread.
+
+```typescript
+interface UpdateThreadRequest {
+    status?: 'open' | 'resolved';
+    priority?: 'normal' | 'important' | 'blocking';
+    title?: string;
+}
+```
+
+#### `GET /api/rfps/[rfpId]/response-threads/[threadId]/comments`
+
+Récupère les commentaires d'un thread spécifique.
+
+#### `POST /api/rfps/[rfpId]/response-threads/[threadId]/comments`
+
+Ajoute un commentaire à un thread.
+
+```typescript
+interface CreateCommentRequest {
+    content: string;
+}
+```
+
+#### `PATCH /api/rfps/[rfpId]/response-threads/[threadId]/comments/[commentId]`
+
+Modifie un commentaire (auteur seulement).
+
+#### `DELETE /api/rfps/[rfpId]/response-threads/[threadId]/comments/[commentId]`
+
+Supprime un commentaire (auteur seulement).
+
+### 3.3 Hooks React (TanStack Query v5)
+
+```typescript
+// hooks/use-response-threads.ts
+
+// Clés de cache
+const threadKeys = {
+    all: (rfpId: string) => ['response-threads', rfpId],
+    byResponse: (rfpId: string, responseId: string) =>
+        ['response-threads', rfpId, { responseId }],
+    detail: (rfpId: string, threadId: string) =>
+        ['response-threads', rfpId, threadId],
+    comments: (rfpId: string, threadId: string) =>
+        ['response-threads', rfpId, threadId, 'comments'],
+    counts: (rfpId: string) => ['response-threads', rfpId, 'counts'],
+};
+
+// Hooks
+useResponseThreads(rfpId, filters?)
+    → { threads, counts, isLoading }
+    // staleTime: 15s (discussions actives)
+
+useResponseThreadsByResponse(rfpId, responseId)
+    → { threads, isLoading }
+    // Sous-ensemble filtré
+
+useThreadComments(rfpId, threadId)
+    → { comments, isLoading }
+
+useCreateThread(rfpId)
+    → { mutate({ response_id, title?, priority?, content }) }
+    // onSuccess: invalidate threads + counts
+
+useUpdateThread(rfpId)
+    → { mutate({ threadId, status?, priority?, title? }) }
+    // onSuccess: invalidate threads + counts
+
+useCreateComment(rfpId, threadId)
+    → { mutate({ content }) }
+    // onSuccess: invalidate comments + thread (pour last_comment_at)
+
+useUpdateComment(rfpId, threadId)
+    → { mutate({ commentId, content }) }
+
+useDeleteComment(rfpId, threadId)
+    → { mutate(commentId) }
+```
+
+### 3.4 Composants React
+
+```
+components/
+├── response-threads/
+│   ├── ThreadIndicator.tsx        # Badge compteur sur SupplierResponseCard
+│   ├── ThreadPanel.tsx            # Panneau fixe 30% (même pattern que PDFViewerSheet)
+│   ├── ThreadList.tsx             # Liste de threads avec filtres inline
+│   ├── ThreadCard.tsx             # Un thread avec ses messages
+│   ├── ThreadCreateForm.tsx       # Formulaire de création de thread
+│   ├── CommentItem.tsx            # Un message dans un thread
+│   ├── CommentInput.tsx           # Textarea de réponse
+│   └── ThreadPriorityBadge.tsx    # Badge priorité (normal/important/blocking)
+│
+├── EvaluationFilters.tsx          # MODIFIÉ — ajout section "Discussions"
+├── SupplierResponseCard.tsx       # MODIFIÉ — ajout ThreadIndicator
+└── PDFViewerSheet.tsx             # INCHANGÉ (ou refactoré en SidePanel partagé)
+```
+
+**`ThreadPanel.tsx`** — Pattern identique à `PDFViewerSheet` :
+
+```typescript
+// Architecture calquée sur PDFViewerSheet
+interface ThreadPanelProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  rfpId: string;
+  // Mode "réponse spécifique" ou "vue globale"
+  responseId?: string;           // Si set → threads de cette réponse
+  supplierName?: string;
+  requirementTitle?: string;
+  // Vue globale
+  globalView?: boolean;          // Si true → tous les threads du RFP
+}
+
+// Rendu : fixed top-0 right-0 bottom-0 w-[30%] z-40
+// Overlay : z-30, cliquable → minimize
+// Minimize button : z-50, bottom-right
+```
+
+**Hiérarchie des composants** :
+
+```
+EvaluatePage
+ ├── PDFViewerSheet               ← existant (w-1/2, z-40)
+ ├── ThreadPanel                  ← NOUVEAU (w-[30%], z-40, mutex avec PDF)
+ │    ├── Header (titre + minimize + close)
+ │    ├── SegmentedControl (Ouverts | Résolus | Tous)
+ │    ├── ThreadList
+ │    │    └── ThreadCard (×N)
+ │    │         ├── ThreadPriorityBadge
+ │    │         ├── CommentItem (×N)
+ │    │         └── CommentInput
+ │    └── ThreadCreateForm
+ │
+ └── ComparisonView
+      └── SupplierResponseCard
+           └── ThreadIndicator     ← badge "💬 3 · 🔴", clic → ouvre ThreadPanel
+
+State management (EvaluatePage) :
+ - activePanel: 'none' | 'pdf' | 'threads'
+ - threadPanelContext: { responseId, supplierName, requirementTitle } | { globalView: true }
+```
+
+**Mutex PDF / Threads** : Un seul panneau actif à la fois. L'état `activePanel` vit dans `EvaluatePage` et contrôle les deux. Ouvrir un panneau minimise l'autre automatiquement.
+
+### 3.5 Supabase Realtime (optionnel, Phase 2)
+
+Pour la collaboration en temps réel :
+
+```typescript
+// Souscription aux changements sur les threads d'un RFP
+const channel = supabase
+    .channel(`rfp-${rfpId}-threads`)
+    .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'response_threads',
+        filter: `response_id=in.(${responseIds.join(',')})`,
+    }, (payload) => {
+        queryClient.invalidateQueries({ queryKey: threadKeys.all(rfpId) });
+    })
+    .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'thread_comments',
+    }, (payload) => {
+        // Invalidate le thread spécifique
+        queryClient.invalidateQueries({
+            queryKey: threadKeys.comments(rfpId, payload.new.thread_id)
+        });
+    })
+    .subscribe();
+```
+
+Phase 1 : polling via TanStack Query (staleTime: 15s), cohérent avec le reste de l'app.
+
+---
+
+## 4. Plan d'implémentation
+
+### Phase 1 — Fondations (DB + API + Types)
+
+| # | Tâche | Fichiers |
+|---|-------|----------|
+| T01 | Migration SQL : tables + index + RLS | `supabase/migrations/20260215_response_threads.sql` |
+| T02 | Types TypeScript | `types/response-thread.ts` |
+| T03 | API GET threads (avec compteurs + filtres) | `app/api/rfps/[rfpId]/response-threads/route.ts` |
+| T04 | API POST thread (création + 1er commentaire) | idem |
+| T05 | API PATCH thread (statut/priorité) | `app/api/rfps/[rfpId]/response-threads/[threadId]/route.ts` |
+| T06 | API CRUD commentaires | `app/api/rfps/[rfpId]/response-threads/[threadId]/comments/route.ts` |
+
+### Phase 2 — Hooks + Composants de base
+
+| # | Tâche | Fichiers |
+|---|-------|----------|
+| T07 | Hooks TanStack Query | `hooks/use-response-threads.ts` |
+| T08 | `ThreadPriorityBadge` | `components/response-threads/ThreadPriorityBadge.tsx` |
+| T09 | `CommentItem` + `CommentInput` | `components/response-threads/CommentItem.tsx`, `CommentInput.tsx` |
+| T10 | `ThreadCard` (thread + messages + réponse) | `components/response-threads/ThreadCard.tsx` |
+| T11 | `ThreadCreateForm` | `components/response-threads/ThreadCreateForm.tsx` |
+
+### Phase 3 — Panneau + Intégration
+
+| # | Tâche | Fichiers |
+|---|-------|----------|
+| T12 | `ThreadIndicator` sur SupplierResponseCard | `components/response-threads/ThreadIndicator.tsx` |
+| T13 | `ThreadPanel` (fixed right 30%, pattern PDFViewerSheet) | `components/response-threads/ThreadPanel.tsx` |
+| T14 | `ThreadList` avec filtres inline (SegmentedControl) | `components/response-threads/ThreadList.tsx` |
+| T15 | Intégration dans `SupplierResponseCard` | `components/SupplierResponseCard.tsx` (modification) |
+| T16 | State `activePanel` mutex PDF/threads dans evaluate | `app/dashboard/rfp/[rfpId]/evaluate/page.tsx` (modification) |
+
+### Phase 4 — Extension des filtres + Sidebar
+
+| # | Tâche | Fichiers |
+|---|-------|----------|
+| T17 | Extension `EvaluationFilters` (section Discussions) | `components/EvaluationFilters.tsx` (modification) |
+| T18 | Vue globale dans `ThreadPanel` (mode `globalView`) | `components/response-threads/ThreadPanel.tsx` (extension) |
+| T19 | Bouton "Discussions" dans la toolbar evaluate | `app/dashboard/rfp/[rfpId]/evaluate/page.tsx` (modification) |
+| T20 | Indicateur threads dans le Sidebar tree | `components/Sidebar.tsx` (modification) |
+| T21 | Hook compteurs agrégés par exigence | `hooks/use-response-threads.ts` (extension) |
+
+### Phase 5 — Realtime + Polish
+
+| # | Tâche | Fichiers |
+|---|-------|----------|
+| T22 | Supabase Realtime subscription | `hooks/use-response-threads.ts` (extension) |
+| T23 | Optimistic updates sur création de commentaire | idem |
+| T24 | Accessibilité (keyboard nav, aria labels) | tous les composants |
+| T25 | Tests unitaires hooks + API | `tests/` |
+
+---
+
+## 5. Considérations
+
+### Performance
+
+- **Fetch bulk** : un seul appel pour tous les threads d'un RFP (avec compteurs agrégés), pas de N+1
+- **Lazy loading des commentaires** : les commentaires d'un thread ne sont chargés qu'à l'ouverture du thread (sauf si `include_comments=true`)
+- **Index composites** sur `(response_id, status)` pour les requêtes filtrées
+
+### Sécurité
+
+- RLS sur les deux tables, cohérent avec le modèle multi-tenant existant
+- Suppression/édition limitée à l'auteur du commentaire
+- Vérification `checkRFPAccess()` dans chaque route API (pattern existant)
+
+### Cohérence avec l'existant
+
+- **Panneau latéral** : même architecture que `PDFViewerSheet` (fixed positioning, slide animation, minimize, z-index) — juste en `w-[30%]` au lieu de `w-1/2`
+- **Filtres** : extension de `EvaluationFilters` existant plutôt que nouveau composant — les filtres discussions vivent au même endroit que les filtres statut/score
+- **Filtre fournisseur** : réutilisation du mécanisme `?supplierId=` existant, pas de nouveau filtre mono-fournisseur à créer
+- Pattern identique à `financial_comments` pour les hooks TanStack Query
+- Réutilisation des composants UI existants (`Badge`, `Button`, `ScrollArea`)
+- Même convention de nommage SQL et TypeScript
+- Stale time aligné avec le peer review (15-30s)
+- Interface en français, cohérent avec le reste de l'application
+
+### Limites volontaires (V1)
+
+- Pas de @mentions ni de notifications (V2)
+- Pas de pièces jointes dans les commentaires (V2)
+- Pas de réactions/emoji (V2)
+- Pas de markdown riche dans les commentaires — texte brut (V2 : markdown)
+- Pas de link automatique avec le peer review (les deux systèmes coexistent)

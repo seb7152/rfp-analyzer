@@ -15,6 +15,7 @@ import {
   Maximize2,
   Sparkles,
   Map,
+  MessageCircle,
 } from "lucide-react";
 import { SupplierBookmarks } from "@/components/SupplierBookmarks";
 import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
@@ -70,6 +71,11 @@ export interface SupplierResponseCardProps {
   onOpenBookmark?: (bookmark: PDFAnnotation) => void;
   rfpId?: string;
   onAICommentUpdate?: () => void;
+  // Thread discussions
+  threadCount?: number;
+  openThreadCount?: number;
+  hasBlockingThread?: boolean;
+  onOpenThreadPanel?: () => void;
 }
 
 export function SupplierResponseCard({
@@ -106,6 +112,10 @@ export function SupplierResponseCard({
   onOpenBookmark,
   rfpId,
   onAICommentUpdate,
+  threadCount = 0,
+  openThreadCount = 0,
+  hasBlockingThread = false,
+  onOpenThreadPanel,
 }: SupplierResponseCardProps) {
   const [isFocusModalOpen, setIsFocusModalOpen] = React.useState(false);
   const [localAIComment, setLocalAIComment] = React.useState(aiComment);
@@ -334,6 +344,39 @@ export function SupplierResponseCard({
             </span>
           )}
         </div>
+
+        {/* Thread indicator */}
+        {onOpenThreadPanel && (
+          <div className="flex-shrink-0">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenThreadPanel();
+              }}
+              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium transition-colors ${
+                hasBlockingThread
+                  ? "text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950 dark:hover:bg-red-900"
+                  : openThreadCount > 0
+                    ? "text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900"
+                    : threadCount > 0
+                      ? "text-green-600 bg-green-50 hover:bg-green-100 dark:bg-green-950 dark:hover:bg-green-900"
+                      : "text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-300 dark:hover:bg-gray-800"
+              }`}
+              title={
+                openThreadCount > 0
+                  ? `${openThreadCount} point${openThreadCount > 1 ? "s" : ""} ouvert${openThreadCount > 1 ? "s" : ""}${hasBlockingThread ? " (bloquant)" : ""}`
+                  : threadCount > 0
+                    ? `${threadCount} point${threadCount > 1 ? "s" : ""} (tous résolus)`
+                    : "Ouvrir une discussion"
+              }
+            >
+              <MessageCircle size={14} />
+              {threadCount > 0 && (
+                <span>{openThreadCount > 0 ? openThreadCount : threadCount}</span>
+              )}
+            </button>
+          </div>
+        )}
 
         {/* Status badge - right side */}
         <div className="flex-shrink-0 w-40 flex justify-end">
