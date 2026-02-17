@@ -23,7 +23,7 @@ const PEER_REVIEW_STATUS_CONFIG: Record<PeerReviewStatus, {
   },
   submitted: {
     icon: Clock,
-    dotClass: "bg-blue-500",
+    dotClass: "bg-amber-500",
     label: "À valider",
   },
   approved: {
@@ -92,9 +92,9 @@ function NodeIcon({ nodeType, nodeId, isSelected, peerReviewEnabled, reviewStatu
     return (
       <span
         title={config.label}
-        className={`inline-flex items-center justify-center rounded-full w-4 h-4 flex-shrink-0 text-white ${config.dotClass}`}
+        className={`inline-flex items-center justify-center rounded-full w-5 h-5 flex-shrink-0 text-white ${config.dotClass}`}
       >
-        <Icon className="w-2.5 h-2.5" />
+        <Icon className="w-3 h-3" />
       </span>
     );
   }
