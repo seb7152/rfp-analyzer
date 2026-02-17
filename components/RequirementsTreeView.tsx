@@ -115,14 +115,31 @@ export function RequirementsTreeView({
                         : "text-slate-500 dark:text-slate-400"
                     }`}
                   />
-                ) : (
-                  <FileText
-                    className={`w-4 h-4 flex-shrink-0 ${
-                      isSelected
-                        ? "text-white dark:text-slate-900"
-                        : "text-slate-400 dark:text-slate-500"
-                    }`}
-                  />
+                ) : (() => {
+                  const reviewStatus = peerReviewEnabled ? reviewStatuses?.get(node.id) : undefined;
+                  const status: PeerReviewStatus = reviewStatus?.status ?? "draft";
+                  if (peerReviewEnabled && status !== "draft") {
+                    const config = PEER_REVIEW_STATUS_CONFIG[status];
+                    const Icon = config.icon;
+                    return (
+                      <span
+                        title={config.label}
+                        className={`inline-flex items-center justify-center rounded-full w-4 h-4 flex-shrink-0 text-white ${config.dotClass}`}
+                      >
+                        <Icon className="w-2.5 h-2.5" />
+                      </span>
+                    );
+                  }
+                  return (
+                    <FileText
+                      className={`w-4 h-4 flex-shrink-0 ${
+                        isSelected
+                          ? "text-white dark:text-slate-900"
+                          : "text-slate-400 dark:text-slate-500"
+                      }`}
+                    />
+                  );
+                })()
                 )}
 
                 {/* Code and Title */}
@@ -148,44 +165,23 @@ export function RequirementsTreeView({
                     >
                       {node.title}
                     </span>
-                    {/* Right-side indicators (peer review + threads) */}
-                    {node.type === "requirement" && (
-                      <span className="ml-auto flex-shrink-0 inline-flex items-center gap-1">
-                        {/* Peer review status indicator */}
-                        {peerReviewEnabled && (() => {
-                          const reviewStatus = reviewStatuses?.get(node.id);
-                          const status: PeerReviewStatus = reviewStatus?.status ?? "draft";
-                          const config = PEER_REVIEW_STATUS_CONFIG[status];
-                          if (status === "draft") return null;
-                          const Icon = config.icon;
-                          return (
-                            <span
-                              title={config.label}
-                              className={`inline-flex items-center justify-center rounded-full w-4 h-4 flex-shrink-0 text-white ${config.dotClass}`}
-                            >
-                              <Icon className="w-2.5 h-2.5" />
-                            </span>
-                          );
-                        })()}
-                        {/* Thread indicator */}
-                        {threadCounts && (() => {
-                          const tc = threadCounts.get(node.id);
-                          if (!tc || tc.open === 0) return null;
-                          return (
-                            <span
-                              className={`inline-flex items-center gap-0.5 text-[10px] font-medium rounded px-1 ${
-                                tc.hasBlocking
-                                  ? "text-red-600 bg-red-100 dark:bg-red-900/50"
-                                  : "text-blue-600 bg-blue-100 dark:bg-blue-900/50"
-                              }`}
-                            >
-                              <MessageCircle size={10} />
-                              {tc.open}
-                            </span>
-                          );
-                        })()}
-                      </span>
-                    )}
+                    {/* Thread indicator */}
+                    {threadCounts && node.type === "requirement" && (() => {
+                      const tc = threadCounts.get(node.id);
+                      if (!tc || tc.open === 0) return null;
+                      return (
+                        <span
+                          className={`ml-auto flex-shrink-0 inline-flex items-center gap-0.5 text-[10px] font-medium rounded px-1 ${
+                            tc.hasBlocking
+                              ? "text-red-600 bg-red-100 dark:bg-red-900/50"
+                              : "text-blue-600 bg-blue-100 dark:bg-blue-900/50"
+                          }`}
+                        >
+                          <MessageCircle size={10} />
+                          {tc.open}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
