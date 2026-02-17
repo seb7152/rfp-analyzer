@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { X, ChevronRight, MessageSquare } from "lucide-react";
+import { X, ChevronRight, ChevronDown, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThreadList } from "./ThreadList";
 import { ThreadCreateForm } from "./ThreadCreateForm";
@@ -11,6 +11,7 @@ import {
   useUpdateThread,
 } from "@/hooks/use-response-threads";
 import type { ThreadPriority, ThreadsQueryFilters } from "@/types/response-thread";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -49,6 +50,7 @@ export function ThreadPanel({
   onNavigateToThread: _onNavigateToThread,
 }: ThreadPanelProps) {
   const [isMinimized, setIsMinimized] = useState(false);
+  const isMobile = useIsMobile();
 
   const isGlobal = "globalView" in context;
 
@@ -103,13 +105,19 @@ export function ThreadPanel({
     ? null
     : `${(context as ThreadPanelContextResponse).supplierName} · ${(context as ThreadPanelContextResponse).requirementTitle}`;
 
+  const panelClasses = isMobile
+    ? `fixed left-0 right-0 bottom-0 h-[78vh] max-h-[720px] bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 rounded-t-2xl transition-transform duration-300 z-40 flex flex-col ${
+        isOpen && !isMinimized ? "translate-y-0" : "translate-y-full"
+      }`
+    : `fixed top-0 right-0 bottom-0 w-[30%] min-w-[360px] bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 transition-transform duration-300 z-40 flex flex-col ${
+        isOpen && !isMinimized ? "translate-x-0" : "translate-x-full"
+      }`;
+
   return (
     <>
-      {/* Main panel — fixed right 30% */}
+      {/* Main panel */}
       <div
-        className={`fixed top-0 right-0 bottom-0 w-[30%] min-w-[360px] bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 transition-transform duration-300 z-40 flex flex-col ${
-          isOpen && !isMinimized ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={panelClasses}
         style={{
           pointerEvents: isOpen && !isMinimized ? "auto" : "none",
         }}
@@ -135,7 +143,11 @@ export function ThreadPanel({
               onClick={() => setIsMinimized(true)}
               title="Minimiser"
             >
-              <ChevronRight className="h-4 w-4" />
+              {isMobile ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
             </Button>
             <Button
               variant="ghost"
@@ -184,13 +196,13 @@ export function ThreadPanel({
 
       {/* Minimized button */}
       {isMinimized && (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className={isMobile ? "fixed bottom-4 inset-x-4 z-50" : "fixed bottom-6 right-6 z-50"}>
           <Button
             onClick={() => setIsMinimized(false)}
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg rounded-lg px-4 py-2"
+            className={`bg-blue-600 hover:bg-blue-700 text-white shadow-lg rounded-lg px-4 py-2 ${isMobile ? "w-full justify-center" : ""}`}
             title="Restaurer les discussions"
           >
-            <ChevronRight className="h-4 w-4 mr-2 rotate-180" />
+            <ChevronRight className={`h-4 w-4 mr-2 ${isMobile ? "-rotate-90" : "rotate-180"}`} />
             <MessageSquare className="h-4 w-4 mr-1" />
             Discussions
             {counts.open > 0 && (
