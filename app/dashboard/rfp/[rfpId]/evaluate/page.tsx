@@ -519,6 +519,10 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
             rfpId={params.rfpId}
             context={threadPanelContext}
             currentUserId={user?.id || ""}
+            onNavigateToThread={(requirementId) => {
+              setSelectedRequirementId(requirementId);
+              setThreadPanelOpen(false);
+            }}
           />
         )}
       </div>

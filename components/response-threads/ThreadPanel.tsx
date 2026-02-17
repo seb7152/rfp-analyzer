@@ -47,7 +47,7 @@ export function ThreadPanel({
   rfpId,
   context,
   currentUserId,
-  onNavigateToThread: _onNavigateToThread,
+  onNavigateToThread,
 }: ThreadPanelProps) {
   const [isMinimized, setIsMinimized] = useState(false);
   const isMobile = useIsMobile();
@@ -172,6 +172,7 @@ export function ThreadPanel({
             onReopen={handleReopen}
             isLoading={isLoading}
             showContext={isGlobal}
+            onNavigateToThread={onNavigateToThread}
           />
         </div>
 

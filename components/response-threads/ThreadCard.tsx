@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -30,6 +30,7 @@ interface ThreadCardProps {
   defaultExpanded?: boolean;
   /** Show requirement + supplier context (for global view) */
   showContext?: boolean;
+  onNavigateToThread?: (requirementId: string, responseId: string) => void;
 }
 
 export function ThreadCard({
@@ -40,6 +41,7 @@ export function ThreadCard({
   onReopen,
   defaultExpanded = false,
   showContext = false,
+  onNavigateToThread,
 }: ThreadCardProps) {
   const [isExpanded, setIsExpanded] = useState(
     defaultExpanded || thread.status === "open"
@@ -81,6 +83,12 @@ export function ThreadCard({
     deleteComment(commentId);
   };
 
+  const handleNavigateToRequirement = (event: MouseEvent) => {
+    event.stopPropagation();
+    if (!onNavigateToThread || !thread.requirement_id) return;
+    onNavigateToThread(thread.requirement_id, thread.response_id);
+  };
+
   return (
     <div
       className={`border rounded-lg transition-colors ${
@@ -94,9 +102,9 @@ export function ThreadCard({
       }`}
     >
       {/* Header — always visible */}
-      <button
+      <div
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-start gap-2 p-3 text-left hover:bg-gray-50/50 dark:hover:bg-gray-800/30 rounded-t-lg transition-colors"
+        className="w-full flex items-start gap-2 p-3 text-left hover:bg-gray-50/50 dark:hover:bg-gray-800/30 rounded-t-lg transition-colors cursor-pointer"
       >
         <span className="mt-0.5 text-gray-400 shrink-0">
           {isExpanded ? (
@@ -127,9 +135,20 @@ export function ThreadCard({
 
           {/* Context line for global view */}
           {showContext && (
-            <p className="text-xs text-gray-500 mt-0.5">
-              {thread.requirement_id_external} · {thread.supplier_name}
-            </p>
+            <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-2 flex-wrap">
+              <span>
+                {thread.requirement_id_external} · {thread.supplier_name}
+              </span>
+              {onNavigateToThread && thread.requirement_id && (
+                <button
+                  type="button"
+                  onClick={handleNavigateToRequirement}
+                  className="text-blue-600 hover:text-blue-700 hover:underline"
+                >
+                  Voir l'exigence
+                </button>
+              )}
+            </div>
           )}
 
           <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
@@ -148,7 +167,7 @@ export function ThreadCard({
             </span>
           </div>
         </div>
-      </button>
+      </div>
 
       {/* Expanded content */}
       {isExpanded && (
