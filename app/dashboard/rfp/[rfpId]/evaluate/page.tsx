@@ -417,10 +417,10 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar with Tree */}
           <div
-            className="flex-shrink-0 flex border-r border-slate-200 bg-white/50 dark:border-slate-800 dark:bg-slate-900/40"
+            className={`${isMobile ? "flex-1 flex" : "flex-shrink-0 flex"} border-r border-slate-200 bg-white/50 dark:border-slate-800 dark:bg-slate-900/40`}
             style={isMobile ? undefined : { width: sidebarWidth }}
           >
-            <div className={isMobile ? "w-full" : "flex-1 min-w-0"}>
+            <div className="flex-1 min-w-0">
               <Sidebar
                 rfpId={params.rfpId}
                 selectedRequirementId={selectedRequirementId}
