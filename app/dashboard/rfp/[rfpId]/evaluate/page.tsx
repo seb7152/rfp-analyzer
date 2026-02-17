@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useRequirements } from "@/hooks/use-requirements";
@@ -57,6 +57,31 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   >("viewer");
   const [peerReviewEnabled, setPeerReviewEnabled] = useState(false);
   const isMobile = useIsMobile();
+
+  // Resizable sidebar
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const sidebarResize = useRef({ isResizing: false, startX: 0, startWidth: 320 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!sidebarResize.current.isResizing) return;
+      const delta = e.clientX - sidebarResize.current.startX;
+      const newWidth = Math.min(Math.max(sidebarResize.current.startWidth + delta, 200), 600);
+      setSidebarWidth(newWidth);
+    };
+    const handleMouseUp = () => {
+      if (!sidebarResize.current.isResizing) return;
+      sidebarResize.current.isResizing = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
 
   // Thread panel state
   const [threadPanelOpen, setThreadPanelOpen] = useState(false);
@@ -392,20 +417,32 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar with Tree */}
           <div
-            className={`${
-              isMobile ? "w-full" : "w-80"
-            } border-r border-slate-200 bg-white/50 dark:border-slate-800 dark:bg-slate-900/40`}
+            className="flex-shrink-0 flex border-r border-slate-200 bg-white/50 dark:border-slate-800 dark:bg-slate-900/40"
+            style={isMobile ? undefined : { width: sidebarWidth }}
           >
-            <Sidebar
-              rfpId={params.rfpId}
-              selectedRequirementId={selectedRequirementId}
-              onSelectRequirement={setSelectedRequirementId}
-              responses={filteredResponses}
-              isSingleSupplier={isSingleSupplierView}
-              peerReviewEnabled={peerReviewEnabled}
-              reviewStatuses={reviewStatuses}
-              threadCounts={threadCountsByRequirement}
-            />
+            <div className={isMobile ? "w-full" : "flex-1 min-w-0"}>
+              <Sidebar
+                rfpId={params.rfpId}
+                selectedRequirementId={selectedRequirementId}
+                onSelectRequirement={setSelectedRequirementId}
+                responses={filteredResponses}
+                isSingleSupplier={isSingleSupplierView}
+                peerReviewEnabled={peerReviewEnabled}
+                reviewStatuses={reviewStatuses}
+                threadCounts={threadCountsByRequirement}
+              />
+            </div>
+            {/* Resize handle (desktop only) */}
+            {!isMobile && (
+              <div
+                className="w-1 cursor-col-resize flex-shrink-0 hover:bg-blue-400 active:bg-blue-500 transition-colors"
+                onMouseDown={(e) => {
+                  sidebarResize.current = { isResizing: true, startX: e.clientX, startWidth: sidebarWidth };
+                  document.body.style.cursor = "col-resize";
+                  document.body.style.userSelect = "none";
+                }}
+              />
+            )}
           </div>
 
           {/* Details Panel - Desktop only */}
