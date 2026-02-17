@@ -16,6 +16,7 @@ interface ThreadListProps {
   onReopen: (threadId: string) => void;
   isLoading?: boolean;
   showContext?: boolean;
+  onNavigateToThread?: (requirementId: string, responseId: string) => void;
 }
 
 type StatusFilter = "all" | "open" | "resolved";
@@ -29,6 +30,7 @@ export function ThreadList({
   onReopen,
   isLoading,
   showContext = false,
+  onNavigateToThread,
 }: ThreadListProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("open");
 
@@ -110,6 +112,7 @@ export function ThreadList({
               onResolve={onResolve}
               onReopen={onReopen}
               showContext={showContext}
+              onNavigateToThread={onNavigateToThread}
             />
           ))
         )}

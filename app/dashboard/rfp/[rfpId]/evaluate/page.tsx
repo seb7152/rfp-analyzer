@@ -82,6 +82,31 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
     return map;
   }, [allThreads]);
 
+  const threadStatsByResponseId = useMemo(() => {
+    const map = new Map<string, { total: number; open: number; hasBlocking: boolean }>();
+
+    for (const thread of allThreads) {
+      const responseId = thread.response_id;
+      if (!responseId) continue;
+
+      const existing = map.get(responseId) || {
+        total: 0,
+        open: 0,
+        hasBlocking: false,
+      };
+
+      existing.total += 1;
+      if (thread.status === "open") {
+        existing.open += 1;
+        if (thread.priority === "blocking") existing.hasBlocking = true;
+      }
+
+      map.set(responseId, existing);
+    }
+
+    return map;
+  }, [allThreads]);
+
   const openThreadPanel = (context: ThreadPanelContext) => {
     setThreadPanelContext(context);
     setThreadPanelOpen(true);
@@ -188,7 +213,9 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   size="sm"
                   className="h-8 w-8 p-0"
                   title="Ajouter des documents PDF"
-                ></Button>
+                >
+                  <FileUp className="h-4 w-4" />
+                </Button>
 
                 {/* Financial Grid Button - icon only */}
                 <Button
@@ -203,6 +230,24 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   <Euro className="h-4 w-4" />
                 </Button>
 
+
+                {/* Discussions Button - icon only */}
+                <Button
+                  onClick={() => openThreadPanel({ globalView: true })}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0 relative"
+                  title="Points de discussion"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  {globalThreadCounts.open > 0 && (
+                    <span className={`absolute -top-1.5 -right-1.5 text-white text-[10px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1 ${
+                      globalThreadCounts.blocking > 0 ? "bg-red-500" : "bg-blue-500"
+                    }`}>
+                      {globalThreadCounts.open}
+                    </span>
+                  )}
+                </Button>
                 {/* AI Analysis Button - icon only */}
                 {rfpData && (
                   <AIAnalysisButton
@@ -210,6 +255,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                     responsesCount={responsesCount}
                     hasUnanalyzedResponses={completionPercentage < 100}
                     userAccessLevel={userAccessLevel}
+                    compact
                     onAnalysisStarted={() => {
                       // Optional: refresh data or show toast
                     }}
@@ -406,6 +452,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                       requirementTitle,
                     })
                   }
+                  threadStatsByResponseId={threadStatsByResponseId}
                 />
               )}
             </div>
@@ -449,6 +496,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                       requirementTitle,
                     })
                   }
+                  threadStatsByResponseId={threadStatsByResponseId}
                 />
               ) : null}
             </SheetContent>
@@ -471,6 +519,10 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
             rfpId={params.rfpId}
             context={threadPanelContext}
             currentUserId={user?.id || ""}
+            onNavigateToThread={(requirementId) => {
+              setSelectedRequirementId(requirementId);
+              setThreadPanelOpen(false);
+            }}
           />
         )}
       </div>

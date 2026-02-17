@@ -32,9 +32,8 @@ export async function GET(
     // Verify thread belongs to this RFP
     const { data: thread, error: threadError } = await adminSupabase
       .from("response_threads")
-      .select("id, responses!inner ( rfp_id )")
+      .select("id, response_id")
       .eq("id", threadId)
-      .eq("responses.rfp_id", rfpId)
       .single();
 
     if (threadError || !thread) {
@@ -44,7 +43,21 @@ export async function GET(
       );
     }
 
-    // Fetch comments with author info
+    const { data: responseLink, error: responseLinkError } = await adminSupabase
+      .from("responses")
+      .select("id")
+      .eq("id", thread.response_id)
+      .eq("rfp_id", rfpId)
+      .single();
+
+    if (responseLinkError || !responseLink) {
+      return NextResponse.json(
+        { error: "Thread not found" },
+        { status: 404 }
+      );
+    }
+
+    // Fetch comments
     const { data: comments, error: commentsError } = await adminSupabase
       .from("thread_comments")
       .select(
@@ -55,8 +68,7 @@ export async function GET(
         author_id,
         edited_at,
         created_at,
-        updated_at,
-        users ( id, email, full_name )
+        updated_at
       `
       )
       .eq("thread_id", threadId)
@@ -70,6 +82,29 @@ export async function GET(
       );
     }
 
+    const authorIds = Array.from(
+      new Set((comments || []).map((c: any) => c.author_id).filter(Boolean))
+    );
+
+    let usersMap: Record<string, { email: string; display_name: string | null }> = {};
+    if (authorIds.length > 0) {
+      const { data: users, error: usersError } = await adminSupabase
+        .from("users")
+        .select("id, email, full_name")
+        .in("id", authorIds);
+
+      if (usersError) {
+        console.error("[thread-comments] GET users error:", usersError);
+      } else if (users) {
+        usersMap = Object.fromEntries(
+          users.map((u: any) => [
+            u.id,
+            { email: u.email || "", display_name: u.full_name || null },
+          ])
+        );
+      }
+    }
+
     const transformedComments = (comments || []).map((c: any) => ({
       id: c.id,
       thread_id: c.thread_id,
@@ -78,12 +113,7 @@ export async function GET(
       edited_at: c.edited_at,
       created_at: c.created_at,
       updated_at: c.updated_at,
-      author: c.users
-        ? {
-            email: c.users.email || "",
-            display_name: c.users.full_name || null,
-          }
-        : { email: "", display_name: null },
+      author: usersMap[c.author_id] || { email: "", display_name: null },
     }));
 
     return NextResponse.json({ comments: transformedComments }, { status: 200 });
@@ -142,12 +172,25 @@ export async function POST(
     // Verify thread belongs to this RFP
     const { data: thread, error: threadError } = await adminSupabase
       .from("response_threads")
-      .select("id, responses!inner ( rfp_id )")
+      .select("id, response_id")
       .eq("id", threadId)
-      .eq("responses.rfp_id", rfpId)
       .single();
 
     if (threadError || !thread) {
+      return NextResponse.json(
+        { error: "Thread not found" },
+        { status: 404 }
+      );
+    }
+
+    const { data: responseLink, error: responseLinkError } = await adminSupabase
+      .from("responses")
+      .select("id")
+      .eq("id", thread.response_id)
+      .eq("rfp_id", rfpId)
+      .single();
+
+    if (responseLinkError || !responseLink) {
       return NextResponse.json(
         { error: "Thread not found" },
         { status: 404 }

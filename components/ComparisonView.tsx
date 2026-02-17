@@ -71,6 +71,7 @@ interface ComparisonViewProps {
   peerReviewEnabled?: boolean;
   reviewStatuses?: Map<string, RequirementReviewStatus>;
   onOpenThreadPanel?: (responseId: string, supplierName: string, requirementTitle: string) => void;
+  threadStatsByResponseId?: Map<string, { total: number; open: number; hasBlocking: boolean }>;
 }
 
 interface ResponseState {
@@ -129,6 +130,7 @@ export function ComparisonView({
   peerReviewEnabled = false,
   reviewStatuses,
   onOpenThreadPanel,
+  threadStatsByResponseId,
 }: ComparisonViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1541,6 +1543,19 @@ export function ComparisonView({
                           onCommentBlur={handlers.onCommentBlur}
                           onQuestionBlur={handlers.onQuestionBlur}
                           onAICommentUpdate={handlers.onAICommentUpdate}
+                          threadCount={threadStatsByResponseId?.get(response.id)?.total ?? 0}
+                          openThreadCount={threadStatsByResponseId?.get(response.id)?.open ?? 0}
+                          hasBlockingThread={threadStatsByResponseId?.get(response.id)?.hasBlocking ?? false}
+                          onOpenThreadPanel={
+                            onOpenThreadPanel
+                              ? () =>
+                                  onOpenThreadPanel(
+                                    response.id,
+                                    supplier.name,
+                                    requirement?.title || ""
+                                  )
+                              : undefined
+                          }
                         />
                       );
                     }
@@ -1567,6 +1582,9 @@ export function ComparisonView({
                         requirementDescription={requirement?.description || ""}
                         onOpenBookmark={handlers.onOpenBookmark}
                         onAICommentUpdate={handlers.onAICommentUpdate}
+                        threadCount={threadStatsByResponseId?.get(response.id)?.total ?? 0}
+                        openThreadCount={threadStatsByResponseId?.get(response.id)?.open ?? 0}
+                        hasBlockingThread={threadStatsByResponseId?.get(response.id)?.hasBlocking ?? false}
                         onOpenThreadPanel={
                           onOpenThreadPanel
                             ? () =>
