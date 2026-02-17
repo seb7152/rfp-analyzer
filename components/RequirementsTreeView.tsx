@@ -1,14 +1,42 @@
 "use client";
 
 import React from "react";
-import { ChevronRight, ChevronDown, Folder, FileText, MessageCircle } from "lucide-react";
+import { ChevronRight, ChevronDown, Folder, FileText, MessageCircle, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { TreeNode } from "@/hooks/use-requirements";
+import type { RequirementReviewStatus, PeerReviewStatus } from "@/types/peer-review";
 
 export interface RequirementThreadCount {
   open: number;
   hasBlocking: boolean;
 }
+
+const PEER_REVIEW_STATUS_CONFIG: Record<PeerReviewStatus, {
+  icon: React.ElementType;
+  dotClass: string;
+  label: string;
+}> = {
+  draft: {
+    icon: FileText,
+    dotClass: "",
+    label: "",
+  },
+  submitted: {
+    icon: Clock,
+    dotClass: "bg-blue-500",
+    label: "À valider",
+  },
+  approved: {
+    icon: CheckCircle2,
+    dotClass: "bg-green-500",
+    label: "Validé",
+  },
+  rejected: {
+    icon: AlertTriangle,
+    dotClass: "bg-red-500",
+    label: "Refusé",
+  },
+};
 
 interface TreeViewProps {
   nodes: TreeNode[];
@@ -19,6 +47,10 @@ interface TreeViewProps {
   level?: number;
   /** Map of requirementId -> thread counts (for sidebar indicators) */
   threadCounts?: Map<string, RequirementThreadCount>;
+  /** Whether peer review is enabled for this RFP */
+  peerReviewEnabled?: boolean;
+  /** Map of requirementId -> review status */
+  reviewStatuses?: Map<string, RequirementReviewStatus>;
 }
 
 export function RequirementsTreeView({
@@ -29,6 +61,8 @@ export function RequirementsTreeView({
   onToggleNode,
   level = 0,
   threadCounts,
+  peerReviewEnabled,
+  reviewStatuses,
 }: TreeViewProps) {
   return (
     <div className="space-y-1">
@@ -114,23 +148,44 @@ export function RequirementsTreeView({
                     >
                       {node.title}
                     </span>
-                    {/* Thread indicator */}
-                    {threadCounts && node.type === "requirement" && (() => {
-                      const tc = threadCounts.get(node.id);
-                      if (!tc || tc.open === 0) return null;
-                      return (
-                        <span
-                          className={`ml-auto flex-shrink-0 inline-flex items-center gap-0.5 text-[10px] font-medium rounded px-1 ${
-                            tc.hasBlocking
-                              ? "text-red-600 bg-red-100 dark:bg-red-900/50"
-                              : "text-blue-600 bg-blue-100 dark:bg-blue-900/50"
-                          }`}
-                        >
-                          <MessageCircle size={10} />
-                          {tc.open}
-                        </span>
-                      );
-                    })()}
+                    {/* Right-side indicators (peer review + threads) */}
+                    {node.type === "requirement" && (
+                      <span className="ml-auto flex-shrink-0 inline-flex items-center gap-1">
+                        {/* Peer review status indicator */}
+                        {peerReviewEnabled && (() => {
+                          const reviewStatus = reviewStatuses?.get(node.id);
+                          const status: PeerReviewStatus = reviewStatus?.status ?? "draft";
+                          const config = PEER_REVIEW_STATUS_CONFIG[status];
+                          if (status === "draft") return null;
+                          const Icon = config.icon;
+                          return (
+                            <span
+                              title={config.label}
+                              className={`inline-flex items-center justify-center rounded-full w-4 h-4 flex-shrink-0 text-white ${config.dotClass}`}
+                            >
+                              <Icon className="w-2.5 h-2.5" />
+                            </span>
+                          );
+                        })()}
+                        {/* Thread indicator */}
+                        {threadCounts && (() => {
+                          const tc = threadCounts.get(node.id);
+                          if (!tc || tc.open === 0) return null;
+                          return (
+                            <span
+                              className={`inline-flex items-center gap-0.5 text-[10px] font-medium rounded px-1 ${
+                                tc.hasBlocking
+                                  ? "text-red-600 bg-red-100 dark:bg-red-900/50"
+                                  : "text-blue-600 bg-blue-100 dark:bg-blue-900/50"
+                              }`}
+                            >
+                              <MessageCircle size={10} />
+                              {tc.open}
+                            </span>
+                          );
+                        })()}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -146,6 +201,8 @@ export function RequirementsTreeView({
                 onToggleNode={onToggleNode}
                 level={level + 1}
                 threadCounts={threadCounts}
+                peerReviewEnabled={peerReviewEnabled}
+                reviewStatuses={reviewStatuses}
               />
             )}
           </div>
