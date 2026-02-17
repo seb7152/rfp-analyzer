@@ -37,8 +37,8 @@ export function Sidebar({
   className = "",
   responses = [],
   isSingleSupplier = false,
-  peerReviewEnabled: _peerReviewEnabled = false,
-  reviewStatuses: _reviewStatuses,
+  peerReviewEnabled = false,
+  reviewStatuses,
   threadCounts,
 }: SidebarProps) {
   const isMobile = useIsMobile();
@@ -384,6 +384,8 @@ export function Sidebar({
                   onSelectNode={onSelectRequirement}
                   onToggleNode={handleToggleNode}
                   threadCounts={threadCounts}
+                  peerReviewEnabled={peerReviewEnabled}
+                  reviewStatuses={reviewStatuses}
                 />
               </div>
             </ScrollArea>
