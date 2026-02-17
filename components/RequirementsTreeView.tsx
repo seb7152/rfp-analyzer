@@ -23,7 +23,7 @@ const PEER_REVIEW_STATUS_CONFIG: Record<PeerReviewStatus, {
   },
   submitted: {
     icon: Clock,
-    dotClass: "bg-amber-500",
+    dotClass: "bg-blue-500",
     label: "À valider",
   },
   approved: {
