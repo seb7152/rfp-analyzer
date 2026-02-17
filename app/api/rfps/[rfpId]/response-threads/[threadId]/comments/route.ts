@@ -32,12 +32,25 @@ export async function GET(
     // Verify thread belongs to this RFP
     const { data: thread, error: threadError } = await adminSupabase
       .from("response_threads")
-      .select("id, responses!inner ( rfp_id )")
+      .select("id, response_id")
       .eq("id", threadId)
-      .eq("responses.rfp_id", rfpId)
       .single();
 
     if (threadError || !thread) {
+      return NextResponse.json(
+        { error: "Thread not found" },
+        { status: 404 }
+      );
+    }
+
+    const { data: responseLink, error: responseLinkError } = await adminSupabase
+      .from("responses")
+      .select("id")
+      .eq("id", thread.response_id)
+      .eq("rfp_id", rfpId)
+      .single();
+
+    if (responseLinkError || !responseLink) {
       return NextResponse.json(
         { error: "Thread not found" },
         { status: 404 }
@@ -142,12 +155,25 @@ export async function POST(
     // Verify thread belongs to this RFP
     const { data: thread, error: threadError } = await adminSupabase
       .from("response_threads")
-      .select("id, responses!inner ( rfp_id )")
+      .select("id, response_id")
       .eq("id", threadId)
-      .eq("responses.rfp_id", rfpId)
       .single();
 
     if (threadError || !thread) {
+      return NextResponse.json(
+        { error: "Thread not found" },
+        { status: 404 }
+      );
+    }
+
+    const { data: responseLink, error: responseLinkError } = await adminSupabase
+      .from("responses")
+      .select("id")
+      .eq("id", thread.response_id)
+      .eq("rfp_id", rfpId)
+      .single();
+
+    if (responseLinkError || !responseLink) {
       return NextResponse.json(
         { error: "Thread not found" },
         { status: 404 }

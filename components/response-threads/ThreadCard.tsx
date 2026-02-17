@@ -47,7 +47,11 @@ export function ThreadCard({
   const isResolved = thread.status === "resolved";
 
   // Comments — only fetched when expanded
-  const { comments, isLoading: commentsLoading } = useThreadComments(
+  const {
+    comments,
+    isLoading: commentsLoading,
+    error: commentsError,
+  } = useThreadComments(
     rfpId,
     isExpanded ? thread.id : undefined
   );
@@ -154,6 +158,10 @@ export function ThreadCard({
             {commentsLoading ? (
               <div className="p-3 text-xs text-gray-400 text-center">
                 Chargement...
+              </div>
+            ) : commentsError ? (
+              <div className="p-3 text-xs text-red-500 text-center">
+                Impossible de charger la conversation.
               </div>
             ) : comments.length === 0 ? (
               <div className="p-3 text-xs text-gray-400 text-center">

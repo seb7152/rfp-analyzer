@@ -82,6 +82,31 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
     return map;
   }, [allThreads]);
 
+  const threadStatsByResponseId = useMemo(() => {
+    const map = new Map<string, { total: number; open: number; hasBlocking: boolean }>();
+
+    for (const thread of allThreads) {
+      const responseId = thread.response_id;
+      if (!responseId) continue;
+
+      const existing = map.get(responseId) || {
+        total: 0,
+        open: 0,
+        hasBlocking: false,
+      };
+
+      existing.total += 1;
+      if (thread.status === "open") {
+        existing.open += 1;
+        if (thread.priority === "blocking") existing.hasBlocking = true;
+      }
+
+      map.set(responseId, existing);
+    }
+
+    return map;
+  }, [allThreads]);
+
   const openThreadPanel = (context: ThreadPanelContext) => {
     setThreadPanelContext(context);
     setThreadPanelOpen(true);
@@ -406,6 +431,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                       requirementTitle,
                     })
                   }
+                  threadStatsByResponseId={threadStatsByResponseId}
                 />
               )}
             </div>
@@ -449,6 +475,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                       requirementTitle,
                     })
                   }
+                  threadStatsByResponseId={threadStatsByResponseId}
                 />
               ) : null}
             </SheetContent>
