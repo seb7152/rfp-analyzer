@@ -168,6 +168,7 @@ export function ComparisonView({
   // Touch/Swipe tracking for mobile navigation
   const touchStartXRef = useRef<number>(0);
   const touchStartYRef = useRef<number>(0);
+  const touchStartedOnEditableRef = useRef<boolean>(false);
   const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(
     null
   );
@@ -418,6 +419,12 @@ export function ComparisonView({
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
       if (isMobile && flatReqs.length > 0) {
+        const tag = (e.target as HTMLElement)?.tagName;
+        const isEditable =
+          tag === "INPUT" ||
+          tag === "TEXTAREA" ||
+          (e.target as HTMLElement)?.isContentEditable;
+        touchStartedOnEditableRef.current = isEditable;
         touchStartXRef.current = e.touches[0].clientX;
         touchStartYRef.current = e.touches[0].clientY;
         setSwipeDirection(null);
@@ -429,7 +436,7 @@ export function ComparisonView({
   // Handle touch move to show feedback
   const handleTouchMove = useCallback(
     (e: React.TouchEvent) => {
-      if (!isMobile || flatReqs.length === 0) return;
+      if (!isMobile || flatReqs.length === 0 || touchStartedOnEditableRef.current) return;
 
       const touchCurrentX = e.touches[0].clientX;
       const touchCurrentY = e.touches[0].clientY;
@@ -452,7 +459,7 @@ export function ComparisonView({
   // Handle touch end for swipe detection
   const handleTouchEnd = useCallback(
     (e: React.TouchEvent) => {
-      if (!isMobile || flatReqs.length === 0) return;
+      if (!isMobile || flatReqs.length === 0 || touchStartedOnEditableRef.current) return;
 
       const touchEndX = e.changedTouches[0].clientX;
       const touchEndY = e.changedTouches[0].clientY;
@@ -488,6 +495,14 @@ export function ComparisonView({
     (event: KeyboardEvent) => {
       // Only trigger on arrow keys (left/right)
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        // Do not intercept arrow keys when the user is typing in a text field
+        const tag = (event.target as HTMLElement)?.tagName;
+        const isEditable =
+          tag === "INPUT" ||
+          tag === "TEXTAREA" ||
+          (event.target as HTMLElement)?.isContentEditable;
+        if (isEditable) return;
+
         // Prevent default scrolling behavior
         event.preventDefault();
 
