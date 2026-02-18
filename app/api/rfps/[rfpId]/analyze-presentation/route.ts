@@ -119,29 +119,26 @@ export async function POST(
 
     const edgeFunctionUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/analyze-presentation`;
 
-    try {
-      const response = await fetch(edgeFunctionUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          analysisId: analysis.id,
-          rfpId,
-          supplierId,
-          transcript: transcript.trim(),
-          versionId: versionId || null,
-          correlationId,
-        }),
-      });
-
-      if (!response.ok) {
-        console.error("Edge Function error:", response.status);
-      }
-    } catch (error) {
-      console.error("Error calling Edge Function:", error);
-    }
+    // Fire-and-forget: do not await the Edge Function call to avoid
+    // Vercel FUNCTION_INVOCATION_TIMEOUT. The Edge Function updates the
+    // presentation_analyses record asynchronously; the client polls /results/latest.
+    fetch(edgeFunctionUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        analysisId: analysis.id,
+        rfpId,
+        supplierId,
+        transcript: transcript.trim(),
+        versionId: versionId || null,
+        correlationId,
+      }),
+    }).catch((error) => {
+      console.error("Error calling Edge Function (analyze-presentation):", error);
+    });
 
     return NextResponse.json(
       {
