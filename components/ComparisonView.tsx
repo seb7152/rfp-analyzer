@@ -806,7 +806,7 @@ export function ComparisonView({
 
     const currentStatus =
       reviewStatuses?.get(requirement.id)?.status ?? "draft";
-    if (currentStatus !== "draft" && currentStatus !== "rejected") return;
+    if (currentStatus !== "draft") return;
 
     const isOwnerOrAdmin =
       userAccessLevel === "owner" || userAccessLevel === "admin";
@@ -1338,6 +1338,40 @@ export function ComparisonView({
           </div>
         </div>
       </div>
+
+      {/* Rejection banner — visible evaluator feedback when requirement is rejected */}
+      {peerReviewEnabled &&
+        reviewStatuses?.get(requirement.id)?.status === "rejected" && (
+          <div className="mx-4 sm:mx-6 mt-3 flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800/50 dark:bg-red-950/30">
+            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-500" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-red-700 dark:text-red-400">
+                Exigence rejetée
+                {reviewStatuses?.get(requirement.id)?.reviewed_at && (
+                  <span className="ml-1 font-normal text-red-600 dark:text-red-500">
+                    {"— "}
+                    {new Date(
+                      reviewStatuses?.get(requirement.id)?.reviewed_at ?? ""
+                    ).toLocaleDateString("fr-FR", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </span>
+                )}
+              </p>
+              {reviewStatuses?.get(requirement.id)?.rejection_comment ? (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {reviewStatuses?.get(requirement.id)?.rejection_comment}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm italic text-red-500/70 dark:text-red-500/50">
+                  Aucun motif renseigné.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
       {/* Context section - Collapsible - Hidden on mobile */}
       {!isMobile && (
