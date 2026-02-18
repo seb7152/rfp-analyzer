@@ -488,6 +488,14 @@ export function ComparisonView({
     (event: KeyboardEvent) => {
       // Only trigger on arrow keys (left/right)
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        // Do not intercept arrow keys when the user is typing in a text field
+        const tag = (event.target as HTMLElement)?.tagName;
+        const isEditable =
+          tag === "INPUT" ||
+          tag === "TEXTAREA" ||
+          (event.target as HTMLElement)?.isContentEditable;
+        if (isEditable) return;
+
         // Prevent default scrolling behavior
         event.preventDefault();
 
