@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 interface AnalyzeRequest {
   rfpId: string;
   systemPrompt?: string;
+  supplierId?: string;
 }
 
 interface RequirementPayload {
@@ -40,7 +41,7 @@ serve(async (req) => {
   }
 
   try {
-    const { rfpId, systemPrompt } = (await req.json()) as AnalyzeRequest;
+    const { rfpId, systemPrompt, supplierId } = (await req.json()) as AnalyzeRequest;
 
     if (!rfpId) {
       return new Response(JSON.stringify({ error: "Missing rfpId" }), {
@@ -70,8 +71,8 @@ serve(async (req) => {
       throw new Error(`Failed to fetch requirements: ${reqError?.message}`);
     }
 
-    // Fetch all responses with supplier information
-    const { data: responses, error: respError } = await supabase
+    // Fetch responses — filtered by supplierId when targeting a single supplier
+    let responsesQuery = supabase
       .from("responses")
       .select(
         `
@@ -87,15 +88,27 @@ serve(async (req) => {
       )
       .eq("rfp_id", rfpId);
 
+    if (supplierId) {
+      responsesQuery = responsesQuery.eq("supplier_id", supplierId);
+    }
+
+    const { data: responses, error: respError } = await responsesQuery;
+
     if (respError || !responses) {
       throw new Error(`Failed to fetch responses: ${respError?.message}`);
     }
 
-    // Get all suppliers
-    const { data: suppliers, error: supplierError } = await supabase
+    // Get suppliers — filtered to the targeted supplier when specified
+    let suppliersQuery = supabase
       .from("suppliers")
       .select("id, supplier_id_external, name")
       .eq("rfp_id", rfpId);
+
+    if (supplierId) {
+      suppliersQuery = suppliersQuery.eq("id", supplierId);
+    }
+
+    const { data: suppliers, error: supplierError } = await suppliersQuery;
 
     if (supplierError) {
       throw new Error(`Failed to fetch suppliers: ${supplierError?.message}`);

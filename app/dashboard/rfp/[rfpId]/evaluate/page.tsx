@@ -52,6 +52,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
   const [rfpData, setRfpData] = useState<RFP | null>(null);
   const [responsesCount, setResponsesCount] = useState(0);
+  const [suppliers, setSuppliers] = useState<{ id: string; name: string }[]>([]);
   const [userAccessLevel, setUserAccessLevel] = useState<
     "owner" | "evaluator" | "viewer" | "admin"
   >("viewer");
@@ -201,6 +202,24 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
     }
   }, [params.rfpId]);
 
+  // Fetch suppliers list for the restart-analysis selector
+  useEffect(() => {
+    if (!params.rfpId) return;
+    fetch(`/api/rfps/${params.rfpId}/suppliers`)
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.suppliers) {
+          setSuppliers(
+            data.suppliers.map((s: { id: string; name: string }) => ({
+              id: s.id,
+              name: s.name,
+            }))
+          );
+        }
+      })
+      .catch(() => {/* non-critical, selector stays hidden */});
+  }, [params.rfpId]);
+
   // Redirect if not authenticated
   if (authLoading) {
     return (
@@ -280,6 +299,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                     responsesCount={responsesCount}
                     hasUnanalyzedResponses={completionPercentage < 100}
                     userAccessLevel={userAccessLevel}
+                    suppliers={suppliers}
                     compact
                     onAnalysisStarted={() => {
                       // Optional: refresh data or show toast
@@ -380,6 +400,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                     responsesCount={responsesCount}
                     hasUnanalyzedResponses={completionPercentage < 100}
                     userAccessLevel={userAccessLevel}
+                    suppliers={suppliers}
                     onAnalysisStarted={() => {
                       // Optional: refresh data or show toast
                     }}
