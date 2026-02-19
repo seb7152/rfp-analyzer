@@ -124,6 +124,17 @@ export default function RFPSummaryPage() {
           setRfpTitle(summaryData.rfp.title);
         }
 
+        // Fetch suppliers for the restart-analysis selector
+        try {
+          const suppliersResponse = await fetch(`/api/rfps/${rfpId}/suppliers`);
+          if (suppliersResponse.ok) {
+            const suppliersData = await suppliersResponse.json();
+            setSuppliersForExport(suppliersData.suppliers || []);
+          }
+        } catch {
+          // non-critical
+        }
+
         // Fetch total documents count
         try {
           const docsResponse = await fetch(`/api/rfps/${rfpId}/documents`);
@@ -600,9 +611,9 @@ export default function RFPSummaryPage() {
                   (data.globalProgress.statusDistribution.pending || 0) > 0
                 }
                 userAccessLevel={data.userAccessLevel}
-                suppliers={data.suppliersAnalysis.comparisonTable.map((s) => ({
-                  id: s.supplierId,
-                  name: s.supplierName,
+                suppliers={suppliersForExport.map((s) => ({
+                  id: s.id,
+                  name: s.name,
                 }))}
                 onAnalysisStarted={() => {
                   // Optional: refresh data or show toast

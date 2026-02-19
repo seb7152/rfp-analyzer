@@ -183,17 +183,6 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
           setRfpTitle(data.rfp?.title || `RFP ${params.rfpId.slice(0, 8)}`);
           setUserAccessLevel(data.userAccessLevel || "viewer");
           setPeerReviewEnabled(data.rfp?.peer_review_enabled ?? false);
-          // Build suppliers list from suppliersAnalysis
-          if (data.suppliersAnalysis?.comparisonTable) {
-            setSuppliers(
-              data.suppliersAnalysis.comparisonTable.map(
-                (s: { supplierId: string; supplierName: string }) => ({
-                  id: s.supplierId,
-                  name: s.supplierName,
-                })
-              )
-            );
-          }
           // Count total responses
           const total =
             (data.globalProgress?.statusDistribution?.pass || 0) +
@@ -211,6 +200,24 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
     if (params.rfpId) {
       fetchRFPData();
     }
+  }, [params.rfpId]);
+
+  // Fetch suppliers list for the restart-analysis selector
+  useEffect(() => {
+    if (!params.rfpId) return;
+    fetch(`/api/rfps/${params.rfpId}/suppliers`)
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.suppliers) {
+          setSuppliers(
+            data.suppliers.map((s: { id: string; name: string }) => ({
+              id: s.id,
+              name: s.name,
+            }))
+          );
+        }
+      })
+      .catch(() => {/* non-critical, selector stays hidden */});
   }, [params.rfpId]);
 
   // Redirect if not authenticated
