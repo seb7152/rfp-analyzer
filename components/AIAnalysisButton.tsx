@@ -13,7 +13,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Bot, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, Bot, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 import type { RFP } from "@/lib/supabase/types";
 import type { RFPAccessLevel } from "@/types/user";
 import { canUseAIFeatures } from "@/lib/permissions/ai-permissions";
@@ -69,14 +69,20 @@ export function AIAnalysisButton({
   // Check if user can use AI features
   const hasAIAccess = canUseAIFeatures(userAccessLevel);
 
-  // Hide if no AI access or no unanalyzed responses
-  if (!hasAIAccess || !hasUnanalyzedResponses) {
-    return null;
-  }
-
   // T142: Check if analysis is already in progress
   const isAnalysisInProgress =
     analysisStatus?.status === "processing" || isAnalyzing;
+
+  // Show restart button when a previous analysis exists, even if completion = 100%
+  const hasBeenAnalyzed = !!analysisStatus?.status;
+
+  // Hide if no AI access, or no responses to analyse and never been analysed
+  if (!hasAIAccess || (!hasUnanalyzedResponses && !hasBeenAnalyzed)) {
+    return null;
+  }
+
+  // Restart mode: all responses are manually reviewed but user wants to re-run AI
+  const isRestartMode = !hasUnanalyzedResponses && hasBeenAnalyzed;
 
   const handleAnalyze = () => {
     triggerAnalysis(
@@ -112,7 +118,11 @@ export function AIAnalysisButton({
         disabled={isAnalysisInProgress}
         className={`bg-purple-600 hover:bg-purple-700 text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${compact ? "h-8 w-8 p-0" : ""}`}
         title={
-          isAnalysisInProgress ? "Analysis in progress..." : "Analyze with AI"
+          isAnalysisInProgress
+            ? "Analysis in progress..."
+            : isRestartMode
+            ? "Restart AI Analysis"
+            : "Analyze with AI"
         }
       >
         {isAnalyzing || isAnalysisInProgress ? (
@@ -122,6 +132,15 @@ export function AIAnalysisButton({
             <>
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
               Analyzing...
+            </>
+          )
+        ) : isRestartMode ? (
+          compact ? (
+            <RefreshCw className="h-4 w-4" />
+          ) : (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Restart Analysis
             </>
           )
         ) : compact ? (
@@ -170,11 +189,24 @@ export function AIAnalysisButton({
       <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Analyze Responses with AI</DialogTitle>
+            <DialogTitle>
+              {isRestartMode
+                ? "Restart AI Analysis"
+                : "Analyze Responses with AI"}
+            </DialogTitle>
             <DialogDescription>
-              This will analyze {responsesCount} responses. This may take
-              several minutes depending on the size and complexity of the
-              responses.
+              {isRestartMode ? (
+                <>
+                  This will re-analyze {responsesCount} responses. Previous AI
+                  scores and comments will be overwritten.
+                </>
+              ) : (
+                <>
+                  This will analyze {responsesCount} responses. This may take
+                  several minutes depending on the size and complexity of the
+                  responses.
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -223,6 +255,11 @@ export function AIAnalysisButton({
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   Starting...
+                </>
+              ) : isRestartMode ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Restart Analysis
                 </>
               ) : (
                 <>
