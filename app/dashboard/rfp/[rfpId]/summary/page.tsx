@@ -615,6 +615,7 @@ export default function RFPSummaryPage() {
                   id: s.id,
                   name: s.name,
                 }))}
+                compact
                 onAnalysisStarted={() => {
                   // Optional: refresh data or show toast
                 }}
