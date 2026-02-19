@@ -13,10 +13,22 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, Bot, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 import type { RFP } from "@/lib/supabase/types";
 import type { RFPAccessLevel } from "@/types/user";
 import { canUseAIFeatures } from "@/lib/permissions/ai-permissions";
+
+interface SupplierOption {
+  id: string;
+  name: string;
+}
 
 interface AIAnalysisButtonProps {
   rfp: RFP;
@@ -25,6 +37,7 @@ interface AIAnalysisButtonProps {
   userAccessLevel?: RFPAccessLevel;
   onAnalysisStarted?: () => void;
   compact?: boolean;
+  suppliers?: SupplierOption[];
 }
 
 /**
@@ -44,9 +57,12 @@ export function AIAnalysisButton({
   userAccessLevel,
   onAnalysisStarted,
   compact = false,
+  suppliers = [],
 }: AIAnalysisButtonProps) {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState("");
+  // "all" or a specific supplier id — only used in restart mode
+  const [supplierTarget, setSupplierTarget] = useState<"all" | string>("all");
   const [showNotification, setShowNotification] = useState<{
     type: "success" | "error";
     message: string;
@@ -85,8 +101,10 @@ export function AIAnalysisButton({
   const isRestartMode = !hasUnanalyzedResponses && hasBeenAnalyzed;
 
   const handleAnalyze = () => {
+    const supplierId =
+      isRestartMode && supplierTarget !== "all" ? supplierTarget : undefined;
     triggerAnalysis(
-      { rfpId: rfp.id, systemPrompt },
+      { rfpId: rfp.id, systemPrompt, supplierId },
       {
         onSuccess: (data) => {
           setShowConfirmation(false);
@@ -186,7 +204,13 @@ export function AIAnalysisButton({
       )}
 
       {/* T141: Confirmation dialog */}
-      <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+      <Dialog
+        open={showConfirmation}
+        onOpenChange={(open) => {
+          setShowConfirmation(open);
+          if (!open) setSupplierTarget("all");
+        }}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>
@@ -210,6 +234,37 @@ export function AIAnalysisButton({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {/* Supplier selection — restart mode only */}
+            {isRestartMode && suppliers.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium leading-none">
+                  Scope
+                </label>
+                <Select
+                  value={supplierTarget}
+                  onValueChange={(v) => setSupplierTarget(v)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select scope..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All suppliers</SelectItem>
+                    {suppliers.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {supplierTarget !== "all" && (
+                  <p className="text-xs text-muted-foreground">
+                    Only this supplier&apos;s responses will be re-analyzed.
+                    Other suppliers&apos; scores remain unchanged.
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               <label
                 htmlFor="system-prompt"

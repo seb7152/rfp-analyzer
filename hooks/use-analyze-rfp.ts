@@ -23,12 +23,14 @@ export function useAnalyzeRFP() {
     mutationFn: async ({
       rfpId,
       systemPrompt,
+      supplierId,
     }: {
       rfpId: string;
       systemPrompt?: string;
+      supplierId?: string;
     }): Promise<AnalyzeRFPResponse> => {
       const { data, error } = await supabase.functions.invoke("analyze-rfp", {
-        body: { rfpId, systemPrompt },
+        body: { rfpId, systemPrompt, supplierId },
       });
 
       if (error) {

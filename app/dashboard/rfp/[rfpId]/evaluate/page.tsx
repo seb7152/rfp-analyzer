@@ -52,6 +52,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
   const [rfpData, setRfpData] = useState<RFP | null>(null);
   const [responsesCount, setResponsesCount] = useState(0);
+  const [suppliers, setSuppliers] = useState<{ id: string; name: string }[]>([]);
   const [userAccessLevel, setUserAccessLevel] = useState<
     "owner" | "evaluator" | "viewer" | "admin"
   >("viewer");
@@ -182,6 +183,17 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
           setRfpTitle(data.rfp?.title || `RFP ${params.rfpId.slice(0, 8)}`);
           setUserAccessLevel(data.userAccessLevel || "viewer");
           setPeerReviewEnabled(data.rfp?.peer_review_enabled ?? false);
+          // Build suppliers list from suppliersAnalysis
+          if (data.suppliersAnalysis?.comparisonTable) {
+            setSuppliers(
+              data.suppliersAnalysis.comparisonTable.map(
+                (s: { supplierId: string; supplierName: string }) => ({
+                  id: s.supplierId,
+                  name: s.supplierName,
+                })
+              )
+            );
+          }
           // Count total responses
           const total =
             (data.globalProgress?.statusDistribution?.pass || 0) +
@@ -280,6 +292,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                     responsesCount={responsesCount}
                     hasUnanalyzedResponses={completionPercentage < 100}
                     userAccessLevel={userAccessLevel}
+                    suppliers={suppliers}
                     compact
                     onAnalysisStarted={() => {
                       // Optional: refresh data or show toast
@@ -380,6 +393,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                     responsesCount={responsesCount}
                     hasUnanalyzedResponses={completionPercentage < 100}
                     userAccessLevel={userAccessLevel}
+                    suppliers={suppliers}
                     onAnalysisStarted={() => {
                       // Optional: refresh data or show toast
                     }}
