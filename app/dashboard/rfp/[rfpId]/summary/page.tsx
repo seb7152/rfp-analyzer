@@ -600,6 +600,10 @@ export default function RFPSummaryPage() {
                   (data.globalProgress.statusDistribution.pending || 0) > 0
                 }
                 userAccessLevel={data.userAccessLevel}
+                suppliers={data.suppliersAnalysis.comparisonTable.map((s) => ({
+                  id: s.supplierId,
+                  name: s.supplierName,
+                }))}
                 onAnalysisStarted={() => {
                   // Optional: refresh data or show toast
                 }}
