@@ -20,6 +20,20 @@ tests/
 
 npm test && npm run lint
 
+### Déploiement Supabase Edge Functions
+
+```bash
+# Déployer une edge function (--no-verify-jwt : la fonction gère son propre auth via SUPABASE_SERVICE_ROLE_KEY)
+npx supabase functions deploy <function_name> --project-ref cddpksndtiprcwcvkaua --no-verify-jwt
+
+# Exemples
+npx supabase functions deploy generate-soutenance --project-ref cddpksndtiprcwcvkaua --no-verify-jwt
+npx supabase functions deploy generate-soutenance-callback --project-ref cddpksndtiprcwcvkaua --no-verify-jwt
+
+# Ajouter/mettre à jour un secret (variable d'env pour les edge functions)
+npx supabase secrets set MY_VAR=value --project-ref cddpksndtiprcwcvkaua
+```
+
 ## Code Style
 
 TypeScript 5.x / JavaScript ES2022+ with Next.js 14 (React 18): Follow standard conventions
