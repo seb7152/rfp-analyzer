@@ -5,7 +5,7 @@ CREATE TABLE soutenance_briefs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   rfp_id UUID REFERENCES rfps(id) ON DELETE CASCADE NOT NULL,
   supplier_id UUID REFERENCES suppliers(id) ON DELETE CASCADE NOT NULL,
-  version_id UUID REFERENCES versions(id) ON DELETE SET NULL,
+  version_id UUID REFERENCES evaluation_versions(id) ON DELETE SET NULL,
   correlation_id TEXT UNIQUE NOT NULL,
   status TEXT DEFAULT 'pending'
     CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
@@ -28,7 +28,7 @@ CREATE POLICY "org_members_can_access_soutenance_briefs"
     rfp_id IN (
       SELECT id FROM rfps
       WHERE organization_id IN (
-        SELECT organization_id FROM organization_members
+        SELECT organization_id FROM user_organizations
         WHERE user_id = auth.uid()
       )
     )
