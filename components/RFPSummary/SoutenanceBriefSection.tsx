@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import {
   CheckCircle2,
   Clock,
@@ -42,45 +43,84 @@ const STATUS_OPTIONS = [
 ] as const;
 
 function MarkdownRenderer({ content }: { content: string }) {
+  // Pre-process dirty markdown from some LLMs
+  const processedContent = content
+    // Fix "- []" or "-[]" -> "- [ ] "
+    .replace(/^(\s*)-\s*\[\s*\]\s*/gm, "$1- [ ] ")
+    // Fix "- [x]" or "-[x]" -> "- [x] "
+    .replace(/^(\s*)-\s*\[x\]\s*/gmi, "$1- [x] ")
+    // Fix headers without space like "#3. Roadmap" -> "### 3. Roadmap"
+    .replace(/^#(\d+\.)/gm, "### $1");
+
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
+      rehypePlugins={[rehypeRaw]}
       components={{
         h1: ({ children }) => (
-          <h1 className="text-2xl font-bold mt-4 mb-2 first:mt-0">
+          <h1 className="text-2xl font-bold mt-6 mb-3 first:mt-0 text-slate-800 dark:text-slate-100">
             {children}
           </h1>
         ),
         h2: ({ children }) => (
-          <h2 className="text-xl font-bold mt-3 mb-2">{children}</h2>
+          <h2 className="text-xl font-bold mt-5 mb-3 text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-slate-700 pb-1">
+            {children}
+          </h2>
         ),
         h3: ({ children }) => (
-          <h3 className="text-lg font-semibold mt-2 mb-1">{children}</h3>
+          <h3 className="text-lg font-semibold mt-4 mb-2 text-slate-800 dark:text-slate-100">
+            {children}
+          </h3>
         ),
-        p: ({ children }) => <p className="mb-3">{children}</p>,
-        ul: ({ children }) => (
-          <ul className="list-disc list-inside mb-3 space-y-1">{children}</ul>
-        ),
-        ol: ({ children }) => (
-          <ol className="list-decimal list-inside mb-3 space-y-1">
+        p: ({ children }) => <p className="mb-3 text-slate-600 dark:text-slate-300 leading-relaxed">{children}</p>,
+        ul: ({ children, className }) => {
+          const isTaskList = className?.includes('contains-task-list');
+          return (
+            <ul className={`list-outside mb-4 space-y-1 ${isTaskList ? '!list-none !pl-0' : 'list-disc pl-5'} ${className || ''}`}>
+              {children}
+            </ul>
+          );
+        },
+        ol: ({ children, className }) => (
+          <ol className={`list-decimal list-outside mb-4 space-y-1 pl-5 ${className || ''}`}>
             {children}
           </ol>
         ),
-        li: ({ children }) => <li className="ml-2">{children}</li>,
+        li: ({ children, className }) => {
+          const isTaskListItem = className?.includes('task-list-item');
+          return (
+            <li className={`${isTaskListItem ? '!list-none flex items-start gap-2.5 marker:text-transparent marker:content-none !pl-0' : 'pl-1'} ${className || ''}`}>
+              {children}
+            </li>
+          );
+        },
+        input: ({ type, checked, disabled }) => {
+          if (type === 'checkbox') {
+            return (
+              <input
+                type="checkbox"
+                checked={checked}
+                readOnly={disabled}
+                className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 shrink-0"
+              />
+            );
+          }
+          return <input type={type} checked={checked} disabled={disabled} />;
+        },
         blockquote: ({ children }) => (
-          <blockquote className="border-l-4 border-slate-300 dark:border-slate-600 pl-4 italic my-3">
+          <blockquote className="border-l-4 border-indigo-500/50 bg-indigo-50/50 dark:bg-indigo-900/20 pl-4 py-2 italic my-4 rounded-r text-slate-700 dark:text-slate-300">
             {children}
           </blockquote>
         ),
         code: ({ children, ...props }: any) => {
           const inline = !props.className?.includes("language-");
           return inline ? (
-            <code className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-sm font-mono">
+            <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-sm font-mono text-pink-600 dark:text-pink-400">
               {children}
             </code>
           ) : (
             <code
-              className="block bg-slate-100 dark:bg-slate-800 p-3 rounded mb-3 overflow-x-auto font-mono text-sm"
+              className="block bg-slate-900 text-slate-50 p-4 rounded-lg mb-4 overflow-x-auto font-mono text-sm shadow-sm"
               {...props}
             >
               {children}
@@ -88,23 +128,35 @@ function MarkdownRenderer({ content }: { content: string }) {
           );
         },
         table: ({ children }) => (
-          <table className="border-collapse border border-slate-300 dark:border-slate-600 w-full mb-3">
+          <div className="overflow-x-auto mb-5 rounded-lg border border-slate-200 dark:border-slate-700">
+            <table className="border-collapse w-full text-left text-sm">
+              {children}
+            </table>
+          </div>
+        ),
+        thead: ({ children }) => (
+          <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
             {children}
-          </table>
+          </thead>
+        ),
+        tr: ({ children }) => (
+          <tr className="border-b border-slate-100 dark:border-slate-800/50 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+            {children}
+          </tr>
         ),
         th: ({ children }) => (
-          <th className="border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 px-3 py-2 text-left">
+          <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider text-xs">
             {children}
           </th>
         ),
         td: ({ children }) => (
-          <td className="border border-slate-300 dark:border-slate-600 px-3 py-2">
+          <td className="px-4 py-3 text-slate-600 dark:text-slate-300 align-top">
             {children}
           </td>
         ),
       }}
     >
-      {content}
+      {processedContent}
     </ReactMarkdown>
   );
 }
