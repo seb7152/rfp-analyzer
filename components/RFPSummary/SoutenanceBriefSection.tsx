@@ -282,7 +282,7 @@ function SupplierBriefPanel({ rfpId, supplier, versionId }: SupplierBriefPanelPr
             className="gap-2 shrink-0"
           >
             {generateMutation.isPending ||
-            currentBrief?.status === "processing" ? (
+              currentBrief?.status === "processing" ? (
               <>
                 <Loader className="h-4 w-4 animate-spin" />
                 Génération...
@@ -347,7 +347,7 @@ function SupplierBriefPanel({ rfpId, supplier, versionId }: SupplierBriefPanelPr
       </Card>
 
       {/* Report Card */}
-      {currentBrief?.status === "completed" && currentBrief.report_markdown && (
+      {currentBrief?.status === "completed" && (
         <Card className="rounded-2xl border border-slate-200 p-6 dark:border-slate-800 flex flex-col overflow-hidden">
           <div className="flex items-center justify-between mb-4 shrink-0">
             <h3 className="font-medium text-slate-900 dark:text-white">
@@ -426,7 +426,7 @@ function SupplierBriefPanel({ rfpId, supplier, versionId }: SupplierBriefPanelPr
                 </div>
               </div>
             ) : (
-              <MarkdownRenderer content={currentBrief.report_markdown} />
+              <MarkdownRenderer content={currentBrief.report_markdown || "_Le brief renvoyé par l'IA est vide._"} />
             )}
           </div>
         </Card>
