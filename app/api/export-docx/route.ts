@@ -15,8 +15,9 @@ export async function POST(req: Request) {
 
         // Pre-process dirty markdown like we do on the frontend
         const processedMarkdown = markdown
-            .replace(/^(\s*)-\s*\[\s*\]\s*/gm, "$1- [ ] ")
-            .replace(/^(\s*)-\s*\[x\]\s*/gmi, "$1- [x] ")
+            // Convert checkboxes to unicode ballot boxes for DOCX compat
+            .replace(/^(\s*)-\s*\[\s*\]\s*/gm, "$1- ☐ ")
+            .replace(/^(\s*)-\s*\[x\]\s*/gmi, "$1- ☑ ")
             .replace(/^#(\d+\.)/gm, "### $1");
 
         // Convert markdown to HTML
