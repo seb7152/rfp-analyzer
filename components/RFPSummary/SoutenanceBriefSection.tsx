@@ -274,6 +274,40 @@ function SupplierBriefPanel({ rfpId, supplier, versionId }: SupplierBriefPanelPr
     URL.revokeObjectURL(url);
   };
 
+  const handleDownloadDocx = async () => {
+    const content = currentBrief?.report_markdown;
+    if (!content) return;
+
+    const toastId = toast.loading("Génération du document Word...");
+    try {
+      const response = await fetch("/api/export-docx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          markdown: content,
+          title: `brief-soutenance-${supplier.name.replace(/\s+/g, "-").toLowerCase()}`
+        })
+      });
+
+      if (!response.ok) throw new Error("Erreur serveur lors de la génération DOCX");
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `brief-soutenance-${supplier.name.replace(/\s+/g, "-").toLowerCase()}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success("Document Word généré avec succès !", { id: toastId });
+    } catch (error) {
+      console.error(error);
+      toast.error("Échec de la génération du document DOCX", { id: toastId });
+    }
+  };
+
   const toggleStatus = (value: string) => {
     setTargetStatuses((prev) =>
       prev.includes(value)
@@ -418,8 +452,17 @@ function SupplierBriefPanel({ rfpId, supplier, versionId }: SupplierBriefPanelPr
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleDownloadMarkdown}
+                onClick={handleDownloadDocx}
                 className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                .docx
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDownloadMarkdown}
+                className="gap-2 text-slate-500"
               >
                 <Download className="h-4 w-4" />
                 .md
