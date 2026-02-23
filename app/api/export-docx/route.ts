@@ -1,78 +1,369 @@
 import { NextResponse } from "next/server";
-import { marked } from "marked";
-import HTMLtoDOCX from "html-to-docx";
+import { marked, type Token, type Tokens } from "marked";
+import {
+    AlignmentType,
+    convertInchesToTwip,
+    Document,
+    HeadingLevel,
+    LevelFormat,
+    Packer,
+    Paragraph,
+    Table,
+    TableCell,
+    TableRow,
+    TextRun,
+    WidthType,
+} from "docx";
+
+type DocxChild = Paragraph | Table;
+
+/** Remove characters that are illegal in XML 1.0 */
+function sanitize(text: string): string {
+    return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "").replace(/\uFFFE|\uFFFF/g, "");
+}
+
+function decodeEntities(text: string): string {
+    return text
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, " ");
+}
+
+type RunCtx = { bold?: boolean; italics?: boolean; strike?: boolean };
+
+/** Recursively convert marked inline tokens to TextRun objects */
+function inlineTokensToRuns(tokens: Token[], ctx: RunCtx = {}): TextRun[] {
+    const runs: TextRun[] = [];
+
+    for (const token of tokens) {
+        switch (token.type) {
+            case "text": {
+                const t = token as Tokens.Text;
+                if (t.tokens) {
+                    runs.push(...inlineTokensToRuns(t.tokens, ctx));
+                } else {
+                    const text = sanitize(decodeEntities(t.text));
+                    if (text) runs.push(new TextRun({ text, ...ctx }));
+                }
+                break;
+            }
+            case "strong": {
+                const t = token as Tokens.Strong;
+                runs.push(...inlineTokensToRuns(t.tokens ?? [], { ...ctx, bold: true }));
+                break;
+            }
+            case "em": {
+                const t = token as Tokens.Em;
+                runs.push(...inlineTokensToRuns(t.tokens ?? [], { ...ctx, italics: true }));
+                break;
+            }
+            case "del": {
+                const t = token as Tokens.Del;
+                runs.push(...inlineTokensToRuns(t.tokens ?? [], { ...ctx, strike: true }));
+                break;
+            }
+            case "codespan": {
+                const t = token as Tokens.Codespan;
+                runs.push(new TextRun({ text: sanitize(t.text), font: "Courier New", size: 18 }));
+                break;
+            }
+            case "link": {
+                const t = token as Tokens.Link;
+                runs.push(...inlineTokensToRuns(t.tokens ?? [], ctx));
+                break;
+            }
+            case "br": {
+                runs.push(new TextRun({ break: 1 }));
+                break;
+            }
+            case "escape": {
+                const t = token as Tokens.Escape;
+                const text = sanitize(decodeEntities(t.text));
+                if (text) runs.push(new TextRun({ text, ...ctx }));
+                break;
+            }
+            // html, image, space → skip
+        }
+    }
+
+    return runs;
+}
+
+/** Extract TextRuns from a block token that has an inline tokens array */
+function blockToRuns(token: { tokens?: Token[]; text?: string }): TextRun[] {
+    if (token.tokens && token.tokens.length > 0) {
+        return inlineTokensToRuns(token.tokens);
+    }
+    if (token.text) {
+        const text = sanitize(decodeEntities(token.text));
+        return text ? [new TextRun({ text })] : [];
+    }
+    return [];
+}
+
+/** Extract TextRuns from a list item (item.tokens[0] holds a text block with inline tokens) */
+function listItemToRuns(item: Tokens.ListItem): TextRun[] {
+    if (item.tokens && item.tokens.length > 0) {
+        const first = item.tokens[0] as { tokens?: Token[]; text?: string };
+        return blockToRuns(first);
+    }
+    const text = sanitize(decodeEntities(item.text));
+    return text ? [new TextRun({ text })] : [];
+}
+
+const HEADING_LEVELS = [
+    HeadingLevel.HEADING_1,
+    HeadingLevel.HEADING_2,
+    HeadingLevel.HEADING_3,
+    HeadingLevel.HEADING_4,
+    HeadingLevel.HEADING_5,
+    HeadingLevel.HEADING_6,
+] as const;
+
+/** Convert an array of block tokens to docx Document children */
+function convertTokens(tokens: Token[]): DocxChild[] {
+    const elements: DocxChild[] = [];
+
+    for (const token of tokens) {
+        switch (token.type) {
+            case "heading": {
+                const t = token as Tokens.Heading;
+                elements.push(
+                    new Paragraph({
+                        heading: HEADING_LEVELS[Math.min(t.depth - 1, 5)],
+                        children: blockToRuns(t),
+                        spacing: { before: 240, after: 120 },
+                    })
+                );
+                break;
+            }
+
+            case "paragraph": {
+                const t = token as Tokens.Paragraph;
+                elements.push(
+                    new Paragraph({
+                        children: blockToRuns(t),
+                        spacing: { after: 120 },
+                    })
+                );
+                break;
+            }
+
+            case "list": {
+                const t = token as Tokens.List;
+                for (const item of t.items) {
+                    const children = listItemToRuns(item);
+                    if (t.ordered) {
+                        elements.push(
+                            new Paragraph({
+                                children,
+                                numbering: { reference: "ordered-list", level: 0 },
+                                spacing: { after: 60 },
+                            })
+                        );
+                    } else {
+                        elements.push(
+                            new Paragraph({
+                                children,
+                                numbering: { reference: "bullet-list", level: 0 },
+                                spacing: { after: 60 },
+                            })
+                        );
+                    }
+                }
+                break;
+            }
+
+            case "table": {
+                const t = token as Tokens.Table;
+                const tableRows: TableRow[] = [];
+
+                // Header row
+                tableRows.push(
+                    new TableRow({
+                        tableHeader: true,
+                        children: t.header.map(
+                            (cell) =>
+                                new TableCell({
+                                    children: [
+                                        new Paragraph({
+                                            children: blockToRuns(cell),
+                                            spacing: { after: 0 },
+                                        }),
+                                    ],
+                                    shading: { fill: "F1F5F9" },
+                                })
+                        ),
+                    })
+                );
+
+                // Data rows
+                for (const row of t.rows) {
+                    tableRows.push(
+                        new TableRow({
+                            children: row.map(
+                                (cell) =>
+                                    new TableCell({
+                                        children: [
+                                            new Paragraph({
+                                                children: blockToRuns(cell),
+                                                spacing: { after: 0 },
+                                            }),
+                                        ],
+                                    })
+                            ),
+                        })
+                    );
+                }
+
+                elements.push(
+                    new Table({
+                        rows: tableRows,
+                        width: { size: 100, type: WidthType.PERCENTAGE },
+                    })
+                );
+                break;
+            }
+
+            case "blockquote": {
+                const t = token as Tokens.Blockquote;
+                elements.push(...convertTokens(t.tokens));
+                break;
+            }
+
+            case "code": {
+                const t = token as Tokens.Code;
+                elements.push(
+                    new Paragraph({
+                        children: [new TextRun({ text: sanitize(t.text), font: "Courier New", size: 18 })],
+                        spacing: { before: 120, after: 120 },
+                        indent: { left: convertInchesToTwip(0.25) },
+                    })
+                );
+                break;
+            }
+
+            case "hr": {
+                elements.push(
+                    new Paragraph({
+                        children: [new TextRun({ text: "─".repeat(60) })],
+                        spacing: { after: 120 },
+                    })
+                );
+                break;
+            }
+
+            case "space":
+                // Skip empty tokens
+                break;
+        }
+    }
+
+    return elements;
+}
 
 export async function POST(req: Request) {
     try {
         const { markdown, title } = await req.json();
 
         if (!markdown) {
-            return NextResponse.json(
-                { error: "Markdown content is required" },
-                { status: 400 }
-            );
+            return NextResponse.json({ error: "Markdown content is required" }, { status: 400 });
         }
 
-        // Pre-process dirty markdown like we do on the frontend
-        const processedMarkdown = markdown
-            // Convert checkboxes to unicode ballot boxes for DOCX compat
+        // Pre-process: convert checkboxes to unicode, fix heading-number collisions
+        const processedMarkdown = (markdown as string)
             .replace(/^(\s*)-\s*\[\s*\]\s*/gm, "$1- ☐ ")
             .replace(/^(\s*)-\s*\[x\]\s*/gmi, "$1- ☑ ")
             .replace(/^#(\d+\.)/gm, "### $1");
 
-        // Convert markdown to HTML
-        const htmlString = await marked.parse(processedMarkdown, { breaks: true, gfm: true });
+        // Tokenize markdown into block tokens
+        const tokens = marked.lexer(processedMarkdown);
 
-        // Add inline HTML styling that Word/html-to-docx understands
-        // We add some custom CSS classes to tables so html-to-docx renders them nicely
-        const styledHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: 'Arial', sans-serif; font-size: 11pt; color: #333333; }
-            h1 { font-family: 'Arial', sans-serif; font-size: 18pt; color: #1e293b; margin-top: 24pt; margin-bottom: 12pt; }
-            h2 { font-family: 'Arial', sans-serif; font-size: 14pt; color: #334155; margin-top: 18pt; margin-bottom: 8pt; border-bottom: 1px solid #cbd5e1; }
-            h3 { font-family: 'Arial', sans-serif; font-size: 12pt; color: #475569; margin-top: 12pt; margin-bottom: 6pt; }
-            table { border-collapse: collapse; width: 100%; border: 1px solid #cbd5e1; margin-bottom: 12pt; }
-            th { border: 1px solid #cbd5e1; background-color: #f8fafc; padding: 6pt; font-weight: bold; text-align: left; }
-            td { border: 1px solid #cbd5e1; padding: 6pt; vertical-align: top; }
-            p { margin-bottom: 8pt; line-height: 1.5; }
-            ul, ol { margin-bottom: 8pt; padding-left: 20pt; }
-            li { margin-bottom: 4pt; }
-            /* Simple task list support */
-            input[type=checkbox] { margin-right: 4pt; }
-          </style>
-        </head>
-        <body>
-          ${htmlString}
-        </body>
-      </html>
-    `;
+        // Convert tokens to docx elements
+        const children = convertTokens(Array.from(tokens));
 
-        // Convert HTML to DOCX using the library
-        const fileBuffer = await HTMLtoDOCX(styledHtml, null, {
-            table: { row: { cantSplit: true } },
-            footer: true,
-            pageNumber: true,
-            margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 }, // 1 inch
+        // docx requires at least one child in a section
+        if (children.length === 0) {
+            children.push(new Paragraph({ children: [new TextRun({ text: "" })] }));
+        }
+
+        const doc = new Document({
+            numbering: {
+                config: [
+                    {
+                        reference: "bullet-list",
+                        levels: [
+                            {
+                                level: 0,
+                                format: LevelFormat.BULLET,
+                                text: "•",
+                                alignment: AlignmentType.LEFT,
+                                style: {
+                                    paragraph: {
+                                        indent: {
+                                            left: convertInchesToTwip(0.5),
+                                            hanging: convertInchesToTwip(0.25),
+                                        },
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                    {
+                        reference: "ordered-list",
+                        levels: [
+                            {
+                                level: 0,
+                                format: LevelFormat.DECIMAL,
+                                text: "%1.",
+                                alignment: AlignmentType.LEFT,
+                                style: {
+                                    paragraph: {
+                                        indent: {
+                                            left: convertInchesToTwip(0.5),
+                                            hanging: convertInchesToTwip(0.25),
+                                        },
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                ],
+            },
+            sections: [
+                {
+                    properties: {
+                        page: {
+                            margin: {
+                                top: convertInchesToTwip(1),
+                                right: convertInchesToTwip(1),
+                                bottom: convertInchesToTwip(1),
+                                left: convertInchesToTwip(1),
+                            },
+                        },
+                    },
+                    children,
+                },
+            ],
         });
 
+        const buffer = await Packer.toBuffer(doc);
         const filename = `${title || "export"}.docx`;
 
-        // Send the docx buffer down
-        return new Response(fileBuffer as any, {
+        return new Response(new Uint8Array(buffer), {
             status: 200,
             headers: {
-                "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "Content-Type":
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 "Content-Disposition": `attachment; filename="${filename}"`,
+                "Content-Length": String(buffer.length),
             },
         });
     } catch (error) {
         console.error("Export DOCX error:", error);
-        return NextResponse.json(
-            { error: "Failed to create DOCX export" },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: "Failed to create DOCX export" }, { status: 500 });
     }
 }
