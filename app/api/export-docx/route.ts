@@ -121,8 +121,11 @@ function listItemToRuns(item: Tokens.ListItem): TextRun[] {
  *   2. Inline • separator without newlines: "• Q1? • Q2? • Q3?"
  */
 function splitCellContent(raw: string): { isBullet: boolean; content: string }[] {
-    // Normalise literal "\n" (2-char sequence) to a real newline
-    const text = raw.replace(/\\n/g, "\n").trim();
+    // Normalise literal "\n" and <br> tags to real newlines
+    const text = raw
+        .replace(/\\n/g, "\n")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .trim();
 
     // Split on real newlines first
     const lines = text.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
