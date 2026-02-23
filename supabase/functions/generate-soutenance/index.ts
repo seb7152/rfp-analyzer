@@ -37,7 +37,14 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body = (await req.json()) as GenerateSoutenanceRequest;
-    const { briefId, rfpId, supplierId, versionId, correlationId, targetStatuses } = body;
+    const {
+      briefId,
+      rfpId,
+      supplierId,
+      versionId,
+      correlationId,
+      targetStatuses,
+    } = body;
 
     console.log("[generate-soutenance] Request received:", {
       briefId,
@@ -48,10 +55,17 @@ serve(async (req) => {
       targetStatuses,
     });
 
-    if (!briefId || !rfpId || !supplierId || !correlationId || !targetStatuses?.length) {
+    if (
+      !briefId ||
+      !rfpId ||
+      !supplierId ||
+      !correlationId ||
+      !targetStatuses?.length
+    ) {
       return new Response(
         JSON.stringify({
-          error: "Missing required fields: briefId, rfpId, supplierId, correlationId, targetStatuses",
+          error:
+            "Missing required fields: briefId, rfpId, supplierId, correlationId, targetStatuses",
         }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
@@ -67,7 +81,10 @@ serve(async (req) => {
       .eq("id", briefId);
 
     if (statusError) {
-      console.error("[generate-soutenance] Error updating status:", statusError);
+      console.error(
+        "[generate-soutenance] Error updating status:",
+        statusError
+      );
       throw statusError;
     }
 
@@ -94,8 +111,11 @@ serve(async (req) => {
     }
 
     // Séparer le statut virtuel "pass_with_question" des vrais statuts DB
-    const includePassWithQuestion = targetStatuses.includes("pass_with_question");
-    const realStatuses = targetStatuses.filter((s) => s !== "pass_with_question");
+    const includePassWithQuestion =
+      targetStatuses.includes("pass_with_question");
+    const realStatuses = targetStatuses.filter(
+      (s) => s !== "pass_with_question"
+    );
 
     // Récupérer les réponses filtrées par statut
     const responseSelect =
@@ -129,7 +149,10 @@ serve(async (req) => {
     const respError = results.find((r) => r.error)?.error;
 
     if (respError) {
-      console.error("[generate-soutenance] Error fetching responses:", respError);
+      console.error(
+        "[generate-soutenance] Error fetching responses:",
+        respError
+      );
       throw respError;
     }
 
@@ -144,7 +167,9 @@ serve(async (req) => {
       });
 
     if (!responses || responses.length === 0) {
-      console.log("[generate-soutenance] No responses found with target statuses");
+      console.log(
+        "[generate-soutenance] No responses found with target statuses"
+      );
       await supabase
         .from("soutenance_briefs")
         .update({
@@ -156,7 +181,11 @@ serve(async (req) => {
         .eq("id", briefId);
 
       return new Response(
-        JSON.stringify({ success: true, briefId, message: "No matching responses" }),
+        JSON.stringify({
+          success: true,
+          briefId,
+          message: "No matching responses",
+        }),
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     }
@@ -165,17 +194,18 @@ serve(async (req) => {
     const requirementIds = [...new Set(responses.map((r) => r.requirement_id))];
     const { data: requirements, error: reqError } = await supabase
       .from("requirements")
-      .select("id, requirement_id_external, title, description")
+      .select("id, requirement_id_external, title, description, weight")
       .in("id", requirementIds);
 
     if (reqError) {
-      console.error("[generate-soutenance] Error fetching requirements:", reqError);
+      console.error(
+        "[generate-soutenance] Error fetching requirements:",
+        reqError
+      );
       throw reqError;
     }
 
-    const requirementsMap = new Map(
-      (requirements || []).map((r) => [r.id, r])
-    );
+    const requirementsMap = new Map((requirements || []).map((r) => [r.id, r]));
 
     // Construire le payload N8N
     const n8nPayload = {
@@ -196,6 +226,7 @@ serve(async (req) => {
             code: req.requirement_id_external,
             title: req.title,
             description: req.description || "",
+            weight: req.weight,
             status: resp.status,
             response: {
               text: resp.response_text,
@@ -205,7 +236,8 @@ serve(async (req) => {
             },
           };
         })
-        .filter(Boolean),
+        .filter(Boolean)
+        .sort((a, b) => (b.weight || 0) - (a.weight || 0)),
       callbackUrl: `${supabaseUrl}/functions/v1/generate-soutenance-callback`,
       timestamp: new Date().toISOString(),
     };
@@ -217,7 +249,9 @@ serve(async (req) => {
     const n8nWebhookUrl = Deno.env.get("N8N_SOUTENANCE_WEBHOOK_URL");
 
     if (!n8nWebhookUrl) {
-      throw new Error("Missing N8N_SOUTENANCE_WEBHOOK_URL environment variable");
+      throw new Error(
+        "Missing N8N_SOUTENANCE_WEBHOOK_URL environment variable"
+      );
     }
 
     const n8nResponse = await fetch(n8nWebhookUrl, {
@@ -228,7 +262,11 @@ serve(async (req) => {
 
     if (!n8nResponse.ok) {
       const errorText = await n8nResponse.text();
-      console.error(`[generate-soutenance] N8N error:`, n8nResponse.status, errorText);
+      console.error(
+        `[generate-soutenance] N8N error:`,
+        n8nResponse.status,
+        errorText
+      );
 
       await supabase
         .from("soutenance_briefs")
@@ -240,7 +278,10 @@ serve(async (req) => {
         .eq("id", briefId);
 
       return new Response(
-        JSON.stringify({ error: `N8N analysis failed: ${n8nResponse.status}`, briefId }),
+        JSON.stringify({
+          error: `N8N analysis failed: ${n8nResponse.status}`,
+          briefId,
+        }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
@@ -248,13 +289,20 @@ serve(async (req) => {
     console.log(`[generate-soutenance] Brief submitted to N8N successfully`);
 
     return new Response(
-      JSON.stringify({ success: true, briefId, message: "Brief generation submitted to N8N" }),
+      JSON.stringify({
+        success: true,
+        briefId,
+        message: "Brief generation submitted to N8N",
+      }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("[generate-soutenance] Error:", error);
     return new Response(
-      JSON.stringify({ error: "Internal server error", details: String(error) }),
+      JSON.stringify({
+        error: "Internal server error",
+        details: String(error),
+      }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
