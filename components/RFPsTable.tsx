@@ -46,7 +46,12 @@ interface RFPsTableProps {
   onRefresh?: () => void;
 }
 
-export function RFPsTable({ rfps, isLoading, onDelete, onRefresh }: RFPsTableProps) {
+export function RFPsTable({
+  rfps,
+  isLoading,
+  onDelete,
+  onRefresh,
+}: RFPsTableProps) {
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -61,9 +66,10 @@ export function RFPsTable({ rfps, isLoading, onDelete, onRefresh }: RFPsTablePro
     }
   };
 
-  const filteredRfps = statusFilter === "all"
-    ? rfps
-    : rfps.filter((rfp) => rfp.status === statusFilter);
+  const filteredRfps =
+    statusFilter === "all"
+      ? rfps
+      : rfps.filter((rfp) => rfp.status === statusFilter);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { bg: string; text: string }> = {
@@ -84,7 +90,11 @@ export function RFPsTable({ rfps, isLoading, onDelete, onRefresh }: RFPsTablePro
     const variant = variants[status] || variants.in_progress;
     return (
       <Badge className={`${variant.bg} border-none ${variant.text}`}>
-        {status === "in_progress" ? "En cours" : status === "completed" ? "Terminé" : "Archivé"}
+        {status === "in_progress"
+          ? "En cours"
+          : status === "completed"
+            ? "Terminé"
+            : "Archivé"}
       </Badge>
     );
   };
@@ -161,10 +171,15 @@ export function RFPsTable({ rfps, isLoading, onDelete, onRefresh }: RFPsTablePro
                 className="h-8 w-8 p-0"
                 title="Rafraîchir"
               >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+                />
               </Button>
             )}
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+            >
               <SelectTrigger className="h-8 w-36 text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -185,7 +200,9 @@ export function RFPsTable({ rfps, isLoading, onDelete, onRefresh }: RFPsTablePro
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Titre</th>
                 <th className="px-4 py-3 text-left font-medium">Statut</th>
-                <th className="px-4 py-3 text-center font-medium">Avancement</th>
+                <th className="px-4 py-3 text-center font-medium">
+                  Avancement
+                </th>
                 <th className="px-4 py-3 text-left font-medium">Créé le</th>
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
@@ -193,67 +210,72 @@ export function RFPsTable({ rfps, isLoading, onDelete, onRefresh }: RFPsTablePro
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
               {filteredRfps.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400 text-sm">
+                  <td
+                    colSpan={5}
+                    className="px-4 py-8 text-center text-slate-500 dark:text-slate-400 text-sm"
+                  >
                     Aucun RFP ne correspond au filtre sélectionné.
                   </td>
                 </tr>
-              ) : filteredRfps.map((rfp) => (
-                <tr
-                  key={rfp.id}
-                  className="hover:bg-slate-100/50 transition-colors dark:hover:bg-slate-800/50 cursor-pointer"
-                  onDoubleClick={() =>
-                    router.push(`/dashboard/rfp/${rfp.id}/summary`)
-                  }
-                >
-                  <td className="px-4 py-3">
-                    <div>
-                      <p className="font-medium text-slate-900 dark:text-slate-50">
-                        {rfp.title}
-                      </p>
-                      {rfp.description && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-1">
-                          {rfp.description}
+              ) : (
+                filteredRfps.map((rfp) => (
+                  <tr
+                    key={rfp.id}
+                    className="hover:bg-slate-100/50 transition-colors dark:hover:bg-slate-800/50 cursor-pointer"
+                    onDoubleClick={() =>
+                      router.push(`/dashboard/rfp/${rfp.id}/summary`)
+                    }
+                  >
+                    <td className="px-4 py-3">
+                      <div>
+                        <p className="font-medium text-slate-900 dark:text-slate-50">
+                          {rfp.title}
                         </p>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">{getStatusBadge(rfp.status)}</td>
-                  <td className="px-4 py-3 text-center">
-                    <RFPProgressCell rfpId={rfp.id} />
-                  </td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
-                    {formatDate(rfp.created_at)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/dashboard/rfp/${rfp.id}/summary`);
-                        }}
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-slate-800"
-                        title="Consulter RFP"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete?.(rfp.id);
-                        }}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-slate-800"
-                        title="Supprimer RFP"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {rfp.description && (
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-1">
+                            {rfp.description}
+                          </p>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">{getStatusBadge(rfp.status)}</td>
+                    <td className="px-4 py-3 text-center">
+                      <RFPProgressCell rfpId={rfp.id} />
+                    </td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                      {formatDate(rfp.created_at)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/dashboard/rfp/${rfp.id}/summary`);
+                          }}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-slate-800"
+                          title="Consulter RFP"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete?.(rfp.id);
+                          }}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-slate-800"
+                          title="Supprimer RFP"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

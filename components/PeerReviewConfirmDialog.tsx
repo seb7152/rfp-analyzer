@@ -70,11 +70,7 @@ export function PeerReviewConfirmDialog({
         )}
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
             Annuler
           </Button>
           <Button onClick={handleConfirm} disabled={isLoading}>

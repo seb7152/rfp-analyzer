@@ -40,6 +40,7 @@ const STATUS_OPTIONS = [
   { value: "partial", label: "Partiellement conforme" },
   { value: "fail", label: "Non conforme" },
   { value: "roadmap", label: "Roadmap" },
+  { value: "pass_with_question", label: "Conforme avec question" },
 ] as const;
 
 function MarkdownRenderer({ content }: { content: string }) {
@@ -48,7 +49,7 @@ function MarkdownRenderer({ content }: { content: string }) {
     // Fix "- []" or "-[]" -> "- [ ] "
     .replace(/^(\s*)-\s*\[\s*\]\s*/gm, "$1- [ ] ")
     // Fix "- [x]" or "-[x]" -> "- [x] "
-    .replace(/^(\s*)-\s*\[x\]\s*/gmi, "$1- [x] ")
+    .replace(/^(\s*)-\s*\[x\]\s*/gim, "$1- [x] ")
     // Fix headers without space like "#3. Roadmap" -> "### 3. Roadmap"
     .replace(/^#(\d+\.)/gm, "### $1");
 
@@ -72,30 +73,40 @@ function MarkdownRenderer({ content }: { content: string }) {
             {children}
           </h3>
         ),
-        p: ({ children }) => <p className="mb-3 text-slate-600 dark:text-slate-300 leading-relaxed">{children}</p>,
+        p: ({ children }) => (
+          <p className="mb-3 text-slate-600 dark:text-slate-300 leading-relaxed">
+            {children}
+          </p>
+        ),
         ul: ({ children, className }) => {
-          const isTaskList = className?.includes('contains-task-list');
+          const isTaskList = className?.includes("contains-task-list");
           return (
-            <ul className={`list-outside mb-4 space-y-1 ${isTaskList ? '!list-none !pl-0' : 'list-disc pl-5'} ${className || ''}`}>
+            <ul
+              className={`list-outside mb-4 space-y-1 ${isTaskList ? "!list-none !pl-0" : "list-disc pl-5"} ${className || ""}`}
+            >
               {children}
             </ul>
           );
         },
         ol: ({ children, className }) => (
-          <ol className={`list-decimal list-outside mb-4 space-y-1 pl-5 ${className || ''}`}>
+          <ol
+            className={`list-decimal list-outside mb-4 space-y-1 pl-5 ${className || ""}`}
+          >
             {children}
           </ol>
         ),
         li: ({ children, className }) => {
-          const isTaskListItem = className?.includes('task-list-item');
+          const isTaskListItem = className?.includes("task-list-item");
           return (
-            <li className={`${isTaskListItem ? '!list-none flex items-start gap-2.5 marker:text-transparent marker:content-none !pl-0' : 'pl-1'} ${className || ''}`}>
+            <li
+              className={`${isTaskListItem ? "!list-none flex items-start gap-2.5 marker:text-transparent marker:content-none !pl-0" : "pl-1"} ${className || ""}`}
+            >
               {children}
             </li>
           );
         },
         input: ({ type, checked, disabled }) => {
-          if (type === 'checkbox') {
+          if (type === "checkbox") {
             return (
               <input
                 type="checkbox"
@@ -167,7 +178,11 @@ interface SupplierBriefPanelProps {
   versionId?: string;
 }
 
-function SupplierBriefPanel({ rfpId, supplier, versionId }: SupplierBriefPanelProps) {
+function SupplierBriefPanel({
+  rfpId,
+  supplier,
+  versionId,
+}: SupplierBriefPanelProps) {
   const [targetStatuses, setTargetStatuses] = useState<string[]>([
     "partial",
     "fail",
@@ -285,11 +300,12 @@ function SupplierBriefPanel({ rfpId, supplier, versionId }: SupplierBriefPanelPr
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           markdown: content,
-          title: `brief-soutenance-${supplier.name.replace(/\s+/g, "-").toLowerCase()}`
-        })
+          title: `brief-soutenance-${supplier.name.replace(/\s+/g, "-").toLowerCase()}`,
+        }),
       });
 
-      if (!response.ok) throw new Error("Erreur serveur lors de la génération DOCX");
+      if (!response.ok)
+        throw new Error("Erreur serveur lors de la génération DOCX");
 
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
@@ -310,9 +326,7 @@ function SupplierBriefPanel({ rfpId, supplier, versionId }: SupplierBriefPanelPr
 
   const toggleStatus = (value: string) => {
     setTargetStatuses((prev) =>
-      prev.includes(value)
-        ? prev.filter((s) => s !== value)
-        : [...prev, value]
+      prev.includes(value) ? prev.filter((s) => s !== value) : [...prev, value]
     );
   };
 
@@ -368,7 +382,7 @@ function SupplierBriefPanel({ rfpId, supplier, versionId }: SupplierBriefPanelPr
             className="gap-2 shrink-0"
           >
             {generateMutation.isPending ||
-              currentBrief?.status === "processing" ? (
+            currentBrief?.status === "processing" ? (
               <>
                 <Loader className="h-4 w-4 animate-spin" />
                 Génération...
@@ -389,7 +403,9 @@ function SupplierBriefPanel({ rfpId, supplier, versionId }: SupplierBriefPanelPr
               {currentBrief.status === "completed" && (
                 <>
                   <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span className="text-green-600 font-medium">Brief généré</span>
+                  <span className="text-green-600 font-medium">
+                    Brief généré
+                  </span>
                 </>
               )}
               {currentBrief.status === "processing" && (
@@ -410,7 +426,8 @@ function SupplierBriefPanel({ rfpId, supplier, versionId }: SupplierBriefPanelPr
                 <>
                   <AlertTriangle className="h-4 w-4 text-red-600" />
                   <span className="text-red-600 font-medium">
-                    Erreur : {currentBrief.error_message ?? "Échec de la génération"}
+                    Erreur :{" "}
+                    {currentBrief.error_message ?? "Échec de la génération"}
                   </span>
                 </>
               )}
@@ -521,7 +538,12 @@ function SupplierBriefPanel({ rfpId, supplier, versionId }: SupplierBriefPanelPr
                 </div>
               </div>
             ) : (
-              <MarkdownRenderer content={currentBrief.report_markdown || "_Le brief renvoyé par l'IA est vide._"} />
+              <MarkdownRenderer
+                content={
+                  currentBrief.report_markdown ||
+                  "_Le brief renvoyé par l'IA est vide._"
+                }
+              />
             )}
           </div>
         </Card>
@@ -582,11 +604,7 @@ export function SoutenanceBriefSection({
         </TabsList>
 
         {suppliers.map((supplier) => (
-          <TabsContent
-            key={supplier.id}
-            value={supplier.id}
-            className="mt-6"
-          >
+          <TabsContent key={supplier.id} value={supplier.id} className="mt-6">
             <SupplierBriefPanel
               rfpId={rfpId}
               supplier={supplier}

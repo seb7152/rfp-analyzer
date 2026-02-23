@@ -113,7 +113,7 @@ CREATE POLICY "Evaluators can update review statuses"
 ### `PeerReviewStatus`
 
 ```typescript
-export type PeerReviewStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
+export type PeerReviewStatus = "draft" | "submitted" | "approved" | "rejected";
 ```
 
 ### `RequirementReviewStatus`
@@ -138,8 +138,8 @@ export interface RequirementReviewStatus {
 
 ```typescript
 export interface UpdateReviewStatusRequest {
-  status: 'submitted' | 'approved' | 'rejected';
-  rejection_comment?: string;  // requis si status = 'rejected'
+  status: "submitted" | "approved" | "rejected";
+  rejection_comment?: string; // requis si status = 'rejected'
 }
 ```
 
@@ -147,14 +147,14 @@ export interface UpdateReviewStatusRequest {
 
 ## Matrice de transitions
 
-| Statut actuel | Nouveau statut | Rôles autorisés         | Conditions               |
-|---------------|----------------|-------------------------|--------------------------|
-| `draft`       | `submitted`    | evaluator, owner, admin | —                        |
+| Statut actuel | Nouveau statut | Rôles autorisés         | Conditions                      |
+| ------------- | -------------- | ----------------------- | ------------------------------- |
+| `draft`       | `submitted`    | evaluator, owner, admin | —                               |
 | `rejected`    | `submitted`    | evaluator, owner, admin | (resoumission après correction) |
-| `submitted`   | `approved`     | owner, admin            | —                        |
-| `submitted`   | `rejected`     | owner, admin            | rejection_comment facultatif |
-| `approved`    | `draft`        | ❌ non autorisé         | —                        |
-| `approved`    | `submitted`    | ❌ non autorisé         | —                        |
+| `submitted`   | `approved`     | owner, admin            | —                               |
+| `submitted`   | `rejected`     | owner, admin            | rejection_comment facultatif    |
+| `approved`    | `draft`        | ❌ non autorisé         | —                               |
+| `approved`    | `submitted`    | ❌ non autorisé         | —                               |
 
 ---
 

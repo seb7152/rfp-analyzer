@@ -1069,7 +1069,10 @@ export async function getRFPCompletionPercentage(
     const { getVersionSupplierStatuses, getActiveSupplierIds } = await import(
       "@/lib/suppliers/status-cache"
     );
-    const statuses = await getVersionSupplierStatuses(supabase, resolvedVersionId);
+    const statuses = await getVersionSupplierStatuses(
+      supabase,
+      resolvedVersionId
+    );
     const activeSupplierIds = getActiveSupplierIds(statuses);
     responses = responses.filter((r) => activeSupplierIds.has(r.supplier_id));
   }

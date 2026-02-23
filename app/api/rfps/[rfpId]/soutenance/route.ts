@@ -35,7 +35,14 @@ export async function POST(
       );
     }
 
-    const validStatuses = ["partial", "fail", "roadmap", "pending", "pass"];
+    const validStatuses = [
+      "partial",
+      "fail",
+      "roadmap",
+      "pending",
+      "pass",
+      "pass_with_question",
+    ];
     const sanitizedStatuses = (targetStatuses as string[]).filter((s) =>
       validStatuses.includes(s)
     );
@@ -103,7 +110,10 @@ export async function POST(
       .single();
 
     if (briefError || !brief) {
-      console.error("[/soutenance POST] Error creating brief record:", briefError);
+      console.error(
+        "[/soutenance POST] Error creating brief record:",
+        briefError
+      );
       return NextResponse.json(
         { error: "Failed to create brief record" },
         { status: 500 }
@@ -128,7 +138,10 @@ export async function POST(
         targetStatuses: sanitizedStatuses,
       }),
     }).catch((error) => {
-      console.error("[/soutenance POST] Error calling generate-soutenance edge function:", error);
+      console.error(
+        "[/soutenance POST] Error calling generate-soutenance edge function:",
+        error
+      );
     });
 
     return NextResponse.json(

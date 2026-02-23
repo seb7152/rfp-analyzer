@@ -137,7 +137,10 @@ export async function POST(
         correlationId,
       }),
     }).catch((error) => {
-      console.error("Error calling Edge Function (analyze-presentation):", error);
+      console.error(
+        "Error calling Edge Function (analyze-presentation):",
+        error
+      );
     });
 
     return NextResponse.json(

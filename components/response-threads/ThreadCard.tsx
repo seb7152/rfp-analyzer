@@ -53,10 +53,7 @@ export function ThreadCard({
     comments,
     isLoading: commentsLoading,
     error: commentsError,
-  } = useThreadComments(
-    rfpId,
-    isExpanded ? thread.id : undefined
-  );
+  } = useThreadComments(rfpId, isExpanded ? thread.id : undefined);
 
   const { mutate: createComment, isPending: isCreating } = useCreateComment(
     rfpId,
@@ -107,11 +104,7 @@ export function ThreadCard({
         className="w-full flex items-start gap-2 p-3 text-left hover:bg-gray-50/50 dark:hover:bg-gray-800/30 rounded-t-lg transition-colors cursor-pointer"
       >
         <span className="mt-0.5 text-gray-400 shrink-0">
-          {isExpanded ? (
-            <ChevronDown size={14} />
-          ) : (
-            <ChevronRight size={14} />
-          )}
+          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </span>
 
         <div className="flex-1 min-w-0">

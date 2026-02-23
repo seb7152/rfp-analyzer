@@ -69,16 +69,12 @@ export function PeerReviewBadge({
     <span
       className={cn(
         "inline-flex items-center rounded-full font-medium",
-        size === "sm"
-          ? "px-2 py-0.5 text-xs"
-          : "px-3 py-1.5 text-sm",
+        size === "sm" ? "px-2 py-0.5 text-xs" : "px-3 py-1.5 text-sm",
         config.className,
         className
       )}
     >
-      <Icon
-        className={cn("mr-1.5", size === "sm" ? "w-3 h-3" : "w-4 h-4")}
-      />
+      <Icon className={cn("mr-1.5", size === "sm" ? "w-3 h-3" : "w-4 h-4")} />
       {config.label}
     </span>
   );

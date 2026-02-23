@@ -1,21 +1,36 @@
 "use client";
 
 import React from "react";
-import { ChevronRight, ChevronDown, Folder, FileText, MessageCircle, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import {
+  ChevronRight,
+  ChevronDown,
+  Folder,
+  FileText,
+  MessageCircle,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { TreeNode } from "@/hooks/use-requirements";
-import type { RequirementReviewStatus, PeerReviewStatus } from "@/types/peer-review";
+import type {
+  RequirementReviewStatus,
+  PeerReviewStatus,
+} from "@/types/peer-review";
 
 export interface RequirementThreadCount {
   open: number;
   hasBlocking: boolean;
 }
 
-const PEER_REVIEW_STATUS_CONFIG: Record<PeerReviewStatus, {
-  icon: React.ElementType;
-  dotClass: string;
-  label: string;
-}> = {
+const PEER_REVIEW_STATUS_CONFIG: Record<
+  PeerReviewStatus,
+  {
+    icon: React.ElementType;
+    dotClass: string;
+    label: string;
+  }
+> = {
   draft: {
     icon: FileText,
     dotClass: "",
@@ -52,7 +67,11 @@ interface ThreadIndicatorProps {
   nodeType: TreeNode["type"];
 }
 
-function ThreadIndicator({ threadCounts, nodeId, nodeType }: ThreadIndicatorProps) {
+function ThreadIndicator({
+  threadCounts,
+  nodeId,
+  nodeType,
+}: ThreadIndicatorProps) {
   if (!threadCounts || nodeType !== "requirement") return null;
   const tc = threadCounts.get(nodeId);
   if (!tc || tc.open === 0) return null;
@@ -70,7 +89,13 @@ function ThreadIndicator({ threadCounts, nodeId, nodeType }: ThreadIndicatorProp
   );
 }
 
-function NodeIcon({ nodeType, nodeId, isSelected, peerReviewEnabled, reviewStatuses }: NodeIconProps) {
+function NodeIcon({
+  nodeType,
+  nodeId,
+  isSelected,
+  peerReviewEnabled,
+  reviewStatuses,
+}: NodeIconProps) {
   if (nodeType === "category") {
     return (
       <Folder
@@ -83,7 +108,9 @@ function NodeIcon({ nodeType, nodeId, isSelected, peerReviewEnabled, reviewStatu
     );
   }
 
-  const reviewStatus = peerReviewEnabled ? reviewStatuses?.get(nodeId) : undefined;
+  const reviewStatus = peerReviewEnabled
+    ? reviewStatuses?.get(nodeId)
+    : undefined;
   const status: PeerReviewStatus = reviewStatus?.status ?? "draft";
 
   if (peerReviewEnabled && status !== "draft") {

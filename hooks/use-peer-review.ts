@@ -33,7 +33,10 @@ export function usePeerReviewStatuses(
 
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        throw new Error(body.error ?? `Failed to fetch review statuses: ${response.statusText}`);
+        throw new Error(
+          body.error ??
+            `Failed to fetch review statuses: ${response.statusText}`
+        );
       }
 
       const json = await response.json();
@@ -83,7 +86,9 @@ export function usePeerReviewMutation({
 
       if (!response.ok) {
         const json = await response.json().catch(() => ({}));
-        throw new Error(json.error ?? `Failed to update review status: ${response.statusText}`);
+        throw new Error(
+          json.error ?? `Failed to update review status: ${response.statusText}`
+        );
       }
 
       const json = await response.json();

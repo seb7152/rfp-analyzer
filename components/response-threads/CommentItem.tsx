@@ -79,7 +79,9 @@ export function CommentItem({
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-1.5 text-xs">
               <span className="font-medium text-gray-700 dark:text-gray-300">
-                {comment.author?.display_name || comment.author?.email || "Inconnu"}
+                {comment.author?.display_name ||
+                  comment.author?.email ||
+                  "Inconnu"}
               </span>
               <span className="text-gray-400">·</span>
               <span className="text-gray-400">

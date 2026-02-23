@@ -199,7 +199,11 @@ function CategoryTagDialog({ node, tags, onApply }: CategoryTagDialogProps) {
   );
 }
 
-export function RequirementsTab({ rfpId, peerReviewEnabled = false, versionId }: RequirementsTabProps) {
+export function RequirementsTab({
+  rfpId,
+  peerReviewEnabled = false,
+  versionId,
+}: RequirementsTabProps) {
   const [data, setData] = useState<TreeNode[]>([]);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
     new Set()

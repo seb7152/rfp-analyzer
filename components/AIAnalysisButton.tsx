@@ -20,7 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Bot, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
+import {
+  Loader2,
+  Bot,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
 import type { RFP } from "@/lib/supabase/types";
 import type { RFPAccessLevel } from "@/types/user";
 import { canUseAIFeatures } from "@/lib/permissions/ai-permissions";
@@ -139,8 +145,8 @@ export function AIAnalysisButton({
           isAnalysisInProgress
             ? "Analysis in progress..."
             : isRestartMode
-            ? "Restart AI Analysis"
-            : "Analyze with AI"
+              ? "Restart AI Analysis"
+              : "Analyze with AI"
         }
       >
         {isAnalyzing || isAnalysisInProgress ? (

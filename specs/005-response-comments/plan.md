@@ -63,6 +63,7 @@ Dans la vue de comparaison (`ComparisonView`), chaque carte de réponse fourniss
 ### 2.2 Panneau latéral de discussion — réutilisation du pattern PDFViewerSheet
 
 Le panneau de discussion **réutilise l'architecture exacte de `PDFViewerSheet`** :
+
 - Même pattern `fixed top-0 right-0 bottom-0` avec `transition-transform duration-300`
 - Même z-index (z-40 content, z-30 overlay, z-50 minimized)
 - Même bouton minimize/restore en bas à droite
@@ -108,14 +109,14 @@ Le panneau de discussion **réutilise l'architecture exacte de `PDFViewerSheet`*
 
 **Comportements clés** :
 
-| Action | Comportement |
-|--------|-------------|
-| Créer un thread | Formulaire inline : titre (optionnel) + premier message + priorité |
-| Répondre | Textarea sous le dernier message du thread |
-| Résoudre | Bouton sur le thread → statut passe à `resolved`, thread se replie |
-| Rouvrir | Bouton sur un thread résolu → repasse à `open` |
-| Supprimer | Uniquement ses propres messages, pas le thread entier (sauf si vide) |
-| Éditer | Uniquement ses propres messages, indicateur "modifié" visible |
+| Action          | Comportement                                                         |
+| --------------- | -------------------------------------------------------------------- |
+| Créer un thread | Formulaire inline : titre (optionnel) + premier message + priorité   |
+| Répondre        | Textarea sous le dernier message du thread                           |
+| Résoudre        | Bouton sur le thread → statut passe à `resolved`, thread se replie   |
+| Rouvrir         | Bouton sur un thread résolu → repasse à `open`                       |
+| Supprimer       | Uniquement ses propres messages, pas le thread entier (sauf si vide) |
+| Éditer          | Uniquement ses propres messages, indicateur "modifié" visible        |
 
 ### 2.3 Filtrage — extension des filtres existants
 
@@ -148,8 +149,8 @@ Le composant `EvaluationFilters` filtre déjà les réponses par statut, score, 
 // Extension de l'interface existante
 interface EvaluationFilterState {
   // ... champs existants ...
-  hasThreads: boolean | null;        // null=tous, true=avec threads, false=sans
-  hasOpenThreads: boolean | null;    // null=tous, true=avec ouverts
+  hasThreads: boolean | null; // null=tous, true=avec threads, false=sans
+  hasOpenThreads: boolean | null; // null=tous, true=avec ouverts
   hasBlockingThreads: boolean | null; // null=tous, true=avec bloquants
 }
 ```
@@ -311,47 +312,47 @@ Récupère tous les threads du RFP avec compteurs, pour la vue globale et les in
 ```typescript
 // Query params
 interface ThreadsQueryParams {
-    response_id?: string;       // Filtrer par réponse spécifique
-    status?: 'open' | 'resolved';
-    priority?: 'normal' | 'important' | 'blocking';
-    supplier_id?: string;       // Filtrer par fournisseur
-    created_by?: string;        // Filtrer par auteur
-    include_comments?: boolean; // Inclure les commentaires (défaut: false)
-    include_counts?: boolean;   // Inclure les compteurs (défaut: true)
+  response_id?: string; // Filtrer par réponse spécifique
+  status?: "open" | "resolved";
+  priority?: "normal" | "important" | "blocking";
+  supplier_id?: string; // Filtrer par fournisseur
+  created_by?: string; // Filtrer par auteur
+  include_comments?: boolean; // Inclure les commentaires (défaut: false)
+  include_counts?: boolean; // Inclure les compteurs (défaut: true)
 }
 
 // Response
 interface ThreadsResponse {
-    threads: ResponseThread[];
-    counts: {
-        total: number;
-        open: number;
-        resolved: number;
-        blocking: number;
-    };
+  threads: ResponseThread[];
+  counts: {
+    total: number;
+    open: number;
+    resolved: number;
+    blocking: number;
+  };
 }
 
 interface ResponseThread {
-    id: string;
-    response_id: string;
-    title: string | null;
-    status: 'open' | 'resolved';
-    priority: 'normal' | 'important' | 'blocking';
-    created_by: string;
-    creator: { email: string; display_name: string | null };
-    resolved_by: string | null;
-    resolver: { email: string; display_name: string | null } | null;
-    resolved_at: string | null;
-    created_at: string;
-    updated_at: string;
-    comment_count: number;
-    last_comment_at: string | null;
-    // Dénormalisé pour la vue globale
-    requirement_title?: string;
-    requirement_id_external?: string;
-    supplier_name?: string;
-    // Commentaires inclus si include_comments=true
-    comments?: ThreadComment[];
+  id: string;
+  response_id: string;
+  title: string | null;
+  status: "open" | "resolved";
+  priority: "normal" | "important" | "blocking";
+  created_by: string;
+  creator: { email: string; display_name: string | null };
+  resolved_by: string | null;
+  resolver: { email: string; display_name: string | null } | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+  comment_count: number;
+  last_comment_at: string | null;
+  // Dénormalisé pour la vue globale
+  requirement_title?: string;
+  requirement_id_external?: string;
+  supplier_name?: string;
+  // Commentaires inclus si include_comments=true
+  comments?: ThreadComment[];
 }
 ```
 
@@ -389,10 +390,10 @@ Crée un nouveau thread avec son premier commentaire.
 
 ```typescript
 interface CreateThreadRequest {
-    response_id: string;
-    title?: string;
-    priority?: 'normal' | 'important' | 'blocking';
-    content: string; // Premier commentaire
+  response_id: string;
+  title?: string;
+  priority?: "normal" | "important" | "blocking";
+  content: string; // Premier commentaire
 }
 ```
 
@@ -402,9 +403,9 @@ Met à jour le statut ou la priorité d'un thread.
 
 ```typescript
 interface UpdateThreadRequest {
-    status?: 'open' | 'resolved';
-    priority?: 'normal' | 'important' | 'blocking';
-    title?: string;
+  status?: "open" | "resolved";
+  priority?: "normal" | "important" | "blocking";
+  title?: string;
 }
 ```
 
@@ -418,7 +419,7 @@ Ajoute un commentaire à un thread.
 
 ```typescript
 interface CreateCommentRequest {
-    content: string;
+  content: string;
 }
 ```
 
@@ -506,11 +507,11 @@ interface ThreadPanelProps {
   onOpenChange: (open: boolean) => void;
   rfpId: string;
   // Mode "réponse spécifique" ou "vue globale"
-  responseId?: string;           // Si set → threads de cette réponse
+  responseId?: string; // Si set → threads de cette réponse
   supplierName?: string;
   requirementTitle?: string;
   // Vue globale
-  globalView?: boolean;          // Si true → tous les threads du RFP
+  globalView?: boolean; // Si true → tous les threads du RFP
 }
 
 // Rendu : fixed top-0 right-0 bottom-0 w-[30%] z-40
@@ -551,26 +552,34 @@ Pour la collaboration en temps réel :
 ```typescript
 // Souscription aux changements sur les threads d'un RFP
 const channel = supabase
-    .channel(`rfp-${rfpId}-threads`)
-    .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'response_threads',
-        filter: `response_id=in.(${responseIds.join(',')})`,
-    }, (payload) => {
-        queryClient.invalidateQueries({ queryKey: threadKeys.all(rfpId) });
-    })
-    .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'thread_comments',
-    }, (payload) => {
-        // Invalidate le thread spécifique
-        queryClient.invalidateQueries({
-            queryKey: threadKeys.comments(rfpId, payload.new.thread_id)
-        });
-    })
-    .subscribe();
+  .channel(`rfp-${rfpId}-threads`)
+  .on(
+    "postgres_changes",
+    {
+      event: "*",
+      schema: "public",
+      table: "response_threads",
+      filter: `response_id=in.(${responseIds.join(",")})`,
+    },
+    (payload) => {
+      queryClient.invalidateQueries({ queryKey: threadKeys.all(rfpId) });
+    }
+  )
+  .on(
+    "postgres_changes",
+    {
+      event: "INSERT",
+      schema: "public",
+      table: "thread_comments",
+    },
+    (payload) => {
+      // Invalidate le thread spécifique
+      queryClient.invalidateQueries({
+        queryKey: threadKeys.comments(rfpId, payload.new.thread_id),
+      });
+    }
+  )
+  .subscribe();
 ```
 
 Phase 1 : polling via TanStack Query (staleTime: 15s), cohérent avec le reste de l'app.
@@ -581,53 +590,53 @@ Phase 1 : polling via TanStack Query (staleTime: 15s), cohérent avec le reste d
 
 ### Phase 1 — Fondations (DB + API + Types)
 
-| # | Tâche | Fichiers |
-|---|-------|----------|
-| T01 | Migration SQL : tables + index + RLS | `supabase/migrations/20260215_response_threads.sql` |
-| T02 | Types TypeScript | `types/response-thread.ts` |
-| T03 | API GET threads (avec compteurs + filtres) | `app/api/rfps/[rfpId]/response-threads/route.ts` |
-| T04 | API POST thread (création + 1er commentaire) | idem |
-| T05 | API PATCH thread (statut/priorité) | `app/api/rfps/[rfpId]/response-threads/[threadId]/route.ts` |
-| T06 | API CRUD commentaires | `app/api/rfps/[rfpId]/response-threads/[threadId]/comments/route.ts` |
+| #   | Tâche                                        | Fichiers                                                             |
+| --- | -------------------------------------------- | -------------------------------------------------------------------- |
+| T01 | Migration SQL : tables + index + RLS         | `supabase/migrations/20260215_response_threads.sql`                  |
+| T02 | Types TypeScript                             | `types/response-thread.ts`                                           |
+| T03 | API GET threads (avec compteurs + filtres)   | `app/api/rfps/[rfpId]/response-threads/route.ts`                     |
+| T04 | API POST thread (création + 1er commentaire) | idem                                                                 |
+| T05 | API PATCH thread (statut/priorité)           | `app/api/rfps/[rfpId]/response-threads/[threadId]/route.ts`          |
+| T06 | API CRUD commentaires                        | `app/api/rfps/[rfpId]/response-threads/[threadId]/comments/route.ts` |
 
 ### Phase 2 — Hooks + Composants de base
 
-| # | Tâche | Fichiers |
-|---|-------|----------|
-| T07 | Hooks TanStack Query | `hooks/use-response-threads.ts` |
-| T08 | `ThreadPriorityBadge` | `components/response-threads/ThreadPriorityBadge.tsx` |
-| T09 | `CommentItem` + `CommentInput` | `components/response-threads/CommentItem.tsx`, `CommentInput.tsx` |
-| T10 | `ThreadCard` (thread + messages + réponse) | `components/response-threads/ThreadCard.tsx` |
-| T11 | `ThreadCreateForm` | `components/response-threads/ThreadCreateForm.tsx` |
+| #   | Tâche                                      | Fichiers                                                          |
+| --- | ------------------------------------------ | ----------------------------------------------------------------- |
+| T07 | Hooks TanStack Query                       | `hooks/use-response-threads.ts`                                   |
+| T08 | `ThreadPriorityBadge`                      | `components/response-threads/ThreadPriorityBadge.tsx`             |
+| T09 | `CommentItem` + `CommentInput`             | `components/response-threads/CommentItem.tsx`, `CommentInput.tsx` |
+| T10 | `ThreadCard` (thread + messages + réponse) | `components/response-threads/ThreadCard.tsx`                      |
+| T11 | `ThreadCreateForm`                         | `components/response-threads/ThreadCreateForm.tsx`                |
 
 ### Phase 3 — Panneau + Intégration
 
-| # | Tâche | Fichiers |
-|---|-------|----------|
-| T12 | `ThreadIndicator` sur SupplierResponseCard | `components/response-threads/ThreadIndicator.tsx` |
-| T13 | `ThreadPanel` (fixed right 30%, pattern PDFViewerSheet) | `components/response-threads/ThreadPanel.tsx` |
-| T14 | `ThreadList` avec filtres inline (SegmentedControl) | `components/response-threads/ThreadList.tsx` |
-| T15 | Intégration dans `SupplierResponseCard` | `components/SupplierResponseCard.tsx` (modification) |
-| T16 | State `activePanel` mutex PDF/threads dans evaluate | `app/dashboard/rfp/[rfpId]/evaluate/page.tsx` (modification) |
+| #   | Tâche                                                   | Fichiers                                                     |
+| --- | ------------------------------------------------------- | ------------------------------------------------------------ |
+| T12 | `ThreadIndicator` sur SupplierResponseCard              | `components/response-threads/ThreadIndicator.tsx`            |
+| T13 | `ThreadPanel` (fixed right 30%, pattern PDFViewerSheet) | `components/response-threads/ThreadPanel.tsx`                |
+| T14 | `ThreadList` avec filtres inline (SegmentedControl)     | `components/response-threads/ThreadList.tsx`                 |
+| T15 | Intégration dans `SupplierResponseCard`                 | `components/SupplierResponseCard.tsx` (modification)         |
+| T16 | State `activePanel` mutex PDF/threads dans evaluate     | `app/dashboard/rfp/[rfpId]/evaluate/page.tsx` (modification) |
 
 ### Phase 4 — Extension des filtres + Sidebar
 
-| # | Tâche | Fichiers |
-|---|-------|----------|
-| T17 | Extension `EvaluationFilters` (section Discussions) | `components/EvaluationFilters.tsx` (modification) |
-| T18 | Vue globale dans `ThreadPanel` (mode `globalView`) | `components/response-threads/ThreadPanel.tsx` (extension) |
-| T19 | Bouton "Discussions" dans la toolbar evaluate | `app/dashboard/rfp/[rfpId]/evaluate/page.tsx` (modification) |
-| T20 | Indicateur threads dans le Sidebar tree | `components/Sidebar.tsx` (modification) |
-| T21 | Hook compteurs agrégés par exigence | `hooks/use-response-threads.ts` (extension) |
+| #   | Tâche                                               | Fichiers                                                     |
+| --- | --------------------------------------------------- | ------------------------------------------------------------ |
+| T17 | Extension `EvaluationFilters` (section Discussions) | `components/EvaluationFilters.tsx` (modification)            |
+| T18 | Vue globale dans `ThreadPanel` (mode `globalView`)  | `components/response-threads/ThreadPanel.tsx` (extension)    |
+| T19 | Bouton "Discussions" dans la toolbar evaluate       | `app/dashboard/rfp/[rfpId]/evaluate/page.tsx` (modification) |
+| T20 | Indicateur threads dans le Sidebar tree             | `components/Sidebar.tsx` (modification)                      |
+| T21 | Hook compteurs agrégés par exigence                 | `hooks/use-response-threads.ts` (extension)                  |
 
 ### Phase 5 — Realtime + Polish
 
-| # | Tâche | Fichiers |
-|---|-------|----------|
-| T22 | Supabase Realtime subscription | `hooks/use-response-threads.ts` (extension) |
-| T23 | Optimistic updates sur création de commentaire | idem |
-| T24 | Accessibilité (keyboard nav, aria labels) | tous les composants |
-| T25 | Tests unitaires hooks + API | `tests/` |
+| #   | Tâche                                          | Fichiers                                    |
+| --- | ---------------------------------------------- | ------------------------------------------- |
+| T22 | Supabase Realtime subscription                 | `hooks/use-response-threads.ts` (extension) |
+| T23 | Optimistic updates sur création de commentaire | idem                                        |
+| T24 | Accessibilité (keyboard nav, aria labels)      | tous les composants                         |
+| T25 | Tests unitaires hooks + API                    | `tests/`                                    |
 
 ---
 

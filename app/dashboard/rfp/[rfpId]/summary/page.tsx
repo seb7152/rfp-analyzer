@@ -860,7 +860,9 @@ export default function RFPSummaryPage() {
               ) : (
                 <RequirementsTab
                   rfpId={rfpId}
-                  peerReviewEnabled={(data?.rfp as any)?.peer_review_enabled ?? false}
+                  peerReviewEnabled={
+                    (data?.rfp as any)?.peer_review_enabled ?? false
+                  }
                   versionId={activeVersion?.id}
                 />
               )}
@@ -872,7 +874,9 @@ export default function RFPSummaryPage() {
               ) : (
                 <AnalysisTab
                   rfpId={rfpId}
-                  peerReviewEnabled={(data?.rfp as any)?.peer_review_enabled ?? false}
+                  peerReviewEnabled={
+                    (data?.rfp as any)?.peer_review_enabled ?? false
+                  }
                 />
               )}
             </TabsContent>
@@ -909,7 +913,9 @@ export default function RFPSummaryPage() {
                   rfpId={rfpId}
                   currentOrganizationId={data.rfp.organization_id}
                   currentStatus={data.rfp.status}
-                  peerReviewEnabled={(data.rfp as any).peer_review_enabled ?? false}
+                  peerReviewEnabled={
+                    (data.rfp as any).peer_review_enabled ?? false
+                  }
                   userAccessLevel={data.userAccessLevel}
                 />
               ) : null}

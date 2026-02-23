@@ -81,7 +81,10 @@ export function useResponseThreadsByResponse(
   rfpId: string | undefined,
   responseId: string | undefined
 ) {
-  return useResponseThreads(rfpId, responseId ? { response_id: responseId } : undefined);
+  return useResponseThreads(
+    rfpId,
+    responseId ? { response_id: responseId } : undefined
+  );
 }
 
 // ─── useThreadComments ──────────────────────────────────────────────────────

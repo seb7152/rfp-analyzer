@@ -40,9 +40,7 @@ export function ThreadIndicator({ threads, onClick }: ThreadIndicatorProps) {
     >
       {hasBlocking ? <AlertOctagon size={14} /> : <MessageCircle size={14} />}
       <span>{openCount > 0 ? openCount : totalCount}</span>
-      {openCount === 0 && (
-        <span className="text-[10px] text-green-500">✓</span>
-      )}
+      {openCount === 0 && <span className="text-[10px] text-green-500">✓</span>}
     </button>
   );
 }

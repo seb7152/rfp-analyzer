@@ -13,29 +13,29 @@ Le peer review est un circuit de validation optionnel par RFP. Quand activé, ch
 
 ## Fichiers à créer
 
-| Fichier | Rôle |
-|---------|------|
-| `supabase/migrations/20260213_add_peer_review.sql` | Migration DB (table + colonne) |
-| `types/peer-review.ts` | Types TypeScript partagés |
-| `app/api/rfps/[rfpId]/review-statuses/route.ts` | GET tous les statuts |
-| `app/api/rfps/[rfpId]/requirements/[requirementId]/review-status/route.ts` | PATCH statut d'une exigence |
-| `hooks/use-peer-review.ts` | Hook React Query pour les statuts |
-| `components/PeerReviewBadge.tsx` | Badge status (draft/submitted/approved/rejected) |
-| `components/PeerReviewActionButton.tsx` | Bouton contextuel selon rôle+statut |
-| `components/PeerReviewConfirmDialog.tsx` | Modale confirmation (avec champ commentaire) |
+| Fichier                                                                    | Rôle                                             |
+| -------------------------------------------------------------------------- | ------------------------------------------------ |
+| `supabase/migrations/20260213_add_peer_review.sql`                         | Migration DB (table + colonne)                   |
+| `types/peer-review.ts`                                                     | Types TypeScript partagés                        |
+| `app/api/rfps/[rfpId]/review-statuses/route.ts`                            | GET tous les statuts                             |
+| `app/api/rfps/[rfpId]/requirements/[requirementId]/review-status/route.ts` | PATCH statut d'une exigence                      |
+| `hooks/use-peer-review.ts`                                                 | Hook React Query pour les statuts                |
+| `components/PeerReviewBadge.tsx`                                           | Badge status (draft/submitted/approved/rejected) |
+| `components/PeerReviewActionButton.tsx`                                    | Bouton contextuel selon rôle+statut              |
+| `components/PeerReviewConfirmDialog.tsx`                                   | Modale confirmation (avec champ commentaire)     |
 
 ---
 
 ## Fichiers à modifier
 
-| Fichier | Modification |
-|---------|-------------|
-| `app/api/rfps/[rfpId]/route.ts` | Ajouter `peer_review_enabled` aux champs patchables (owner only) |
-| `lib/supabase/types.ts` | Ajouter types `requirement_review_status` et champ `peer_review_enabled` sur `rfps` |
-| `components/ComparisonView.tsx` | Intégrer `PeerReviewBadge` + `PeerReviewActionButton` dans le header exigence |
-| `components/Sidebar.tsx` | Ajouter indicateur visuel peer review sur les nœuds exigence |
-| `components/RFPSummary/CategoryAnalysisTable.tsx` | Ajouter colonne/indicateur agrégé peer review |
-| `app/dashboard/rfp/[rfpId]/evaluate/page.tsx` | Passer `peerReviewEnabled` et statuts aux composants enfants |
+| Fichier                                           | Modification                                                                        |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `app/api/rfps/[rfpId]/route.ts`                   | Ajouter `peer_review_enabled` aux champs patchables (owner only)                    |
+| `lib/supabase/types.ts`                           | Ajouter types `requirement_review_status` et champ `peer_review_enabled` sur `rfps` |
+| `components/ComparisonView.tsx`                   | Intégrer `PeerReviewBadge` + `PeerReviewActionButton` dans le header exigence       |
+| `components/Sidebar.tsx`                          | Ajouter indicateur visuel peer review sur les nœuds exigence                        |
+| `components/RFPSummary/CategoryAnalysisTable.tsx` | Ajouter colonne/indicateur agrégé peer review                                       |
+| `app/dashboard/rfp/[rfpId]/evaluate/page.tsx`     | Passer `peerReviewEnabled` et statuts aux composants enfants                        |
 
 ---
 

@@ -58,10 +58,7 @@ export async function PATCH(
       .single();
 
     if (threadError || !thread) {
-      return NextResponse.json(
-        { error: "Thread not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
 
     const body: UpdateThreadRequest = await request.json();
@@ -92,7 +89,10 @@ export async function PATCH(
     if (body.priority && body.priority !== thread.priority) {
       if (!["normal", "important", "blocking"].includes(body.priority)) {
         return NextResponse.json(
-          { error: "Invalid priority. Must be 'normal', 'important', or 'blocking'." },
+          {
+            error:
+              "Invalid priority. Must be 'normal', 'important', or 'blocking'.",
+          },
           { status: 400 }
         );
       }
@@ -132,7 +132,9 @@ export async function PATCH(
   } catch (error) {
     console.error("[response-threads] PATCH error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
       { status: 500 }
     );
   }

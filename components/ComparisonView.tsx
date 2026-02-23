@@ -70,8 +70,15 @@ interface ComparisonViewProps {
   userAccessLevel?: "owner" | "evaluator" | "viewer" | "admin";
   peerReviewEnabled?: boolean;
   reviewStatuses?: Map<string, RequirementReviewStatus>;
-  onOpenThreadPanel?: (responseId: string, supplierName: string, requirementTitle: string) => void;
-  threadStatsByResponseId?: Map<string, { total: number; open: number; hasBlocking: boolean }>;
+  onOpenThreadPanel?: (
+    responseId: string,
+    supplierName: string,
+    requirementTitle: string
+  ) => void;
+  threadStatsByResponseId?: Map<
+    string,
+    { total: number; open: number; hasBlocking: boolean }
+  >;
 }
 
 interface ResponseState {
@@ -436,7 +443,12 @@ export function ComparisonView({
   // Handle touch move to show feedback
   const handleTouchMove = useCallback(
     (e: React.TouchEvent) => {
-      if (!isMobile || flatReqs.length === 0 || touchStartedOnEditableRef.current) return;
+      if (
+        !isMobile ||
+        flatReqs.length === 0 ||
+        touchStartedOnEditableRef.current
+      )
+        return;
 
       const touchCurrentX = e.touches[0].clientX;
       const touchCurrentY = e.touches[0].clientY;
@@ -459,7 +471,12 @@ export function ComparisonView({
   // Handle touch end for swipe detection
   const handleTouchEnd = useCallback(
     (e: React.TouchEvent) => {
-      if (!isMobile || flatReqs.length === 0 || touchStartedOnEditableRef.current) return;
+      if (
+        !isMobile ||
+        flatReqs.length === 0 ||
+        touchStartedOnEditableRef.current
+      )
+        return;
 
       const touchEndX = e.changedTouches[0].clientX;
       const touchEndY = e.changedTouches[0].clientY;
@@ -1593,9 +1610,17 @@ export function ComparisonView({
                           onCommentBlur={handlers.onCommentBlur}
                           onQuestionBlur={handlers.onQuestionBlur}
                           onAICommentUpdate={handlers.onAICommentUpdate}
-                          threadCount={threadStatsByResponseId?.get(response.id)?.total ?? 0}
-                          openThreadCount={threadStatsByResponseId?.get(response.id)?.open ?? 0}
-                          hasBlockingThread={threadStatsByResponseId?.get(response.id)?.hasBlocking ?? false}
+                          threadCount={
+                            threadStatsByResponseId?.get(response.id)?.total ??
+                            0
+                          }
+                          openThreadCount={
+                            threadStatsByResponseId?.get(response.id)?.open ?? 0
+                          }
+                          hasBlockingThread={
+                            threadStatsByResponseId?.get(response.id)
+                              ?.hasBlocking ?? false
+                          }
                           onOpenThreadPanel={
                             onOpenThreadPanel
                               ? () =>
@@ -1632,9 +1657,16 @@ export function ComparisonView({
                         requirementDescription={requirement?.description || ""}
                         onOpenBookmark={handlers.onOpenBookmark}
                         onAICommentUpdate={handlers.onAICommentUpdate}
-                        threadCount={threadStatsByResponseId?.get(response.id)?.total ?? 0}
-                        openThreadCount={threadStatsByResponseId?.get(response.id)?.open ?? 0}
-                        hasBlockingThread={threadStatsByResponseId?.get(response.id)?.hasBlocking ?? false}
+                        threadCount={
+                          threadStatsByResponseId?.get(response.id)?.total ?? 0
+                        }
+                        openThreadCount={
+                          threadStatsByResponseId?.get(response.id)?.open ?? 0
+                        }
+                        hasBlockingThread={
+                          threadStatsByResponseId?.get(response.id)
+                            ?.hasBlocking ?? false
+                        }
                         onOpenThreadPanel={
                           onOpenThreadPanel
                             ? () =>
