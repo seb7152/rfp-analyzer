@@ -114,6 +114,66 @@ function listItemToRuns(item: Tokens.ListItem): TextRun[] {
     return text ? [new TextRun({ text })] : [];
 }
 
+/**
+ * Split table-cell text into individual bullet items.
+ * Handles two AI-generated patterns:
+ *   1. Real or literal \n between items: "• Q1?\n• Q2?\n• Q3?"
+ *   2. Inline • separator without newlines: "• Q1? • Q2? • Q3?"
+ */
+function splitCellContent(raw: string): { isBullet: boolean; content: string }[] {
+    // Normalise literal "\n" and <br> tags to real newlines
+    const text = raw
+        .replace(/\\n/g, "\n")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .trim();
+
+    // Split on real newlines first
+    const lines = text.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+    if (lines.length > 1) {
+        return lines.map((line) => {
+            const m = /^[-*•]\s*(.+)/.exec(line);
+            return { isBullet: !!m, content: m ? m[1].trim() : line };
+        });
+    }
+
+    // Single line: split on • as inline separator (lookahead keeps • in each part)
+    if (text.includes("•")) {
+        const parts = text.split(/\s*(?=•)/).map((p) => p.trim()).filter((p) => p.length > 0);
+        if (parts.length > 1) {
+            return parts.map((p) => ({
+                isBullet: p.startsWith("•"),
+                content: p.replace(/^•\s*/, "").trim(),
+            }));
+        }
+    }
+
+    return [{ isBullet: false, content: text }];
+}
+
+/**
+ * Convert a table cell to one or more Paragraphs.
+ * Falls back to full inline-token rendering for single-item cells.
+ */
+function cellToChildren(cell: { tokens?: Token[]; text?: string }): Paragraph[] {
+    const rawText = (cell.text ?? "").trim();
+    const items = splitCellContent(rawText);
+
+    if (items.length <= 1) {
+        // Preserve inline formatting (bold/italic) via token rendering
+        return [new Paragraph({ children: blockToRuns(cell), spacing: { after: 0 } })];
+    }
+
+    return items.map(({ isBullet, content }, idx) => {
+        const text = sanitize(decodeEntities(content));
+        return new Paragraph({
+            children: isBullet
+                ? [new TextRun({ text: "• " }), new TextRun({ text })]
+                : [new TextRun({ text })],
+            spacing: { after: idx < items.length - 1 ? 60 : 0 },
+        });
+    });
+}
+
 const HEADING_LEVELS = [
     HeadingLevel.HEADING_1,
     HeadingLevel.HEADING_2,
@@ -156,7 +216,22 @@ function convertTokens(tokens: Token[]): DocxChild[] {
                 const t = token as Tokens.List;
                 for (const item of t.items) {
                     const children = listItemToRuns(item);
-                    if (t.ordered) {
+                    // Checkbox items (☐/☑) must not get a bullet prefix
+                    const isCheckbox =
+                        item.text.trimStart().startsWith("☐") ||
+                        item.text.trimStart().startsWith("☑");
+                    if (isCheckbox) {
+                        elements.push(
+                            new Paragraph({
+                                children,
+                                spacing: { after: 60 },
+                                indent: {
+                                    left: convertInchesToTwip(0.5),
+                                    hanging: convertInchesToTwip(0.25),
+                                },
+                            })
+                        );
+                    } else if (t.ordered) {
                         elements.push(
                             new Paragraph({
                                 children,
@@ -188,12 +263,7 @@ function convertTokens(tokens: Token[]): DocxChild[] {
                         children: t.header.map(
                             (cell) =>
                                 new TableCell({
-                                    children: [
-                                        new Paragraph({
-                                            children: blockToRuns(cell),
-                                            spacing: { after: 0 },
-                                        }),
-                                    ],
+                                    children: cellToChildren(cell),
                                     shading: { fill: "F1F5F9" },
                                 })
                         ),
@@ -207,12 +277,7 @@ function convertTokens(tokens: Token[]): DocxChild[] {
                             children: row.map(
                                 (cell) =>
                                     new TableCell({
-                                        children: [
-                                            new Paragraph({
-                                                children: blockToRuns(cell),
-                                                spacing: { after: 0 },
-                                            }),
-                                        ],
+                                        children: cellToChildren(cell),
                                     })
                             ),
                         })
