@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { FileUp, FileText } from "lucide-react";
+import { FileUp, FileText, ClipboardList } from "lucide-react";
 import { useVersion } from "@/contexts/VersionContext";
 import { useSuppliersByVersion } from "@/hooks/use-suppliers-by-version";
 import { PresentationImportModal } from "./PresentationImportModal";
 import { PresentationReport } from "./PresentationReport";
 import { CategoryAnalysisTable } from "./CategoryAnalysisTable";
+import { SoutenanceBriefSection } from "./SoutenanceBriefSection";
 import type { RFPAccessLevel } from "@/types/user";
 
 interface PresentationAnalysisSectionProps {
@@ -23,7 +24,7 @@ export function PresentationAnalysisSection({
   userAccessLevel,
 }: PresentationAnalysisSectionProps) {
   const { activeVersion } = useVersion();
-  const [activeTab, setActiveTab] = useState<"preparation" | "report">(
+  const [activeTab, setActiveTab] = useState<"preparation" | "report" | "brief">(
     "preparation"
   );
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -83,6 +84,19 @@ export function PresentationAnalysisSection({
             Compte rendu
           </span>
         </button>
+        <button
+          onClick={() => setActiveTab("brief")}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            activeTab === "brief"
+              ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+              : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" />
+            Brief Soutenance
+          </span>
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -133,6 +147,14 @@ export function PresentationAnalysisSection({
               key={refreshKey}
             />
           </div>
+        )}
+
+        {activeTab === "brief" && (
+          <SoutenanceBriefSection
+            rfpId={rfpId}
+            suppliers={suppliers}
+            versionId={activeVersionId}
+          />
         )}
       </div>
 

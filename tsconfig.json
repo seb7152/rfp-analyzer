@@ -37,6 +37,7 @@
     "mockup/**/*",
     "supabase/functions/**/*",
     "mcp-server/**/*",
-    "docs/**/*"
+    "docs/**/*",
+    "specs/**/*"
   ]
 }
