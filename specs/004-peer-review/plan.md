@@ -24,14 +24,14 @@ Approche technique : nouvelle table `requirement_review_status` + colonne `rfps.
 
 _La constitution est un template vide — pas de principes formels définis. Application des principes de facto du projet observés dans le code existant :_
 
-| Principe observé | Statut |
-|-----------------|--------|
-| RLS sur toutes les nouvelles tables | ✅ Prévu |
-| Pattern tanstack-query pour les hooks | ✅ Prévu |
-| Contrôle d'accès via `checkRFPAccess` | ✅ Prévu |
+| Principe observé                         | Statut             |
+| ---------------------------------------- | ------------------ |
+| RLS sur toutes les nouvelles tables      | ✅ Prévu           |
+| Pattern tanstack-query pour les hooks    | ✅ Prévu           |
+| Contrôle d'accès via `checkRFPAccess`    | ✅ Prévu           |
 | Isolation multi-tenant (organization_id) | ✅ Inclus dans RLS |
-| Migration SQL versionnée avec timestamp | ✅ Prévu |
-| Types TypeScript pour toutes les entités | ✅ Prévu |
+| Migration SQL versionnée avec timestamp  | ✅ Prévu           |
+| Types TypeScript pour toutes les entités | ✅ Prévu           |
 
 ## Project Structure
 
@@ -88,6 +88,7 @@ app/dashboard/rfp/[rfpId]/evaluate/page.tsx      ← +passage des props
 Voir [research.md](./research.md) pour le détail complet.
 
 **Décisions clés** :
+
 1. Table dédiée `requirement_review_status` (vs colonnes dans `requirements`) → supporte le versioning
 2. Colonne `rfps.peer_review_enabled BOOLEAN` (vs JSONB) → simple et requêtable
 3. Endpoint PATCH dédié par exigence (pas de bulk) → scope initial
@@ -101,6 +102,7 @@ Voir [research.md](./research.md) pour le détail complet.
 Voir [data-model.md](./data-model.md) pour le SQL complet.
 
 **Résumé** :
+
 ```
 rfps
   + peer_review_enabled BOOLEAN DEFAULT false
@@ -135,12 +137,14 @@ Voir [contracts/api.md](./contracts/api.md) pour le détail complet.
 | `rejected` | Rouge | Rejeté |
 
 **`PeerReviewActionButton`** — Bouton contextuel selon rôle + statut :
+
 - Évaluateur + `draft` → "Soumettre pour validation"
 - Évaluateur + `rejected` → "Soumettre à nouveau"
 - Owner + `submitted` → "Valider" / "Rejeter"
 - Autres combinaisons → null (aucun bouton)
 
 **`PeerReviewConfirmDialog`** — Modale avec :
+
 - Texte de confirmation contextuel
 - Champ commentaire (obligatoire pour rejet, optionnel sinon)
 - Boutons Confirmer / Annuler

@@ -41,7 +41,8 @@ serve(async (req) => {
   }
 
   try {
-    const { rfpId, systemPrompt, supplierId } = (await req.json()) as AnalyzeRequest;
+    const { rfpId, systemPrompt, supplierId } =
+      (await req.json()) as AnalyzeRequest;
 
     if (!rfpId) {
       return new Response(JSON.stringify({ error: "Missing rfpId" }), {

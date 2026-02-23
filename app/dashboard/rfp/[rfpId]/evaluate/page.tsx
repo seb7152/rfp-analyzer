@@ -14,7 +14,14 @@ import { AIAnalysisButton } from "@/components/AIAnalysisButton";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft, Loader2, CheckCircle2, FileUp, Euro, MessageSquare } from "lucide-react";
+import {
+  ChevronLeft,
+  Loader2,
+  CheckCircle2,
+  FileUp,
+  Euro,
+  MessageSquare,
+} from "lucide-react";
 import { ThreadPanel } from "@/components/response-threads/ThreadPanel";
 import type { ThreadPanelContext } from "@/components/response-threads/ThreadPanel";
 import { useResponseThreads } from "@/hooks/use-response-threads";
@@ -52,7 +59,9 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
   const [rfpData, setRfpData] = useState<RFP | null>(null);
   const [responsesCount, setResponsesCount] = useState(0);
-  const [suppliers, setSuppliers] = useState<{ id: string; name: string }[]>([]);
+  const [suppliers, setSuppliers] = useState<{ id: string; name: string }[]>(
+    []
+  );
   const [userAccessLevel, setUserAccessLevel] = useState<
     "owner" | "evaluator" | "viewer" | "admin"
   >("viewer");
@@ -61,13 +70,20 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
 
   // Resizable sidebar
   const [sidebarWidth, setSidebarWidth] = useState(320);
-  const sidebarResize = useRef({ isResizing: false, startX: 0, startWidth: 320 });
+  const sidebarResize = useRef({
+    isResizing: false,
+    startX: 0,
+    startWidth: 320,
+  });
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!sidebarResize.current.isResizing) return;
       const delta = e.clientX - sidebarResize.current.startX;
-      const newWidth = Math.min(Math.max(sidebarResize.current.startWidth + delta, 200), 600);
+      const newWidth = Math.min(
+        Math.max(sidebarResize.current.startWidth + delta, 200),
+        600
+      );
       setSidebarWidth(newWidth);
     };
     const handleMouseUp = () => {
@@ -90,7 +106,8 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
     useState<ThreadPanelContext | null>(null);
 
   // Global thread counts for toolbar badge + sidebar indicators
-  const { threads: allThreads, counts: globalThreadCounts } = useResponseThreads(params.rfpId);
+  const { threads: allThreads, counts: globalThreadCounts } =
+    useResponseThreads(params.rfpId);
 
   // Compute thread counts per requirement for sidebar indicators
   const threadCountsByRequirement = useMemo(() => {
@@ -109,7 +126,10 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   }, [allThreads]);
 
   const threadStatsByResponseId = useMemo(() => {
-    const map = new Map<string, { total: number; open: number; hasBlocking: boolean }>();
+    const map = new Map<
+      string,
+      { total: number; open: number; hasBlocking: boolean }
+    >();
 
     for (const thread of allThreads) {
       const responseId = thread.response_id;
@@ -206,7 +226,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   useEffect(() => {
     if (!params.rfpId) return;
     fetch(`/api/rfps/${params.rfpId}/suppliers`)
-      .then((res) => res.ok ? res.json() : null)
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.suppliers) {
           setSuppliers(
@@ -217,7 +237,9 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
           );
         }
       })
-      .catch(() => {/* non-critical, selector stays hidden */});
+      .catch(() => {
+        /* non-critical, selector stays hidden */
+      });
   }, [params.rfpId]);
 
   // Redirect if not authenticated
@@ -274,7 +296,6 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   <Euro className="h-4 w-4" />
                 </Button>
 
-
                 {/* Discussions Button - icon only */}
                 <Button
                   onClick={() => openThreadPanel({ globalView: true })}
@@ -285,9 +306,13 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                 >
                   <MessageSquare className="h-4 w-4" />
                   {globalThreadCounts.open > 0 && (
-                    <span className={`absolute -top-1.5 -right-1.5 text-white text-[10px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1 ${
-                      globalThreadCounts.blocking > 0 ? "bg-red-500" : "bg-blue-500"
-                    }`}>
+                    <span
+                      className={`absolute -top-1.5 -right-1.5 text-white text-[10px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1 ${
+                        globalThreadCounts.blocking > 0
+                          ? "bg-red-500"
+                          : "bg-blue-500"
+                      }`}
+                    >
                       {globalThreadCounts.open}
                     </span>
                   )}
@@ -374,9 +399,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
 
                 {/* Discussions Button */}
                 <Button
-                  onClick={() =>
-                    openThreadPanel({ globalView: true })
-                  }
+                  onClick={() => openThreadPanel({ globalView: true })}
                   variant="outline"
                   size="sm"
                   className="gap-2 relative"
@@ -385,9 +408,13 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   <MessageSquare className="h-4 w-4" />
                   <span className="hidden sm:inline">Discussions</span>
                   {globalThreadCounts.open > 0 && (
-                    <span className={`absolute -top-1.5 -right-1.5 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 ${
-                      globalThreadCounts.blocking > 0 ? "bg-red-500" : "bg-blue-500"
-                    }`}>
+                    <span
+                      className={`absolute -top-1.5 -right-1.5 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 ${
+                        globalThreadCounts.blocking > 0
+                          ? "bg-red-500"
+                          : "bg-blue-500"
+                      }`}
+                    >
                       {globalThreadCounts.open}
                     </span>
                   )}
@@ -458,7 +485,11 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
               <div
                 className="w-1 cursor-col-resize flex-shrink-0 hover:bg-blue-400 active:bg-blue-500 transition-colors"
                 onMouseDown={(e) => {
-                  sidebarResize.current = { isResizing: true, startX: e.clientX, startWidth: sidebarWidth };
+                  sidebarResize.current = {
+                    isResizing: true,
+                    startX: e.clientX,
+                    startWidth: sidebarWidth,
+                  };
                   document.body.style.cursor = "col-resize";
                   document.body.style.userSelect = "none";
                 }}
@@ -503,7 +534,11 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   userAccessLevel={userAccessLevel}
                   peerReviewEnabled={peerReviewEnabled}
                   reviewStatuses={reviewStatuses}
-                  onOpenThreadPanel={(responseId, supplierName, requirementTitle) =>
+                  onOpenThreadPanel={(
+                    responseId,
+                    supplierName,
+                    requirementTitle
+                  ) =>
                     openThreadPanel({
                       responseId,
                       supplierName,
@@ -547,7 +582,11 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   userAccessLevel={userAccessLevel}
                   peerReviewEnabled={peerReviewEnabled}
                   reviewStatuses={reviewStatuses}
-                  onOpenThreadPanel={(responseId, supplierName, requirementTitle) =>
+                  onOpenThreadPanel={(
+                    responseId,
+                    supplierName,
+                    requirementTitle
+                  ) =>
                     openThreadPanel({
                       responseId,
                       supplierName,

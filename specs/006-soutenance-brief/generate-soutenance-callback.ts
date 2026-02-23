@@ -19,7 +19,10 @@ serve(async (req) => {
 
   try {
     const body = (await req.json()) as any;
-    console.log("[generate-soutenance-callback] Request body keys:", Object.keys(body));
+    console.log(
+      "[generate-soutenance-callback] Request body keys:",
+      Object.keys(body)
+    );
 
     // N8N peut wrapper les données dans un objet "body"
     const payload = body.body || body;
@@ -32,9 +35,7 @@ serve(async (req) => {
       payload.data?.correlation_id;
 
     let status =
-      payload.status ||
-      payload.data?.status ||
-      payload.execution?.status;
+      payload.status || payload.data?.status || payload.execution?.status;
 
     // Défaut à "completed" si non fourni
     if (!status) {
@@ -79,7 +80,10 @@ serve(async (req) => {
         `[generate-soutenance-callback] Brief not found for correlation ${correlationId}`
       );
       return new Response(
-        JSON.stringify({ error: "Brief not found for this correlation ID", correlationId }),
+        JSON.stringify({
+          error: "Brief not found for this correlation ID",
+          correlationId,
+        }),
         { status: 404, headers: { "Content-Type": "application/json" } }
       );
     }
@@ -105,7 +109,10 @@ serve(async (req) => {
       .eq("id", brief.id);
 
     if (updateError) {
-      console.error("[generate-soutenance-callback] Error updating brief:", updateError);
+      console.error(
+        "[generate-soutenance-callback] Error updating brief:",
+        updateError
+      );
       throw updateError;
     }
 
@@ -114,13 +121,20 @@ serve(async (req) => {
     );
 
     return new Response(
-      JSON.stringify({ success: true, briefId: brief.id, correlationId, status }),
+      JSON.stringify({
+        success: true,
+        briefId: brief.id,
+        correlationId,
+        status,
+      }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("[generate-soutenance-callback] Error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Internal server error" }),
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Internal server error",
+      }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }

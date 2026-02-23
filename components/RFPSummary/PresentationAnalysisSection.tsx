@@ -24,9 +24,9 @@ export function PresentationAnalysisSection({
   userAccessLevel,
 }: PresentationAnalysisSectionProps) {
   const { activeVersion } = useVersion();
-  const [activeTab, setActiveTab] = useState<"preparation" | "report" | "brief">(
-    "preparation"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "preparation" | "report" | "brief"
+  >("preparation");
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 

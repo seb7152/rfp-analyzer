@@ -293,7 +293,9 @@ export function RequirementsHeatmap({
               className="gap-2"
               title="Actualiser les tableaux"
             >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+              />
               Actualiser
             </Button>
             <span className="text-sm font-medium text-slate-700">
@@ -364,7 +366,9 @@ export function RequirementsHeatmap({
                         </span>
                         {peerReviewEnabled && (
                           <PeerReviewBadge
-                            status={reviewStatuses.get(req.id)?.status ?? "draft"}
+                            status={
+                              reviewStatuses.get(req.id)?.status ?? "draft"
+                            }
                             size="sm"
                             iconOnly
                           />

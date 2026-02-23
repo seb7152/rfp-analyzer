@@ -122,9 +122,15 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
         }
 
         // Initialize local weights from effective weights
-        const initialEffective = computeEffectiveWeights(result || [], { ...defaultWeights, ...loadedWeights });
+        const initialEffective = computeEffectiveWeights(result || [], {
+          ...defaultWeights,
+          ...loadedWeights,
+        });
         const initialLocal: Record<string, number> = {};
-        const calculateInitialLocal = (nodes: TreeNode[], parentEff: number) => {
+        const calculateInitialLocal = (
+          nodes: TreeNode[],
+          parentEff: number
+        ) => {
           for (const node of nodes) {
             const eff = initialEffective[node.id] || 0;
             initialLocal[node.id] = parentEff > 0 ? (eff / parentEff) * 100 : 0;
@@ -187,7 +193,10 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
   // Helper to compute effective global weights (Bottom-Up)
   // Leaf = stored weight
   // Category = sum of children's effective weights
-  const computeEffectiveWeights = (nodes: TreeNode[], currentWeights: Record<string, number>): Record<string, number> => {
+  const computeEffectiveWeights = (
+    nodes: TreeNode[],
+    currentWeights: Record<string, number>
+  ): Record<string, number> => {
     const effective: Record<string, number> = {};
 
     const traverse = (nodeList: TreeNode[]) => {
@@ -216,7 +225,10 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
   };
 
   // NEW: Compute effective weights from local percentages (top-down)
-  const computeEffectiveFromLocal = (nodes: TreeNode[], locals: Record<string, number>): Record<string, number> => {
+  const computeEffectiveFromLocal = (
+    nodes: TreeNode[],
+    locals: Record<string, number>
+  ): Record<string, number> => {
     const effective: Record<string, number> = {};
 
     const traverse = (nodeList: TreeNode[], parentEffective: number) => {
@@ -240,9 +252,9 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
 
   const handleWeightChange = (nodeId: string, newLocalWeight: number) => {
     // Simply update the local weight - siblings remain unchanged!
-    setLocalWeights(prev => ({
+    setLocalWeights((prev) => ({
       ...prev,
-      [nodeId]: newLocalWeight
+      [nodeId]: newLocalWeight,
     }));
   };
 
@@ -253,15 +265,18 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
     if (childrenIds.length === 0) return;
 
     // Distribute equally: each child gets Total/N.
-    // We need to determine "Total". 
-    // If strict bottom-up, "Total" is the sum of current effective, 
+    // We need to determine "Total".
+    // If strict bottom-up, "Total" is the sum of current effective,
     // OR it's the Parent's effective (which is the same).
 
     let totalToDistribute = 0;
     if (parentId) {
       totalToDistribute = effectiveWeights[parentId] || 0;
     } else {
-      totalToDistribute = childrenIds.reduce((sum, id) => sum + (effectiveWeights[id] || 0), 0);
+      totalToDistribute = childrenIds.reduce(
+        (sum, id) => sum + (effectiveWeights[id] || 0),
+        0
+      );
     }
 
     if (totalToDistribute === 0) return;
@@ -276,7 +291,7 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
     const updateNodeTotal = (id: string, targetWeight: number) => {
       const current = effectiveWeights[id] || 0;
       if (current === 0) {
-        // If 0, distribute evenly to leaves? 
+        // If 0, distribute evenly to leaves?
         // We need to find the node to get its children.
         const findNode = (nodes: TreeNode[]): TreeNode | undefined => {
           for (const n of nodes) {
@@ -301,7 +316,7 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
           collectLeaves(node);
           if (leaves.length > 0) {
             const val = targetWeight / leaves.length;
-            leaves.forEach(lId => newWeights[lId] = val);
+            leaves.forEach((lId) => (newWeights[lId] = val));
           }
         } else {
           newWeights[id] = targetWeight;
@@ -332,7 +347,7 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
       }
     };
 
-    childrenIds.forEach(id => updateNodeTotal(id, perChild));
+    childrenIds.forEach((id) => updateNodeTotal(id, perChild));
     setWeights(newWeights);
   };
 
@@ -359,8 +374,12 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
 
     const sum = requirements.reduce((acc, r) => acc + r.weight, 0);
     const average = sum / requirements.length;
-    const max = requirements.reduce((prev, current) => current.weight > prev.weight ? current : prev);
-    const min = requirements.reduce((prev, current) => current.weight < prev.weight ? current : prev);
+    const max = requirements.reduce((prev, current) =>
+      current.weight > prev.weight ? current : prev
+    );
+    const min = requirements.reduce((prev, current) =>
+      current.weight < prev.weight ? current : prev
+    );
 
     return {
       average: Math.round(average * 100 * 100) / 100,
@@ -416,7 +435,10 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (err) {
       console.error("Error saving weights:", err);
-      setSaveMessage({ type: "error", text: err instanceof Error ? err.message : "Error saving weights" });
+      setSaveMessage({
+        type: "error",
+        text: err instanceof Error ? err.message : "Error saving weights",
+      });
     } finally {
       setSaving(false);
     }
@@ -425,8 +447,6 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
   const stats = calculateRequirementStats();
 
   // localWeights is now stored in state and initialized at load time
-
-
 
   if (loading) {
     return (
@@ -447,10 +467,11 @@ export function WeightsTab({ rfpId }: WeightsTabProps) {
       {/* Success/Error Message */}
       {saveMessage && (
         <div
-          className={`p-4 rounded-lg ${saveMessage.type === "success"
-            ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-200"
-            : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200"
-            }`}
+          className={`p-4 rounded-lg ${
+            saveMessage.type === "success"
+              ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-200"
+              : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200"
+          }`}
         >
           {saveMessage.text}
         </div>

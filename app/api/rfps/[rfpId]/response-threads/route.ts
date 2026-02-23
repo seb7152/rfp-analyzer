@@ -35,8 +35,12 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams;
     const filters: ThreadsQueryFilters = {
       response_id: searchParams.get("response_id") || undefined,
-      status: (searchParams.get("status") as ThreadsQueryFilters["status"]) || undefined,
-      priority: (searchParams.get("priority") as ThreadsQueryFilters["priority"]) || undefined,
+      status:
+        (searchParams.get("status") as ThreadsQueryFilters["status"]) ||
+        undefined,
+      priority:
+        (searchParams.get("priority") as ThreadsQueryFilters["priority"]) ||
+        undefined,
       supplier_id: searchParams.get("supplier_id") || undefined,
       created_by: searchParams.get("created_by") || undefined,
     };
@@ -101,11 +105,16 @@ export async function GET(
 
     // Fetch comment counts for all threads in one query
     const threadIds = (threads || []).map((t: any) => t.id);
-    let commentCountsMap: Record<string, { count: number; last_at: string | null }> = {};
+    let commentCountsMap: Record<
+      string,
+      { count: number; last_at: string | null }
+    > = {};
 
     if (threadIds.length > 0) {
-      const { data: commentStats, error: countError } = await adminSupabase
-        .rpc("get_thread_comment_stats", { thread_ids: threadIds });
+      const { data: commentStats, error: countError } = await adminSupabase.rpc(
+        "get_thread_comment_stats",
+        { thread_ids: threadIds }
+      );
 
       if (!countError && commentStats) {
         commentCountsMap = Object.fromEntries(
@@ -125,7 +134,10 @@ export async function GET(
         if (comments) {
           for (const c of comments) {
             if (!commentCountsMap[c.thread_id]) {
-              commentCountsMap[c.thread_id] = { count: 0, last_at: c.created_at };
+              commentCountsMap[c.thread_id] = {
+                count: 0,
+                last_at: c.created_at,
+              };
             }
             commentCountsMap[c.thread_id].count++;
           }
@@ -141,7 +153,10 @@ export async function GET(
       if (thread.resolved_by) userIds.add(thread.resolved_by);
     }
 
-    let usersMap: Record<string, { email: string; display_name: string | null }> = {};
+    let usersMap: Record<
+      string,
+      { email: string; display_name: string | null }
+    > = {};
     if (userIds.size > 0) {
       const { data: users } = await adminSupabase
         .from("users")
@@ -198,11 +213,16 @@ export async function GET(
       ).length,
     };
 
-    return NextResponse.json({ threads: transformedThreads, counts }, { status: 200 });
+    return NextResponse.json(
+      { threads: transformedThreads, counts },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("[response-threads] GET error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
       { status: 500 }
     );
   }
@@ -275,7 +295,9 @@ export async function POST(
         status: "open",
         created_by: user.id,
       })
-      .select("id, response_id, title, status, priority, created_by, created_at, updated_at")
+      .select(
+        "id, response_id, title, status, priority, created_by, created_at, updated_at"
+      )
       .single();
 
     if (threadError || !thread) {
@@ -315,7 +337,10 @@ export async function POST(
           resolved_at: null,
           creator: {
             email: user.email || "",
-            display_name: user.user_metadata?.display_name || user.user_metadata?.full_name || null,
+            display_name:
+              user.user_metadata?.display_name ||
+              user.user_metadata?.full_name ||
+              null,
           },
           resolver: null,
           comment_count: 1,
@@ -327,7 +352,9 @@ export async function POST(
   } catch (error) {
     console.error("[response-threads] POST error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
       { status: 500 }
     );
   }

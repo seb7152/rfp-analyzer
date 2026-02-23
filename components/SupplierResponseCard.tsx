@@ -372,7 +372,9 @@ export function SupplierResponseCard({
             >
               <MessageCircle size={14} />
               {threadCount > 0 && (
-                <span>{openThreadCount > 0 ? openThreadCount : threadCount}</span>
+                <span>
+                  {openThreadCount > 0 ? openThreadCount : threadCount}
+                </span>
               )}
             </button>
           </div>

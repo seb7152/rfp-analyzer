@@ -7,9 +7,14 @@ interface AnalysisTabProps {
   peerReviewEnabled?: boolean;
 }
 
-export function AnalysisTab({ rfpId, peerReviewEnabled = false }: AnalysisTabProps) {
+export function AnalysisTab({
+  rfpId,
+  peerReviewEnabled = false,
+}: AnalysisTabProps) {
   const [isMounted, setIsMounted] = useState(false);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    null
+  );
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
 

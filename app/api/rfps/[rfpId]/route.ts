@@ -190,7 +190,10 @@ export async function PATCH(
 
       if (accessLevel !== "owner" && accessLevel !== "admin") {
         return NextResponse.json(
-          { error: "Access denied. Only owners and admins can toggle peer review." },
+          {
+            error:
+              "Access denied. Only owners and admins can toggle peer review.",
+          },
           { status: 403 }
         );
       }
@@ -221,7 +224,10 @@ export async function PATCH(
     if ("status" in requestBody) {
       const validStatuses = ["in_progress", "completed", "archived"];
       if (!validStatuses.includes(requestBody.status)) {
-        return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
+        return NextResponse.json(
+          { error: "Invalid status value" },
+          { status: 400 }
+        );
       }
 
       const { checkRFPAccess } = await import("@/lib/permissions/rfp-access");
@@ -233,16 +239,24 @@ export async function PATCH(
 
       if (accessLevel !== "owner" && accessLevel !== "admin") {
         return NextResponse.json(
-          { error: "Access denied. Only owners and admins can change the status." },
+          {
+            error:
+              "Access denied. Only owners and admins can change the status.",
+          },
           { status: 403 }
         );
       }
 
       const { data: updatedRfp, error: updateError } = await supabase
         .from("rfps")
-        .update({ status: requestBody.status, updated_at: new Date().toISOString() })
+        .update({
+          status: requestBody.status,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", rfpId)
-        .select("id, title, description, status, organization_id, created_by, created_at, updated_at")
+        .select(
+          "id, title, description, status, organization_id, created_by, created_at, updated_at"
+        )
         .single();
 
       if (updateError) {

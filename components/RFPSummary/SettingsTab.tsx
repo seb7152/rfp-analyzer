@@ -58,7 +58,8 @@ export function SettingsTab({
   const [isStatusSaving, setIsStatusSaving] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [statusSuccess, setStatusSuccess] = useState(false);
-  const canEditStatus = userAccessLevel === "owner" || userAccessLevel === "admin";
+  const canEditStatus =
+    userAccessLevel === "owner" || userAccessLevel === "admin";
 
   // Peer review toggle state
   const [isPeerReviewEnabled, setIsPeerReviewEnabled] =
@@ -266,7 +267,9 @@ export function SettingsTab({
           </Select>
           <Button
             onClick={handleSaveStatus}
-            disabled={!canEditStatus || isStatusSaving || status === currentStatus}
+            disabled={
+              !canEditStatus || isStatusSaving || status === currentStatus
+            }
             size="sm"
           >
             {isStatusSaving ? "Enregistrement..." : "Enregistrer"}

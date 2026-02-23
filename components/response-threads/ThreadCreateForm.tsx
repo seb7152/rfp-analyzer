@@ -14,10 +14,29 @@ interface ThreadCreateFormProps {
   isPending?: boolean;
 }
 
-const PRIORITY_OPTIONS: { value: ThreadPriority; label: string; color: string }[] = [
-  { value: "normal", label: "Normal", color: "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600" },
-  { value: "important", label: "Important", color: "bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-700" },
-  { value: "blocking", label: "Bloquant", color: "bg-red-50 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-700" },
+const PRIORITY_OPTIONS: {
+  value: ThreadPriority;
+  label: string;
+  color: string;
+}[] = [
+  {
+    value: "normal",
+    label: "Normal",
+    color:
+      "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600",
+  },
+  {
+    value: "important",
+    label: "Important",
+    color:
+      "bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-700",
+  },
+  {
+    value: "blocking",
+    label: "Bloquant",
+    color:
+      "bg-red-50 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-700",
+  },
 ];
 
 export function ThreadCreateForm({

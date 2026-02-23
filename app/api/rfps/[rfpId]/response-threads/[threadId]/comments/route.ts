@@ -37,10 +37,7 @@ export async function GET(
       .single();
 
     if (threadError || !thread) {
-      return NextResponse.json(
-        { error: "Thread not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
 
     const { data: responseLink, error: responseLinkError } = await adminSupabase
@@ -51,10 +48,7 @@ export async function GET(
       .single();
 
     if (responseLinkError || !responseLink) {
-      return NextResponse.json(
-        { error: "Thread not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
 
     // Fetch comments
@@ -86,7 +80,10 @@ export async function GET(
       new Set((comments || []).map((c: any) => c.author_id).filter(Boolean))
     );
 
-    let usersMap: Record<string, { email: string; display_name: string | null }> = {};
+    let usersMap: Record<
+      string,
+      { email: string; display_name: string | null }
+    > = {};
     if (authorIds.length > 0) {
       const { data: users, error: usersError } = await adminSupabase
         .from("users")
@@ -116,11 +113,16 @@ export async function GET(
       author: usersMap[c.author_id] || { email: "", display_name: null },
     }));
 
-    return NextResponse.json({ comments: transformedComments }, { status: 200 });
+    return NextResponse.json(
+      { comments: transformedComments },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("[thread-comments] GET error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
       { status: 500 }
     );
   }
@@ -177,10 +179,7 @@ export async function POST(
       .single();
 
     if (threadError || !thread) {
-      return NextResponse.json(
-        { error: "Thread not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
 
     const { data: responseLink, error: responseLinkError } = await adminSupabase
@@ -191,10 +190,7 @@ export async function POST(
       .single();
 
     if (responseLinkError || !responseLink) {
-      return NextResponse.json(
-        { error: "Thread not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
 
     const { data: comment, error: insertError } = await adminSupabase
@@ -204,7 +200,9 @@ export async function POST(
         content,
         author_id: user.id,
       })
-      .select("id, thread_id, content, author_id, edited_at, created_at, updated_at")
+      .select(
+        "id, thread_id, content, author_id, edited_at, created_at, updated_at"
+      )
       .single();
 
     if (insertError) {
@@ -233,7 +231,9 @@ export async function POST(
   } catch (error) {
     console.error("[thread-comments] POST error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
       { status: 500 }
     );
   }
@@ -288,10 +288,7 @@ export async function PATCH(
       .single();
 
     if (existingError || !existing) {
-      return NextResponse.json(
-        { error: "Comment not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Comment not found" }, { status: 404 });
     }
 
     if (existing.author_id !== user.id) {
@@ -308,7 +305,9 @@ export async function PATCH(
         edited_at: new Date().toISOString(),
       })
       .eq("id", commentId)
-      .select("id, thread_id, content, author_id, edited_at, created_at, updated_at")
+      .select(
+        "id, thread_id, content, author_id, edited_at, created_at, updated_at"
+      )
       .single();
 
     if (updateError) {
@@ -323,7 +322,9 @@ export async function PATCH(
   } catch (error) {
     console.error("[thread-comments] PATCH error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
       { status: 500 }
     );
   }
@@ -373,10 +374,7 @@ export async function DELETE(
       .single();
 
     if (existingError || !existing) {
-      return NextResponse.json(
-        { error: "Comment not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Comment not found" }, { status: 404 });
     }
 
     if (existing.author_id !== user.id) {
@@ -403,7 +401,9 @@ export async function DELETE(
   } catch (error) {
     console.error("[thread-comments] DELETE error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
       { status: 500 }
     );
   }

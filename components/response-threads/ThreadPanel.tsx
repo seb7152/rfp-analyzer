@@ -10,7 +10,10 @@ import {
   useCreateThread,
   useUpdateThread,
 } from "@/hooks/use-response-threads";
-import type { ThreadPriority, ThreadsQueryFilters } from "@/types/response-thread";
+import type {
+  ThreadPriority,
+  ThreadsQueryFilters,
+} from "@/types/response-thread";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -98,9 +101,7 @@ export function ThreadPanel({
   };
 
   // Panel title
-  const title = isGlobal
-    ? "Points de discussion"
-    : `Discussion`;
+  const title = isGlobal ? "Points de discussion" : `Discussion`;
   const subtitle = isGlobal
     ? null
     : `${(context as ThreadPanelContextResponse).supplierName} · ${(context as ThreadPanelContextResponse).requirementTitle}`;
@@ -197,13 +198,21 @@ export function ThreadPanel({
 
       {/* Minimized button */}
       {isMinimized && (
-        <div className={isMobile ? "fixed bottom-4 inset-x-4 z-50" : "fixed bottom-6 right-6 z-50"}>
+        <div
+          className={
+            isMobile
+              ? "fixed bottom-4 inset-x-4 z-50"
+              : "fixed bottom-6 right-6 z-50"
+          }
+        >
           <Button
             onClick={() => setIsMinimized(false)}
             className={`bg-blue-600 hover:bg-blue-700 text-white shadow-lg rounded-lg px-4 py-2 ${isMobile ? "w-full justify-center" : ""}`}
             title="Restaurer les discussions"
           >
-            <ChevronRight className={`h-4 w-4 mr-2 ${isMobile ? "-rotate-90" : "rotate-180"}`} />
+            <ChevronRight
+              className={`h-4 w-4 mr-2 ${isMobile ? "-rotate-90" : "rotate-180"}`}
+            />
             <MessageSquare className="h-4 w-4 mr-1" />
             Discussions
             {counts.open > 0 && (

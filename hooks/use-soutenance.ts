@@ -2,7 +2,11 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-export type SoutenanceStatus = "pending" | "processing" | "completed" | "failed";
+export type SoutenanceStatus =
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed";
 
 export interface SoutenanceBrief {
   id: string;
@@ -30,10 +34,7 @@ const soutenanceKeys = {
 /**
  * Fetches the latest soutenance brief for a given RFP and optionally a supplier.
  */
-export function useLatestSoutenanceBriefs(
-  rfpId: string,
-  supplierId?: string
-) {
+export function useLatestSoutenanceBriefs(rfpId: string, supplierId?: string) {
   return useQuery({
     queryKey: soutenanceKeys.latest(rfpId, supplierId),
     queryFn: async (): Promise<SoutenanceBrief[]> => {

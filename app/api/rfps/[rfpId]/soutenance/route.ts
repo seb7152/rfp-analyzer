@@ -35,7 +35,14 @@ export async function POST(
       );
     }
 
-    const validStatuses = ["partial", "fail", "roadmap", "pending", "pass", "pass_with_question"];
+    const validStatuses = [
+      "partial",
+      "fail",
+      "roadmap",
+      "pending",
+      "pass",
+      "pass_with_question",
+    ];
     const sanitizedStatuses = (targetStatuses as string[]).filter((s) =>
       validStatuses.includes(s)
     );

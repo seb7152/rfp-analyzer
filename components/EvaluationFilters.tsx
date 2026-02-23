@@ -335,7 +335,9 @@ export function EvaluationFilters({
                 </Button>
                 <Button
                   variant={
-                    filters.hasBlockingThreads === true ? "secondary" : "outline"
+                    filters.hasBlockingThreads === true
+                      ? "secondary"
+                      : "outline"
                   }
                   size="sm"
                   className="flex-1 text-xs"

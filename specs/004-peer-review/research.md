@@ -12,6 +12,7 @@
 **Rationale**: La table dédiée permet un historique complet (who/when), une contrainte UNIQUE propre, et des requêtes optimisées par index. L'alternative d'ajouter des colonnes directement à `requirements` ne supporte pas la granularité par version.
 
 **Alternatives considérées**:
+
 - Colonnes dans `requirements` : trop simple, ne supporte pas le versioning
 - JSONB dans `rfps` : aucune intégrité référentielle, difficile à requêter
 - Colonnes dans `evaluation_versions` : mauvais niveau de granularité
@@ -25,6 +26,7 @@
 **Rationale**: Simple, requêtable, et cohérent avec le pattern `analysis_settings` déjà présent. Le toggle est par RFP, ce qui correspond à un champ de premier niveau.
 
 **Alternatives considérées**:
+
 - Dans `analysis_settings JSONB` : possible mais moins typé, pas de contrainte NOT NULL facile
 
 ---
@@ -36,6 +38,7 @@
 **Rationale**: Aligné avec le pattern existant des routes imbriquées sous `rfps/[rfpId]/`. La mutation ne concerne qu'un seul requirement à la fois. Le PATCH est approprié pour des mises à jour partielles.
 
 **Alternatives considérées**:
+
 - Endpoint bulk pour plusieurs requirements à la fois : hors scope (pas de propagation de catégorie)
 - Extension du endpoint responses : sémantique incorrecte (review_status ≠ response status)
 
@@ -56,6 +59,7 @@
 **Rationale**: Permet de charger tous les statuts d'un RFP en une requête (pour le Sidebar et la CategoryAnalysisTable) plutôt qu'un appel par exigence. Cohérent avec le pattern `useAllResponses`.
 
 **Alternatives considérées**:
+
 - Fetch individuel par requirement : trop de requêtes N+1
 - Inclure dans la payload requirements : complexifie le endpoint tree
 
@@ -64,6 +68,7 @@
 ## Decision 6 — RLS policies
 
 **Decision**: Suivre le pattern de `evaluation_versions` migration 023 :
+
 - SELECT pour tous les membres de l'organisation
 - INSERT/UPDATE pour owner + evaluator (submit)
 - UPDATE vers `approved`/`rejected` restreint côté API (pas uniquement RLS) pour la logique de transition
@@ -82,11 +87,11 @@
 
 ## Patterns de référence dans le codebase
 
-| Pattern | Fichier référence |
-|---------|-------------------|
-| Hook de fetch | `hooks/use-responses.ts` (tanstack-query) |
-| API handler avec auth | `app/api/rfps/[rfpId]/versions/route.ts` |
-| Contrôle d'accès | `lib/permissions/rfp-access.ts` |
-| Migration + RLS | `supabase/migrations/023_add_evaluation_versions.sql` |
-| Badge status UI | `components/ui/status-switch.tsx` |
-| Modale confirmation | Pattern `SupplierStatusDialog.tsx` |
+| Pattern               | Fichier référence                                     |
+| --------------------- | ----------------------------------------------------- |
+| Hook de fetch         | `hooks/use-responses.ts` (tanstack-query)             |
+| API handler avec auth | `app/api/rfps/[rfpId]/versions/route.ts`              |
+| Contrôle d'accès      | `lib/permissions/rfp-access.ts`                       |
+| Migration + RLS       | `supabase/migrations/023_add_evaluation_versions.sql` |
+| Badge status UI       | `components/ui/status-switch.tsx`                     |
+| Modale confirmation   | Pattern `SupplierStatusDialog.tsx`                    |

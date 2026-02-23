@@ -126,6 +126,7 @@ Phase 1 (Setup)
 ## Opportunités de parallélisation
 
 ### Phase 2 — tâches parallélisables entre développeurs
+
 ```
 T004 (PATCH rfp toggle)
 T005 (GET review-statuses)     ← tous les 3 en parallèle si 3 devs
@@ -134,12 +135,14 @@ T007 (hook usePeerReview)      ← peut aussi démarrer en parallèle
 ```
 
 ### Phase 6 — US4 en parallèle avec US1–US3
+
 ```
 T017 (Sidebar badges)          ← parallèle avec US2/US3
 T018 (CategoryAnalysisTable)   ← parallèle avec US2/US3
 ```
 
 ### Phase Finale
+
 ```
 T021 + T022 + T023             ← tous en parallèle (fichiers différents)
 ```

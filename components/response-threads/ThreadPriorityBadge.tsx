@@ -22,7 +22,8 @@ const PRIORITY_CONFIG: Record<
   important: {
     label: "Important",
     color: "text-amber-600",
-    bgColor: "bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800",
+    bgColor:
+      "bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800",
     Icon: AlertTriangle,
   },
   normal: {

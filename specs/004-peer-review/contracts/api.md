@@ -17,6 +17,7 @@ PATCH /api/rfps/{rfpId}
 **Permissions**: `access_level IN ('owner', 'admin')`
 
 **Request body** (partiel — ajout au PATCH existant):
+
 ```json
 {
   "peer_review_enabled": true
@@ -24,6 +25,7 @@ PATCH /api/rfps/{rfpId}
 ```
 
 **Response 200**:
+
 ```json
 {
   "rfp": {
@@ -35,6 +37,7 @@ PATCH /api/rfps/{rfpId}
 ```
 
 **Errors**:
+
 - `401` Unauthorized
 - `403` Forbidden (non owner/admin)
 - `404` RFP not found
@@ -58,6 +61,7 @@ GET /api/rfps/{rfpId}/review-statuses?versionId={versionId}
 | `versionId` | UUID | Oui | Version d'évaluation active |
 
 **Response 200**:
+
 ```json
 {
   "statuses": [
@@ -94,6 +98,7 @@ PATCH /api/rfps/{rfpId}/requirements/{requirementId}/review-status
 **Permissions**: Dépend de la transition (voir matrice)
 
 **Request body**:
+
 ```json
 {
   "status": "submitted | approved | rejected",
@@ -103,6 +108,7 @@ PATCH /api/rfps/{rfpId}/requirements/{requirementId}/review-status
 ```
 
 **Logique de transition serveur**:
+
 ```
 draft      → submitted  : evaluator | owner | admin
 rejected   → submitted  : evaluator | owner | admin
@@ -112,6 +118,7 @@ Autres transitions → 400 Bad Request
 ```
 
 **Response 200**:
+
 ```json
 {
   "review_status": {
@@ -130,6 +137,7 @@ Autres transitions → 400 Bad Request
 ```
 
 **Errors**:
+
 - `400` Transition invalide (message explicite)
 - `400` Peer review non activé sur ce RFP
 - `401` Unauthorized
@@ -143,7 +151,7 @@ Autres transitions → 400 Bad Request
 **Fichier** : `types/peer-review.ts` (nouveau)
 
 ```typescript
-export type PeerReviewStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
+export type PeerReviewStatus = "draft" | "submitted" | "approved" | "rejected";
 
 export interface RequirementReviewStatus {
   id: string;
@@ -160,7 +168,7 @@ export interface RequirementReviewStatus {
 }
 
 export interface UpdateReviewStatusRequest {
-  status: Exclude<PeerReviewStatus, 'draft'>;
+  status: Exclude<PeerReviewStatus, "draft">;
   version_id: string;
   rejection_comment?: string;
 }

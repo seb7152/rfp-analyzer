@@ -105,7 +105,6 @@ function WeightInput({
     }
   };
 
-
   return (
     <Input
       type="number"
