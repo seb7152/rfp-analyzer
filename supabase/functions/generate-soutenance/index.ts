@@ -93,25 +93,55 @@ serve(async (req) => {
       throw new Error(`Failed to fetch supplier: ${supplierError?.message}`);
     }
 
-    // Récupérer les réponses filtrées par statut
-    let responsesQuery = supabase
-      .from("responses")
-      .select(
-        "id, requirement_id, response_text, question, manual_comment, ai_comment, manual_score, ai_score, status"
-      )
-      .eq("supplier_id", supplierId)
-      .in("status", targetStatuses);
+    // Séparer le statut virtuel "pass_with_question" des vrais statuts DB
+    const includePassWithQuestion = targetStatuses.includes("pass_with_question");
+    const realStatuses = targetStatuses.filter((s) => s !== "pass_with_question");
 
-    if (versionId) {
-      responsesQuery = responsesQuery.eq("version_id", versionId);
+    // Récupérer les réponses filtrées par statut
+    const responseSelect =
+      "id, requirement_id, response_text, question, manual_comment, ai_comment, manual_score, ai_score, status";
+
+    const queries: Promise<{ data: unknown[] | null; error: unknown }>[] = [];
+
+    if (realStatuses.length > 0) {
+      let q = supabase
+        .from("responses")
+        .select(responseSelect)
+        .eq("supplier_id", supplierId)
+        .in("status", realStatuses);
+      if (versionId) q = q.eq("version_id", versionId);
+      queries.push(q);
     }
 
-    const { data: responses, error: respError } = await responsesQuery;
+    if (includePassWithQuestion) {
+      let q = supabase
+        .from("responses")
+        .select(responseSelect)
+        .eq("supplier_id", supplierId)
+        .eq("status", "pass")
+        .not("question", "is", null)
+        .neq("question", "");
+      if (versionId) q = q.eq("version_id", versionId);
+      queries.push(q);
+    }
+
+    const results = await Promise.all(queries);
+    const respError = results.find((r) => r.error)?.error;
 
     if (respError) {
       console.error("[generate-soutenance] Error fetching responses:", respError);
       throw respError;
     }
+
+    // Merger et dédupliquer par id
+    const seen = new Set<string>();
+    const responses = results
+      .flatMap((r) => (r.data as { id: string }[]) || [])
+      .filter((r) => {
+        if (seen.has(r.id)) return false;
+        seen.add(r.id);
+        return true;
+      });
 
     if (!responses || responses.length === 0) {
       console.log("[generate-soutenance] No responses found with target statuses");

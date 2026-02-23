@@ -40,6 +40,7 @@ const STATUS_OPTIONS = [
   { value: "partial", label: "Partiellement conforme" },
   { value: "fail", label: "Non conforme" },
   { value: "roadmap", label: "Roadmap" },
+  { value: "pass_with_question", label: "Conforme avec question" },
 ] as const;
 
 function MarkdownRenderer({ content }: { content: string }) {
