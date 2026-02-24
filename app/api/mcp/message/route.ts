@@ -1,12 +1,6 @@
 /**
- * MCP Server Route Handler - Streamable HTTP Implementation
- *
- * Implements the MCP Streamable HTTP protocol:
- * - GET: Returns SSE descriptor with message endpoint (one-time, Vercel-compatible)
- * - POST: Handles JSON-RPC 2.0 messages (backward compatible with direct POST)
- *
- * Message handling is done at /api/mcp/message for Streamable HTTP clients,
- * but POST to /api/mcp continues to work for backward compatibility.
+ * MCP Message Endpoint - JSON-RPC 2.0 Handler
+ * This endpoint handles all MCP JSON-RPC messages according to Streamable HTTP protocol
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -364,10 +358,16 @@ async function handleToolCall(id: number | string, params: any) {
 
 /**
  * Handle MCP POST requests
- * Implements JSON-RPC 2.0 protocol
+ * Implements JSON-RPC 2.0 protocol for Streamable HTTP
  */
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
+
+  // Support optional session ID header
+  const sessionId = req.headers.get("mcp-session-id");
+  if (sessionId) {
+    httpLogger.info(`[MCP] Session ID: ${sessionId}`);
+  }
 
   try {
     const body: {
@@ -376,6 +376,7 @@ export async function POST(req: NextRequest) {
       id?: number | string;
       params?: any;
     } = await req.json();
+
     httpLogger.info("[MCP] Request received", {
       method: body?.method,
       id: body?.id,
@@ -392,7 +393,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(response, {
           headers: {
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
           },
         });
 
@@ -403,7 +404,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(response1, {
           headers: {
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
           },
         });
 
@@ -414,7 +415,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(response2, {
           headers: {
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
           },
         });
 
@@ -433,7 +434,7 @@ export async function POST(req: NextRequest) {
             status: 400,
             headers: {
               "Access-Control-Allow-Origin": "*",
-              "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+              "Access-Control-Allow-Methods": "POST, OPTIONS",
             },
           }
         );
@@ -458,7 +459,7 @@ export async function POST(req: NextRequest) {
         status: 400,
         headers: {
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
         },
       }
     );
@@ -473,66 +474,10 @@ export async function OPTIONS() {
     status: 204,
     headers: {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers":
         "Content-Type, Authorization, mcp-session-id, Accept",
       "Access-Control-Max-Age": "86400",
-    },
-  });
-}
-
-/**
- * Handle GET requests - SSE Descriptor for Streamable HTTP
- * Returns Server-Sent Events stream with endpoint descriptor then closes
- * Compatible with Vercel (no long-lived connections)
- */
-export async function GET(req: NextRequest) {
-  httpLogger.info("[MCP] SSE descriptor requested");
-
-  const encoder = new TextEncoder();
-
-  // Create a one-time SSE stream
-  const stream = new ReadableStream({
-    start(controller) {
-      try {
-        // Get the base URL from the request
-        const baseUrl = `${req.nextUrl.protocol}//${req.nextUrl.host}`;
-
-        // Send endpoint descriptor event
-        const endpoint = {
-          jsonrpc: "2.0",
-          method: "endpoint",
-          params: {
-            uri: `${baseUrl}/api/mcp/message`,
-          },
-        };
-
-        httpLogger.info("[MCP] Sending SSE endpoint descriptor", {
-          uri: endpoint.params.uri,
-        });
-
-        // Send the event in SSE format
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify(endpoint)}\n\n`)
-        );
-
-        // Close the stream immediately (Vercel-compatible)
-        controller.close();
-        httpLogger.info("[MCP] SSE descriptor sent and closed");
-      } catch (error) {
-        httpLogger.error("[MCP] Error sending SSE descriptor:", error as any);
-        controller.error(error);
-      }
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
-      "X-Accel-Buffering": "no", // Important for Vercel/nginx
-      "Access-Control-Allow-Origin": "*",
     },
   });
 }
