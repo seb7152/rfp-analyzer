@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { httpLogger } from "@/lib/mcp/utils/logger";
+import { authenticateMCPRequest, unauthorizedResponse } from "@/lib/mcp/auth";
 
 // Import existing business logic
 import { handleTestConnection } from "@/lib/mcp/tools/test-connection";
@@ -208,7 +209,11 @@ function handleToolsList(id: number | string) {
 /**
  * Handle tools/call method
  */
-async function handleToolCall(id: number | string, params: any) {
+async function handleToolCall(
+  id: number | string,
+  params: any,
+  authContext: { userId: string; organizationId: string | null }
+) {
   const toolName = params?.name;
   const toolArgs = params?.arguments || {};
 
@@ -264,7 +269,7 @@ async function handleToolCall(id: number | string, params: any) {
           },
         };
       }
-      result = handleGetRFPs(validation.data);
+      result = await handleGetRFPs(validation.data, authContext);
       break;
     }
 
@@ -287,7 +292,7 @@ async function handleToolCall(id: number | string, params: any) {
           },
         };
       }
-      result = handleGetRequirements(validation.data);
+      result = await handleGetRequirements(validation.data, authContext);
       break;
     }
 
@@ -309,7 +314,7 @@ async function handleToolCall(id: number | string, params: any) {
           },
         };
       }
-      result = handleGetRequirementsTree(validation.data);
+      result = await handleGetRequirementsTree(validation.data, authContext);
       break;
     }
 
@@ -332,7 +337,7 @@ async function handleToolCall(id: number | string, params: any) {
           },
         };
       }
-      result = handleListSuppliers(validation.data);
+      result = await handleListSuppliers(validation.data, authContext);
       break;
     }
 
@@ -407,8 +412,19 @@ export async function POST(req: NextRequest) {
           },
         });
 
-      case "tools/call":
-        const response2 = await handleToolCall(requestId, body.params);
+      case "tools/call": {
+        const authContext = await authenticateMCPRequest(req);
+        if (!authContext) {
+          httpLogger.warn("[MCP] Unauthorized tools/call attempt");
+          return NextResponse.json(unauthorizedResponse(requestId), {
+            status: 401,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+            },
+          });
+        }
+        const response2 = await handleToolCall(requestId, body.params, authContext);
         const elapsedMs2 = Date.now() - startTime;
         httpLogger.info(`[MCP] Tools/call completed in ${elapsedMs2}ms`);
         return NextResponse.json(response2, {
@@ -417,6 +433,7 @@ export async function POST(req: NextRequest) {
             "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
           },
         });
+      }
 
       default:
         httpLogger.warn(`[MCP] Unknown method: ${body?.method}`);
