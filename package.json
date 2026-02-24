@@ -20,7 +20,6 @@
     "@emotion/styled": "^11.14.1",
     "@google-cloud/storage": "^7.17.3",
     "@headless-tree/react": "^1.5.1",
-    "@modelcontextprotocol/sdk": "^1.26.0",
     "@mui/icons-material": "^7.3.8",
     "@mui/material": "^7.3.5",
     "@mui/x-date-pickers": "^8.27.2",
