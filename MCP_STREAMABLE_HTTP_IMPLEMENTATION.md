@@ -114,6 +114,7 @@ curl -X POST http://localhost:3000/api/mcp \
 **Problem:** `test_connection` tool had empty `inputSchema: {}` causing MCP Inspector validation error.
 
 **Solution:** Changed to proper JSON Schema format:
+
 ```typescript
 inputSchema: {
   type: "object",
@@ -139,26 +140,28 @@ inputSchema: {
 
 ## Comparison: Before vs After
 
-| Feature | Before | After |
-|---------|--------|-------|
-| Protocol | JSON-RPC 2.0 only | Streamable HTTP |
-| SSE support | ❌ | ✅ (one-time) |
-| MCP Inspector HTTP | ❌ | ✅ |
-| MCP Inspector stdio | ✅ (wrapper) | ✅ (wrapper) |
-| curl direct | ✅ | ✅ (maintained) |
-| Vercel compatible | ✅ | ✅ |
-| inputSchema format | ❌ (empty for test) | ✅ (JSON Schema) |
+| Feature             | Before              | After            |
+| ------------------- | ------------------- | ---------------- |
+| Protocol            | JSON-RPC 2.0 only   | Streamable HTTP  |
+| SSE support         | ❌                  | ✅ (one-time)    |
+| MCP Inspector HTTP  | ❌                  | ✅               |
+| MCP Inspector stdio | ✅ (wrapper)        | ✅ (wrapper)     |
+| curl direct         | ✅                  | ✅ (maintained)  |
+| Vercel compatible   | ✅                  | ✅               |
+| inputSchema format  | ❌ (empty for test) | ✅ (JSON Schema) |
 
 ## Next Steps (Optional Improvements)
 
 These are **not required** but could enhance the server:
 
 ### 1. Tool Naming Convention
+
 - Add `rfp_` prefix to tool names
 - Example: `get_rfps` → `rfp_get_rfps`
 - Benefits: Avoids conflicts with other MCP servers
 
 ### 2. Tool Annotations
+
 - Add metadata to tool definitions:
   - `readOnlyHint: true` (all current tools are read-only)
   - `destructiveHint: false`
@@ -166,16 +169,19 @@ These are **not required** but could enhance the server:
 - Benefits: Better agent understanding
 
 ### 3. Output Schema
+
 - Define `outputSchema` for each tool
 - Documents return structure
 - Benefits: Better client integration
 
 ### 4. Response Format Support
+
 - Add `response_format` parameter: `"json" | "markdown"`
 - Return human-friendly Markdown for Claude Desktop
 - Benefits: Better UX for human users
 
 ### 5. Authentication
+
 - Add token-based authentication for production
 - Restrict CORS to specific origins
 - Benefits: Production security
@@ -185,6 +191,7 @@ These are **not required** but could enhance the server:
 ### From mcp-handler
 
 The attempt to use `mcp-handler` failed due to SDK version conflict:
+
 - `mcp-handler@1.0.7` requires `@modelcontextprotocol/sdk@1.25.2` exactly
 - Latest SDK is `v1.27.0`
 - Peer dependency conflict unresolvable
@@ -194,6 +201,7 @@ The attempt to use `mcp-handler` failed due to SDK version conflict:
 ### SDK Version
 
 Updated to `@modelcontextprotocol/sdk@1.27.0` for security:
+
 - v1.25.1 had data leak vulnerability (fixed in v1.26.0)
 - Current: v1.27.0 (latest, February 2026)
 
@@ -202,12 +210,14 @@ Updated to `@modelcontextprotocol/sdk@1.27.0` for security:
 ## Deployment
 
 ### Development
+
 ```bash
 npm run dev
 # Server available at http://localhost:3000/api/mcp
 ```
 
 ### Production (Vercel)
+
 ```bash
 vercel --prod
 # Streamable HTTP works on Vercel Edge Functions
@@ -239,6 +249,7 @@ Configure with stdio wrapper for best experience:
 ## Conclusion
 
 The RFP Analyzer MCP server now fully supports the MCP Streamable HTTP protocol with:
+
 - ✅ Native MCP Inspector compatibility (HTTP/SSE)
 - ✅ Vercel-compatible implementation (no long connections)
 - ✅ Full backward compatibility (curl still works)

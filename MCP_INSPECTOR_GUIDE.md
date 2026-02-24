@@ -5,6 +5,7 @@
 Le serveur MCP **supporte maintenant nativement le protocole Streamable HTTP** compatible avec MCP Inspector en mode HTTP/SSE.
 
 **Architecture:**
+
 - `GET /api/mcp` - Retourne un SSE descriptor (one-time, compatible Vercel)
 - `POST /api/mcp/message` - Handle tous les messages JSON-RPC
 - `POST /api/mcp` - Maintenu pour rétrocompatibilité (curl)
@@ -108,10 +109,7 @@ open ~/Library/Application\ Support/Claude/claude_desktop_config.json
   "mcpServers": {
     "rfp-analyzer": {
       "command": "npx",
-      "args": [
-        "tsx",
-        "/chemin/absolu/vers/scripts/mcp-stdio-wrapper.ts"
-      ]
+      "args": ["tsx", "/chemin/absolu/vers/scripts/mcp-stdio-wrapper.ts"]
     }
   }
 }
@@ -161,6 +159,7 @@ Le serveur implémente le protocole MCP Streamable HTTP de façon compatible ave
 ### MCP Inspector ne se connecte pas en HTTP/SSE
 
 1. **Vérifier que le serveur dev tourne:**
+
    ```bash
    curl http://localhost:3000/api/mcp
    # Devrait retourner un SSE descriptor
@@ -192,6 +191,7 @@ inputSchema: {
 ```
 
 **Pour les outils sans paramètres:**
+
 ```typescript
 inputSchema: {
   type: "object",
