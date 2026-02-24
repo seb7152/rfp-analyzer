@@ -57,20 +57,34 @@ Le serveur implémente le **MCP Streamable HTTP Transport** (standard depuis mar
 
 **Endpoint** : `https://votre-domaine.vercel.app/api/mcp`
 
-**Configuration Claude Code** :
+**Configuration Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`) :
+
+```json
+{
+  "mcpServers": {
+    "rfp-analyzer": {
+      "url": "https://votre-app.vercel.app/api/mcp",
+      "headers": {
+        "Authorization": "Bearer rfpa_..."
+      }
+    }
+  }
+}
+```
+
+**Configuration Claude Code (CLI)** :
 
 ```bash
-# Ajouter le serveur MCP
 claude mcp add --transport http rfp-analyzer https://votre-app.vercel.app/api/mcp \
-  --header "x-pat-token: votre_token_pat" \
-  --header "x-organization-id: votre_org_id" \
+  --header "Authorization: Bearer rfpa_..." \
   --scope user
 ```
 
-**Headers requis** :
+**Header requis** :
 
-- `x-pat-token`: Personal Access Token (créé via UI ou tool `create_personal_access_token`)
-- `x-organization-id`: UUID de votre organisation Supabase
+- `Authorization: Bearer rfpa_<token>` : Personal Access Token (créé via l'UI Settings → Tokens)
+
+> **Note** : L'organisation est résolue automatiquement à partir du token — aucun header `x-organization-id` n'est nécessaire.
 
 **Avantages** :
 
@@ -98,21 +112,26 @@ npx @modelcontextprotocol/inspector http://localhost:3000/api/mcp
 ### Server Capabilities
 
 ```typescript
+// Implémentation actuelle
 {
   capabilities: {
-    tools: { listChanged: true },
-    resources: {
-      subscribe: true,
-      listChanged: true
-    },
-    prompts: { listChanged: true }
+    tools: { listChanged: false }
   }
 }
+
+// Roadmap (Phase 2+)
+// resources: { subscribe: true, listChanged: true }
+// prompts: { listChanged: true }
+```
 ```
 
 ---
 
-## 📦 1. Resources (Accès Données)
+## 📦 1. Resources (Accès Données) — ⚠️ Non implémenté (Phase 2)
+
+> **État actuel** : Le serveur MCP n'expose pas encore de Resources. Toutes les données sont accessibles via les **Tools** (section 2). Les Resources décrites ci-dessous constituent la roadmap Phase 2.
+
+
 
 ### 1.1 RFPs
 
@@ -672,6 +691,25 @@ Toutes les réponses d'un fournisseur spécifique.
 ---
 
 ## 🔧 2. Tools (Outils)
+
+### État d'implémentation
+
+| Tool | Statut |
+|---|---|
+| `test_connection` | ✅ Implémenté |
+| `get_rfps` | ✅ Implémenté |
+| `get_requirements` | ✅ Implémenté |
+| `get_requirements_tree` | ✅ Implémenté |
+| `list_suppliers` | ✅ Implémenté |
+| `get_rfp_with_responses` | 📋 Phase 2 |
+| `compare_suppliers` | 📋 Phase 2 |
+| `get_domain_analysis` | 📋 Phase 2 |
+| `get_requirements_scores` | 📋 Phase 2 |
+| `get_scores_matrix` | 📋 Phase 2 |
+| `update_response_ai_scores` | 📋 Phase 2 |
+| `search_responses` | 📋 Phase 2 |
+| `export_domain_responses` | 📋 Phase 3 |
+| `generate_comparison_report` | 📋 Phase 3 |
 
 ### Convention de nommage et structuration
 
@@ -1528,14 +1566,17 @@ Génère un rapport de comparaison complet.
 
 ### 3.1 Authentification PAT
 
-Toutes les requêtes requièrent un Personal Access Token valide.
+Toutes les requêtes `tools/call` requièrent un Personal Access Token valide.
 
-**Headers requis:**
+**Header requis :**
 
 ```http
-Authorization: Bearer pat_xxxxxxxxxxxxx
-X-Organization-Id: uuid-organization
+Authorization: Bearer rfpa_xxxxxxxxxxxxx
 ```
+
+**Résolution de l'organisation** : l'`organizationId` est résolu automatiquement depuis le token (lookup en base via `validateToken()`). Aucun header `x-organization-id` n'est nécessaire.
+
+**Méthodes sans auth** : `initialize` et `tools/list` ne requièrent pas de token.
 
 ### 3.2 Permissions
 
