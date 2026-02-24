@@ -82,7 +82,7 @@ claude mcp add --transport http rfp-analyzer https://votre-app.vercel.app/api/mc
 
 **Header requis** :
 
-- `Authorization: Bearer rfpa_<token>` : Personal Access Token (créé via l'UI Settings → Tokens)
+- `Authorization: Bearer rfpa_<token>` : Personal Access Token (créé via `/dashboard/settings/tokens`)
 
 > **Note** : L'organisation est résolue automatiquement à partir du token — aucun header `x-organization-id` n'est nécessaire.
 
