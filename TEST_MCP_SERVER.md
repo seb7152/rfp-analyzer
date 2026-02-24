@@ -73,7 +73,6 @@ curl -X POST http://localhost:3000/api/mcp \
 ```
 
 **Réponse attendue:**
-
 ```json
 {
   "jsonrpc": "2.0",
@@ -104,7 +103,6 @@ curl -X POST http://localhost:3000/api/mcp \
 ```
 
 **Réponse attendue (implémentation originale):**
-
 ```
 "test_connection"
 "get_rfps"
@@ -130,7 +128,6 @@ curl -X POST http://localhost:3000/api/mcp \
 ```
 
 **Réponse attendue:**
-
 ```json
 {
   "jsonrpc": "2.0",
@@ -166,7 +163,6 @@ curl -X POST http://localhost:3000/api/mcp \
 ```
 
 **Réponse attendue:**
-
 ```json
 {
   "limit": 5,
@@ -202,7 +198,6 @@ curl -X POST http://localhost:3000/api/mcp \
 ### Tests dans Claude Desktop:
 
 Posez des questions à Claude qui nécessitent les outils MCP:
-
 - "Liste-moi tous les RFPs disponibles"
 - "Montre-moi les requirements du RFP cloud_001"
 - "Quels sont les fournisseurs pour le RFP cloud_001 ?"
@@ -216,7 +211,6 @@ Posez des questions à Claude qui nécessitent les outils MCP:
 **Cause:** Le serveur dev n'est pas démarré
 
 **Solution:**
-
 ```bash
 npm run dev
 # Attendre que le message "Ready in XXms" apparaisse
@@ -227,7 +221,6 @@ npm run dev
 **Cause:** URL incorrecte ou route non compilée
 
 **Solution:**
-
 - Vérifier l'URL: `http://localhost:3000/api/mcp` (pas de `/` à la fin)
 - Vérifier que le fichier existe: `ls app/api/mcp/route.ts`
 - Redémarrer le serveur dev
@@ -237,7 +230,6 @@ npm run dev
 **Cause:** La méthode JSON-RPC n'est pas implémentée
 
 **Solution:**
-
 - Vérifier les logs du serveur (terminal où tourne `npm run dev`)
 - Vérifier que la méthode est supportée dans le code
 - Pour v2: Vérifier que `mcp-handler` est correctement installé
@@ -247,7 +239,6 @@ npm run dev
 **Cause:** Incompatibilité de versions entre packages
 
 **Solution:**
-
 ```bash
 # Réinstaller avec --legacy-peer-deps
 npm install --legacy-peer-deps
@@ -258,7 +249,6 @@ npm install --legacy-peer-deps
 **Cause:** Le SDK n'est peut-être pas à la bonne version ou mcp-handler a un problème
 
 **Solution:**
-
 - Vérifier la version du SDK: `npm list @modelcontextprotocol/sdk`
 - Version attendue: `1.26.0` (installée avec --legacy-peer-deps)
 - Vérifier les logs du serveur pour les warnings
@@ -281,27 +271,25 @@ npm install --legacy-peer-deps
 
 ### Comparaison /api/mcp vs /api/mcp-v2:
 
-| Critère           | /api/mcp (manuel) | /api/mcp-v2 (SDK) |
-| ----------------- | ----------------- | ----------------- |
-| Noms d'outils     | `get_rfps`        | `rfp_get_rfps`    |
-| Annotations       | ❌ Non            | ✅ Oui            |
-| outputSchema      | ❌ Non            | ✅ Oui            |
-| structuredContent | ❌ Non            | ✅ Oui            |
-| Stabilité         | ✅ Prouvée        | 🟡 À tester       |
+| Critère | /api/mcp (manuel) | /api/mcp-v2 (SDK) |
+|---------|-------------------|-------------------|
+| Noms d'outils | `get_rfps` | `rfp_get_rfps` |
+| Annotations | ❌ Non | ✅ Oui |
+| outputSchema | ❌ Non | ✅ Oui |
+| structuredContent | ❌ Non | ✅ Oui |
+| Stabilité | ✅ Prouvée | 🟡 À tester |
 
 ---
 
 ## Prochaines Étapes
 
 ### Si /api/mcp-v2 fonctionne bien:
-
 1. Tester en profondeur avec tous les outils
 2. Vérifier les performances (temps de réponse)
 3. Tester avec de vraies données (pas seulement mock)
 4. Décider si migration vaut le coup
 
 ### Si /api/mcp-v2 a des problèmes:
-
 1. Documenter les problèmes rencontrés
 2. Retourner à /api/mcp (implémentation stable)
 3. Implémenter les améliorations incrémentales sur /api/mcp:
@@ -318,7 +306,6 @@ npm install --legacy-peer-deps
 Le serveur utilise le logger dans `lib/mcp/utils/logger.ts`.
 
 Pour voir les logs:
-
 ```bash
 # Terminal où tourne npm run dev
 # Les logs MCP apparaissent avec le préfixe [MCP] ou [MCP-V2]
