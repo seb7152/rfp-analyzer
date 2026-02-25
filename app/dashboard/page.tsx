@@ -24,6 +24,10 @@ import {
   Users,
   Zap,
   Shield,
+  Key,
+  Code2,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { CreateRFPDialog } from "@/components/CreateRFPDialog";
@@ -291,7 +295,7 @@ export default function DashboardPage() {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="flex w-full gap-1 rounded-2xl border border-slate-200 bg-white/80 p-2 dark:border-slate-800 dark:bg-slate-900/60">
+          <TabsList className="flex w-full gap-1 rounded-2xl border border-slate-200 bg-white/80 p-2 dark:border-slate-800 dark:bg-slate-900/60 overflow-x-auto">
             <TabsTrigger
               value="overview"
               className="flex-1 rounded-xl px-4 py-2 text-sm font-medium text-slate-500 transition data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:text-slate-400 dark:data-[state=active]:bg-white dark:data-[state=active]:text-slate-900"
@@ -303,6 +307,12 @@ export default function DashboardPage() {
               className="flex-1 rounded-xl px-4 py-2 text-sm font-medium text-slate-500 transition data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:text-slate-400 dark:data-[state=active]:bg-white dark:data-[state=active]:text-slate-900"
             >
               Organisation
+            </TabsTrigger>
+            <TabsTrigger
+              value="integrations"
+              className="flex-1 rounded-xl px-4 py-2 text-sm font-medium text-slate-500 transition data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:text-slate-400 dark:data-[state=active]:bg-white dark:data-[state=active]:text-slate-900"
+            >
+              Intégrations
             </TabsTrigger>
             <TabsTrigger
               value="account"
@@ -370,39 +380,95 @@ export default function DashboardPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
                 <CardHeader>
-                  <CardTitle>État des espaces</CardTitle>
+                  <CardTitle>État de l'organisation</CardTitle>
                   <CardDescription>
-                    Une vision synthétique de vos organisations.
+                    Vue d'ensemble de <strong>{currentOrg.name}</strong>
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4 text-sm text-slate-600 dark:text-slate-300">
+                <CardContent className="space-y-4 text-sm">
                   <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/40">
-                    <span>Espaces actifs</span>
-                    <strong>{user.organizations?.length || 0}</strong>
+                    <span className="text-slate-600 dark:text-slate-300">RFPs actifs</span>
+                    <strong className="text-lg text-slate-900 dark:text-white">
+                      {rfps?.filter(r => r.status === 'in_progress').length || 0}
+                    </strong>
                   </div>
                   <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/40">
-                    <span>Invitations en attente</span>
-                    <strong>0</strong>
+                    <span className="text-slate-600 dark:text-slate-300">Total RFPs</span>
+                    <strong className="text-lg text-slate-900 dark:text-white">
+                      {rfps?.length || 0}
+                    </strong>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+                    <span className="text-slate-600 dark:text-slate-300">Utilisateurs accès</span>
+                    <strong className="text-lg text-slate-900 dark:text-white">
+                      {user.organizations?.length || 0}
+                    </strong>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+                    <span className="text-slate-600 dark:text-slate-300">Plan</span>
+                    <Badge
+                      variant="outline"
+                      className="capitalize border-slate-200 text-slate-700 dark:border-slate-700 dark:text-slate-200"
+                    >
+                      {currentOrg.subscription_tier}
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>
               <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
                 <CardHeader>
-                  <CardTitle>Activité récente</CardTitle>
+                  <CardTitle>Conseils pratiques</CardTitle>
                   <CardDescription>
-                    Derniers événements côté organisations.
+                    Prochaines étapes pour optimiser votre utilisation
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                  {["Aucune création récente", "Aucune note publiée"].map(
-                    (entry) => (
-                      <div
-                        key={entry}
-                        className="rounded-xl border border-dashed border-slate-200 px-4 py-3 dark:border-slate-700"
-                      >
-                        {entry}
+                <CardContent className="space-y-3 text-sm">
+                  {activeRFP ? (
+                    <div className="rounded-xl border border-green-200 bg-green-50/50 px-4 py-3 dark:border-green-900/50 dark:bg-green-900/20">
+                      <div className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-green-900 dark:text-green-200">
+                            RFP en cours
+                          </p>
+                          <p className="text-xs text-green-800 dark:text-green-300">
+                            {activeRFP.title} ({Math.round(progressPercentage)}% complété)
+                          </p>
+                        </div>
                       </div>
-                    )
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-900/20">
+                      <div className="flex items-start gap-2">
+                        <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-amber-900 dark:text-amber-200">
+                            Créer un RFP
+                          </p>
+                          <p className="text-xs text-amber-800 dark:text-amber-300">
+                            Aucun RFP actif. Commencez une nouvelle analyse.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {isAdmin && (
+                    <div className="rounded-xl border border-blue-200 bg-blue-50/50 px-4 py-3 dark:border-blue-900/50 dark:bg-blue-900/20">
+                      <div className="flex items-start gap-2">
+                        <Users className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-blue-900 dark:text-blue-200">
+                            Gérer les accès
+                          </p>
+                          <Link
+                            href="/dashboard/organizations"
+                            className="text-xs text-blue-700 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200"
+                          >
+                            Voir les organisations →
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -465,6 +531,134 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="integrations" className="space-y-4">
+            <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Key className="h-5 w-5" />
+                    Gestion des tokens API
+                  </CardTitle>
+                  <CardDescription>
+                    Créez et gérez vos clés d'accès pour l'intégration MCP
+                  </CardDescription>
+                </div>
+                {isAdmin && (
+                  <Link href="/dashboard/settings/tokens">
+                    <Button>
+                      Accéder aux tokens
+                      <ArrowUpRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+                  <div className="flex items-start gap-3">
+                    <Code2 className="h-5 w-5 text-slate-500 flex-shrink-0 mt-0.5" />
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">
+                        Tokens d'authentification
+                      </p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300">
+                        Les tokens permettent d'authentifier les clients MCP sans utiliser vos identifiants de session. Chaque token peut avoir une date d'expiration et être révoqué à tout moment.
+                      </p>
+                      <div className="flex items-center gap-2 pt-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        <span className="text-xs text-slate-600 dark:text-slate-400">
+                          Sécurisé avec préfixe visible et révocation instantanée
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-700">
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                      Format d'utilisation
+                    </p>
+                    <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded mt-2 block text-slate-700 dark:text-slate-200 font-mono">
+                      Authorization: Bearer &lt;token&gt;
+                    </code>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-700">
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                      Endpoint
+                    </p>
+                    <p className="text-sm text-slate-900 dark:text-white mt-2 font-mono break-all">
+                      /api/mcp
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-700">
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                      Documentation
+                    </p>
+                    <Link href="#" className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 mt-2 block">
+                      Voir les spécifications MCP →
+                    </Link>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {isAdmin && (
+              <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+                <CardHeader>
+                  <CardTitle>Intégrations disponibles</CardTitle>
+                  <CardDescription>
+                    Services et clients supportés pour accéder à vos données
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {[
+                      {
+                        name: "Claude Desktop",
+                        icon: "🤖",
+                        description: "Assistant IA pour interactions MCP",
+                        status: "active",
+                      },
+                      {
+                        name: "Cursor",
+                        icon: "💻",
+                        description: "Éditeur de code avec support MCP",
+                        status: "active",
+                      },
+                      {
+                        name: "VS Code",
+                        icon: "📝",
+                        description: "Intégration Copilot avec MCP",
+                        status: "active",
+                      },
+                    ].map((integration) => (
+                      <div
+                        key={integration.name}
+                        className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="text-lg font-medium">
+                              {integration.icon} {integration.name}
+                            </p>
+                            <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                              {integration.description}
+                            </p>
+                          </div>
+                          <Badge
+                            className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                          >
+                            {integration.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="account" className="space-y-4">
