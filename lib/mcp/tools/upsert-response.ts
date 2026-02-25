@@ -76,10 +76,9 @@ export interface UpsertResponseOutput {
   requirementId: string;
   supplierId: string;
   responseText: string | null;
-  aiScore: number | null;
-  aiComment: string | null;
-  manualScore: number | null;
-  manualComment: string | null;
+  score: number | null;
+  iaComment: string | null;
+  reviewerComment: string | null;
   status: string;
   isChecked: boolean;
   updatedAt: string;
@@ -165,10 +164,9 @@ export async function handleUpsertResponse(
     requirementId: data.requirement_id,
     supplierId: data.supplier_id,
     responseText: data.response_text,
-    aiScore: data.ai_score,
-    aiComment: data.ai_comment,
-    manualScore: data.manual_score,
-    manualComment: data.manual_comment,
+    score: data.manual_score !== null ? data.manual_score : (data.ai_score ?? null),
+    iaComment: data.ai_comment ?? null,
+    reviewerComment: data.manual_comment ?? null,
     status: data.status,
     isChecked: data.is_checked ?? false,
     updatedAt: data.updated_at,

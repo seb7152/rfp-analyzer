@@ -14,6 +14,7 @@ import { handleGetRFPs } from "@/lib/mcp/tools/get-rfps";
 import { handleGetRequirements } from "@/lib/mcp/tools/get-requirements";
 import { handleListSuppliers } from "@/lib/mcp/tools/list-suppliers";
 import { handleGetRequirementsTree } from "@/lib/mcp/tools/get-requirements-tree";
+import { handleGetResponses } from "@/lib/mcp/tools/get-responses";
 
 /**
  * Server info for initialize response
@@ -131,6 +132,10 @@ const TOOL_DEFINITIONS = [
           type: "string",
           description: "The RFP ID",
           minLength: 1,
+        },
+        version_id: {
+          type: "string",
+          description: "Evaluation version ID (omit for active version)",
         },
         limit: {
           type: "number",
@@ -272,7 +277,8 @@ async function handleToolCall(
         toolArgs,
         z.object({
           rfp_id: z.string().min(1),
-          limit: z.number().int().min(1).max(100).optional().default(50),
+          category_id: z.string().optional(),
+          limit: z.number().int().min(1).max(200).optional().default(50),
           offset: z.number().int().min(0).optional().default(0),
         })
       );
@@ -287,6 +293,40 @@ async function handleToolCall(
         };
       }
       result = await handleGetRequirements(validation.data, authContext);
+      break;
+    }
+
+    case "get_responses": {
+      const validation = validateParams(
+        toolArgs,
+        z.object({
+          rfp_id: z.string().min(1),
+          version_id: z.string().optional(),
+          supplier_id: z.string().optional(),
+          requirement_id: z.string().optional(),
+          category_id: z.string().optional(),
+          status: z.enum(["pending", "pass", "partial", "fail", "roadmap"]).optional(),
+          min_score: z.number().min(0).max(5).optional(),
+          max_score: z.number().min(0).max(5).optional(),
+          has_comment: z.boolean().optional(),
+          has_question: z.boolean().optional(),
+          include_score: z.boolean().optional().default(true),
+          include_ia_comment: z.boolean().optional().default(false),
+          limit: z.number().int().min(1).max(200).optional().default(50),
+          offset: z.number().int().min(0).optional().default(0),
+        })
+      );
+      if (!validation.isValid) {
+        return {
+          jsonrpc: "2.0",
+          id,
+          error: {
+            code: -32602,
+            message: `Invalid parameters: ${validation.error}`,
+          },
+        };
+      }
+      result = await handleGetResponses(validation.data, authContext);
       break;
     }
 
@@ -317,6 +357,7 @@ async function handleToolCall(
         toolArgs,
         z.object({
           rfp_id: z.string().min(1),
+          version_id: z.string().optional(),
           limit: z.number().int().min(1).max(100).optional().default(50),
           offset: z.number().int().min(0).optional().default(0),
         })

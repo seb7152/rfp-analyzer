@@ -152,6 +152,7 @@ const TOOL_DEFINITIONS = [
       type: "object",
       properties: {
         rfp_id: { type: "string", description: "The RFP ID", minLength: 1 },
+        version_id: { type: "string", description: "Evaluation version ID (omit for active version)" },
         limit: { type: "number", minimum: 1, maximum: 100, default: 50 },
         offset: { type: "number", minimum: 0, default: 0 },
       },
@@ -177,7 +178,17 @@ const TOOL_DEFINITIONS = [
           description:
             "Filter by category UUID — returns responses for all requirements in the category and its sub-categories (recursive)",
         },
-        include_scores: { type: "boolean", description: "Include ai_score, manual_score, status (default: true)", default: true },
+        status: {
+          type: "string",
+          enum: ["pending", "pass", "partial", "fail", "roadmap"],
+          description: "Filter by evaluation status",
+        },
+        min_score: { type: "number", minimum: 0, maximum: 5, description: "Minimum score (uses manual_score if it exists, else ai_score)" },
+        max_score: { type: "number", minimum: 0, maximum: 5, description: "Maximum score" },
+        has_comment: { type: "boolean", description: "Filter responses that have a manual reviewer comment" },
+        has_question: { type: "boolean", description: "Filter responses that have a reviewer question" },
+        include_score: { type: "boolean", description: "Include unified score and reviewer_comment (default: true)", default: true },
+        include_ia_comment: { type: "boolean", description: "Include AI generated comment (default: false)", default: false },
         limit: { type: "number", minimum: 1, maximum: 200, default: 50 },
         offset: { type: "number", minimum: 0, default: 0 },
       },
@@ -195,12 +206,6 @@ const TOOL_DEFINITIONS = [
         rfp_id: { type: "string", description: "The RFP ID", minLength: 1 },
         version_id: { type: "string", description: "Evaluation version ID (omit for active version)" },
         category_id: { type: "string", description: "Optional: scope matrix to a category subtree" },
-        score_type: {
-          type: "string",
-          enum: ["ai", "manual", "both"],
-          description: "Which scores to include: 'ai', 'manual', or 'both' (default)",
-          default: "both",
-        },
       },
       required: ["rfp_id"],
     },
@@ -602,6 +607,7 @@ async function handleToolCall(
         toolArgs,
         z.object({
           rfp_id: z.string().min(1),
+          version_id: z.string().optional(),
           limit: z.number().int().min(1).max(100).optional().default(50),
           offset: z.number().int().min(0).optional().default(0),
         })
@@ -632,7 +638,13 @@ async function handleToolCall(
           supplier_id: z.string().optional(),
           requirement_id: z.string().optional(),
           category_id: z.string().optional(),
-          include_scores: z.boolean().optional().default(true),
+          status: z.enum(["pending", "pass", "partial", "fail", "roadmap"]).optional(),
+          min_score: z.number().min(0).max(5).optional(),
+          max_score: z.number().min(0).max(5).optional(),
+          has_comment: z.boolean().optional(),
+          has_question: z.boolean().optional(),
+          include_score: z.boolean().optional().default(true),
+          include_ia_comment: z.boolean().optional().default(false),
           limit: z.number().int().min(1).max(200).optional().default(50),
           offset: z.number().int().min(0).optional().default(0),
         })
@@ -643,17 +655,16 @@ async function handleToolCall(
     }
 
     case "get_scoring_matrix": {
-      const v = validateParams(
+      const validation = validateParams(
         toolArgs,
         z.object({
           rfp_id: z.string().min(1),
           version_id: z.string().optional(),
           category_id: z.string().optional(),
-          score_type: z.enum(["ai", "manual", "both"]).optional().default("both"),
         })
       );
-      if (!v.isValid) return invalidParams(id, v.error);
-      result = await handleGetScoringMatrix(v.data, authContext);
+      if (!validation.isValid) return invalidParams(id, validation.error);
+      result = await handleGetScoringMatrix(validation.data, authContext);
       break;
     }
 

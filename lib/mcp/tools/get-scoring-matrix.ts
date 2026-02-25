@@ -23,19 +23,13 @@ export const GetScoringMatrixInputSchema = z.object({
     .describe(
       "Optional: scope the matrix to a specific category (and its subtree)"
     ),
-  score_type: z
-    .enum(["ai", "manual", "both"])
-    .optional()
-    .default("both")
-    .describe("Which scores to include: 'ai', 'manual', or 'both' (default)"),
 });
 
 export type GetScoringMatrixInput = z.infer<typeof GetScoringMatrixInputSchema>;
 
 export interface ScoreCell {
   responseId: string | null;
-  aiScore: number | null;
-  manualScore: number | null;
+  score: number | null;
   status: string | null;
   isChecked: boolean;
 }
@@ -56,8 +50,7 @@ export interface MatrixSupplier {
   id: string;
   externalId: string;
   name: string;
-  averageAiScore: number | null;
-  averageManualScore: number | null;
+  averageScore: number | null;
   responseCount: number;
 }
 
@@ -108,7 +101,7 @@ export async function handleGetScoringMatrix(
   authContext: MCPAuthContext
 ): Promise<GetScoringMatrixOutput> {
   const supabase = createServiceClient();
-  const { rfp_id, version_id, category_id, score_type } = input;
+  const { rfp_id, version_id, category_id } = input;
 
   // Verify access
   const { data: rfp, error: rfpError } = await supabase
@@ -147,10 +140,10 @@ export async function handleGetScoringMatrix(
     { data: categories, error: catError },
   ] = await Promise.all([
     supabase
-      .from("suppliers")
-      .select("id, supplier_id_external, name")
-      .eq("rfp_id", rfp_id)
-      .order("created_at", { ascending: true }),
+      .from("version_supplier_status")
+      .select("supplier_id, is_active, suppliers!inner(id, supplier_id_external, name, created_at)")
+      .eq("version_id", resolvedVersionId)
+      .eq("is_active", true),
     supabase
       .from("requirements")
       .select(
@@ -181,7 +174,11 @@ export async function handleGetScoringMatrix(
   );
 
   const requirementIds = filteredRequirements.map((r: any) => r.id);
-  const supplierList = suppliers ?? [];
+  // Extract suppliers array from the join
+  const supplierList = (suppliers ?? [])
+    .map((vs: any) => vs.suppliers && Array.isArray(vs.suppliers) ? vs.suppliers[0] : vs.suppliers)
+    .filter(Boolean)
+    .sort((a: any, b: any) => (a.created_at > b.created_at ? 1 : -1));
 
   // Fetch all responses for the filtered requirements in the resolved version
   let responsesQuery = supabase
@@ -206,10 +203,7 @@ export async function handleGetScoringMatrix(
       responseIndex[res.requirement_id] = {};
     responseIndex[res.requirement_id][res.supplier_id] = {
       responseId: res.id,
-      aiScore:
-        score_type !== "manual" ? (res.ai_score ?? null) : null,
-      manualScore:
-        score_type !== "ai" ? (res.manual_score ?? null) : null,
+      score: res.manual_score !== null ? res.manual_score : (res.ai_score ?? null),
       status: res.status,
       isChecked: res.is_checked ?? false,
     };
@@ -230,8 +224,7 @@ export async function handleGetScoringMatrix(
       (acc: Record<string, ScoreCell>, sup: any) => {
         acc[sup.id] = responseIndex[req.id]?.[sup.id] ?? {
           responseId: null,
-          aiScore: null,
-          manualScore: null,
+          score: null,
           status: null,
           isChecked: false,
         };
@@ -246,25 +239,17 @@ export async function handleGetScoringMatrix(
     const supResponses = (responses ?? []).filter(
       (r: any) => r.supplier_id === sup.id && requirementIds.includes(r.requirement_id)
     );
-    const aiScores = supResponses
-      .map((r: any) => r.ai_score)
-      .filter((s: any) => s !== null) as number[];
-    const manualScores = supResponses
-      .map((r: any) => r.manual_score)
+    const scores = supResponses
+      .map((r: any) => r.manual_score !== null ? r.manual_score : (r.ai_score ?? null))
       .filter((s: any) => s !== null) as number[];
 
     return {
       id: sup.id,
       externalId: sup.supplier_id_external ?? "",
       name: sup.name,
-      averageAiScore:
-        aiScores.length > 0
-          ? Math.round((aiScores.reduce((a, b) => a + b, 0) / aiScores.length) * 100) / 100
-          : null,
-      averageManualScore:
-        manualScores.length > 0
-          ? Math.round((manualScores.reduce((a, b) => a + b, 0) / manualScores.length) * 100) /
-            100
+      averageScore:
+        scores.length > 0
+          ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100
           : null,
       responseCount: supResponses.length,
     };
