@@ -78,15 +78,18 @@ export async function POST(
 
     const { data: analysis, error: analysisError } = await supabase
       .from("defense_analyses")
-      .upsert({
-        rfp_id: rfpId,
-        supplier_id: supplierId,
-        version_id: versionId || null,
-        analysis_data: {},
-        status: "pending",
-        generated_by: user.id,
-        correlation_id: correlationId,
-      }, { onConflict: 'rfp_id, supplier_id, version_id' })
+      .upsert(
+        {
+          rfp_id: rfpId,
+          supplier_id: supplierId,
+          version_id: versionId || null,
+          analysis_data: {},
+          status: "pending",
+          generated_by: user.id,
+          correlation_id: correlationId,
+        },
+        { onConflict: "rfp_id, supplier_id, version_id" }
+      )
       .select("id")
       .single();
 
