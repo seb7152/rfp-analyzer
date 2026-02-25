@@ -25,6 +25,7 @@ export interface RequirementItem {
   parentId: string | null;
   isMandatory: boolean;
   isOptional: boolean;
+  weight: number | null;
   createdAt: string;
 }
 
@@ -71,7 +72,7 @@ export async function handleGetRequirements(
   const { data, error, count } = await supabase
     .from("requirements")
     .select(
-      "id, rfp_id, title, description, level, parent_id, is_mandatory, is_optional, created_at",
+      "id, rfp_id, title, description, level, parent_id, is_mandatory, is_optional, weight, created_at",
       { count: "exact" }
     )
     .eq("rfp_id", rfp_id)
@@ -91,6 +92,7 @@ export async function handleGetRequirements(
     parentId: req.parent_id,
     isMandatory: req.is_mandatory,
     isOptional: req.is_optional,
+    weight: req.weight,
     createdAt: req.created_at,
   }));
 
