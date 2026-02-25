@@ -792,7 +792,7 @@ async function handleToolCall(
         toolArgs,
         z.object({
           rfp_id: z.string().min(1),
-          requirements: z.array(z.record(z.unknown())).min(1),
+          requirements: z.array(z.record(z.string(), z.unknown())).min(1),
           mode: z.enum(["append", "replace"]).optional().default("append"),
         })
       );
