@@ -1,6 +1,16 @@
 /**
  * MCP Tool: get_rfp_structure
- * Get complete structure of an RFP: metadata, category tree with requirements, suppliers, stats
+ * Lightweight structure-only view of an RFP: metadata, category tree (no requirements),
+ * suppliers, and stats.
+ *
+ * Each category node exposes recursive aggregates so an LLM can quickly identify
+ * the most important parts of the RFP:
+ *   - aggregateWeight: recursive sum of all requirement weights in this subtree
+ *   - requirementCount: recursive total of requirements in this subtree
+ *   - mandatoryCount: recursive count of mandatory requirements in this subtree
+ *   - weight: own weight from the categories table
+ *
+ * Use get_requirements_tree for the full tree with requirements embedded.
  */
 
 import { z } from "zod";
@@ -30,20 +40,15 @@ export interface CategoryNode {
   shortName: string;
   level: number;
   displayOrder: number | null;
+  /** Own weight from the categories table */
   weight: number;
-  children: CategoryNode[];
-  requirements: RequirementSummary[];
+  /** Recursive sum of all requirement weights in this subtree */
+  aggregateWeight: number;
+  /** Recursive total of requirements in this subtree */
   requirementCount: number;
-}
-
-export interface RequirementSummary {
-  id: string;
-  externalId: string;
-  title: string;
-  description: string | null;
-  weight: number;
-  isMandatory: boolean;
-  displayOrder: number | null;
+  /** Recursive count of mandatory requirements in this subtree */
+  mandatoryCount: number;
+  children: CategoryNode[];
 }
 
 export interface SupplierSummary {
@@ -74,29 +79,38 @@ export interface GetRFPStructureOutput {
   stats: RFPStats | null;
 }
 
-/**
- * Build a hierarchical category tree and embed requirements per category
- */
+// ─────────────────────────────────────────────────────────────────────────────
+// Internal types
+// ─────────────────────────────────────────────────────────────────────────────
+
+type RawCategory = {
+  id: string;
+  code: string;
+  title: string;
+  short_name: string;
+  level: number;
+  parent_id: string | null;
+  display_order: number | null;
+  weight: number;
+};
+
+type RawRequirement = {
+  category_id: string | null;
+  weight: number | null;
+  is_mandatory: boolean | null;
+};
+
 function buildCategoryTree(
-  categories: Array<{
-    id: string;
-    code: string;
-    title: string;
-    short_name: string;
-    level: number;
-    parent_id: string | null;
-    display_order: number | null;
-    weight: number;
-  }>,
-  requirementsByCategory: Record<string, RequirementSummary[]>
+  categories: RawCategory[],
+  requirementsByCategory: Record<string, { weight: number; isMandatory: boolean }[]>
 ): CategoryNode[] {
   const nodeMap: Record<string, CategoryNode> = {};
 
-  // Sort categories by level descending to build bottom-up
+  // Build leaf-to-root so we can propagate aggregates upward
   const sorted = [...categories].sort((a, b) => b.level - a.level);
 
   for (const cat of sorted) {
-    const reqs = requirementsByCategory[cat.id] ?? [];
+    const directReqs = requirementsByCategory[cat.id] ?? [];
     nodeMap[cat.id] = {
       id: cat.id,
       code: cat.code,
@@ -104,49 +118,58 @@ function buildCategoryTree(
       shortName: cat.short_name,
       level: cat.level,
       displayOrder: cat.display_order,
-      weight: cat.weight,
+      weight: cat.weight ?? 1,
+      aggregateWeight: directReqs.reduce((s, r) => s + r.weight, 0),
+      requirementCount: directReqs.length,
+      mandatoryCount: directReqs.filter((r) => r.isMandatory).length,
       children: [],
-      requirements: reqs,
-      requirementCount: reqs.length,
     };
   }
 
-  // Wire children into parents
+  // Wire children into parents and propagate aggregates upward
   for (const cat of sorted) {
-    if (cat.parent_id && nodeMap[cat.parent_id]) {
-      nodeMap[cat.parent_id].children.unshift(nodeMap[cat.id]);
-      // Propagate requirement count upward
-      nodeMap[cat.parent_id].requirementCount +=
-        nodeMap[cat.id].requirementCount;
+    if (cat.parent_id && nodeMap[cat.parent_id] && nodeMap[cat.id]) {
+      const child = nodeMap[cat.id];
+      const parent = nodeMap[cat.parent_id];
+      parent.children.unshift(child);
+      parent.aggregateWeight += child.aggregateWeight;
+      parent.requirementCount += child.requirementCount;
+      parent.mandatoryCount += child.mandatoryCount;
     }
   }
 
-  // Return only root nodes (no parent)
+  // Sort children within each node by display_order
+  for (const node of Object.values(nodeMap)) {
+    node.children.sort(
+      (a, b) => (a.displayOrder ?? 9999) - (b.displayOrder ?? 9999)
+    );
+  }
+
   return categories
     .filter((c) => c.parent_id === null)
-    .sort(
-      (a, b) => (a.display_order ?? 9999) - (b.display_order ?? 9999)
-    )
+    .sort((a, b) => (a.display_order ?? 9999) - (b.display_order ?? 9999))
     .map((c) => nodeMap[c.id])
     .filter(Boolean);
 }
 
-/**
- * Verify RFP access and return RFP data
- */
-async function verifyAndGetRFP(
-  rfp_id: string,
-  authContext: MCPAuthContext
-) {
-  const supabase = createServiceClient();
+// ─────────────────────────────────────────────────────────────────────────────
+// Handler
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const { data: rfp, error } = await supabase
+export async function handleGetRFPStructure(
+  input: GetRFPStructureInput,
+  authContext: MCPAuthContext
+): Promise<GetRFPStructureOutput> {
+  const supabase = createServiceClient();
+  const { rfp_id, include_suppliers, include_stats } = input;
+
+  const { data: rfp, error: rfpError } = await supabase
     .from("rfps")
     .select("id, title, description, status, organization_id, created_at")
     .eq("id", rfp_id)
     .single();
 
-  if (error || !rfp) throw new Error(`RFP not found: ${rfp_id}`);
+  if (rfpError || !rfp) throw new Error(`RFP not found: ${rfp_id}`);
 
   if (
     authContext.organizationId &&
@@ -158,26 +181,9 @@ async function verifyAndGetRFP(
       .eq("rfp_id", rfp_id)
       .eq("user_id", authContext.userId)
       .single();
-
     if (!assignment) throw new Error(`Access denied to RFP: ${rfp_id}`);
   }
 
-  return rfp;
-}
-
-/**
- * get_rfp_structure handler
- */
-export async function handleGetRFPStructure(
-  input: GetRFPStructureInput,
-  authContext: MCPAuthContext
-): Promise<GetRFPStructureOutput> {
-  const supabase = createServiceClient();
-  const { rfp_id, include_suppliers, include_stats } = input;
-
-  const rfp = await verifyAndGetRFP(rfp_id, authContext);
-
-  // Fetch categories, requirements, suppliers in parallel
   const [
     { data: categories, error: catError },
     { data: requirements, error: reqError },
@@ -190,11 +196,8 @@ export async function handleGetRFPStructure(
       .order("display_order", { ascending: true, nullsFirst: false }),
     supabase
       .from("requirements")
-      .select(
-        "id, requirement_id_external, title, description, category_id, weight, is_mandatory, display_order"
-      )
-      .eq("rfp_id", rfp_id)
-      .order("display_order", { ascending: true, nullsFirst: false }),
+      .select("category_id, weight, is_mandatory")
+      .eq("rfp_id", rfp_id),
     include_suppliers
       ? supabase
           .from("suppliers")
@@ -209,23 +212,23 @@ export async function handleGetRFPStructure(
   if (suppliersResult.error)
     throw new Error(`Failed to fetch suppliers: ${suppliersResult.error.message}`);
 
-  // Group requirements by category_id
-  const requirementsByCategory: Record<string, RequirementSummary[]> = {};
-  for (const req of requirements ?? []) {
-    const key = req.category_id ?? "__none__";
-    if (!requirementsByCategory[key]) requirementsByCategory[key] = [];
-    requirementsByCategory[key].push({
-      id: req.id,
-      externalId: req.requirement_id_external ?? "",
-      title: req.title,
-      description: req.description,
-      weight: req.weight ?? 1,
-      isMandatory: req.is_mandatory ?? false,
-      displayOrder: req.display_order ?? null,
-    });
+  // Group lightweight requirement data by category_id
+  const requirementsByCategory: Record<string, { weight: number; isMandatory: boolean }[]> = {};
+  for (const req of (requirements ?? []) as RawRequirement[]) {
+    if (req.category_id) {
+      if (!requirementsByCategory[req.category_id])
+        requirementsByCategory[req.category_id] = [];
+      requirementsByCategory[req.category_id].push({
+        weight: req.weight ?? 1,
+        isMandatory: req.is_mandatory ?? false,
+      });
+    }
   }
 
-  const categoryTree = buildCategoryTree(categories ?? [], requirementsByCategory);
+  const categoryTree = buildCategoryTree(
+    (categories ?? []) as RawCategory[],
+    requirementsByCategory
+  );
 
   const suppliers: SupplierSummary[] = (suppliersResult.data ?? []).map((s: any) => ({
     id: s.id,
@@ -237,13 +240,11 @@ export async function handleGetRFPStructure(
 
   let stats: RFPStats | null = null;
   if (include_stats) {
-    const totalRequirements = (requirements ?? []).length;
-    const mandatoryRequirements = (requirements ?? []).filter(
-      (r: any) => r.is_mandatory
-    ).length;
+    const allReqs = (requirements ?? []) as RawRequirement[];
+    const totalRequirements = allReqs.length;
+    const mandatoryRequirements = allReqs.filter((r) => r.is_mandatory).length;
     const totalSuppliers = suppliers.length;
 
-    // Count responses
     const { count: totalResponses } = await supabase
       .from("responses")
       .select("id", { count: "exact", head: true })

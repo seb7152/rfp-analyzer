@@ -84,7 +84,7 @@ const TOOL_DEFINITIONS = [
     name: "get_rfp_versions",
     title: "Get RFP Evaluation Versions",
     description:
-      "List all evaluation versions of an RFP. Returns version number, name, active status, and finalization date. Use the version ID to scope get_responses, get_scoring_matrix, upsert_response, and import_supplier_responses.",
+      "List all evaluation versions of an RFP. Returns version number, name, and active status. Use the version ID to scope get_responses, get_scoring_matrix, upsert_response, and import_supplier_responses.",
     inputSchema: {
       type: "object",
       properties: {
@@ -97,7 +97,7 @@ const TOOL_DEFINITIONS = [
     name: "get_rfp_structure",
     title: "Get RFP Structure",
     description:
-      "Get the complete structure of an RFP: metadata, hierarchical category tree with embedded requirements, supplier list, and statistics",
+      "Lightweight structure-only view of an RFP: metadata, hierarchical category tree (no requirements embedded), supplier list, and statistics. Each category node includes recursive aggregateWeight, requirementCount, and mandatoryCount so an LLM can quickly identify the most important parts. Use get_requirements_tree for the full tree with requirements embedded.",
     inputSchema: {
       type: "object",
       properties: {
@@ -128,7 +128,7 @@ const TOOL_DEFINITIONS = [
     name: "get_requirements_tree",
     title: "Get Requirements Tree",
     description:
-      "Get hierarchical requirements tree for an RFP (Domain > Category > SubCategory > Requirement)",
+      "Get the full hierarchical requirements tree for an RFP. Each category node contains its direct requirements[] (all fields: id, externalId, title, description, weight, isMandatory) plus recursive aggregates (aggregateWeight, requirementCount, mandatoryCount). Supports flatten=true for a flat list with categoryPath. Use get_rfp_structure for a lightweight structure-only view.",
     inputSchema: {
       type: "object",
       properties: {

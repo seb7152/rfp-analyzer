@@ -1,16 +1,20 @@
 /**
  * MCP Tool: get_requirements_tree
- * Get hierarchical requirements tree for an RFP (4-level structure)
+ * Get hierarchical requirements tree for an RFP.
+ *
+ * Each category node contains:
+ *   - children: sub-categories
+ *   - requirements: direct requirements attached to this category (all fields)
+ *   - requirementCount: recursive total (direct + all sub-categories)
+ *   - mandatoryCount: recursive mandatory requirement count
+ *   - aggregateWeight: recursive sum of requirement weights in the subtree
+ *
+ * Use get_rfp_structure for a lightweight structure-only view (no requirements embedded).
  */
 
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { MCPAuthContext } from "@/lib/mcp/auth";
-import {
-  getTreeStatistics,
-  RequirementNode,
-  TreeStatistics,
-} from "../utils/requirements-tree";
 
 export const GetRequirementsTreeInputSchema = z.object({
   rfp_id: z.string().min(1, "RFP ID is required"),
@@ -18,124 +22,193 @@ export const GetRequirementsTreeInputSchema = z.object({
     .boolean()
     .optional()
     .default(false)
-    .describe("If true, return flattened list instead of tree"),
+    .describe(
+      "If true, return a flat list of requirements with their category path instead of a tree"
+    ),
 });
 
 export type GetRequirementsTreeInput = z.infer<
   typeof GetRequirementsTreeInputSchema
 >;
 
+export interface RequirementDetail {
+  id: string;
+  externalId: string;
+  title: string;
+  description: string | null;
+  weight: number;
+  isMandatory: boolean;
+  displayOrder: number | null;
+}
+
+export interface CategoryTreeNode {
+  id: string;
+  code: string;
+  title: string;
+  shortName: string;
+  level: number;
+  displayOrder: number | null;
+  /** Own weight from the categories table */
+  weight: number;
+  /** Recursive sum of all requirements weights in this subtree */
+  aggregateWeight: number;
+  /** Recursive total requirement count (direct + all sub-categories) */
+  requirementCount: number;
+  /** Recursive mandatory requirement count */
+  mandatoryCount: number;
+  children: CategoryTreeNode[];
+  /** Requirements directly attached to this category */
+  requirements: RequirementDetail[];
+}
+
+export interface FlatRequirement extends RequirementDetail {
+  categoryId: string | null;
+  categoryPath: string;
+}
+
+export interface RequirementsTreeStatistics {
+  totalCategories: number;
+  totalRequirements: number;
+  mandatoryRequirements: number;
+  totalWeight: number;
+}
+
 export interface GetRequirementsTreeOutput {
   rfpId: string;
   rfpTitle: string;
-  tree: RequirementNode;
-  statistics: TreeStatistics;
+  /** Hierarchical tree (when flatten=false) */
+  tree?: CategoryTreeNode[];
+  /** Flat list of requirements with category path (when flatten=true) */
+  flatList?: FlatRequirement[];
+  /** Requirements not attached to any category */
+  uncategorized: RequirementDetail[];
+  statistics: RequirementsTreeStatistics;
 }
 
-/**
- * Build a RequirementNode tree from real DB categories and requirements.
- */
-function buildTreeFromData(
-  rfpId: string,
-  rfpTitle: string,
-  categories: Array<{
-    id: string;
-    title: string;
-    parent_id: string | null;
-    level: number;
-  }>,
-  requirements: Array<{
-    id: string;
-    title: string;
-    description: string | null;
-    category_id: string | null;
-    is_mandatory: boolean;
-  }>
-): RequirementNode {
-  // Map each category to its child category list
-  const catChildrenMap: Record<string, RequirementNode[]> = {};
-  for (const cat of categories) {
-    catChildrenMap[cat.id] = [];
-  }
+// ─────────────────────────────────────────────────────────────────────────────
+// Internal types
+// ─────────────────────────────────────────────────────────────────────────────
 
-  // Group requirements by category_id
-  const reqsByCategory: Record<string, RequirementNode[]> = {};
-  for (const req of requirements) {
-    const catId = req.category_id ?? "__none__";
-    if (!reqsByCategory[catId]) reqsByCategory[catId] = [];
-    reqsByCategory[catId].push({
-      id: req.id,
-      title: req.title,
-      description: req.description ?? undefined,
-      type: "requirement",
-      mandatory: req.is_mandatory,
-    });
-  }
+type RawCategory = {
+  id: string;
+  code: string;
+  title: string;
+  short_name: string;
+  level: number;
+  parent_id: string | null;
+  display_order: number | null;
+  weight: number;
+};
 
-  // Build category nodes bottom-up (deepest levels first)
-  const catNodeMap: Record<string, RequirementNode> = {};
-  const sortedCats = [...categories].sort((a, b) => b.level - a.level);
+type RawRequirement = {
+  id: string;
+  requirement_id_external: string | null;
+  title: string;
+  description: string | null;
+  category_id: string | null;
+  weight: number | null;
+  is_mandatory: boolean | null;
+  display_order: number | null;
+};
 
-  for (const cat of sortedCats) {
-    const childCats = catChildrenMap[cat.id] ?? [];
-    const childReqs = reqsByCategory[cat.id] ?? [];
-    const children = [...childCats, ...childReqs];
-    catNodeMap[cat.id] = {
-      id: cat.id,
-      title: cat.title,
-      type: cat.level === 1 ? "domain" : "category",
-      children,
-      count: children.length,
-    };
-  }
-
-  // Wire child categories into parent category children arrays
-  for (const cat of sortedCats) {
-    if (cat.parent_id && catChildrenMap[cat.parent_id]) {
-      catChildrenMap[cat.parent_id].push(catNodeMap[cat.id]);
-    }
-  }
-
-  // Collect root categories (no parent) — rebuild after wiring
-  const rootCats = categories
-    .filter((c) => c.parent_id === null)
-    .sort((a, b) => a.level - b.level)
-    .map((c) => catNodeMap[c.id])
-    .filter(Boolean);
-
-  // Requirements with no category
-  const uncategorized = reqsByCategory["__none__"] ?? [];
-  const allChildren = [...rootCats, ...uncategorized];
-
+function toDetail(r: RawRequirement): RequirementDetail {
   return {
-    id: `rfp-${rfpId}`,
-    title: rfpTitle,
-    type: "domain",
-    children: allChildren,
-    count: allChildren.reduce((s, n) => s + (n.count ?? 1), 0),
+    id: r.id,
+    externalId: r.requirement_id_external ?? "",
+    title: r.title,
+    description: r.description,
+    weight: r.weight ?? 1,
+    isMandatory: r.is_mandatory ?? false,
+    displayOrder: r.display_order,
   };
 }
 
-/**
- * Get requirements tree tool handler — real Supabase data
- */
+function buildTree(
+  categories: RawCategory[],
+  requirementsByCategory: Record<string, RequirementDetail[]>
+): CategoryTreeNode[] {
+  const nodeMap: Record<string, CategoryTreeNode> = {};
+
+  // Build leaf-to-root so we can propagate aggregates upward
+  const sorted = [...categories].sort((a, b) => b.level - a.level);
+
+  for (const cat of sorted) {
+    const directReqs = requirementsByCategory[cat.id] ?? [];
+    nodeMap[cat.id] = {
+      id: cat.id,
+      code: cat.code,
+      title: cat.title,
+      shortName: cat.short_name,
+      level: cat.level,
+      displayOrder: cat.display_order,
+      weight: cat.weight ?? 1,
+      aggregateWeight: directReqs.reduce((s, r) => s + r.weight, 0),
+      requirementCount: directReqs.length,
+      mandatoryCount: directReqs.filter((r) => r.isMandatory).length,
+      children: [],
+      requirements: directReqs,
+    };
+  }
+
+  // Wire children into parents and propagate aggregates upward
+  for (const cat of sorted) {
+    if (cat.parent_id && nodeMap[cat.parent_id] && nodeMap[cat.id]) {
+      const child = nodeMap[cat.id];
+      const parent = nodeMap[cat.parent_id];
+      parent.children.unshift(child);
+      parent.aggregateWeight += child.aggregateWeight;
+      parent.requirementCount += child.requirementCount;
+      parent.mandatoryCount += child.mandatoryCount;
+    }
+  }
+
+  // Sort children within each node by display_order
+  for (const node of Object.values(nodeMap)) {
+    node.children.sort(
+      (a, b) => (a.displayOrder ?? 9999) - (b.displayOrder ?? 9999)
+    );
+  }
+
+  return categories
+    .filter((c) => c.parent_id === null)
+    .sort((a, b) => (a.display_order ?? 9999) - (b.display_order ?? 9999))
+    .map((c) => nodeMap[c.id])
+    .filter(Boolean);
+}
+
+function flattenTree(
+  nodes: CategoryTreeNode[],
+  pathParts: string[] = []
+): FlatRequirement[] {
+  const result: FlatRequirement[] = [];
+  for (const node of nodes) {
+    const currentPath = [...pathParts, node.title];
+    for (const req of node.requirements) {
+      result.push({ ...req, categoryId: node.id, categoryPath: currentPath.join(" > ") });
+    }
+    result.push(...flattenTree(node.children, currentPath));
+  }
+  return result;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Handler
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function handleGetRequirementsTree(
   input: GetRequirementsTreeInput,
   authContext: MCPAuthContext
 ): Promise<GetRequirementsTreeOutput> {
   const supabase = createServiceClient();
-  const { rfp_id } = input;
+  const { rfp_id, flatten } = input;
 
-  // Verify access and get RFP title
   const { data: rfp, error: rfpError } = await supabase
     .from("rfps")
     .select("id, title, organization_id")
     .eq("id", rfp_id)
     .single();
 
-  if (rfpError || !rfp) {
-    throw new Error(`RFP not found: ${rfp_id}`);
-  }
+  if (rfpError || !rfp) throw new Error(`RFP not found: ${rfp_id}`);
 
   if (
     authContext.organizationId &&
@@ -147,23 +220,21 @@ export async function handleGetRequirementsTree(
       .eq("rfp_id", rfp_id)
       .eq("user_id", authContext.userId)
       .single();
-
-    if (!assignment) {
-      throw new Error(`Access denied to RFP: ${rfp_id}`);
-    }
+    if (!assignment) throw new Error(`Access denied to RFP: ${rfp_id}`);
   }
 
-  // Fetch categories and requirements in parallel
   const [{ data: categories, error: catError }, { data: requirements, error: reqError }] =
     await Promise.all([
       supabase
         .from("categories")
-        .select("id, title, parent_id, level")
+        .select("id, code, title, short_name, level, parent_id, display_order, weight")
         .eq("rfp_id", rfp_id)
         .order("display_order", { ascending: true, nullsFirst: false }),
       supabase
         .from("requirements")
-        .select("id, title, description, category_id, is_mandatory")
+        .select(
+          "id, requirement_id_external, title, description, category_id, weight, is_mandatory, display_order"
+        )
         .eq("rfp_id", rfp_id)
         .order("display_order", { ascending: true, nullsFirst: false }),
     ]);
@@ -171,8 +242,47 @@ export async function handleGetRequirementsTree(
   if (catError) throw new Error(`Failed to fetch categories: ${catError.message}`);
   if (reqError) throw new Error(`Failed to fetch requirements: ${reqError.message}`);
 
-  const tree = buildTreeFromData(rfp_id, rfp.title, categories ?? [], requirements ?? []);
-  const statistics = getTreeStatistics(tree);
+  const allReqs = (requirements ?? []) as RawRequirement[];
 
-  return { rfpId: rfp_id, rfpTitle: rfp.title, tree, statistics };
+  const requirementsByCategory: Record<string, RequirementDetail[]> = {};
+  const uncategorized: RequirementDetail[] = [];
+
+  for (const req of allReqs) {
+    const detail = toDetail(req);
+    if (req.category_id) {
+      if (!requirementsByCategory[req.category_id])
+        requirementsByCategory[req.category_id] = [];
+      requirementsByCategory[req.category_id].push(detail);
+    } else {
+      uncategorized.push(detail);
+    }
+  }
+
+  const tree = buildTree((categories ?? []) as RawCategory[], requirementsByCategory);
+
+  const statistics: RequirementsTreeStatistics = {
+    totalCategories: (categories ?? []).length,
+    totalRequirements: allReqs.length,
+    mandatoryRequirements: allReqs.filter((r: RawRequirement) => r.is_mandatory).length,
+    totalWeight: allReqs.reduce((s: number, r: RawRequirement) => s + (r.weight ?? 1), 0),
+  };
+
+  if (flatten) {
+    return {
+      rfpId: rfp_id,
+      rfpTitle: rfp.title,
+      flatList: [
+        ...flattenTree(tree),
+        ...uncategorized.map((r) => ({
+          ...r,
+          categoryId: null,
+          categoryPath: "Uncategorized",
+        })),
+      ],
+      uncategorized,
+      statistics,
+    };
+  }
+
+  return { rfpId: rfp_id, rfpTitle: rfp.title, tree, uncategorized, statistics };
 }
