@@ -402,6 +402,17 @@ export async function POST(req: NextRequest) {
           },
         });
 
+      case "notifications/initialized":
+        httpLogger.info("[MCP] Received notifications/initialized");
+        // Notifications don't require a JSON-RPC response, returning 202 with no body is correct
+        return new NextResponse(null, {
+          status: 202,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+          },
+        });
+
       case "tools/list":
         const response1 = handleToolsList(requestId);
         const elapsedMs1 = Date.now() - startTime;

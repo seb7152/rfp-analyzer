@@ -917,6 +917,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(response, { headers: corsHeaders() });
       }
 
+      case "notifications/initialized": {
+        httpLogger.info("[MCP] Received notifications/initialized");
+        return new NextResponse(null, { status: 202, headers: corsHeaders() });
+      }
+
       case "tools/list": {
         const response = handleToolsList(requestId);
         httpLogger.info(`[MCP] Tools/list completed in ${Date.now() - startTime}ms`);
