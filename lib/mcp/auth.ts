@@ -17,17 +17,27 @@ export interface MCPAuthContext {
 export async function authenticateMCPRequest(
   req: NextRequest
 ): Promise<MCPAuthContext | null> {
+  let token = "";
+
   const authHeader = req.headers.get("authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.slice("Bearer ".length).trim();
+  }
+
+  // Fallback to query parameter if no token in header
+  if (!token) {
+    const searchParams = req.nextUrl?.searchParams || new URL(req.url).searchParams;
+    const tokenParam = searchParams.get("token");
+    if (tokenParam) {
+      token = tokenParam.trim();
+    }
+  }
+
+  if (!token) {
     return null;
   }
 
-  const raw = authHeader.slice("Bearer ".length).trim();
-  if (!raw) {
-    return null;
-  }
-
-  return validateToken(raw);
+  return validateToken(token);
 }
 
 /**
