@@ -19,7 +19,6 @@ export interface EvaluationVersion {
   isActive: boolean;
   parentVersionId: string | null;
   createdAt: string;
-  finalizedAt: string | null;
 }
 
 /**
@@ -79,7 +78,7 @@ export async function listVersions(rfp_id: string): Promise<EvaluationVersion[]>
   const { data, error } = await supabase
     .from("evaluation_versions")
     .select(
-      "id, rfp_id, version_number, version_name, description, is_active, parent_version_id, created_at, finalized_at"
+      "id, rfp_id, version_number, version_name, description, is_active, parent_version_id, created_at"
     )
     .eq("rfp_id", rfp_id)
     .order("version_number", { ascending: true });
@@ -95,6 +94,5 @@ export async function listVersions(rfp_id: string): Promise<EvaluationVersion[]>
     isActive: v.is_active,
     parentVersionId: v.parent_version_id,
     createdAt: v.created_at,
-    finalizedAt: v.finalized_at,
   }));
 }
