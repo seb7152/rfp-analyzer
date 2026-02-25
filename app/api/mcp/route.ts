@@ -25,6 +25,10 @@ import { handleGetResponses } from "@/lib/mcp/tools/get-responses";
 import { handleGetScoringMatrix } from "@/lib/mcp/tools/get-scoring-matrix";
 import { handleGetRFPVersions } from "@/lib/mcp/tools/get-rfp-versions";
 
+// ── Read: AI Analysis ─────────────────────────────────────────────────────────
+import { handleGetDefenseSynthesis } from "@/lib/mcp/tools/get-defense-synthesis";
+import { handleGetSoutenanceBrief } from "@/lib/mcp/tools/get-soutenance-brief";
+
 // ── Write tools ───────────────────────────────────────────────────────────────
 import { handleCreateRFP } from "@/lib/mcp/tools/create-rfp";
 import { handleUpdateRFP } from "@/lib/mcp/tools/update-rfp";
@@ -196,6 +200,46 @@ const TOOL_DEFINITIONS = [
           enum: ["ai", "manual", "both"],
           description: "Which scores to include: 'ai', 'manual', or 'both' (default)",
           default: "both",
+        },
+      },
+      required: ["rfp_id"],
+    },
+  },
+
+  // ── Read: AI Analysis ───────────────────────────────────────────────────────
+  {
+    name: "get_defense_synthesis",
+    title: "Get Defense Synthesis",
+    description:
+      "Get the AI-generated defense synthesis per category for a supplier: forces (strengths), faiblesses (weaknesses), and points de question extracted from evaluation responses. Optionally filter by supplier_id or version_id.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        rfp_id: { type: "string", description: "The RFP ID", minLength: 1 },
+        supplier_id: {
+          type: "string",
+          description: "Filter by supplier UUID. Omit to get results for all suppliers.",
+        },
+        version_id: {
+          type: "string",
+          description: "Evaluation version ID. Omit for the latest completed analysis.",
+        },
+      },
+      required: ["rfp_id"],
+    },
+  },
+  {
+    name: "get_soutenance_brief",
+    title: "Get Soutenance Brief",
+    description:
+      "Get the latest AI-generated soutenance brief (Markdown report) per supplier. The brief covers weak/partial/roadmap requirements and prepares the defense meeting. Returns status (pending | processing | completed | failed) and report_markdown when completed.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        rfp_id: { type: "string", description: "The RFP ID", minLength: 1 },
+        supplier_id: {
+          type: "string",
+          description: "Filter by supplier UUID. Omit to get the latest brief for each supplier.",
         },
       },
       required: ["rfp_id"],
@@ -610,6 +654,34 @@ async function handleToolCall(
       );
       if (!v.isValid) return invalidParams(id, v.error);
       result = await handleGetScoringMatrix(v.data, authContext);
+      break;
+    }
+
+    // ── Read: AI Analysis ───────────────────────────────────────────────────
+    case "get_defense_synthesis": {
+      const v = validateParams(
+        toolArgs,
+        z.object({
+          rfp_id: z.string().min(1),
+          supplier_id: z.string().optional(),
+          version_id: z.string().optional(),
+        })
+      );
+      if (!v.isValid) return invalidParams(id, v.error);
+      result = await handleGetDefenseSynthesis(v.data, authContext);
+      break;
+    }
+
+    case "get_soutenance_brief": {
+      const v = validateParams(
+        toolArgs,
+        z.object({
+          rfp_id: z.string().min(1),
+          supplier_id: z.string().optional(),
+        })
+      );
+      if (!v.isValid) return invalidParams(id, v.error);
+      result = await handleGetSoutenanceBrief(v.data, authContext);
       break;
     }
 
