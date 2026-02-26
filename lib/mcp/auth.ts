@@ -4,8 +4,8 @@ import { validateToken } from "@/lib/pat/token";
 export interface MCPAuthContext {
   userId: string;
   organizationIds: string[];
-  /** Raw PAT token — available for tools that need to forward it (e.g. curl commands) */
-  rawToken: string;
+  /** Raw PAT token — available when the context originates from an MCP request (not from an import token) */
+  rawToken?: string;
 }
 
 /**

@@ -11,11 +11,13 @@
  *   3. Agent executes the curl via Bash tool.
  *   4. File bytes go: disk → curl → server. Never touch the agent's context.
  *
- * The auth token is referenced as the $MCP_API_TOKEN env var so that it never
- * appears in the command string that enters the agent's context.
+ * Auth: a short-lived import token (15 min TTL) is generated server-side via
+ * HMAC-SHA256 and embedded in the curl command. No env var required on the
+ * agent side.
  */
 
 import type { MCPAuthContext } from "@/lib/mcp/auth";
+import { generateImportToken } from "@/lib/mcp/utils/import-token";
 
 export interface GetImportCommandInput {
   rfp_id: string;
@@ -36,12 +38,14 @@ export interface GetImportCommandOutput {
   endpoint_url: string;
   /** Ready-to-run curl command — execute with the Bash tool */
   curl_command: string;
+  /** Token expiry as ISO-8601 string */
+  token_expires_at: string;
   note: string;
 }
 
 export function handleGetImportCommand(
   input: GetImportCommandInput,
-  _authContext: MCPAuthContext
+  authContext: MCPAuthContext
 ): GetImportCommandOutput {
   // Resolve base URL from environment
   const appUrl =
@@ -62,9 +66,13 @@ export function handleGetImportCommand(
   const endpointUrl = `${appUrl}/api/mcp/import-file?${params.toString()}`;
   const filePlaceholder = input.file_path ?? "/path/to/your/file.json";
 
+  // Generate a short-lived import token (15 min, HMAC-signed, no DB)
+  const importToken = generateImportToken(authContext);
+  const tokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
   const curlCommand = [
     `curl -X POST '${endpointUrl}'`,
-    `  -H 'Authorization: Bearer ${authContext.rawToken}'`,
+    `  -H 'Authorization: Bearer ${importToken}'`,
     `  -H 'Content-Type: application/json'`,
     `  --data-binary @${filePlaceholder}`,
   ].join(" \\\n");
@@ -72,6 +80,7 @@ export function handleGetImportCommand(
   return {
     endpoint_url: endpointUrl,
     curl_command: curlCommand,
+    token_expires_at: tokenExpiresAt,
     note:
       "Run curl_command using the Bash tool. The file content goes directly from disk to the server and never enters agent context." +
       (input.file_path

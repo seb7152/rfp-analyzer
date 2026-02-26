@@ -476,7 +476,7 @@ const TOOL_DEFINITIONS = [
       "Returns a ready-to-run curl command to upload a local JSON file to the import endpoint without loading its content into agent context. " +
       "Use this when a script has produced a JSON file on disk and you want to import it without reading it first. " +
       "The file bytes go directly from disk to the server via curl (Bash tool) — they never appear in agent context. " +
-      "The auth token is referenced as $MCP_API_TOKEN (env var) so it is not exposed in plain text.",
+      "A short-lived import token (15 min TTL, HMAC-signed) is generated automatically and embedded in the command.",
     inputSchema: {
       type: "object",
       properties: {
