@@ -24,14 +24,13 @@ import {
   Users,
   Zap,
   Shield,
-  Key,
-  Code2,
   CheckCircle2,
   Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { CreateRFPDialog } from "@/components/CreateRFPDialog";
 import { RFPsTable } from "@/components/RFPsTable";
+import { TokensManagerCard } from "@/components/TokensManagerCard";
 import { useRFPs } from "@/hooks/use-rfps";
 import { useRFPCompletion } from "@/hooks/use-completion";
 
@@ -534,131 +533,7 @@ export default function DashboardPage() {
           </TabsContent>
 
           <TabsContent value="integrations" className="space-y-4">
-            <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Key className="h-5 w-5" />
-                    Gestion des tokens API
-                  </CardTitle>
-                  <CardDescription>
-                    Créez et gérez vos clés d'accès pour l'intégration MCP
-                  </CardDescription>
-                </div>
-                {isAdmin && (
-                  <Link href="/dashboard/settings/tokens">
-                    <Button>
-                      Accéder aux tokens
-                      <ArrowUpRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </Link>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/40">
-                  <div className="flex items-start gap-3">
-                    <Code2 className="h-5 w-5 text-slate-500 flex-shrink-0 mt-0.5" />
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">
-                        Tokens d'authentification
-                      </p>
-                      <p className="text-sm text-slate-600 dark:text-slate-300">
-                        Les tokens permettent d'authentifier les clients MCP sans utiliser vos identifiants de session. Chaque token peut avoir une date d'expiration et être révoqué à tout moment.
-                      </p>
-                      <div className="flex items-center gap-2 pt-2">
-                        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                        <span className="text-xs text-slate-600 dark:text-slate-400">
-                          Sécurisé avec préfixe visible et révocation instantanée
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-700">
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                      Format d'utilisation
-                    </p>
-                    <code className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded mt-2 block text-slate-700 dark:text-slate-200 font-mono">
-                      Authorization: Bearer &lt;token&gt;
-                    </code>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-700">
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                      Endpoint
-                    </p>
-                    <p className="text-sm text-slate-900 dark:text-white mt-2 font-mono break-all">
-                      /api/mcp
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-700">
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                      Documentation
-                    </p>
-                    <Link href="#" className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 mt-2 block">
-                      Voir les spécifications MCP →
-                    </Link>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {isAdmin && (
-              <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
-                <CardHeader>
-                  <CardTitle>Intégrations disponibles</CardTitle>
-                  <CardDescription>
-                    Services et clients supportés pour accéder à vos données
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {[
-                      {
-                        name: "Claude Desktop",
-                        icon: "🤖",
-                        description: "Assistant IA pour interactions MCP",
-                        status: "active",
-                      },
-                      {
-                        name: "Cursor",
-                        icon: "💻",
-                        description: "Éditeur de code avec support MCP",
-                        status: "active",
-                      },
-                      {
-                        name: "VS Code",
-                        icon: "📝",
-                        description: "Intégration Copilot avec MCP",
-                        status: "active",
-                      },
-                    ].map((integration) => (
-                      <div
-                        key={integration.name}
-                        className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="text-lg font-medium">
-                              {integration.icon} {integration.name}
-                            </p>
-                            <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-                              {integration.description}
-                            </p>
-                          </div>
-                          <Badge
-                            className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                          >
-                            {integration.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            <TokensManagerCard organizationId={currentOrg.id} isAdmin={isAdmin} />
           </TabsContent>
 
           <TabsContent value="account" className="space-y-4">
