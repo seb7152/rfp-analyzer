@@ -27,14 +27,13 @@ export async function GET(request: Request) {
     );
   }
 
-  let query = supabase
+  const { data: tokens, error } = await supabase
     .from("personal_access_tokens")
     .select("id, name, token_prefix, last_used_at, expires_at, created_at")
     .eq("user_id", user.id)
     .eq("organization_id", organizationId)
+    .is("revoked_at", null)
     .order("created_at", { ascending: false });
-
-  const { data: tokens, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -82,7 +81,7 @@ export async function POST(request: Request) {
   const expires_at =
     expires_in_days != null
       ? new Date(Date.now() + expires_in_days * 86400_000).toISOString()
-      : new Date(Date.now() + 90 * 86400_000).toISOString(); // 90 days default
+      : null; // NULL = never expires
 
   const { data: token, error } = await supabase
     .from("personal_access_tokens")

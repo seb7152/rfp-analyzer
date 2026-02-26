@@ -61,7 +61,7 @@ export function TokensManagerCard({
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [newTokenName, setNewTokenName] = useState("");
-  const [expiresInDays, setExpiresInDays] = useState<string>("90");
+  const [expiresInDays, setExpiresInDays] = useState<string>("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -95,7 +95,7 @@ export function TokensManagerCard({
         body: JSON.stringify({
           name: newTokenName.trim(),
           organizationId,
-          expires_in_days: expiresInDays ? parseInt(expiresInDays) : 90,
+          expires_in_days: expiresInDays ? parseInt(expiresInDays) : undefined,
         }),
       });
       if (res.ok) {
@@ -291,7 +291,10 @@ export function TokensManagerCard({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="token-expiry">
-                Expiration (jours)
+                Expiration (jours){" "}
+                <span className="text-slate-500 dark:text-slate-400 font-normal">
+                  — laisser vide pour ne jamais expirer
+                </span>
               </Label>
               <Input
                 id="token-expiry"
@@ -301,9 +304,6 @@ export function TokensManagerCard({
                 value={expiresInDays}
                 onChange={(e) => setExpiresInDays(e.target.value)}
               />
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Par défaut : 90 jours
-              </p>
             </div>
           </div>
           <DialogFooter>
