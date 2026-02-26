@@ -40,7 +40,7 @@ export async function validateToken(raw: string): Promise<{
 
   const { data: token, error } = await supabase
     .from("personal_access_tokens")
-    .select("id, user_id, expires_at, revoked_at")
+    .select("id, user_id, expires_at, revoked_at, organization_id")
     .eq("token_hash", hash)
     .single();
 
@@ -65,15 +65,8 @@ export async function validateToken(raw: string): Promise<{
     .eq("id", token.id)
     .then(() => { });
 
-  // Fetch the user's organizations
-  const { data: orgRows } = await supabase
-    .from("user_organizations")
-    .select("organization_id")
-    .eq("user_id", token.user_id)
-    .order("joined_at", { ascending: true });
-
   return {
     userId: token.user_id,
-    organizationIds: orgRows ? orgRows.map((r) => r.organization_id) : [],
+    organizationIds: token.organization_id ? [token.organization_id] : [],
   };
 }
