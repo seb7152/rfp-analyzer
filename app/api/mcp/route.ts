@@ -1029,13 +1029,29 @@ export async function GET(req: NextRequest) {
           encoder.encode(`data: ${JSON.stringify(endpoint)}\n\n`)
         );
 
-        controller.close();
-        httpLogger.info("[MCP] SSE descriptor sent and closed");
+        // Keep the SSE connection open. If we close it, clients (like mcp-remote) 
+        // will aggressively reconnect thinking the server dropped.
+        const pingInterval = setInterval(() => {
+          try {
+            controller.enqueue(encoder.encode(`: ping\n\n`));
+          } catch (e) {
+            clearInterval(pingInterval);
+          }
+        }, 15000);
+
+        req.signal.addEventListener("abort", () => {
+          clearInterval(pingInterval);
+        });
+
+        httpLogger.info("[MCP] SSE descriptor sent, keeping connection open");
       } catch (error) {
         httpLogger.error("[MCP] Error sending SSE descriptor:", error as any);
         controller.error(error);
       }
     },
+    cancel() {
+      // Optional cleanup on cancel
+    }
   });
 
   return new Response(stream, {
