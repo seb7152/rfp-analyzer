@@ -21,6 +21,7 @@
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { MCPAuthContext } from "@/lib/mcp/auth";
+import { resolveImportData } from "@/lib/mcp/utils/file-import";
 
 // Flexible schema accepting both English and French field names
 const RequirementInputSchema = z
@@ -42,19 +43,44 @@ const RequirementInputSchema = z
   })
   .passthrough();
 
-export const ImportRequirementsInputSchema = z.object({
-  rfp_id: z.string().min(1, "RFP ID is required"),
-  requirements: z
-    .array(RequirementInputSchema)
-    .min(1, "At least one requirement is required"),
-  mode: z
-    .enum(["append", "replace"])
-    .optional()
-    .default("append")
-    .describe(
-      "'append' (default): add requirements without deleting existing ones. 'replace': delete all existing requirements for this RFP first."
-    ),
-});
+export const ImportRequirementsInputSchema = z
+  .object({
+    rfp_id: z.string().min(1, "RFP ID is required"),
+    requirements: z
+      .array(RequirementInputSchema)
+      .optional()
+      .describe("Inline array of requirement objects. Omit when using file_url or file_content."),
+    file_url: z
+      .string()
+      .url()
+      .optional()
+      .describe(
+        "HTTPS URL to a JSON file containing the requirements. Accepts a JSON array or an object with a 'requirements' key. The server fetches and parses the file — the agent does not need to read the file content."
+      ),
+    file_content: z
+      .string()
+      .optional()
+      .describe(
+        "Raw JSON text of the requirements (alternative to file_url). Avoids the server making an outbound HTTP request."
+      ),
+    mode: z
+      .enum(["append", "replace"])
+      .optional()
+      .default("append")
+      .describe(
+        "'append' (default): add requirements without deleting existing ones. 'replace': delete all existing requirements for this RFP first."
+      ),
+  })
+  .refine(
+    (d) =>
+      (d.requirements && d.requirements.length > 0) ||
+      d.file_url ||
+      d.file_content,
+    {
+      message:
+        "Provide one of: requirements (inline array), file_url (HTTPS URL), or file_content (raw JSON text).",
+    }
+  );
 
 export type ImportRequirementsInput = z.infer<typeof ImportRequirementsInputSchema>;
 
@@ -69,7 +95,15 @@ export async function handleImportRequirements(
   authContext: MCPAuthContext
 ): Promise<ImportRequirementsOutput> {
   const supabase = createServiceClient();
-  const { rfp_id, requirements, mode } = input;
+  const { rfp_id, mode } = input;
+
+  // Resolve requirements from inline data, file_url, or file_content
+  const rawData = await resolveImportData({
+    inlineData: input.requirements,
+    file_url: input.file_url,
+    file_content: input.file_content,
+  });
+  const requirements = z.array(RequirementInputSchema).parse(rawData);
 
   // Verify access
   const { data: rfp, error: rfpError } = await supabase

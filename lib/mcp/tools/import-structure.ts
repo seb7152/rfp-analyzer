@@ -18,6 +18,7 @@
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { MCPAuthContext } from "@/lib/mcp/auth";
+import { resolveImportData } from "@/lib/mcp/utils/file-import";
 
 const CategoryInputSchema = z.object({
   id: z.string().describe("External reference ID used for parent_id linking within this batch"),
@@ -30,19 +31,44 @@ const CategoryInputSchema = z.object({
   display_order: z.number().int().optional(),
 });
 
-export const ImportStructureInputSchema = z.object({
-  rfp_id: z.string().min(1, "RFP ID is required"),
-  categories: z
-    .array(CategoryInputSchema)
-    .min(1, "At least one category is required"),
-  mode: z
-    .enum(["append", "replace"])
-    .optional()
-    .default("append")
-    .describe(
-      "'append' (default): add categories without deleting existing ones. 'replace': delete all existing categories first."
-    ),
-});
+export const ImportStructureInputSchema = z
+  .object({
+    rfp_id: z.string().min(1, "RFP ID is required"),
+    categories: z
+      .array(CategoryInputSchema)
+      .optional()
+      .describe("Inline array of category objects. Omit when using file_url or file_content."),
+    file_url: z
+      .string()
+      .url()
+      .optional()
+      .describe(
+        "HTTPS URL to a JSON file containing the categories array. The server fetches and parses the file — the agent does not need to read the file content."
+      ),
+    file_content: z
+      .string()
+      .optional()
+      .describe(
+        "Raw JSON text of the categories array (alternative to file_url). Avoids the server making an outbound HTTP request."
+      ),
+    mode: z
+      .enum(["append", "replace"])
+      .optional()
+      .default("append")
+      .describe(
+        "'append' (default): add categories without deleting existing ones. 'replace': delete all existing categories first."
+      ),
+  })
+  .refine(
+    (d) =>
+      (d.categories && d.categories.length > 0) ||
+      d.file_url ||
+      d.file_content,
+    {
+      message:
+        "Provide one of: categories (inline array), file_url (HTTPS URL), or file_content (raw JSON text).",
+    }
+  );
 
 export type ImportStructureInput = z.infer<typeof ImportStructureInputSchema>;
 
@@ -58,7 +84,15 @@ export async function handleImportStructure(
   authContext: MCPAuthContext
 ): Promise<ImportStructureOutput> {
   const supabase = createServiceClient();
-  const { rfp_id, categories, mode } = input;
+  const { rfp_id, mode } = input;
+
+  // Resolve categories from inline data, file_url, or file_content
+  const rawData = await resolveImportData({
+    inlineData: input.categories,
+    file_url: input.file_url,
+    file_content: input.file_content,
+  });
+  const categories = z.array(CategoryInputSchema).parse(rawData);
 
   // Verify access
   const { data: rfp, error: rfpError } = await supabase

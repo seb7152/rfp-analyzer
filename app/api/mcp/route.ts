@@ -333,14 +333,14 @@ const TOOL_DEFINITIONS = [
     name: "import_structure",
     title: "Import Structure (Bulk Categories)",
     description:
-      "Bulk import categories from a JSON array matching the /imports/test-categories.json format. The 'id' field is an external reference for parent_id linking — not stored as DB UUID. Supports append (default) or replace mode.",
+      "Bulk import categories for an RFP. Provide data via ONE of: (1) categories — inline JSON array; (2) file_url — HTTPS URL the server fetches (e.g. a GCS signed URL), so the agent never reads the file content; (3) file_content — raw JSON text. The 'id' field is an external reference for parent_id linking — not stored as DB UUID. Supports append (default) or replace mode.",
     inputSchema: {
       type: "object",
       properties: {
         rfp_id: { type: "string", description: "The RFP ID", minLength: 1 },
         categories: {
           type: "array",
-          description: "Array of category objects (same format as test-categories.json)",
+          description: "Inline array of category objects. Omit when using file_url or file_content.",
           items: {
             type: "object",
             properties: {
@@ -356,6 +356,16 @@ const TOOL_DEFINITIONS = [
             required: ["id", "code", "title", "level"],
           },
         },
+        file_url: {
+          type: "string",
+          description:
+            "HTTPS URL to a JSON file containing the categories array (e.g. a GCS signed URL). The server fetches and parses the file — the agent does not need to read the file content. Preferred approach for large files to reduce agent context usage.",
+        },
+        file_content: {
+          type: "string",
+          description:
+            "Raw JSON text of the categories array. Use when the file is already read as text but not parsed. Avoids an outbound HTTP request from the server.",
+        },
         mode: {
           type: "string",
           enum: ["append", "replace"],
@@ -363,21 +373,21 @@ const TOOL_DEFINITIONS = [
           default: "append",
         },
       },
-      required: ["rfp_id", "categories"],
+      required: ["rfp_id"],
     },
   },
   {
     name: "import_requirements",
     title: "Import Requirements (Bulk)",
     description:
-      "Bulk import requirements from a JSON payload matching the /imports/test-requirements.json format. Supports English keys (code, title, description, category_name) and French keys (numéro, titre, exigence, catégorie). Categories are matched by title.",
+      "Bulk import requirements for an RFP. Provide data via ONE of: (1) requirements — inline JSON array; (2) file_url — HTTPS URL the server fetches (e.g. a GCS signed URL), so the agent never reads the file content; (3) file_content — raw JSON text. Accepts a JSON array or an object with a 'requirements' key. Supports English keys (code, title, description, category_name) and French keys (numéro, titre, exigence, catégorie). Categories are matched by title.",
     inputSchema: {
       type: "object",
       properties: {
         rfp_id: { type: "string", description: "The RFP ID", minLength: 1 },
         requirements: {
           type: "array",
-          description: "Array of requirement objects (same format as test-requirements.json)",
+          description: "Inline array of requirement objects. Omit when using file_url or file_content.",
           items: {
             type: "object",
             properties: {
@@ -395,6 +405,16 @@ const TOOL_DEFINITIONS = [
             },
           },
         },
+        file_url: {
+          type: "string",
+          description:
+            "HTTPS URL to a JSON file containing the requirements (e.g. a GCS signed URL). The server fetches and parses the file — the agent does not need to read the file content. Preferred approach for large files to reduce agent context usage.",
+        },
+        file_content: {
+          type: "string",
+          description:
+            "Raw JSON text of the requirements. Use when the file is already read as text but not parsed. Avoids an outbound HTTP request from the server.",
+        },
         mode: {
           type: "string",
           enum: ["append", "replace"],
@@ -402,14 +422,14 @@ const TOOL_DEFINITIONS = [
           default: "append",
         },
       },
-      required: ["rfp_id", "requirements"],
+      required: ["rfp_id"],
     },
   },
   {
     name: "import_supplier_responses",
     title: "Import Supplier Responses (Bulk)",
     description:
-      "Bulk import responses for a supplier from a JSON array matching the /imports/test-supplier-1.json format. Requirements are matched by requirement_id_external (e.g. 'R - 1'). Uses upsert — existing responses are updated.",
+      "Bulk import responses for a supplier. Provide data via ONE of: (1) responses — inline JSON array; (2) file_url — HTTPS URL the server fetches (e.g. a GCS signed URL), so the agent never reads the file content; (3) file_content — raw JSON text. Requirements are matched by requirement_id_external (e.g. 'R - 1'). Uses upsert — existing responses are updated.",
     inputSchema: {
       type: "object",
       properties: {
@@ -419,7 +439,7 @@ const TOOL_DEFINITIONS = [
         supplier_name: { type: "string", description: "Supplier name — creates supplier if not found" },
         responses: {
           type: "array",
-          description: "Array of response objects (same format as test-supplier-1.json)",
+          description: "Inline array of response objects. Omit when using file_url or file_content.",
           items: {
             type: "object",
             properties: {
@@ -432,8 +452,18 @@ const TOOL_DEFINITIONS = [
             required: ["requirement_id_external", "response_text"],
           },
         },
+        file_url: {
+          type: "string",
+          description:
+            "HTTPS URL to a JSON file containing the responses array (e.g. a GCS signed URL). The server fetches and parses the file — the agent does not need to read the file content. Preferred approach for large files to reduce agent context usage.",
+        },
+        file_content: {
+          type: "string",
+          description:
+            "Raw JSON text of the responses array. Use when the file is already read as text but not parsed. Avoids an outbound HTTP request from the server.",
+        },
       },
-      required: ["rfp_id", "responses"],
+      required: ["rfp_id"],
     },
   },
 
