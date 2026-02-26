@@ -45,8 +45,8 @@ export async function handleGetRFPs(
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (authContext.organizationId) {
-    query = query.eq("organization_id", authContext.organizationId);
+  if (authContext.organizationIds && authContext.organizationIds.length > 0) {
+    query = query.in("organization_id", authContext.organizationIds);
   } else {
     // Fall back to RFPs directly assigned to the user
     const { data: assignments } = await supabase

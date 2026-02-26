@@ -33,7 +33,7 @@ export function hashToken(raw: string): string {
  */
 export async function validateToken(raw: string): Promise<{
   userId: string;
-  organizationId: string | null;
+  organizationIds: string[];
 } | null> {
   const hash = hashToken(raw);
   const supabase = createServiceClient();
@@ -63,19 +63,17 @@ export async function validateToken(raw: string): Promise<{
     .from("personal_access_tokens")
     .update({ last_used_at: new Date().toISOString() })
     .eq("id", token.id)
-    .then(() => {});
+    .then(() => { });
 
-  // Fetch the user's primary organization
-  const { data: orgRow } = await supabase
+  // Fetch the user's organizations
+  const { data: orgRows } = await supabase
     .from("user_organizations")
     .select("organization_id")
     .eq("user_id", token.user_id)
-    .order("joined_at", { ascending: true })
-    .limit(1)
-    .single();
+    .order("joined_at", { ascending: true });
 
   return {
     userId: token.user_id,
-    organizationId: orgRow?.organization_id ?? null,
+    organizationIds: orgRows ? orgRows.map((r) => r.organization_id) : [],
   };
 }

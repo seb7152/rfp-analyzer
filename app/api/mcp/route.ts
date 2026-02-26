@@ -519,7 +519,7 @@ function handleToolsList(id: number | string) {
 async function handleToolCall(
   id: number | string,
   params: any,
-  authContext: { userId: string; organizationId: string | null }
+  authContext: { userId: string; organizationIds: string[] }
 ) {
   const toolName = params?.name;
   const toolArgs = params?.arguments || {};

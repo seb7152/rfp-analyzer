@@ -33,7 +33,7 @@ export async function handleCreateRFP(
 ): Promise<CreateRFPOutput> {
   const supabase = createServiceClient();
 
-  if (!authContext.organizationId) {
+  if (!authContext.organizationIds || authContext.organizationIds.length === 0) {
     throw new Error(
       "Organization context is required to create an RFP. Ensure your PAT is linked to an organization."
     );
@@ -45,7 +45,7 @@ export async function handleCreateRFP(
       title: input.title,
       description: input.description ?? null,
       status: input.status,
-      organization_id: authContext.organizationId,
+      organization_id: authContext.organizationIds[0],
       created_by: authContext.userId,
     })
     .select("id, title, description, status, organization_id, created_at")

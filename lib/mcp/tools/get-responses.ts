@@ -177,8 +177,9 @@ export async function handleGetResponses(
   if (rfpError || !rfp) throw new Error(`RFP not found: ${rfp_id}`);
 
   if (
-    authContext.organizationId &&
-    rfp.organization_id !== authContext.organizationId
+    authContext.organizationIds &&
+    authContext.organizationIds.length > 0 &&
+    !authContext.organizationIds.includes(rfp.organization_id)
   ) {
     const { data: assignment } = await supabase
       .from("rfp_user_assignments")

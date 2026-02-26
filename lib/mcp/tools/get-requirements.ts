@@ -53,8 +53,9 @@ export async function handleGetRequirements(
   }
 
   if (
-    authContext.organizationId &&
-    rfp.organization_id !== authContext.organizationId
+    authContext.organizationIds &&
+    authContext.organizationIds.length > 0 &&
+    !authContext.organizationIds.includes(rfp.organization_id)
   ) {
     // Check if user has a direct assignment to this RFP
     const { data: assignment } = await supabase

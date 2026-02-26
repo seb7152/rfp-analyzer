@@ -3,7 +3,7 @@ import { validateToken } from "@/lib/pat/token";
 
 export interface MCPAuthContext {
   userId: string;
-  organizationId: string | null;
+  organizationIds: string[];
 }
 
 /**
