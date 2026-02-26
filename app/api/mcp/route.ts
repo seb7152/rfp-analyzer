@@ -1011,12 +1011,13 @@ export async function GET(req: NextRequest) {
     start(controller) {
       try {
         const baseUrl = `${req.nextUrl.protocol}//${req.nextUrl.host}`;
+        const searchParams = req.nextUrl.search || ""; // already contains the ? prefix if not empty
 
         const endpoint = {
           jsonrpc: "2.0",
           method: "endpoint",
           params: {
-            uri: `${baseUrl}/api/mcp/message`,
+            uri: `${baseUrl}/api/mcp/message${searchParams}`,
           },
         };
 
