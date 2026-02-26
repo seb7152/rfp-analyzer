@@ -64,7 +64,7 @@ export function handleGetImportCommand(
 
   const curlCommand = [
     `curl -X POST '${endpointUrl}'`,
-    `  -H 'Authorization: Bearer $MCP_API_TOKEN'`,
+    `  -H 'Authorization: Bearer ${authContext.rawToken}'`,
     `  -H 'Content-Type: application/json'`,
     `  --data-binary @${filePlaceholder}`,
   ].join(" \\\n");
@@ -73,10 +73,9 @@ export function handleGetImportCommand(
     endpoint_url: endpointUrl,
     curl_command: curlCommand,
     note:
-      "Run curl_command using the Bash tool. The file content goes directly from disk to the server and never enters agent context. " +
-      "$MCP_API_TOKEN must be set to your Personal Access Token (rfpa_...). " +
+      "Run curl_command using the Bash tool. The file content goes directly from disk to the server and never enters agent context." +
       (input.file_path
         ? ""
-        : "Replace /path/to/your/file.json with the actual path of the file produced by your script."),
+        : " Replace /path/to/your/file.json with the actual path of the file produced by your script."),
   };
 }

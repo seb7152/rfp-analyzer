@@ -4,6 +4,8 @@ import { validateToken } from "@/lib/pat/token";
 export interface MCPAuthContext {
   userId: string;
   organizationIds: string[];
+  /** Raw PAT token — available for tools that need to forward it (e.g. curl commands) */
+  rawToken: string;
 }
 
 /**
@@ -37,7 +39,9 @@ export async function authenticateMCPRequest(
     return null;
   }
 
-  return validateToken(token);
+  const ctx = await validateToken(token);
+  if (!ctx) return null;
+  return { ...ctx, rawToken: token };
 }
 
 /**
