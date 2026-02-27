@@ -38,6 +38,7 @@ import { handleImportStructure } from "@/lib/mcp/tools/import-structure";
 import { handleImportRequirements } from "@/lib/mcp/tools/import-requirements";
 import { handleImportSupplierResponses } from "@/lib/mcp/tools/import-supplier-responses";
 import { handleUpsertResponse } from "@/lib/mcp/tools/upsert-response";
+import { handleGetImportCommand } from "@/lib/mcp/tools/get-import-command";
 
 /**
  * Server info for initialize response
@@ -333,14 +334,14 @@ const TOOL_DEFINITIONS = [
     name: "import_structure",
     title: "Import Structure (Bulk Categories)",
     description:
-      "Bulk import categories from a JSON array matching the /imports/test-categories.json format. The 'id' field is an external reference for parent_id linking — not stored as DB UUID. Supports append (default) or replace mode.",
+      "Bulk import categories for an RFP. Provide data via ONE of: (1) categories — inline JSON array; (2) file_url — HTTPS URL the server fetches (e.g. a GCS signed URL), so the agent never reads the file content; (3) file_content — raw JSON text. The 'id' field is an external reference for parent_id linking — not stored as DB UUID. Supports append (default) or replace mode. TIP: If the file was produced by a local script and already exists on disk, use get_import_command instead to get a curl command that uploads the file without loading its content into agent context.",
     inputSchema: {
       type: "object",
       properties: {
         rfp_id: { type: "string", description: "The RFP ID", minLength: 1 },
         categories: {
           type: "array",
-          description: "Array of category objects (same format as test-categories.json)",
+          description: "Inline array of category objects. Omit when using file_url or file_content.",
           items: {
             type: "object",
             properties: {
@@ -356,6 +357,16 @@ const TOOL_DEFINITIONS = [
             required: ["id", "code", "title", "level"],
           },
         },
+        file_url: {
+          type: "string",
+          description:
+            "HTTPS URL to a JSON file containing the categories array (e.g. a GCS signed URL). The server fetches and parses the file — the agent does not need to read the file content. Preferred approach for large files to reduce agent context usage.",
+        },
+        file_content: {
+          type: "string",
+          description:
+            "Raw JSON text of the categories array. Use when the file is already read as text but not parsed. Avoids an outbound HTTP request from the server.",
+        },
         mode: {
           type: "string",
           enum: ["append", "replace"],
@@ -363,21 +374,21 @@ const TOOL_DEFINITIONS = [
           default: "append",
         },
       },
-      required: ["rfp_id", "categories"],
+      required: ["rfp_id"],
     },
   },
   {
     name: "import_requirements",
     title: "Import Requirements (Bulk)",
     description:
-      "Bulk import requirements from a JSON payload matching the /imports/test-requirements.json format. Supports English keys (code, title, description, category_name) and French keys (numéro, titre, exigence, catégorie). Categories are matched by title.",
+      "Bulk import requirements for an RFP. Provide data via ONE of: (1) requirements — inline JSON array; (2) file_url — HTTPS URL the server fetches (e.g. a GCS signed URL), so the agent never reads the file content; (3) file_content — raw JSON text. Accepts a JSON array or an object with a 'requirements' key. Supports English keys (code, title, description, category_name) and French keys (numéro, titre, exigence, catégorie). Categories are matched by title. TIP: If the file was produced by a local script and already exists on disk, use get_import_command instead to get a curl command that uploads the file without loading its content into agent context.",
     inputSchema: {
       type: "object",
       properties: {
         rfp_id: { type: "string", description: "The RFP ID", minLength: 1 },
         requirements: {
           type: "array",
-          description: "Array of requirement objects (same format as test-requirements.json)",
+          description: "Inline array of requirement objects. Omit when using file_url or file_content.",
           items: {
             type: "object",
             properties: {
@@ -395,6 +406,16 @@ const TOOL_DEFINITIONS = [
             },
           },
         },
+        file_url: {
+          type: "string",
+          description:
+            "HTTPS URL to a JSON file containing the requirements (e.g. a GCS signed URL). The server fetches and parses the file — the agent does not need to read the file content. Preferred approach for large files to reduce agent context usage.",
+        },
+        file_content: {
+          type: "string",
+          description:
+            "Raw JSON text of the requirements. Use when the file is already read as text but not parsed. Avoids an outbound HTTP request from the server.",
+        },
         mode: {
           type: "string",
           enum: ["append", "replace"],
@@ -402,14 +423,14 @@ const TOOL_DEFINITIONS = [
           default: "append",
         },
       },
-      required: ["rfp_id", "requirements"],
+      required: ["rfp_id"],
     },
   },
   {
     name: "import_supplier_responses",
     title: "Import Supplier Responses (Bulk)",
     description:
-      "Bulk import responses for a supplier from a JSON array matching the /imports/test-supplier-1.json format. Requirements are matched by requirement_id_external (e.g. 'R - 1'). Uses upsert — existing responses are updated.",
+      "Bulk import responses for a supplier. Provide data via ONE of: (1) responses — inline JSON array; (2) file_url — HTTPS URL the server fetches (e.g. a GCS signed URL), so the agent never reads the file content; (3) file_content — raw JSON text. Requirements are matched by requirement_id_external (e.g. 'R - 1'). Uses upsert — existing responses are updated. TIP: If the file was produced by a local script and already exists on disk, use get_import_command instead to get a curl command that uploads the file without loading its content into agent context.",
     inputSchema: {
       type: "object",
       properties: {
@@ -419,7 +440,7 @@ const TOOL_DEFINITIONS = [
         supplier_name: { type: "string", description: "Supplier name — creates supplier if not found" },
         responses: {
           type: "array",
-          description: "Array of response objects (same format as test-supplier-1.json)",
+          description: "Inline array of response objects. Omit when using file_url or file_content.",
           items: {
             type: "object",
             properties: {
@@ -432,8 +453,63 @@ const TOOL_DEFINITIONS = [
             required: ["requirement_id_external", "response_text"],
           },
         },
+        file_url: {
+          type: "string",
+          description:
+            "HTTPS URL to a JSON file containing the responses array (e.g. a GCS signed URL). The server fetches and parses the file — the agent does not need to read the file content. Preferred approach for large files to reduce agent context usage.",
+        },
+        file_content: {
+          type: "string",
+          description:
+            "Raw JSON text of the responses array. Use when the file is already read as text but not parsed. Avoids an outbound HTTP request from the server.",
+        },
       },
-      required: ["rfp_id", "responses"],
+      required: ["rfp_id"],
+    },
+  },
+
+  // ── Write: File-based import (context-free) ──────────────────────────────────
+  {
+    name: "get_import_command",
+    title: "Get Import curl Command",
+    description:
+      "Returns a ready-to-run curl command to upload a local JSON file to the import endpoint without loading its content into agent context. " +
+      "Use this when a script has produced a JSON file on disk and you want to import it without reading it first. " +
+      "The file bytes go directly from disk to the server via curl (Bash tool) — they never appear in agent context. " +
+      "A short-lived import token (15 min TTL, HMAC-signed) is generated automatically and embedded in the command.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        rfp_id: { type: "string", description: "The RFP ID", minLength: 1 },
+        import_type: {
+          type: "string",
+          enum: ["structure", "requirements", "supplier_responses"],
+          description: "What to import: categories hierarchy, requirements list, or supplier responses",
+        },
+        mode: {
+          type: "string",
+          enum: ["append", "replace"],
+          description: "'append' (default): add without deleting existing data. 'replace': delete all existing data first.",
+          default: "append",
+        },
+        supplier_id: {
+          type: "string",
+          description: "Supplier UUID — required when import_type=supplier_responses and supplier_name is absent",
+        },
+        supplier_name: {
+          type: "string",
+          description: "Supplier name — used when import_type=supplier_responses and supplier_id is absent. Creates the supplier if not found.",
+        },
+        version_id: {
+          type: "string",
+          description: "Evaluation version UUID (supplier_responses only). Omit for the active version.",
+        },
+        file_path: {
+          type: "string",
+          description: "Local path of the file to upload (e.g. /tmp/requirements.json). If omitted, a placeholder is used in the curl command.",
+        },
+      },
+      required: ["rfp_id", "import_type"],
     },
   },
 
@@ -838,6 +914,24 @@ async function handleToolCall(
       );
       if (!v.isValid) return invalidParams(id, v.error);
       result = await handleImportSupplierResponses(v.data, authContext);
+      break;
+    }
+
+    case "get_import_command": {
+      const v = validateParams(
+        toolArgs,
+        z.object({
+          rfp_id: z.string().min(1),
+          import_type: z.enum(["structure", "requirements", "supplier_responses"]),
+          mode: z.enum(["append", "replace"]).optional().default("append"),
+          supplier_id: z.string().optional(),
+          supplier_name: z.string().optional(),
+          version_id: z.string().optional(),
+          file_path: z.string().optional(),
+        })
+      );
+      if (!v.isValid) return invalidParams(id, v.error);
+      result = handleGetImportCommand(v.data, authContext);
       break;
     }
 

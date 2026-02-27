@@ -18,6 +18,7 @@ import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { MCPAuthContext } from "@/lib/mcp/auth";
 import { resolveVersionId } from "../utils/versions";
+import { resolveImportData } from "@/lib/mcp/utils/file-import";
 
 const ResponseInputSchema = z.object({
   requirement_id_external: z
@@ -32,28 +33,53 @@ const ResponseInputSchema = z.object({
     .default("pending"),
 });
 
-export const ImportSupplierResponsesInputSchema = z.object({
-  rfp_id: z.string().min(1, "RFP ID is required"),
-  version_id: z
-    .string()
-    .optional()
-    .describe(
-      "Evaluation version ID. Omit to target the active version. Use get_rfp_versions to list versions."
-    ),
-  supplier_id: z
-    .string()
-    .optional()
-    .describe("UUID of the supplier — required if supplier_name is not provided"),
-  supplier_name: z
-    .string()
-    .optional()
-    .describe(
-      "Supplier name — creates a new supplier if not found. Required if supplier_id is not provided."
-    ),
-  responses: z
-    .array(ResponseInputSchema)
-    .min(1, "At least one response is required"),
-});
+export const ImportSupplierResponsesInputSchema = z
+  .object({
+    rfp_id: z.string().min(1, "RFP ID is required"),
+    version_id: z
+      .string()
+      .optional()
+      .describe(
+        "Evaluation version ID. Omit to target the active version. Use get_rfp_versions to list versions."
+      ),
+    supplier_id: z
+      .string()
+      .optional()
+      .describe("UUID of the supplier — required if supplier_name is not provided"),
+    supplier_name: z
+      .string()
+      .optional()
+      .describe(
+        "Supplier name — creates a new supplier if not found. Required if supplier_id is not provided."
+      ),
+    responses: z
+      .array(ResponseInputSchema)
+      .optional()
+      .describe("Inline array of response objects. Omit when using file_url or file_content."),
+    file_url: z
+      .string()
+      .url()
+      .optional()
+      .describe(
+        "HTTPS URL to a JSON file containing the responses array. The server fetches and parses the file — the agent does not need to read the file content."
+      ),
+    file_content: z
+      .string()
+      .optional()
+      .describe(
+        "Raw JSON text of the responses array (alternative to file_url). Avoids the server making an outbound HTTP request."
+      ),
+  })
+  .refine(
+    (d) =>
+      (d.responses && d.responses.length > 0) ||
+      d.file_url ||
+      d.file_content,
+    {
+      message:
+        "Provide one of: responses (inline array), file_url (HTTPS URL), or file_content (raw JSON text).",
+    }
+  );
 
 export type ImportSupplierResponsesInput = z.infer<
   typeof ImportSupplierResponsesInputSchema
@@ -77,7 +103,15 @@ export async function handleImportSupplierResponses(
   authContext: MCPAuthContext
 ): Promise<ImportSupplierResponsesOutput> {
   const supabase = createServiceClient();
-  const { rfp_id, version_id, responses } = input;
+  const { rfp_id, version_id } = input;
+
+  // Resolve responses from inline data, file_url, or file_content
+  const rawData = await resolveImportData({
+    inlineData: input.responses,
+    file_url: input.file_url,
+    file_content: input.file_content,
+  });
+  const responses = z.array(ResponseInputSchema).parse(rawData);
 
   if (!input.supplier_id && !input.supplier_name) {
     throw new Error("Either supplier_id or supplier_name must be provided.");
