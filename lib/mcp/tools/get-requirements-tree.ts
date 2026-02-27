@@ -48,8 +48,6 @@ export interface CategoryTreeNode {
   shortName: string;
   level: number;
   displayOrder: number | null;
-  /** Own weight from the categories table */
-  weight: number;
   /** Recursive sum of all requirements weights in this subtree */
   aggregateWeight: number;
   /** Recursive total requirement count (direct + all sub-categories) */
@@ -97,7 +95,6 @@ type RawCategory = {
   level: number;
   parent_id: string | null;
   display_order: number | null;
-  weight: number;
 };
 
 type RawRequirement = {
@@ -141,7 +138,6 @@ function buildTree(
       shortName: cat.short_name,
       level: cat.level,
       displayOrder: cat.display_order,
-      weight: cat.weight ?? 1,
       aggregateWeight: directReqs.reduce((s, r) => s + r.weight, 0),
       requirementCount: directReqs.length,
       mandatoryCount: directReqs.filter((r) => r.isMandatory).length,
@@ -228,7 +224,7 @@ export async function handleGetRequirementsTree(
     await Promise.all([
       supabase
         .from("categories")
-        .select("id, code, title, short_name, level, parent_id, display_order, weight")
+        .select("id, code, title, short_name, level, parent_id, display_order")
         .eq("rfp_id", rfp_id)
         .order("display_order", { ascending: true, nullsFirst: false }),
       supabase
