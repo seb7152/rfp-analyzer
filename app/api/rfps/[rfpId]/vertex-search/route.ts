@@ -1,5 +1,4 @@
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { SearchServiceClient } from "@google-cloud/discoveryengine";
 
@@ -32,7 +31,7 @@ export async function POST(
 ) {
   try {
     // 1. Auth & Access Control
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
