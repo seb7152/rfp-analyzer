@@ -61,3 +61,6 @@ Thumbs.db
 
 # MCP Configuration with secrets
 opencode.json
+
+# Vertex AI metadata
+vertex-metadata.jsonl
