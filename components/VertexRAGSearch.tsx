@@ -44,7 +44,6 @@ export function VertexRAGSearch({
   const [selectedSupplierIds, setSelectedSupplierIds] = useState<string[]>(
     supplierId ? [supplierId] : []
   );
-  const [submitted, setSubmitted] = useState(false);
 
   // Multi-select supplier logic
   const toggleSupplier = (id: string) => {
@@ -53,8 +52,8 @@ export function VertexRAGSearch({
     );
   };
 
-  // Search query
-  const { data, isLoading, error, refetch } = useQuery<SearchResult>({
+  // Search query - disabled by default, only runs on manual refetch
+  const { data, isLoading, error, refetch, isFetching } = useQuery<SearchResult>({
     queryKey: ["vertex-search", rfpId, query, selectedSupplierIds],
     queryFn: async () => {
       const res = await fetch(`/api/rfps/${rfpId}/vertex-search`, {
@@ -74,13 +73,13 @@ export function VertexRAGSearch({
       }
       return res.json();
     },
-    enabled: submitted && query.length > 0,
+    enabled: false, // Only run on manual refetch
     staleTime: 5 * 60 * 1000, // Cache results for 5 minutes
+    retry: 1, // Only retry once on failure
   });
 
   const handleSearch = () => {
     if (query.trim()) {
-      setSubmitted(true);
       refetch();
     }
   };
@@ -155,11 +154,12 @@ export function VertexRAGSearch({
             placeholder="Posez une question sur les documents fournisseurs..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            onKeyDown={(e) => e.key === "Enter" && !isFetching && handleSearch()}
             className="flex-1"
+            disabled={isFetching}
           />
-          <Button onClick={handleSearch} disabled={isLoading || !query.trim()}>
-            {isLoading ? (
+          <Button onClick={handleSearch} disabled={isFetching || !query.trim()}>
+            {isFetching ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Search className="h-4 w-4" />
@@ -193,14 +193,14 @@ export function VertexRAGSearch({
         )}
 
         {/* Results */}
-        {isLoading && (
+        {isFetching && (
           <div className="space-y-3">
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-24 w-full" />
           </div>
         )}
 
-        {error && (
+        {error && !isFetching && (
           <div className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
             <AlertCircle className="h-5 w-5" />
             <p>
@@ -211,7 +211,7 @@ export function VertexRAGSearch({
           </div>
         )}
 
-        {data && !isLoading && (
+        {data && !isFetching && (
           <div className="space-y-6">
             {/* Summary Section */}
             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
@@ -284,7 +284,7 @@ export function VertexRAGSearch({
           </div>
         )}
 
-        {submitted && !isLoading && !error && !data && (
+        {!isFetching && !error && data && data.sources.length === 0 && (
           <div className="text-center p-8 text-slate-500 dark:text-slate-400">
             Aucun résultat trouvé. Essayez une autre recherche.
           </div>
