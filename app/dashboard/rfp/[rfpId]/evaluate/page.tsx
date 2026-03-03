@@ -12,6 +12,7 @@ import { ComparisonView } from "@/components/ComparisonView";
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
 import { AIAnalysisButton } from "@/components/AIAnalysisButton";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { VertexRAGSearch } from "@/components/VertexRAGSearch";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -21,6 +22,7 @@ import {
   FileUp,
   Euro,
   MessageSquare,
+  Search,
 } from "lucide-react";
 import { ThreadPanel } from "@/components/response-threads/ThreadPanel";
 import type { ThreadPanelContext } from "@/components/response-threads/ThreadPanel";
@@ -56,6 +58,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
     string | null
   >(requirementId || null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
   const [rfpData, setRfpData] = useState<RFP | null>(null);
   const [responsesCount, setResponsesCount] = useState(0);
@@ -283,6 +286,17 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                   <FileUp className="h-4 w-4" />
                 </Button>
 
+                {/* Search Button - icon only */}
+                <Button
+                  onClick={() => setSearchOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  title="Rechercher dans les documents"
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+
                 {/* Financial Grid Button - icon only */}
                 <Button
                   onClick={() =>
@@ -381,6 +395,18 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                 >
                   <FileUp className="h-4 w-4" />
                   <span className="hidden sm:inline">Documents</span>
+                </Button>
+
+                {/* Search Button */}
+                <Button
+                  onClick={() => setSearchOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  title="Rechercher dans les documents"
+                >
+                  <Search className="h-4 w-4" />
+                  <span className="hidden sm:inline">Recherche</span>
                 </Button>
 
                 {/* Financial Grid Button */}
@@ -607,6 +633,19 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
           isOpen={isUploadModalOpen}
           onOpenChange={setIsUploadModalOpen}
         />
+
+        {/* Search Drawer */}
+        <Sheet open={searchOpen} onOpenChange={setSearchOpen}>
+          <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto">
+            <div className="py-6">
+              <VertexRAGSearch
+                rfpId={params.rfpId}
+                supplierId={supplierId || undefined}
+                suppliers={suppliers}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
 
         {/* Thread Discussion Panel */}
         {threadPanelContext && (

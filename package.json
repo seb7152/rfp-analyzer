@@ -18,6 +18,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@google-cloud/discoveryengine": "^2.5.3",
     "@google-cloud/storage": "^7.17.3",
     "@headless-tree/react": "^1.5.1",
     "@mui/icons-material": "^7.3.8",

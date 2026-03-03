@@ -23,6 +23,7 @@ import { VersionsTab } from "@/components/RFPSummary/VersionsTab";
 import { PresentationAnalysisSection } from "@/components/RFPSummary/PresentationAnalysisSection";
 import { SettingsTab } from "@/components/RFPSummary/SettingsTab";
 import { FinancialGridTab } from "@/components/RFPSummary/FinancialGridTab";
+import { VertexRAGSearch } from "@/components/VertexRAGSearch";
 
 import { DocumentUploadModal } from "@/components/DocumentUploadModal";
 import { DocxImportModal } from "@/components/DocxImportModal";
@@ -47,6 +48,7 @@ import {
   Presentation,
   Settings,
   DollarSign,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AIAnalysisButton } from "@/components/AIAnalysisButton";
@@ -718,6 +720,17 @@ export default function RFPSummaryPage() {
                 <span className="hidden sm:inline">Soutenances</span>
               </button>
               <button
+                onClick={() => setActiveTab("search")}
+                className={`flex items-center gap-2 rounded-none border-b-2 px-0 py-3 text-sm font-medium transition ${
+                  activeTab === "search"
+                    ? "border-b-slate-900 text-slate-900 dark:border-b-white dark:text-white"
+                    : "border-b-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                }`}
+              >
+                <Search className="h-4 w-4" />
+                <span className="hidden sm:inline">Recherche</span>
+              </button>
+              <button
                 onClick={() => setActiveTab("export")}
                 className={`flex items-center gap-2 rounded-none border-b-2 px-0 py-3 text-sm font-medium transition ${
                   activeTab === "export"
@@ -888,6 +901,20 @@ export default function RFPSummaryPage() {
                 <PresentationAnalysisSection
                   rfpId={rfpId}
                   userAccessLevel={data?.userAccessLevel}
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent value="search" className="space-y-6">
+              {loading ? (
+                <Skeleton className="h-96 rounded-2xl" />
+              ) : (
+                <VertexRAGSearch
+                  rfpId={rfpId}
+                  suppliers={suppliersForExport.map((s) => ({
+                    id: s.id,
+                    name: s.name,
+                  }))}
                 />
               )}
             </TabsContent>
