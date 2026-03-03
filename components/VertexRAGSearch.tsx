@@ -87,46 +87,46 @@ export function VertexRAGSearch({
   // Rendu du résumé avec ReactMarkdown (citations inline en texte simple)
   const renderSummary = (summary: string) => {
     return (
-      <div className="prose dark:prose-invert max-w-none">
+      <div className="prose dark:prose-invert max-w-none text-sm">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
-            // Réutiliser les composants de SoutenanceBriefSection.tsx
+            // Tailles réduites pour un meilleur formatage
             h1: ({ children }) => (
-              <h1 className="text-2xl font-bold mt-6 mb-3 first:mt-0">
+              <h1 className="text-lg font-bold mt-4 mb-2 first:mt-0">
                 {children}
               </h1>
             ),
             h2: ({ children }) => (
-              <h2 className="text-xl font-bold mt-5 mb-3 border-b pb-1">
+              <h2 className="text-base font-bold mt-3 mb-2 border-b pb-1">
                 {children}
               </h2>
             ),
             h3: ({ children }) => (
-              <h3 className="text-lg font-semibold mt-4 mb-2">{children}</h3>
+              <h3 className="text-sm font-semibold mt-2 mb-1">{children}</h3>
             ),
             p: ({ children }) => (
-              <p className="mb-3 leading-relaxed">{children}</p>
+              <p className="mb-2 leading-relaxed text-sm">{children}</p>
             ),
             ul: ({ children }) => (
-              <ul className="list-disc list-outside mb-4 space-y-1 pl-5">
+              <ul className="list-disc list-outside mb-3 space-y-0.5 pl-4">
                 {children}
               </ul>
             ),
             ol: ({ children }) => (
-              <ol className="list-decimal list-outside mb-4 space-y-1 pl-5">
+              <ol className="list-decimal list-outside mb-3 space-y-0.5 pl-4">
                 {children}
               </ol>
             ),
-            li: ({ children }) => <li className="mb-1">{children}</li>,
+            li: ({ children }) => <li className="mb-0.5 text-sm">{children}</li>,
             code: ({ className, children, ...props }: any) => {
               const inline = !className;
               return inline ? (
-                <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">
+                <code className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded text-xs font-medium">
                   {children}
                 </code>
               ) : (
-                <code className="block bg-slate-100 dark:bg-slate-800 p-3 rounded-lg overflow-x-auto">
+                <code className="block bg-slate-100 dark:bg-slate-800 p-2 rounded text-xs overflow-x-auto">
                   {children}
                 </code>
               );
@@ -215,14 +215,46 @@ export function VertexRAGSearch({
           <div className="space-y-6">
             {/* Summary Section */}
             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-              <h3 className="text-lg font-semibold mb-3">Résumé</h3>
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <h3 className="text-base font-semibold">Résumé</h3>
+                {(() => {
+                  const citationMatches = data.summary.match(/\[\d+\]/g) || [];
+                  const uniqueCitations = [...new Set(citationMatches)];
+                  const citationCount = uniqueCitations.length;
+                  const sourceCount = data.sources.length;
+
+                  if (citationCount > sourceCount && sourceCount > 0) {
+                    return (
+                      <Badge variant="secondary" className="text-xs">
+                        {sourceCount} source{sourceCount > 1 ? "s" : ""} disponible{sourceCount > 1 ? "s" : ""}
+                      </Badge>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
               {renderSummary(data.summary)}
+              {(() => {
+                const citationMatches = data.summary.match(/\[\d+\]/g) || [];
+                const uniqueCitations = [...new Set(citationMatches)];
+                const citationCount = uniqueCitations.length;
+                const sourceCount = data.sources.length;
+
+                if (citationCount > sourceCount && sourceCount > 0) {
+                  return (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 italic">
+                      Note : Le résumé cite {citationCount} sources mais seules {sourceCount} correspondent aux fournisseurs sélectionnés.
+                    </p>
+                  );
+                }
+                return null;
+              })()}
             </div>
 
             {/* Sources Section */}
             {data.sources.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold">
+                <h3 className="text-base font-semibold">
                   Sources ({data.sources.length})
                 </h3>
                 <ScrollArea className="h-96">
@@ -231,13 +263,15 @@ export function VertexRAGSearch({
                       <div
                         key={source.id}
                         id={`source-${index + 1}`}
-                        className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900"
+                        className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900"
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 space-y-2">
+                          <div className="flex-1 space-y-1.5">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <Badge variant="outline">[{index + 1}]</Badge>
-                              <p className="font-medium text-slate-900 dark:text-slate-100">
+                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold">
+                                {index + 1}
+                              </span>
+                              <p className="font-medium text-sm text-slate-900 dark:text-slate-100">
                                 {source.title}
                               </p>
                               {source.supplierName && (
@@ -246,13 +280,13 @@ export function VertexRAGSearch({
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">
+                            <p className="text-xs text-slate-600 dark:text-slate-400 pl-8">
                               Page {source.pageNumber}
                             </p>
                             {source.excerpt && (
-                              <p className="text-sm text-slate-700 dark:text-slate-300 italic">
-                                &ldquo;{source.excerpt.substring(0, 200)}
-                                {source.excerpt.length > 200 ? "..." : ""}
+                              <p className="text-xs text-slate-700 dark:text-slate-300 italic pl-8">
+                                &ldquo;{source.excerpt.substring(0, 150)}
+                                {source.excerpt.length > 150 ? "..." : ""}
                                 &rdquo;
                               </p>
                             )}
@@ -261,7 +295,7 @@ export function VertexRAGSearch({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="gap-2"
+                              className="gap-1.5 text-xs h-8"
                               onClick={() => {
                                 // Ouvrir PDF à la page spécifique
                                 window.open(
@@ -270,7 +304,7 @@ export function VertexRAGSearch({
                                 );
                               }}
                             >
-                              <ExternalLink className="h-4 w-4" />
+                              <ExternalLink className="h-3 w-3" />
                               Voir
                             </Button>
                           )}
