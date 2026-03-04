@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, ExternalLink, Loader2, AlertCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useVertexSearchCache } from "@/hooks/useVertexSearchCache";
 
 interface VertexRAGSearchProps {
   rfpId: string;
@@ -44,6 +45,11 @@ export function VertexRAGSearch({
   const [selectedSupplierIds, setSelectedSupplierIds] = useState<string[]>(
     supplierId ? [supplierId] : []
   );
+  const [cachedResult, setCachedResult] = useState<SearchResult | null>(null);
+
+  // Hook de cache localStorage
+  const { getCachedResult, setCachedResult: saveCachedResult } =
+    useVertexSearchCache(rfpId);
 
   // Multi-select supplier logic
   const toggleSupplier = (id: string) => {
@@ -53,36 +59,59 @@ export function VertexRAGSearch({
   };
 
   // Search query - disabled by default, only runs on manual refetch
-  const { data, isLoading, error, refetch, isFetching } = useQuery<SearchResult>({
-    queryKey: ["vertex-search", rfpId, query, selectedSupplierIds],
-    queryFn: async () => {
-      const res = await fetch(`/api/rfps/${rfpId}/vertex-search`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query,
-          supplierIds:
-            selectedSupplierIds.length > 0 ? selectedSupplierIds : undefined,
-          pageSize: 5,
-          summaryResultCount: 5,
-        }),
-      });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Erreur lors de la recherche");
-      }
-      return res.json();
-    },
-    enabled: false, // Only run on manual refetch
-    staleTime: 5 * 60 * 1000, // Cache results for 5 minutes
-    retry: 1, // Only retry once on failure
-  });
+  const { data, isLoading, error, refetch, isFetching } =
+    useQuery<SearchResult>({
+      queryKey: ["vertex-search", rfpId, query, selectedSupplierIds],
+      queryFn: async () => {
+        const res = await fetch(`/api/rfps/${rfpId}/vertex-search`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query,
+            supplierIds:
+              selectedSupplierIds.length > 0 ? selectedSupplierIds : undefined,
+            pageSize: 5,
+            summaryResultCount: 5,
+          }),
+        });
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || "Erreur lors de la recherche");
+        }
+        const result = await res.json();
+
+        // Sauvegarder dans le cache localStorage
+        saveCachedResult(query, selectedSupplierIds, result);
+
+        return result;
+      },
+      enabled: false, // Only run on manual refetch
+      staleTime: 5 * 60 * 1000, // Cache results for 5 minutes
+      retry: 1, // Only retry once on failure
+    });
 
   const handleSearch = () => {
-    if (query.trim()) {
+    if (!query.trim()) return;
+
+    // D'abord vérifier le cache localStorage
+    const cached = getCachedResult(query, selectedSupplierIds);
+
+    if (cached) {
+      // Afficher immédiatement le résultat du cache
+      setCachedResult(cached);
+    } else {
+      // Pas de cache, faire la vraie requête
+      setCachedResult(null);
       refetch();
     }
   };
+
+  // Effet pour mettre à jour cachedResult quand data change
+  useEffect(() => {
+    if (data) {
+      setCachedResult(data);
+    }
+  }, [data]);
 
   // Rendu du résumé avec ReactMarkdown (citations inline en texte simple)
   const renderSummary = (summary: string) => {
@@ -211,39 +240,43 @@ export function VertexRAGSearch({
           </div>
         )}
 
-        {data && !isFetching && (
+        {cachedResult && !isFetching && (
           <div className="space-y-6">
             {/* Summary Section */}
             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <h3 className="text-base font-semibold">Résumé</h3>
                 {(() => {
-                  const citationMatches = data.summary.match(/\[\d+\]/g) || [];
+                  const citationMatches =
+                    cachedResult.summary.match(/\[\d+\]/g) || [];
                   const uniqueCitations = [...new Set(citationMatches)];
                   const citationCount = uniqueCitations.length;
-                  const sourceCount = data.sources.length;
+                  const sourceCount = cachedResult.sources.length;
 
                   if (citationCount > sourceCount && sourceCount > 0) {
                     return (
                       <Badge variant="secondary" className="text-xs">
-                        {sourceCount} source{sourceCount > 1 ? "s" : ""} disponible{sourceCount > 1 ? "s" : ""}
+                        {sourceCount} source{sourceCount > 1 ? "s" : ""}{" "}
+                        disponible{sourceCount > 1 ? "s" : ""}
                       </Badge>
                     );
                   }
                   return null;
                 })()}
               </div>
-              {renderSummary(data.summary)}
+              {renderSummary(cachedResult.summary)}
               {(() => {
-                const citationMatches = data.summary.match(/\[\d+\]/g) || [];
+                const citationMatches =
+                  cachedResult.summary.match(/\[\d+\]/g) || [];
                 const uniqueCitations = [...new Set(citationMatches)];
                 const citationCount = uniqueCitations.length;
-                const sourceCount = data.sources.length;
+                const sourceCount = cachedResult.sources.length;
 
                 if (citationCount > sourceCount && sourceCount > 0) {
                   return (
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 italic">
-                      Note : Le résumé cite {citationCount} sources mais seules {sourceCount} correspondent aux fournisseurs sélectionnés.
+                      Note : Le résumé cite {citationCount} sources mais seules{" "}
+                      {sourceCount} correspondent aux fournisseurs sélectionnés.
                     </p>
                   );
                 }
@@ -252,14 +285,14 @@ export function VertexRAGSearch({
             </div>
 
             {/* Sources Section */}
-            {data.sources.length > 0 && (
+            {cachedResult.sources.length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-base font-semibold">
-                  Sources ({data.sources.length})
+                  Sources ({cachedResult.sources.length})
                 </h3>
                 <ScrollArea className="h-96">
                   <div className="space-y-3 pr-4">
-                    {data.sources.map((source, index) => (
+                    {cachedResult.sources.map((source, index) => (
                       <div
                         key={source.id}
                         id={`source-${index + 1}`}
@@ -318,7 +351,7 @@ export function VertexRAGSearch({
           </div>
         )}
 
-        {!isFetching && !error && data && data.sources.length === 0 && (
+        {!isFetching && !error && cachedResult && cachedResult.sources.length === 0 && (
           <div className="text-center p-8 text-slate-500 dark:text-slate-400">
             Aucun résultat trouvé. Essayez une autre recherche.
           </div>
