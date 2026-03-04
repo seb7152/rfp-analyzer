@@ -48,8 +48,17 @@ export function VertexRAGSearch({
   const [cachedResult, setCachedResult] = useState<SearchResult | null>(null);
 
   // Hook de cache localStorage
-  const { getCachedResult, setCachedResult: saveCachedResult } =
-    useVertexSearchCache(rfpId);
+  const { getLastSearch, saveLastSearch } = useVertexSearchCache(rfpId);
+
+  // Restaurer la dernière recherche au montage du composant
+  useEffect(() => {
+    const lastSearch = getLastSearch();
+    if (lastSearch) {
+      setQuery(lastSearch.query);
+      setSelectedSupplierIds(lastSearch.supplierIds);
+      setCachedResult(lastSearch.result);
+    }
+  }, [rfpId, getLastSearch]);
 
   // Multi-select supplier logic
   const toggleSupplier = (id: string) => {
@@ -80,8 +89,8 @@ export function VertexRAGSearch({
         }
         const result = await res.json();
 
-        // Sauvegarder dans le cache localStorage
-        saveCachedResult(query, selectedSupplierIds, result);
+        // Sauvegarder comme dernière recherche dans localStorage
+        saveLastSearch(query, selectedSupplierIds, result);
 
         return result;
       },
@@ -93,17 +102,9 @@ export function VertexRAGSearch({
   const handleSearch = () => {
     if (!query.trim()) return;
 
-    // D'abord vérifier le cache localStorage
-    const cached = getCachedResult(query, selectedSupplierIds);
-
-    if (cached) {
-      // Afficher immédiatement le résultat du cache
-      setCachedResult(cached);
-    } else {
-      // Pas de cache, faire la vraie requête
-      setCachedResult(null);
-      refetch();
-    }
+    // Réinitialiser le résultat et faire la requête
+    setCachedResult(null);
+    refetch();
   };
 
   // Effet pour mettre à jour cachedResult quand data change
