@@ -226,9 +226,11 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   }, [params.rfpId]);
 
   // Fetch suppliers list for the restart-analysis selector
+  // Filter by active version to exclude removed suppliers
   useEffect(() => {
     if (!params.rfpId) return;
-    fetch(`/api/rfps/${params.rfpId}/suppliers`)
+    const suppliersUrl = `/api/rfps/${params.rfpId}/suppliers${activeVersion?.id ? `?versionId=${activeVersion.id}` : ""}`;
+    fetch(suppliersUrl)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.suppliers) {
@@ -243,7 +245,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
       .catch(() => {
         /* non-critical, selector stays hidden */
       });
-  }, [params.rfpId]);
+  }, [params.rfpId, activeVersion?.id]);
 
   // Redirect if not authenticated
   if (authLoading) {

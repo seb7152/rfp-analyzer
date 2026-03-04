@@ -127,8 +127,10 @@ export default function RFPSummaryPage() {
         }
 
         // Fetch suppliers for the restart-analysis selector
+        // Filter by active version to exclude removed suppliers
         try {
-          const suppliersResponse = await fetch(`/api/rfps/${rfpId}/suppliers`);
+          const suppliersUrl = `/api/rfps/${rfpId}/suppliers${activeVersion?.id ? `?versionId=${activeVersion.id}` : ""}`;
+          const suppliersResponse = await fetch(suppliersUrl);
           if (suppliersResponse.ok) {
             const suppliersData = await suppliersResponse.json();
             setSuppliersForExport(suppliersData.suppliers || []);

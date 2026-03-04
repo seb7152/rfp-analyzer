@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleAuth } from "google-auth-library";
+import { generateDownloadSignedUrl } from "@/lib/gcs";
 
 interface SearchSource {
   id: string;
@@ -10,6 +11,7 @@ interface SearchSource {
   excerpt: string;
   documentId: string;
   supplierName: string | null;
+  signedUrl?: string; // Signed URL pour accès direct au PDF
 }
 
 interface SearchResult {
@@ -289,7 +291,7 @@ export async function POST(
         };
       }) || [];
 
-    // 8. Enrichir avec les noms de fournisseurs
+    // 8. Enrichir avec les noms de fournisseurs et générer des signed URLs
     const documentIds = rawSources.map((s) => s.documentId).filter(Boolean);
 
     if (documentIds.length > 0) {
@@ -311,12 +313,44 @@ export async function POST(
         }
       });
 
-      // Enrichir les sources
-      rawSources.forEach((source) => {
-        if (source.documentId && supplierMap.has(source.documentId)) {
-          source.supplierName = supplierMap.get(source.documentId) || null;
-        }
+      // Récupérer les gcs_object_name pour générer les signed URLs
+      const { data: documents } = await supabase
+        .from("rfp_documents")
+        .select("id, gcs_object_name")
+        .in("id", documentIds);
+
+      const gcsObjectMap = new Map<string, string>();
+      documents?.forEach((doc) => {
+        gcsObjectMap.set(doc.id, doc.gcs_object_name);
       });
+
+      // Enrichir les sources avec nom de fournisseur et signed URL
+      for (const source of rawSources) {
+        if (source.documentId) {
+          // Nom du fournisseur
+          if (supplierMap.has(source.documentId)) {
+            source.supplierName = supplierMap.get(source.documentId) || null;
+          }
+
+          // Signed URL pour accès direct au PDF
+          const gcsObjectName = gcsObjectMap.get(source.documentId);
+          if (gcsObjectName) {
+            try {
+              // Signed URL valide 1 heure
+              source.signedUrl = await generateDownloadSignedUrl(
+                gcsObjectName,
+                60 * 60 * 1000
+              );
+            } catch (error) {
+              console.error(
+                `[Vertex Search] Failed to generate signed URL for ${gcsObjectName}:`,
+                error
+              );
+              // Continue without signed URL
+            }
+          }
+        }
+      }
     }
 
     const summary =

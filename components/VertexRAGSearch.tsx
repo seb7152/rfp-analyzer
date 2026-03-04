@@ -28,6 +28,7 @@ interface SearchSource {
   excerpt: string;
   documentId: string;
   supplierName?: string | null;
+  signedUrl?: string;
 }
 
 interface SearchResult {
@@ -325,21 +326,20 @@ export function VertexRAGSearch({
                               </p>
                             )}
                           </div>
-                          {source.documentId && (
+                          {source.signedUrl && (
                             <Button
                               variant="ghost"
                               size="sm"
                               className="gap-1.5 text-xs h-8"
                               onClick={() => {
-                                // Ouvrir PDF à la page spécifique
-                                window.open(
-                                  `/dashboard/rfp/${rfpId}/documents/${source.documentId}?page=${source.pageNumber}`,
-                                  "_blank"
-                                );
+                                // Ouvrir PDF avec signed URL (GCS direct access)
+                                // Note: GCS ne supporte pas #page= pour ouvrir à une page spécifique
+                                // Le PDF s'ouvrira à la première page
+                                window.open(source.signedUrl, "_blank");
                               }}
                             >
                               <ExternalLink className="h-3 w-3" />
-                              Voir
+                              Voir PDF
                             </Button>
                           )}
                         </div>
