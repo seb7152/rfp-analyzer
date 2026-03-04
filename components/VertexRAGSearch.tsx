@@ -12,12 +12,15 @@ import { Search, ExternalLink, Loader2, AlertCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useVertexSearchCache } from "@/hooks/useVertexSearchCache";
+import { PDFViewerSheet } from "@/components/PDFViewerSheet";
+import type { PDFDocument } from "@/components/PDFViewerSheet";
 
 interface VertexRAGSearchProps {
   rfpId: string;
   supplierId?: string;
   suppliers?: Array<{ id: string; name: string }>;
   defaultOpen?: boolean;
+  enableIntegratedViewer?: boolean; // true = PDFViewerSheet, false = nouvel onglet
 }
 
 interface SearchSource {
@@ -41,12 +44,20 @@ export function VertexRAGSearch({
   rfpId,
   supplierId,
   suppliers = [],
+  enableIntegratedViewer = false, // false par défaut (mode summary)
 }: VertexRAGSearchProps) {
   const [query, setQuery] = useState("");
   const [selectedSupplierIds, setSelectedSupplierIds] = useState<string[]>(
     supplierId ? [supplierId] : []
   );
   const [cachedResult, setCachedResult] = useState<SearchResult | null>(null);
+
+  // State pour PDF Viewer (seulement utilisé si enableIntegratedViewer = true)
+  const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
+  const [pdfInitialDocument, setPdfInitialDocument] = useState<string | null>(
+    null
+  );
+  const [pdfInitialPage, setPdfInitialPage] = useState<number | null>(null);
 
   // Hook de cache localStorage
   const { getLastSearch, saveLastSearch } = useVertexSearchCache(rfpId);
@@ -99,6 +110,20 @@ export function VertexRAGSearch({
       staleTime: 5 * 60 * 1000, // Cache results for 5 minutes
       retry: 1, // Only retry once on failure
     });
+
+  // Récupérer les documents du RFP pour le PDF viewer (seulement si viewer intégré)
+  const { data: rfpDocuments = [] as PDFDocument[] } = useQuery<PDFDocument[]>({
+    queryKey: ["rfp-documents", rfpId],
+    queryFn: async () => {
+      const res = await fetch(`/api/rfps/${rfpId}/documents`);
+      if (!res.ok)
+        throw new Error("Erreur lors du chargement des documents");
+      const data = await res.json();
+      return data.documents || []; // Extract documents array from response
+    },
+    enabled: enableIntegratedViewer, // Seulement si viewer intégré activé
+    staleTime: 5 * 60 * 1000,
+  });
 
   const handleSearch = () => {
     if (!query.trim()) return;
@@ -171,7 +196,8 @@ export function VertexRAGSearch({
   };
 
   return (
-    <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+    <>
+      <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Search className="h-5 w-5" />
@@ -326,16 +352,24 @@ export function VertexRAGSearch({
                               </p>
                             )}
                           </div>
-                          {source.signedUrl && (
+                          {(source.documentId || source.signedUrl) && (
                             <Button
                               variant="ghost"
                               size="sm"
                               className="gap-1.5 text-xs h-8"
                               onClick={() => {
-                                // Ouvrir PDF avec signed URL (GCS direct access)
-                                // Note: GCS ne supporte pas #page= pour ouvrir à une page spécifique
-                                // Le PDF s'ouvrira à la première page
-                                window.open(source.signedUrl, "_blank");
+                                if (
+                                  enableIntegratedViewer &&
+                                  source.documentId
+                                ) {
+                                  // Mode evaluate: Ouvrir le PDF viewer intégré avec annotations
+                                  setPdfInitialDocument(source.documentId);
+                                  setPdfInitialPage(source.pageNumber);
+                                  setIsPdfViewerOpen(true);
+                                } else if (source.signedUrl) {
+                                  // Mode summary: Ouvrir dans un nouvel onglet
+                                  window.open(source.signedUrl, "_blank");
+                                }
                               }}
                             >
                               <ExternalLink className="h-3 w-3" />
@@ -359,5 +393,18 @@ export function VertexRAGSearch({
         )}
       </CardContent>
     </Card>
+
+    {/* PDF Viewer Sheet - Only in evaluate mode */}
+    {enableIntegratedViewer && (
+      <PDFViewerSheet
+        isOpen={isPdfViewerOpen}
+        onOpenChange={setIsPdfViewerOpen}
+        documents={rfpDocuments}
+        rfpId={rfpId}
+        initialDocumentId={pdfInitialDocument}
+        initialPage={pdfInitialPage}
+      />
+    )}
+    </>
   );
 }

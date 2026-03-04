@@ -644,6 +644,7 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
                 rfpId={params.rfpId}
                 supplierId={supplierId || undefined}
                 suppliers={suppliers}
+                enableIntegratedViewer={true}
               />
             </div>
           </SheetContent>
