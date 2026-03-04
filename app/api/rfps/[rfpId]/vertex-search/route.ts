@@ -96,8 +96,8 @@ export async function POST(
       );
     }
 
-    // 4. Récupérer les GCS URIs des fournisseurs actifs pour filtrage post-recherche
-    let allowedGcsUris: Set<string> = new Set();
+    // 4. Récupérer les IDs des fournisseurs actifs pour filtrage natif Vertex AI
+    let activeSupplierIds: string[] = [];
 
     if (supplierIds && Array.isArray(supplierIds) && supplierIds.length > 0) {
       // Filter suppliers by active status in current version
@@ -118,8 +118,7 @@ export async function POST(
         );
       }
 
-      const activeSupplierIds =
-        activeSuppliers?.map((s) => s.supplier_id) || [];
+      activeSupplierIds = activeSuppliers?.map((s) => s.supplier_id) || [];
 
       if (activeSupplierIds.length === 0) {
         console.log(
@@ -137,58 +136,8 @@ export async function POST(
         `[Vertex Search] Active suppliers in version ${activeVersion.id}:`,
         activeSupplierIds
       );
-
-      // Filtrage multi-fournisseurs : récupérer les GCS paths des documents associés
-      const { data: docSuppliers, error: docSuppliersError } = await supabase
-        .from("document_suppliers")
-        .select(
-          `
-          document_id,
-          documents:rfp_documents!inner(gcs_object_name, rfp_id)
-        `
-        )
-        .in("supplier_id", activeSupplierIds)
-        .eq("documents.rfp_id", params.rfpId)
-        .is("documents.deleted_at", null);
-
-      if (docSuppliersError) {
-        console.error("Error fetching document suppliers:", docSuppliersError);
-        return NextResponse.json(
-          { error: "Failed to fetch documents" },
-          { status: 500 }
-        );
-      }
-
-      console.log(
-        `[Vertex Search] Found ${docSuppliers?.length || 0} documents for suppliers:`,
-        supplierIds
-      );
-
-      if (!docSuppliers || docSuppliers.length === 0) {
-        console.log(
-          "[Vertex Search] No documents found in database for suppliers"
-        );
-        return NextResponse.json({
-          summary: "Aucun document trouvé pour les fournisseurs sélectionnés.",
-          sources: [],
-          totalResults: 0,
-        });
-      }
-
-      // Collecter les URIs autorisés pour filtrage post-recherche
-      docSuppliers.forEach((ds: any) => {
-        allowedGcsUris.add(
-          `gs://rfps-documents/${ds.documents.gcs_object_name}`
-        );
-      });
-
-      console.log("[Vertex Search] Documents found:", docSuppliers);
-      console.log(
-        "[Vertex Search] Allowed URIs:",
-        Array.from(allowedGcsUris)
-      );
     } else {
-      // Pas de filtre fournisseur : collecter tous les docs des fournisseurs actifs
+      // Pas de filtre fournisseur : utiliser tous les fournisseurs actifs
       const { data: activeSuppliers, error: supplierStatusError } =
         await supabase
           .from("version_supplier_status")
@@ -198,39 +147,13 @@ export async function POST(
           .neq("shortlist_status", "removed");
 
       if (!supplierStatusError && activeSuppliers && activeSuppliers.length > 0) {
-        const activeSupplierIds =
-          activeSuppliers.map((s) => s.supplier_id) || [];
+        activeSupplierIds = activeSuppliers.map((s) => s.supplier_id) || [];
 
         console.log(
           `[Vertex Search] Searching all documents for active suppliers:`,
           activeSupplierIds
         );
-
-        const { data: docSuppliers } = await supabase
-          .from("document_suppliers")
-          .select(
-            `
-            document_id,
-            documents:rfp_documents!inner(gcs_object_name, rfp_id)
-          `
-          )
-          .in("supplier_id", activeSupplierIds)
-          .eq("documents.rfp_id", params.rfpId)
-          .is("documents.deleted_at", null);
-
-        if (docSuppliers && docSuppliers.length > 0) {
-          docSuppliers.forEach((ds: any) => {
-            allowedGcsUris.add(
-              `gs://rfps-documents/${ds.documents.gcs_object_name}`
-            );
-          });
-        }
       }
-
-      console.log(
-        "[Vertex Search] Allowed URIs for all active suppliers:",
-        Array.from(allowedGcsUris)
-      );
     }
 
     // 5. Appel Vertex AI Search
@@ -268,9 +191,20 @@ export async function POST(
     const servingConfig = `projects/${projectNumber}/locations/${location}/collections/default_collection/engines/${engineId}/servingConfigs/default_search`;
     const endpoint = `https://discoveryengine.googleapis.com/v1/${servingConfig}:search`;
 
+    // 5. Construire le filtre natif Vertex AI (sans préfixe structData.)
+    let filter = `rfp_id: ANY("${params.rfpId}")`;
+
+    if (activeSupplierIds.length > 0) {
+      const supplierFilter = activeSupplierIds
+        .map((id) => `"${id}"`)
+        .join(", ");
+      filter += ` AND supplier_id: ANY(${supplierFilter})`;
+    }
+
     const requestBody = {
       query,
-      pageSize: Number(pageSize) * 5, // Request 5x more results for post-filtering
+      pageSize: Number(pageSize), // Native filtering, no need for multiplier
+      filter, // ✨ Native Vertex AI filtering
       queryExpansionSpec: { condition: "AUTO" },
       spellCorrectionSpec: { mode: "AUTO" },
       contentSearchSpec: {
@@ -287,10 +221,10 @@ export async function POST(
     };
 
     console.log("[Vertex Search] Query:", query);
+    console.log("[Vertex Search] Native filter:", filter);
     console.log(
-      "[Vertex Search] Will filter results to allowed URIs:",
-      allowedGcsUris.size,
-      "documents"
+      "[Vertex Search] Active suppliers count:",
+      activeSupplierIds.length
     );
     console.log(
       "[Vertex Search] Requesting pageSize:",
@@ -323,39 +257,8 @@ export async function POST(
       response.results?.length || 0
     );
 
-    // 6. Filtrer les résultats par URIs autorisés (fournisseurs actifs)
-    let filteredResults = response.results || [];
-
-    if (allowedGcsUris.size > 0) {
-      const beforeCount = filteredResults.length;
-      filteredResults = filteredResults.filter((result: any) => {
-        const gcsUri =
-          typeof result.document?.derivedStructData?.link === "string"
-            ? result.document.derivedStructData.link
-            : "";
-        const isAllowed = allowedGcsUris.has(gcsUri);
-        if (!isAllowed) {
-          console.log(`[Vertex Search] Filtered out URI: ${gcsUri}`);
-        }
-        return isAllowed;
-      });
-
-      console.log(
-        `[Vertex Search] Filtered from ${beforeCount} to ${filteredResults.length} results`
-      );
-      console.log(
-        `[Vertex Search] Summary result count in request: ${summaryResultCount}`
-      );
-    }
-
-    // Limiter au nombre demandé APRÈS filtrage
-    const beforeSlice = filteredResults.length;
-    filteredResults = filteredResults.slice(0, Number(pageSize));
-    console.log(
-      `[Vertex Search] After limiting to pageSize ${pageSize}: ${beforeSlice} → ${filteredResults.length} results`
-    );
-
-    // 7. Traitement et enrichissement des résultats
+    // 6. Traitement et enrichissement des résultats (filtrage natif déjà appliqué)
+    const filteredResults = response.results || [];
     const rawSources: SearchSource[] =
       filteredResults?.map((result: any, index: number) => {
         const doc = result.document;
