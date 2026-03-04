@@ -53,6 +53,7 @@ For complete understanding of the RFP Analyzer system, refer to:
 - **[Architecture & Workflow Guide](specs/ARCHITECTURE_WORKFLOW_GUIDE.md)** - Complete system overview, data flows, and technical architecture
 - **[Implementation Plan PDF Annotations](IMPLEMENTATION_PLAN_PDF_ANNOTATIONS.md)** - Detailed PDF annotation system implementation
 - **[PDF Upload Implementation Summary](docs/IMPLEMENTATION-SUMMARY.md)** - File upload and storage architecture
+- **[Vertex AI Search RAG Implementation](docs/VERTEX_AI_SEARCH_IMPLEMENTATION.md)** - Complete RAG search system with native filtering
 
 ## Key System Components
 
@@ -60,6 +61,7 @@ For complete understanding of the RFP Analyzer system, refer to:
 - **Backend**: Next.js API Routes + Supabase (PostgreSQL + Auth + Realtime)
 - **Storage**: Google Cloud Storage for PDFs with signed URLs
 - **Processing**: N8N workflows for PDF parsing and AI analysis
+- **AI Search**: Vertex AI Search (Google Discovery Engine) for RAG-based document search with native filtering
 - **Multi-tenant**: Organization-based isolation with Row Level Security
 
 ## Core Workflows
@@ -67,6 +69,7 @@ For complete understanding of the RFP Analyzer system, refer to:
 1. **Document Processing**: PDF upload → GCS storage → N8N parsing → Database storage
 2. **AI Analysis**: Response import → N8N AI processing → Score generation → Database update
 3. **Human Evaluation**: Collaborative review → Manual scoring → Annotations → Real-time sync
+4. **RAG Search**: User query → Vertex AI Search with native filtering (`rfp_id: ANY(...)`) → LLM summary with citations → Enriched sources
 
 ## Development Context
 
@@ -77,4 +80,25 @@ This is a B2B SaaS platform for RFP evaluation with:
 - 4-10 suppliers per evaluation
 - Real-time collaboration features
 - Advanced PDF annotation system
+
+## Critical Technical Details
+
+### Vertex AI Search Filtering Syntax
+
+**⚠️ IMPORTANT**: For unstructured data stores (PDFs), use field names **WITHOUT** the `structData.` prefix:
+
+```javascript
+// ❌ INCORRECT (will return 0 results)
+filter: "structData.rfp_id: ANY(\"uuid\")"
+
+// ✅ CORRECT for unstructured data stores
+filter: "rfp_id: ANY(\"uuid\")"
+filter: "supplier_id: ANY(\"uuid1\", \"uuid2\")"
+filter: "rfp_id: ANY(\"uuid\") AND supplier_id: ANY(\"uuid1\", \"uuid2\")"
+```
+
+**Why**: The official Google documentation mentions `structData.field` for structured data stores (BigQuery, JSON). For unstructured stores (GCS PDFs with metadata), use the field name directly.
+
+**Reference**: See [Vertex AI Search Implementation](docs/VERTEX_AI_SEARCH_IMPLEMENTATION.md) for complete details.
+
 <!-- MANUAL ADDITIONS END -->
