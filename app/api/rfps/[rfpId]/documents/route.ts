@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { deleteFile } from "@/lib/gcs";
+import { removeFromVertexAIIndex } from "@/lib/vertex-ai-index";
 
 // GET: List all documents for an RFP (optionally filtered by supplier)
 export async function GET(
@@ -193,6 +194,7 @@ export async function DELETE(
     }
 
     // Get document and verify it exists
+    // Also fetch associated supplier IDs for Vertex AI index cleanup
     const { data: document, error: docFetchError } = await supabase
       .from("rfp_documents")
       .select("id, gcs_object_name")
@@ -207,6 +209,14 @@ export async function DELETE(
         { status: 404 }
       );
     }
+
+    // Get supplier IDs for this document (for Vertex AI cleanup)
+    const { data: docSuppliers } = await supabase
+      .from("document_suppliers")
+      .select("supplier_id")
+      .eq("document_id", documentId);
+
+    const supplierIds = docSuppliers?.map((ds) => ds.supplier_id) || [];
 
     // Delete file from GCS
     try {
@@ -239,6 +249,17 @@ export async function DELETE(
       ip_address: request.headers.get("x-forwarded-for"),
       user_agent: request.headers.get("user-agent"),
     });
+
+    // ✨ Remove document from Vertex AI Search index
+    // This runs asynchronously and doesn't block the response
+    if (supplierIds.length > 0) {
+      removeFromVertexAIIndex(documentId, supplierIds).catch((error) => {
+        console.error(
+          "[Vertex AI] Failed to remove from index (non-critical):",
+          error
+        );
+      });
+    }
 
     return NextResponse.json(
       {

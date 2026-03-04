@@ -54,6 +54,7 @@ For complete understanding of the RFP Analyzer system, refer to:
 - **[Implementation Plan PDF Annotations](IMPLEMENTATION_PLAN_PDF_ANNOTATIONS.md)** - Detailed PDF annotation system implementation
 - **[PDF Upload Implementation Summary](docs/IMPLEMENTATION-SUMMARY.md)** - File upload and storage architecture
 - **[Vertex AI Search RAG Implementation](docs/VERTEX_AI_SEARCH_IMPLEMENTATION.md)** - Complete RAG search system with native filtering
+- **[Vertex AI Auto-Index System](docs/VERTEX_AI_AUTO_INDEX.md)** - Automatic index updates on document upload/delete
 
 ## Key System Components
 
@@ -66,10 +67,11 @@ For complete understanding of the RFP Analyzer system, refer to:
 
 ## Core Workflows
 
-1. **Document Processing**: PDF upload → GCS storage → N8N parsing → Database storage
+1. **Document Processing**: PDF upload → GCS storage → Database storage → **Auto-index in Vertex AI** → N8N parsing
 2. **AI Analysis**: Response import → N8N AI processing → Score generation → Database update
 3. **Human Evaluation**: Collaborative review → Manual scoring → Annotations → Real-time sync
 4. **RAG Search**: User query → Vertex AI Search with native filtering (`rfp_id: ANY(...)`) → LLM summary with citations → Enriched sources
+5. **Auto-Indexing**: Document uploaded → JSONL generated → GCS temp upload → Vertex AI INCREMENTAL import → Index updated (6-12h latency)
 
 ## Development Context
 

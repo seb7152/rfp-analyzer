@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { deleteFile, getFileMetadata } from "@/lib/gcs";
+import { updateVertexAIIndex } from "@/lib/vertex-ai-index";
 
 export async function POST(
   request: NextRequest,
@@ -197,6 +198,24 @@ export async function POST(
           { status: 400 }
         );
       }
+
+      // ✨ Update Vertex AI Search index with the new document
+      // This runs asynchronously and doesn't block the response
+      // If it fails, we can run the batch re-index script later
+      updateVertexAIIndex({
+        documentId,
+        supplierId,
+        rfpId,
+        organizationId: rfp.organization_id,
+        documentType,
+        filename,
+        gcsObjectName: objectName,
+      }).catch((error) => {
+        console.error(
+          "[Vertex AI] Failed to update index (non-critical):",
+          error
+        );
+      });
     }
 
     // Log the upload action
