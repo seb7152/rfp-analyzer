@@ -80,8 +80,7 @@ export function VertexRAGSearch({
   };
 
   // Search query - disabled by default, only runs on manual refetch
-  const { data, isLoading, error, refetch, isFetching } =
-    useQuery<SearchResult>({
+  const { data, error, refetch, isFetching } = useQuery<SearchResult>({
       queryKey: ["vertex-search", rfpId, query, selectedSupplierIds],
       queryFn: async () => {
         const res = await fetch(`/api/rfps/${rfpId}/vertex-search`, {
