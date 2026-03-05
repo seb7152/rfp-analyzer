@@ -38,16 +38,6 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   process.exit(1);
 }
 
-interface DocumentMetadata {
-  id: string;
-  gcs_object_name: string;
-  rfp_id: string;
-  organization_id: string;
-  document_type: string;
-  filename: string;
-  supplier_ids: string[]; // Un document peut avoir plusieurs fournisseurs
-}
-
 interface VertexMetadataEntry {
   id: string;
   structData: {

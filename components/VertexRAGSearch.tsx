@@ -139,6 +139,38 @@ export function VertexRAGSearch({
     }
   }, [data]);
 
+  // Conditional rendering for supplier selector
+  const showSupplierSelector = !supplierId && suppliers.length > 0;
+
+  // Render supplier selector
+  const renderSupplierSelector = () => {
+    if (!showSupplierSelector) return null;
+
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          Filtrer par fournisseur (optionnel) :
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {suppliers.map((supplier) => (
+            <Badge
+              key={supplier.id}
+              variant={
+                selectedSupplierIds.includes(supplier.id)
+                  ? "default"
+                  : "outline"
+              }
+              className="cursor-pointer"
+              onClick={() => toggleSupplier(supplier.id)}
+            >
+              {supplier.name}
+            </Badge>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   // Rendu du résumé avec ReactMarkdown (citations inline en texte simple)
   const renderSummary = (summary: string) => {
     return (
@@ -174,7 +206,7 @@ export function VertexRAGSearch({
               </ol>
             ),
             li: ({ children }) => <li className="mb-0.5 text-sm">{children}</li>,
-            code: ({ className, children, ...props }: any) => {
+            code: ({ className, children }: any) => {
               const inline = !className;
               return inline ? (
                 <code className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded text-xs font-medium">
@@ -224,39 +256,17 @@ export function VertexRAGSearch({
         </div>
 
         {/* Supplier Selector (multi-supplier mode only) */}
-        {!supplierId && suppliers.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Filtrer par fournisseur (optionnel) :
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {suppliers.map((supplier) => (
-                <Badge
-                  key={supplier.id}
-                  variant={
-                    selectedSupplierIds.includes(supplier.id)
-                      ? "default"
-                      : "outline"
-                  }
-                  className="cursor-pointer"
-                  onClick={() => toggleSupplier(supplier.id)}
-                >
-                  {supplier.name}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
+        {renderSupplierSelector()}
 
         {/* Results */}
-        {isFetching && (
+        {isFetching ? (
           <div className="space-y-3">
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-24 w-full" />
           </div>
-        )}
+        ) : null}
 
-        {error && !isFetching && (
+        {error && !isFetching ? (
           <div className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
             <AlertCircle className="h-5 w-5" />
             <p>
@@ -265,9 +275,9 @@ export function VertexRAGSearch({
                 : "Erreur lors de la recherche. Veuillez réessayer."}
             </p>
           </div>
-        )}
+        ) : null}
 
-        {cachedResult && !isFetching && (
+        {cachedResult && !isFetching ? (
           <div className="space-y-6">
             {/* Summary Section */}
             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
@@ -383,18 +393,18 @@ export function VertexRAGSearch({
               </div>
             )}
           </div>
-        )}
+        ) : null}
 
-        {!isFetching && !error && cachedResult && cachedResult.sources.length === 0 && (
+        {!isFetching && !error && cachedResult && cachedResult.sources.length === 0 ? (
           <div className="text-center p-8 text-slate-500 dark:text-slate-400">
             Aucun résultat trouvé. Essayez une autre recherche.
           </div>
-        )}
+        ) : null}
       </CardContent>
     </Card>
 
     {/* PDF Viewer Sheet - Only in evaluate mode */}
-    {enableIntegratedViewer && (
+    {enableIntegratedViewer ? (
       <PDFViewerSheet
         isOpen={isPdfViewerOpen}
         onOpenChange={setIsPdfViewerOpen}
@@ -403,7 +413,7 @@ export function VertexRAGSearch({
         initialDocumentId={pdfInitialDocument}
         initialPage={pdfInitialPage}
       />
-    )}
+    ) : null}
     </>
   );
 }

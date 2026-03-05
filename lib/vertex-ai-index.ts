@@ -93,7 +93,6 @@ export async function updateVertexAIIndex(
   const tempJsonlUri = `gs://${bucketName}/${tempJsonlPath}`;
 
   try {
-    const { Storage } = await import("@google-cloud/storage");
     const { getGCSClient } = await import("@/lib/gcs");
 
     const storage = getGCSClient();
