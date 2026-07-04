@@ -1,11 +1,20 @@
 // Test script to debug the versions API
 const { createClient } = require("@supabase/supabase-js");
 
-// Use the hardcoded values from the project
-const supabase = createClient(
-  "https://ixxmjmxfzipxmlwmqods.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4eG1qbXhmaXB4bWx3bXFvZHMiLCJyb2xlIjoic2VydmljZV9yb2xlIiwiaWF0IjoxNzMzNTQ0MjQ2LCJleHAiOjIwNDkxMjAyNDZ9.5Xu4W-7Kz2XJhMjKL9jz3t9J2M4S6RqT7JY3mF8D0k"
-);
+// Read connection values from the environment. Set these before running:
+//   SUPABASE_URL=https://<project-ref>.supabase.co
+//   SUPABASE_SERVICE_ROLE_KEY=<service_role key>  (keep this out of version control)
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.error(
+    "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables."
+  );
+  process.exit(1);
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 async function testVersionsAPI() {
   const rfpId = "1f8d89fd-547c-4db5-96c2-c9447226952e";
