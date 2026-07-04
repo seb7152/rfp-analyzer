@@ -1,0 +1,36 @@
+-- ============================================================================
+-- Enable Row Level Security on public.defense_analyses
+-- ============================================================================
+-- Context: the advisors flagged defense_analyses as "RLS disabled in public"
+-- (ERROR) while policies already exist on the table. Enabling RLS simply
+-- activates those existing, already-correct policies.
+--
+-- Existing policies on defense_analyses (verified 2026-07-04, unchanged here):
+--   SELECT  "Users can view defense analyses for their organization"
+--             USING  rfp -> organization membership (auth.uid())
+--   INSERT  "Users can create defense analyses for their organization"
+--             CHECK  rfp -> organization membership (auth.uid())
+--   UPDATE  "Users can update defense analyses for their organization"
+--             USING  rfp -> organization membership (auth.uid())
+--             (WITH CHECK defaults to USING -> same org check)
+--
+-- Access paths that must keep working after this change:
+--   * Authenticated route app/api/rfps/[rfpId]/analyze-defense/route.ts
+--     (createServerClient + auth.getUser) performs an UPSERT -> covered by the
+--     INSERT + UPDATE policies for any org member of the RFP.
+--   * Edge functions analyze-defense / analyze-defense-callback write with the
+--     service_role key -> service_role BYPASSES RLS (we ENABLE, we do NOT FORCE).
+--   * The browser reads defense_analyses only via nested joins carrying the
+--     user session (authenticated) -> covered by the SELECT policy.
+--
+-- No DELETE path exists in the codebase, so no DELETE policy is added.
+--
+-- Rollback:
+--   ALTER TABLE public.defense_analyses DISABLE ROW LEVEL SECURITY;
+-- ============================================================================
+
+ALTER TABLE public.defense_analyses ENABLE ROW LEVEL SECURITY;
+
+-- Intentionally NOT forcing RLS: service_role (edge functions) must keep its
+-- bypass. FORCE would break the async analysis callbacks.
+-- ALTER TABLE public.defense_analyses FORCE ROW LEVEL SECURITY;  -- do NOT enable
