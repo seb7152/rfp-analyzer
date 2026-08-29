@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { createN8nWebhookHeaders } from "@/lib/security/webhook-auth";
 
 /**
  * POST /api/rfps/[rfpId]/analyze
@@ -169,14 +170,11 @@ export async function POST(
     }
 
     // Send payload to N8N webhook
-    console.log(`[N8N] Sending analysis request to ${webhookUrl}`);
-    console.log(`[N8N] Payload:`, JSON.stringify(payload, null, 2));
+    console.log(`[N8N] Sending analysis request for RFP ${rfpId}`);
 
     const webhookResponse = await fetch(webhookUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: createN8nWebhookHeaders(process.env.N8N_WEBHOOK_SECRET),
       body: JSON.stringify(payload),
     });
 

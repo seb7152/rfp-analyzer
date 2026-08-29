@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isValidWebhookRequest } from "../_shared/webhook-auth.ts";
 
 interface AnalysisResult {
   supplier_code: string;
@@ -30,7 +31,15 @@ serve(async (req) => {
   }
 
   try {
-    const body = (await req.json()) as CallbackRequest & { rfpId: string };
+    const rawBody = await req.text();
+    if (!isValidWebhookRequest(req)) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const body = JSON.parse(rawBody) as CallbackRequest & { rfpId: string };
     const { jobId, requirementId, status, results, rfpId } = body;
 
     // Validate required fields

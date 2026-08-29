@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isValidWebhookRequest } from "../_shared/webhook-auth.ts";
 
 interface CallbackRequest {
   taskId: string;
@@ -27,20 +28,19 @@ serve(async (req) => {
   }
 
   try {
-    const body = (await req.json()) as any;
+    const rawBody = await req.text();
+    if (!isValidWebhookRequest(req)) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
-    console.log(
-      "[analyze-defense-callback] Full request body:",
-      JSON.stringify(body, null, 2)
-    );
-    console.log("[analyze-defense-callback] Body keys:", Object.keys(body));
+    const body = JSON.parse(rawBody) as any;
 
     // N8N wraps data in a "body" object, so unwrap it first
     const payload = body.body || body;
-    console.log(
-      "[analyze-defense-callback] Payload keys:",
-      Object.keys(payload)
-    );
+
 
     // Handle both camelCase and snake_case field names
     const taskId =

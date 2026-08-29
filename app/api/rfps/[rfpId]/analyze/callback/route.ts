@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { verifyWebhookToken } from "@/lib/security/webhook-auth";
 
 /**
  * PUT /api/rfps/[rfpId]/analyze/callback
@@ -35,7 +36,17 @@ export async function PUT(
       return NextResponse.json({ error: "Invalid RFP ID" }, { status: 400 });
     }
 
-    const body = await request.json();
+    const rawBody = await request.text();
+    const isAuthenticated = verifyWebhookToken(
+      request.headers.get("x-n8n-token"),
+      process.env.N8N_WEBHOOK_TOKEN
+    );
+
+    if (!isAuthenticated) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = JSON.parse(rawBody);
 
     const { jobId, requirementId, status, results } = body;
 
@@ -64,27 +75,6 @@ export async function PUT(
         { status: 400 }
       );
     }
-
-    // T135: Validate callback is from N8N using bearer token
-    // TODO: Re-enable token validation once N8N workflow is ready
-    // const authHeader = request.headers.get("authorization");
-    // if (!authHeader?.startsWith("Bearer ")) {
-    //   return NextResponse.json(
-    //     { error: "Missing or invalid authorization header" },
-    //     { status: 401 },
-    //   );
-    // }
-    //
-    // const token = authHeader.slice(7); // Remove "Bearer " prefix
-    // const expectedToken = process.env.N8N_WEBHOOK_TOKEN;
-    //
-    // if (!expectedToken || token !== expectedToken) {
-    //   console.warn("[Analysis Callback] Invalid N8N webhook token received");
-    //   return NextResponse.json(
-    //     { error: "Unauthorized: Invalid webhook token" },
-    //     { status: 401 },
-    //   );
-    // }
 
     const supabase = await createServerClient();
 

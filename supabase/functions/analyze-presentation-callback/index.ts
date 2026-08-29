@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isValidWebhookRequest } from "../_shared/webhook-auth.ts";
 
 interface PresentationCallbackRequest {
   correlationId: string;
@@ -32,12 +33,15 @@ serve(async (req) => {
   }
 
   try {
-    const body = (await req.json()) as any;
+    const rawBody = await req.text();
+    if (!isValidWebhookRequest(req)) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
-    console.log(
-      "[analyze-presentation-callback] Request body keys:",
-      Object.keys(body)
-    );
+    const body = JSON.parse(rawBody) as any;
 
     // N8N may wrap data in a "body" object, unwrap if needed
     const payload = body.body || body;
