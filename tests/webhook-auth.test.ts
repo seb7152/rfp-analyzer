@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createN8nWebhookHeaders,
+  getBearerToken,
   verifyWebhookToken,
 } from "../lib/security/webhook-auth";
 
@@ -17,6 +18,12 @@ describe("webhook token authentication", () => {
 
   it("rejects an absent callback token", () => {
     expect(verifyWebhookToken(null, secret)).toBe(false);
+  });
+
+  it("extracts a callback token from a bearer authorization header", () => {
+    expect(getBearerToken(`Bearer ${secret}`)).toBe(secret);
+    expect(getBearerToken("Basic credentials")).toBeNull();
+    expect(getBearerToken(null)).toBeNull();
   });
 
   it("creates the dedicated n8n trigger credential header", () => {

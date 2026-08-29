@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { verifyWebhookToken } from "@/lib/security/webhook-auth";
+import {
+  getBearerToken,
+  verifyWebhookToken,
+} from "@/lib/security/webhook-auth";
 
 /**
  * PUT /api/rfps/[rfpId]/analyze/callback
@@ -38,7 +41,7 @@ export async function PUT(
 
     const rawBody = await request.text();
     const isAuthenticated = verifyWebhookToken(
-      request.headers.get("x-n8n-token"),
+      getBearerToken(request.headers.get("authorization")),
       process.env.N8N_WEBHOOK_TOKEN
     );
 

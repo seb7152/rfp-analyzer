@@ -9,9 +9,15 @@ function constantTimeEqual(left: string, right: string): boolean {
   return difference === 0;
 }
 
+function getBearerToken(authorization: string | null): string | null {
+  if (!authorization?.startsWith("Bearer ")) return null;
+
+  return authorization.slice("Bearer ".length);
+}
+
 export function isValidWebhookRequest(request: Request): boolean {
   const secret = Deno.env.get("N8N_WEBHOOK_TOKEN");
-  const token = request.headers.get("x-n8n-token");
+  const token = getBearerToken(request.headers.get("authorization"));
 
   return Boolean(secret && token && constantTimeEqual(token, secret));
 }

@@ -18,6 +18,14 @@ export function verifyWebhookToken(
   return Boolean(secret && providedToken && constantTimeEqual(providedToken, secret));
 }
 
+export function getBearerToken(authorization: string | null): string | null {
+  if (!authorization?.startsWith("Bearer ")) {
+    return null;
+  }
+
+  return authorization.slice("Bearer ".length);
+}
+
 /** Header required by n8n's Header Auth credential for application triggers. */
 export function createN8nWebhookHeaders(secret: string | undefined): HeadersInit {
   if (!secret) {
