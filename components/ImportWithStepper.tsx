@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import CodeEditor from "@uiw/react-textarea-code-editor";
 import "@uiw/react-textarea-code-editor/dist.css";
@@ -54,7 +54,18 @@ interface Supplier {
 
 export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(1);
+  // The preparation hub links straight to a supplier's responses, so honour
+  // ?step= and ?supplier= rather than always starting at the structure step.
+  const searchParams = useSearchParams();
+  const requestedStep = Number(searchParams.get("step"));
+  const requestedSupplier = searchParams.get("supplier");
+  const [currentStep, setCurrentStep] = useState(
+    requestedStep >= 1 && requestedStep <= 4
+      ? requestedStep
+      : requestedSupplier
+        ? 4
+        : 1
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -87,7 +98,7 @@ export function ImportWithStepper({ rfpId }: ImportWithStepperProps) {
   }>({});
   const [expandedSuppliers, setExpandedSuppliers] = useState<{
     [key: string]: boolean;
-  }>({});
+  }>(() => (requestedSupplier ? { [requestedSupplier]: true } : {}));
   const [responsesImportedBySupplier, setResponsesImportedBySupplier] =
     useState<{ [key: string]: boolean }>({});
 
