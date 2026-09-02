@@ -1,4 +1,4 @@
-import { ImportWithStepper } from "@/components/ImportWithStepper";
+import { PreparationHub } from "@/components/preparation/PreparationHub";
 
 interface ImportPageProps {
   params: {
@@ -8,8 +8,8 @@ interface ImportPageProps {
 
 export default function ImportPage({ params }: ImportPageProps) {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8">
-      <ImportWithStepper rfpId={params.rfpId} />
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <PreparationHub rfpId={params.rfpId} />
     </div>
   );
 }
