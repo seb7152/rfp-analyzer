@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useVersion } from "@/contexts/VersionContext";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -101,7 +101,11 @@ export default function RFPSummaryPage() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isDocxImportModalOpen, setIsDocxImportModalOpen] = useState(false);
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
-  const [activeTab, setActiveTab] = useState("dashboard");
+  // Deep links such as ?tab=weights come from the preparation hub.
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState(
+    () => searchParams.get("tab") || "dashboard"
+  );
   const [suppliersForExport, setSuppliersForExport] = useState<
     SupplierForExport[]
   >([]);
