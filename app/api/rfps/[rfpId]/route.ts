@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
+import { checkRFPAccess } from "@/lib/permissions/rfp-access";
 
 export async function GET(
   _request: NextRequest,
@@ -28,26 +28,39 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Verify user has access to this RFP
-    const accessCheckResponse = await verifyRFPAccess(rfpId, user.id);
-    if (accessCheckResponse) {
-      return accessCheckResponse;
+    // Access check, RFP row and response count are independent reads.
+    // Callers that only need the RFP header used to hit the (much heavier)
+    // /dashboard endpoint for it, so this route returns the access level and
+    // the response count alongside the row.
+    const [access, rfpResult, responsesCountResult] = await Promise.all([
+      checkRFPAccess(rfpId, user.id),
+      supabase.from("rfps").select("*").eq("id", rfpId).maybeSingle(),
+      supabase
+        .from("responses")
+        .select("id", { count: "exact", head: true })
+        .eq("rfp_id", rfpId),
+    ]);
+
+    if (!access.hasAccess) {
+      if (access.error?.includes("not found")) {
+        return NextResponse.json({ error: "RFP not found" }, { status: 404 });
+      }
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    // Get the RFP details
-    const { data: rfp, error: rfpError } = await supabase
-      .from("rfps")
-      .select(
-        "id, title, description, organization_id, created_by, created_at, updated_at"
-      )
-      .eq("id", rfpId)
-      .single();
-
-    if (rfpError || !rfp) {
+    const rfp = rfpResult.data;
+    if (rfpResult.error || !rfp) {
       return NextResponse.json({ error: "RFP not found" }, { status: 404 });
     }
 
-    return NextResponse.json(rfp, { status: 200 });
+    return NextResponse.json(
+      {
+        ...rfp,
+        userAccessLevel: access.accessLevel || "viewer",
+        responsesCount: responsesCountResult.count ?? 0,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error fetching RFP:", error);
     return NextResponse.json(

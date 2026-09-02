@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useVersion } from "@/contexts/VersionContext";
@@ -13,19 +14,83 @@ import {
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KPICard } from "@/components/RFPSummary/KPICard";
-import { SuppliersTab } from "@/components/RFPSummary/SuppliersTab";
-import { AnalystsTab } from "@/components/RFPSummary/AnalystsTab";
-import { AnalysisTab } from "@/components/RFPSummary/AnalysisTab";
-import { WeightsTab } from "@/components/RFPSummary/WeightsTab";
-import { RequirementsTab } from "@/components/RFPSummary/RequirementsTab";
-import { ExportTab } from "@/components/RFPSummary/ExportTab";
-import { VersionsTab } from "@/components/RFPSummary/VersionsTab";
-import { PresentationAnalysisSection } from "@/components/RFPSummary/PresentationAnalysisSection";
-import { SettingsTab } from "@/components/RFPSummary/SettingsTab";
-import { FinancialGridTab } from "@/components/RFPSummary/FinancialGridTab";
 
-import { DocumentUploadModal } from "@/components/DocumentUploadModal";
-import { DocxImportModal } from "@/components/DocxImportModal";
+// Only one tab is on screen at a time, and the modals open on demand, so their
+// code is split out of the initial page bundle instead of being downloaded and
+// parsed before the dashboard can render.
+const tabFallback = () => (
+  <div className="space-y-3">
+    <Skeleton className="h-8 w-48" />
+    <Skeleton className="h-64 w-full" />
+  </div>
+);
+
+const SuppliersTab = dynamic(
+  () =>
+    import("@/components/RFPSummary/SuppliersTab").then((m) => m.SuppliersTab),
+  { ssr: false, loading: tabFallback }
+);
+const AnalystsTab = dynamic(
+  () =>
+    import("@/components/RFPSummary/AnalystsTab").then((m) => m.AnalystsTab),
+  { ssr: false, loading: tabFallback }
+);
+const AnalysisTab = dynamic(
+  () =>
+    import("@/components/RFPSummary/AnalysisTab").then((m) => m.AnalysisTab),
+  { ssr: false, loading: tabFallback }
+);
+const WeightsTab = dynamic(
+  () => import("@/components/RFPSummary/WeightsTab").then((m) => m.WeightsTab),
+  { ssr: false, loading: tabFallback }
+);
+const RequirementsTab = dynamic(
+  () =>
+    import("@/components/RFPSummary/RequirementsTab").then(
+      (m) => m.RequirementsTab
+    ),
+  { ssr: false, loading: tabFallback }
+);
+const ExportTab = dynamic(
+  () => import("@/components/RFPSummary/ExportTab").then((m) => m.ExportTab),
+  { ssr: false, loading: tabFallback }
+);
+const VersionsTab = dynamic(
+  () =>
+    import("@/components/RFPSummary/VersionsTab").then((m) => m.VersionsTab),
+  { ssr: false, loading: tabFallback }
+);
+const PresentationAnalysisSection = dynamic(
+  () =>
+    import("@/components/RFPSummary/PresentationAnalysisSection").then(
+      (m) => m.PresentationAnalysisSection
+    ),
+  { ssr: false, loading: tabFallback }
+);
+const SettingsTab = dynamic(
+  () =>
+    import("@/components/RFPSummary/SettingsTab").then((m) => m.SettingsTab),
+  { ssr: false, loading: tabFallback }
+);
+const FinancialGridTab = dynamic(
+  () =>
+    import("@/components/RFPSummary/FinancialGridTab").then(
+      (m) => m.FinancialGridTab
+    ),
+  { ssr: false, loading: tabFallback }
+);
+
+const DocumentUploadModal = dynamic(
+  () =>
+    import("@/components/DocumentUploadModal").then(
+      (m) => m.DocumentUploadModal
+    ),
+  { ssr: false }
+);
+const DocxImportModal = dynamic(
+  () => import("@/components/DocxImportModal").then((m) => m.DocxImportModal),
+  { ssr: false }
+);
 
 import {
   Building2,
@@ -91,7 +156,7 @@ interface SupplierForExport {
 
 export default function RFPSummaryPage() {
   const params = useParams();
-  const { activeVersion } = useVersion();
+  const { activeVersion, isLoading: versionsLoading } = useVersion();
   const rfpId = params.rfpId as string;
   const [data, setData] = useState<RFPSummaryData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,6 +165,10 @@ export default function RFPSummaryPage() {
   const [expandDashboard, setExpandDashboard] = useState(true);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isDocxImportModalOpen, setIsDocxImportModalOpen] = useState(false);
+  const hasOpenedUploadModal = useRef(false);
+  const hasOpenedDocxImportModal = useRef(false);
+  if (isUploadModalOpen) hasOpenedUploadModal.current = true;
+  if (isDocxImportModalOpen) hasOpenedDocxImportModal.current = true;
   const [rfpTitle, setRfpTitle] = useState<string>("RFP");
   const [activeTab, setActiveTab] = useState("dashboard");
   const [suppliersForExport, setSuppliersForExport] = useState<
@@ -109,55 +178,67 @@ export default function RFPSummaryPage() {
   const [exportingResponses, setExportingResponses] = useState(false);
 
   useEffect(() => {
+    // Wait for the version list before firing: starting earlier meant loading
+    // the whole dashboard once without a version and again with it.
+    if (!rfpId || versionsLoading) {
+      return;
+    }
+
+    let cancelled = false;
+
     const fetchData = async () => {
       try {
         setLoading(true);
-        const url = `/api/rfps/${rfpId}/dashboard${activeVersion?.id ? `?versionId=${activeVersion.id}` : ""}`;
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("Failed to fetch RFP summary");
 
-        const summaryData = await response.json();
+        const dashboardUrl = `/api/rfps/${rfpId}/dashboard${activeVersion?.id ? `?versionId=${activeVersion.id}` : ""}`;
+
+        // The three reads are independent — request them together rather than
+        // one after the other.
+        const [dashboardResponse, suppliersResponse, docsResponse] =
+          await Promise.all([
+            fetch(dashboardUrl),
+            fetch(`/api/rfps/${rfpId}/suppliers`).catch(() => null),
+            fetch(`/api/rfps/${rfpId}/documents`).catch(() => null),
+          ]);
+
+        if (!dashboardResponse.ok)
+          throw new Error("Failed to fetch RFP summary");
+
+        const summaryData = await dashboardResponse.json();
+        if (cancelled) return;
+
         setData(summaryData);
 
-        // Set RFP title
         if (summaryData.rfp?.title) {
           setRfpTitle(summaryData.rfp.title);
         }
 
-        // Fetch suppliers for the restart-analysis selector
-        try {
-          const suppliersResponse = await fetch(`/api/rfps/${rfpId}/suppliers`);
-          if (suppliersResponse.ok) {
-            const suppliersData = await suppliersResponse.json();
-            setSuppliersForExport(suppliersData.suppliers || []);
-          }
-        } catch {
-          // non-critical
+        if (suppliersResponse?.ok) {
+          const suppliersData = await suppliersResponse.json();
+          if (!cancelled) setSuppliersForExport(suppliersData.suppliers || []);
         }
 
-        // Fetch total documents count
-        try {
-          const docsResponse = await fetch(`/api/rfps/${rfpId}/documents`);
-          if (docsResponse.ok) {
-            const docsData = await docsResponse.json();
-            setTotalDocuments(docsData.count || 0);
-          }
-        } catch {
-          // Documents fetch error, continue without it
+        if (docsResponse?.ok) {
+          const docsData = await docsResponse.json();
+          if (!cancelled) setTotalDocuments(docsData.count || 0);
         }
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Une erreur est survenue"
-        );
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Une erreur est survenue"
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    if (rfpId) {
-      fetchData();
-    }
-  }, [rfpId, activeVersion?.id]);
+    fetchData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [rfpId, activeVersion?.id, versionsLoading]);
 
   // Load suppliers for export when needed
   const loadSuppliersForExport = async () => {
@@ -923,20 +1004,26 @@ export default function RFPSummaryPage() {
           </Tabs>
         </section>
 
-        {/* Document Upload Modal */}
-        <DocumentUploadModal
-          rfpId={rfpId}
-          rfpTitle={rfpTitle}
-          isOpen={isUploadModalOpen}
-          onOpenChange={setIsUploadModalOpen}
-        />
+        {/* Document Upload Modal — mounted on first open so its chunk is not
+            downloaded with the page. Stays mounted afterwards, keeping the
+            in-modal state across open/close as before. */}
+        {hasOpenedUploadModal.current && (
+          <DocumentUploadModal
+            rfpId={rfpId}
+            rfpTitle={rfpTitle}
+            isOpen={isUploadModalOpen}
+            onOpenChange={setIsUploadModalOpen}
+          />
+        )}
 
         {/* DOCX Import Modal */}
-        <DocxImportModal
-          rfpId={rfpId}
-          isOpen={isDocxImportModalOpen}
-          onOpenChange={setIsDocxImportModalOpen}
-        />
+        {hasOpenedDocxImportModal.current && (
+          <DocxImportModal
+            rfpId={rfpId}
+            isOpen={isDocxImportModalOpen}
+            onOpenChange={setIsDocxImportModalOpen}
+          />
+        )}
       </div>
     </div>
   );

@@ -37,9 +37,9 @@ import {
   FileSpreadsheet,
   FileDown,
 } from "lucide-react";
-import ExcelJS from "exceljs";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+// exceljs + jspdf + jspdf-autotable weigh several hundred kB and are only
+// needed when the user actually exports. They are loaded on demand inside the
+// export handlers instead of shipping with the summary page.
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Supplier } from "@/types/supplier";
@@ -1086,6 +1086,7 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
 
   const exportToExcel = async () => {
     try {
+      const { default: ExcelJS } = await import("exceljs");
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Analyse par Catégorie");
 
@@ -1193,8 +1194,12 @@ export function CategoryAnalysisTable({ rfpId }: CategoryAnalysisTableProps) {
     }
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     try {
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
       const doc = new jsPDF({ orientation: "landscape" });
 
       // Title

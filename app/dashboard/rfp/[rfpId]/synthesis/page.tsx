@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
@@ -14,7 +15,21 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { WeightConfigurationTable } from "@/components/dashboard/WeightConfigurationTable";
+// The weights grid pulls in MUI + material-react-table, by far the heaviest
+// dependency on this route. It renders below the fold and only once the
+// weights payload has arrived, so it is loaded separately.
+const WeightConfigurationTable = dynamic(
+  () =>
+    import("@/components/dashboard/WeightConfigurationTable").then(
+      (m) => m.WeightConfigurationTable
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-64 w-full animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+    ),
+  }
+);
 import { useVersion } from "@/contexts/VersionContext";
 
 interface DashboardData {

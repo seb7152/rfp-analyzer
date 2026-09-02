@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { EvaluationVersion, CreateVersionRequest } from "@/lib/supabase/types";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 
 /**
  * GET /api/rfps/[rfpId]/versions
@@ -24,7 +25,6 @@ export async function GET(
     }
 
     // Fetch all versions for this RFP
-    console.log(`🔍 Fetching versions for RFP: ${rfpId}`);
     const { data: versions, error } = await supabase
       .from("evaluation_versions")
       .select("*")
@@ -39,104 +39,100 @@ export async function GET(
       );
     }
 
-    console.log(`✓ Found ${versions?.length || 0} versions`);
-    versions?.forEach((v) => {
-      console.log(`  - v${v.version_number}: ${v.version_name} (${v.id})`);
+    const versionList = (versions || []) as EvaluationVersion[];
+
+    if (versionList.length === 0) {
+      return NextResponse.json({ success: true, versions: [] });
+    }
+
+    // Statistics used to be computed per version, costing ~6 queries each
+    // (supplier statuses twice, three counts, and every response row). Two
+    // bulk queries cover every version instead, and the per-version figures
+    // are derived in memory.
+    const versionIds = versionList.map((version) => version.id);
+
+    const [statusRows, responseRows] = await Promise.all([
+      fetchAllRows<{
+        version_id: string;
+        supplier_id: string;
+        shortlist_status: string | null;
+      }>(
+        () =>
+          supabase
+            .from("version_supplier_status")
+            .select("version_id, supplier_id, shortlist_status")
+            .in("version_id", versionIds)
+            .order("supplier_id", { ascending: true }) as never,
+        { label: "version supplier statuses" }
+      ),
+      fetchAllRows<{
+        id: string;
+        version_id: string;
+        supplier_id: string;
+        is_checked: boolean;
+      }>(
+        () =>
+          supabase
+            .from("responses")
+            .select("id, version_id, supplier_id, is_checked")
+            .in("version_id", versionIds)
+            .order("id", { ascending: true }) as never,
+        { label: "responses for version stats" }
+      ),
+    ]);
+
+    const activeSuppliersByVersion = new Map<string, Set<string>>();
+    const removedCountByVersion = new Map<string, number>();
+
+    for (const row of statusRows) {
+      if (
+        row.shortlist_status === "active" ||
+        row.shortlist_status === "shortlisted"
+      ) {
+        const set =
+          activeSuppliersByVersion.get(row.version_id) || new Set<string>();
+        set.add(row.supplier_id);
+        activeSuppliersByVersion.set(row.version_id, set);
+      } else if (row.shortlist_status === "removed") {
+        removedCountByVersion.set(
+          row.version_id,
+          (removedCountByVersion.get(row.version_id) || 0) + 1
+        );
+      }
+    }
+
+    const totalsByVersion = new Map<
+      string,
+      { total: number; checked: number }
+    >();
+
+    for (const response of responseRows) {
+      const activeSuppliers = activeSuppliersByVersion.get(response.version_id);
+      if (!activeSuppliers || !activeSuppliers.has(response.supplier_id)) {
+        continue;
+      }
+      const totals = totalsByVersion.get(response.version_id) || {
+        total: 0,
+        checked: 0,
+      };
+      totals.total++;
+      if (response.is_checked) totals.checked++;
+      totalsByVersion.set(response.version_id, totals);
+    }
+
+    const versionsWithStats = versionList.map((version) => {
+      const totals = totalsByVersion.get(version.id);
+      const completionPercentage =
+        totals && totals.total > 0 ? (totals.checked / totals.total) * 100 : 0;
+
+      return {
+        ...version,
+        active_suppliers_count:
+          activeSuppliersByVersion.get(version.id)?.size ?? 0,
+        removed_suppliers_count: removedCountByVersion.get(version.id) ?? 0,
+        completion_percentage: Math.round(completionPercentage),
+      };
     });
-
-    // Fetch statistics for each version
-    const versionsWithStats = await Promise.all(
-      (versions || []).map(async (version: EvaluationVersion) => {
-        console.log(
-          `\n  📊 Processing v${version.version_number}: ${version.version_name}`
-        );
-
-        // Check if version_supplier_status table has any records for this version
-        const { data: allStatusRecords, error: statusError } = await supabase
-          .from("version_supplier_status")
-          .select("supplier_id, is_active, shortlist_status")
-          .eq("version_id", version.id);
-
-        console.log(
-          `    Total status records in DB: ${allStatusRecords?.length || 0}`
-        );
-        if (statusError) {
-          console.log(`    ⚠️ Error fetching all status records:`, statusError);
-        }
-        if (allStatusRecords && allStatusRecords.length > 0) {
-          const active = allStatusRecords.filter(
-            (s) =>
-              s.shortlist_status === "active" ||
-              s.shortlist_status === "shortlisted"
-          );
-          const removed = allStatusRecords.filter(
-            (s) => s.shortlist_status === "removed"
-          );
-          console.log(`    - Active/Shortlisted: ${active.length}`);
-          console.log(`    - Removed: ${removed.length}`);
-        }
-
-        const [_suppliersResult, activeResult, removedResult] =
-          await Promise.all([
-            supabase
-              .from("suppliers")
-              .select("id", { count: "exact", head: true })
-              .eq("rfp_id", rfpId),
-            supabase
-              .from("version_supplier_status")
-              .select("id", { count: "exact", head: true })
-              .eq("version_id", version.id)
-              .in("shortlist_status", ["active", "shortlisted"]),
-            supabase
-              .from("version_supplier_status")
-              .select("id", { count: "exact", head: true })
-              .eq("version_id", version.id)
-              .eq("shortlist_status", "removed"),
-          ]);
-
-        console.log(`    Query results:`);
-        console.log(`    - activeResult.count: ${activeResult.count}`);
-        console.log(`    - removedResult.count: ${removedResult.count}`);
-
-        const activeSuppliers = activeResult.count ?? 0;
-        const removedSuppliers = removedResult.count ?? 0;
-
-        console.log(
-          `    ✓ Final counts - Active: ${activeSuppliers}, Removed: ${removedSuppliers}`
-        );
-
-        // Calculate completion percentage based on active suppliers only
-        const { data: activeSupplierIds } = await supabase
-          .from("version_supplier_status")
-          .select("supplier_id")
-          .eq("version_id", version.id)
-          .in("shortlist_status", ["active", "shortlisted"]);
-
-        const activeSupplierIdSet = new Set(
-          (activeSupplierIds || []).map((s) => s.supplier_id)
-        );
-
-        // Get responses only from active suppliers
-        const { data: responses } = await supabase
-          .from("responses")
-          .select("id, is_checked, supplier_id")
-          .eq("version_id", version.id)
-          .in("supplier_id", Array.from(activeSupplierIdSet));
-
-        const evaluatedCount =
-          responses?.filter((r) => r.is_checked).length || 0;
-        const totalResponses = responses?.length || 0;
-        const completionPercentage =
-          totalResponses > 0 ? (evaluatedCount / totalResponses) * 100 : 0;
-
-        return {
-          ...version,
-          active_suppliers_count: activeSuppliers,
-          removed_suppliers_count: removedSuppliers,
-          completion_percentage: Math.round(completionPercentage),
-        };
-      })
-    );
 
     return NextResponse.json({
       success: true,

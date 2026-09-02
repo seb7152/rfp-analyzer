@@ -1,4 +1,6 @@
 import { createClient as createServerClient } from "./server";
+import { fetchAllRows } from "./fetch-all";
+import { computeCompletionPercentage } from "@/lib/dashboard/aggregate";
 import type { Requirement } from "./types";
 
 /**
@@ -13,10 +15,12 @@ import type { Requirement } from "./types";
 export async function getRequirements(rfpId: string): Promise<Requirement[]> {
   const supabase = await createServerClient();
 
-  const { data, error } = await supabase
-    .from("requirements")
-    .select(
-      `
+  const data = await fetchAllRows<Requirement>(
+    () =>
+      supabase
+        .from("requirements")
+        .select(
+          `
       id,
       rfp_id,
       requirement_id_external,
@@ -33,17 +37,16 @@ export async function getRequirements(rfpId: string): Promise<Requirement[]> {
       updated_at,
       created_by
     `
-    )
-    .eq("rfp_id", rfpId)
-    .order("level", { ascending: true })
-    .order("requirement_id_external", { ascending: true });
+        )
+        .eq("rfp_id", rfpId)
+        .order("level", { ascending: true })
+        .order("requirement_id_external", { ascending: true })
+        // Tiebreaker so page boundaries stay stable while paging.
+        .order("id", { ascending: true }) as never,
+    { label: "requirements" }
+  );
 
-  if (error) {
-    console.error("Error fetching requirements:", error);
-    throw new Error(`Failed to fetch requirements: ${error.message}`);
-  }
-
-  return (data || []) as Requirement[];
+  return data;
 }
 
 /**
@@ -188,12 +191,22 @@ export async function getRequirementBreadcrumb(
     return [];
   }
 
-  // Build breadcrumb by traversing up the parent chain
+  // Walking the parent chain used to issue one query per ancestor, each
+  // waiting on the previous. One read of the RFP's requirements lets the whole
+  // chain be resolved in memory.
+  const siblings = await getRequirements(requirement.rfp_id);
+  const byId = new Map<string, Requirement>(
+    siblings.map((row) => [row.id, row])
+  );
+  byId.set(requirement.id, requirement);
+
   const breadcrumb: Requirement[] = [];
+  const seen = new Set<string>();
   let currentId: string | null = requirementId;
 
-  while (currentId) {
-    const current = await getRequirement(currentId);
+  while (currentId && !seen.has(currentId)) {
+    seen.add(currentId);
+    const current: Requirement | undefined = byId.get(currentId);
     if (!current) break;
 
     breadcrumb.unshift(current);
@@ -1032,111 +1045,64 @@ export async function getRFPCompletionPercentage(
       .select("id")
       .eq("rfp_id", rfpId)
       .eq("is_active", true)
-      .single();
+      .maybeSingle();
     if (activeVersion) {
       resolvedVersionId = activeVersion.id;
     }
   }
 
-  // Get all responses for leaf requirements only (level 4)
-  let query = supabase
-    .from("responses")
-    .select("id, is_checked, requirement_id, supplier_id")
-    .eq("rfp_id", rfpId);
+  // Responses and requirements are independent reads, and the supplier
+  // shortlist only depends on the version — fetch all three concurrently.
+  const [responses, requirements, activeSupplierIds] = await Promise.all([
+    fetchAllRows<{
+      id: string;
+      is_checked: boolean;
+      requirement_id: string;
+      supplier_id: string;
+      version_id: string | null;
+    }>(
+      () => {
+        let query = supabase
+          .from("responses")
+          .select("id, is_checked, requirement_id, supplier_id, version_id")
+          .eq("rfp_id", rfpId);
+        if (resolvedVersionId) {
+          query = query.eq("version_id", resolvedVersionId);
+        }
+        return query.order("id", { ascending: true }) as never;
+      },
+      { label: "responses for completion" }
+    ),
+    fetchAllRows<{ id: string; parent_id: string | null }>(
+      () =>
+        supabase
+          .from("requirements")
+          .select("id, parent_id")
+          .eq("rfp_id", rfpId)
+          .order("id", { ascending: true }) as never,
+      { label: "requirements for completion" }
+    ),
+    (async () => {
+      if (!resolvedVersionId) return null;
+      const { getVersionSupplierStatuses, getActiveSupplierIds } = await import(
+        "@/lib/suppliers/status-cache"
+      );
+      const statuses = await getVersionSupplierStatuses(
+        supabase,
+        resolvedVersionId
+      );
+      return getActiveSupplierIds(statuses);
+    })(),
+  ]);
 
-  if (resolvedVersionId) {
-    query = query.eq("version_id", resolvedVersionId);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error("Error fetching responses for completion:", error);
-    throw new Error(
-      `Failed to fetch responses for completion: ${error.message}`
-    );
-  }
-
-  let responses = (data || []) as Array<{
-    id: string;
-    is_checked: boolean;
-    requirement_id: string;
-    supplier_id: string;
-  }>;
-
-  // Filter responses to only include active suppliers of the version
-  if (resolvedVersionId) {
-    const { getVersionSupplierStatuses, getActiveSupplierIds } = await import(
-      "@/lib/suppliers/status-cache"
-    );
-    const statuses = await getVersionSupplierStatuses(
-      supabase,
-      resolvedVersionId
-    );
-    const activeSupplierIds = getActiveSupplierIds(statuses);
-    responses = responses.filter((r) => activeSupplierIds.has(r.supplier_id));
-  }
-
-  // Get all requirements to identify leaf nodes (requirements without children)
-  const { data: requirements, error: reqError } = await supabase
-    .from("requirements")
-    .select("id, parent_id")
-    .eq("rfp_id", rfpId);
-
-  if (reqError) {
-    console.error("Error fetching requirements:", reqError);
-    throw new Error(
-      `Failed to fetch requirements for completion: ${reqError.message}`
-    );
-  }
-
-  const allRequirements = (requirements || []) as Array<{
-    id: string;
-    parent_id: string | null;
-  }>;
-
-  // Identify leaf requirements (those that are not parents of other requirements)
-  const parentIds = new Set(
-    allRequirements.filter((r) => r.parent_id !== null).map((r) => r.parent_id)
+  return computeCompletionPercentage(
+    requirements as never,
+    responses as never,
+    {
+      versionId: resolvedVersionId ?? null,
+      activeSupplierIds,
+    }
   );
-
-  const leafReqIds = new Set(
-    allRequirements.filter((r) => !parentIds.has(r.id)).map((r) => r.id)
-  );
-
-  // Debug logging
-  console.log(
-    `[Completion] RFP ${rfpId}${resolvedVersionId ? ` (v${resolvedVersionId})` : ""}:`
-  );
-  console.log(`  Total responses: ${responses.length}`);
-  console.log(`  Total requirements: ${allRequirements.length}`);
-  console.log(`  Leaf requirements: ${leafReqIds.size}`);
-  console.log(`  Parent IDs: ${parentIds.size}`);
-
-  // Filter responses to only those for leaf requirements
-  const leafResponses = responses.filter((r) =>
-    leafReqIds.has(r.requirement_id)
-  );
-
-  console.log(`  Leaf responses: ${leafResponses.length}`);
-  console.log(
-    `  Checked responses: ${leafResponses.filter((r) => r.is_checked).length}`
-  );
-
-  const total = leafResponses.length;
-
-  if (total === 0) {
-    console.log(`  Result: 0% (no responses for leaf requirements)`);
-    return 0; // No responses = 0% complete
-  }
-
-  const checked = leafResponses.filter((r) => r.is_checked).length;
-  const percentage = Math.round((checked / total) * 100);
-
-  console.log(
-    `  Result: ${percentage}%${resolvedVersionId ? " (filtered by version)" : ""}`
-  );
-  return percentage;
 }
 
 /**
@@ -1268,8 +1234,11 @@ export async function getResponsesForRFP(
 > {
   const supabase = await createServerClient();
 
-  let query = supabase.from("responses").select(
-    `
+  // Rebuilt per page: a PostgREST builder is single-use, so paging needs a
+  // fresh one for every `.range()` call.
+  const buildQuery = () => {
+    let query = supabase.from("responses").select(
+      `
     id,
     rfp_id,
     requirement_id,
@@ -1297,31 +1266,36 @@ export async function getResponsesForRFP(
       created_at
     )
   `
-  );
+    );
 
-  query = query.eq("rfp_id", rfpId);
+    query = query.eq("rfp_id", rfpId);
 
-  if (requirementId) {
-    query = query.eq("requirement_id", requirementId);
-  }
+    if (requirementId) {
+      query = query.eq("requirement_id", requirementId);
+    }
 
-  if (versionId) {
-    query = query.eq("version_id", versionId);
-  }
+    if (versionId) {
+      query = query.eq("version_id", versionId);
+    }
 
-  if (supplierId) {
-    query = query.eq("supplier_id", supplierId);
-  }
+    if (supplierId) {
+      query = query.eq("supplier_id", supplierId);
+    }
 
-  const { data, error } = await query;
+    // Stable page boundaries: without an explicit order, PostgREST may return
+    // rows in a different order per page and drop or duplicate some.
+    return query.order("id", { ascending: true });
+  };
 
-  if (error) {
-    console.error("Error fetching responses for RFP:", error);
-    throw new Error(`Failed to fetch responses for RFP: ${error.message}`);
-  }
+  // An RFP with 200 requirements and 10 suppliers has 2000 response rows, well
+  // past PostgREST's 1000-row cap — page through them instead of silently
+  // truncating.
+  const data = await fetchAllRows<any>(() => buildQuery() as never, {
+    label: "responses for RFP",
+  });
 
   // Sort responses by supplier name to maintain consistent order
-  const sortedData = (data || []).sort((a, b) => {
+  const sortedData = data.sort((a, b) => {
     const supplierA = Array.isArray(a.supplier) ? a.supplier[0] : a.supplier;
     const supplierB = Array.isArray(b.supplier) ? b.supplier[0] : b.supplier;
     const nameA = supplierA?.name || "";

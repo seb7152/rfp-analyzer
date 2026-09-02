@@ -2,8 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import CodeEditor from "@uiw/react-textarea-code-editor";
+import dynamic from "next/dynamic";
 import "@uiw/react-textarea-code-editor/dist.css";
+
+// The syntax-highlighting editor drags in refractor/prism and is the single
+// biggest chunk of the import route. Loaded on demand so the stepper's first
+// screen ships without it.
+const CodeEditor = dynamic(() => import("@uiw/react-textarea-code-editor"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-40 w-full animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+  ),
+});
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

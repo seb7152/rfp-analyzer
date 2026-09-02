@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
+import {
+  verifyRFPAccess,
+  invalidateRFPAccessCache,
+} from "@/lib/permissions/rfp-access";
 
 /**
  * DELETE /api/rfps/[rfpId]/assignments/[userId]
@@ -93,6 +96,8 @@ export async function DELETE(
     if (deleteError) {
       throw deleteError;
     }
+
+    invalidateRFPAccessCache(rfpId, userId);
 
     return NextResponse.json(
       {
