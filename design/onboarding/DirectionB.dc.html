@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: Inter, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #0f172a; } a:hover { color: #475569; }
+    * { box-sizing: border-box; }
+    .hand { font-family: "Architects Daughter", "Comic Sans MS", cursive; }
+  </style>
+</helmet>
+
+<div style="background: #ffffff; min-height: 740px; color: #0f172a; padding: 26px; display: flex; flex-direction: column; gap: 16px;">
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <span class="hand" style="font-size: 15px; color: #64748b;">Direction B</span>
+    <h2 style="margin: 0; font-size: 21px; font-weight: 700; letter-spacing: -0.01em;">L'assistant guidé</h2>
+    <p style="margin: 0; font-size: 13px; color: #475569; line-height: 1.5;">Le stepper actuel, mais fondé sur des fichiers au lieu de JSON : une étape, une question, un bouton. On avance en ligne droite.</p>
+  </div>
+
+  <div style="height: 1px; background: #e2e8f0;"></div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px; flex: 1;">
+
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="width: 20px; height: 20px; border-radius: 9999px; background: #0f172a; flex: none;"></span>
+      <span style="height: 2px; flex: 1; background: #0f172a;"></span>
+      <span style="width: 20px; height: 20px; border-radius: 9999px; background: #0f172a; flex: none;"></span>
+      <span style="height: 2px; flex: 1; background: #e2e8f0;"></span>
+      <span style="width: 20px; height: 20px; border-radius: 9999px; border: 1px solid #cbd5e1; flex: none;"></span>
+      <span style="height: 2px; flex: 1; background: #e2e8f0;"></span>
+      <span style="width: 20px; height: 20px; border-radius: 9999px; border: 1px solid #cbd5e1; flex: none;"></span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px; padding: 20px; border: 1px solid #cbd5e1; border-radius: 10px; flex: 1;">
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <span style="height: 12px; width: 52%; background: #334155; border-radius: 2px;"></span>
+        <span style="height: 8px; width: 78%; background: #e2e8f0; border-radius: 2px;"></span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 40px 20px; border: 1.5px dashed #cbd5e1; border-radius: 10px; background: #f8fafc;">
+        <span style="width: 34px; height: 34px; border-radius: 9999px; border: 1px solid #cbd5e1; background: #ffffff;"></span>
+        <span class="hand" style="font-size: 14px; color: #64748b;">déposez le cahier des charges</span>
+        <span style="height: 26px; width: 108px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff;"></span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="height: 7px; width: 40%; background: #f1f5f9; border-radius: 2px;"></span>
+        <span style="height: 7px; width: 56%; background: #f1f5f9; border-radius: 2px;"></span>
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 14px; border-top: 1px solid #e2e8f0;">
+        <span style="height: 30px; width: 84px; border: 1px solid #cbd5e1; border-radius: 6px;"></span>
+        <span style="height: 30px; width: 104px; background: #0f172a; border-radius: 6px;"></span>
+      </div>
+    </div>
+
+    <span class="hand" style="font-size: 13px; color: #64748b; padding-left: 4px;">↑ une seule chose à faire à l'écran</span>
+
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    <div style="display: flex; gap: 10px;">
+      <span style="width: 3px; background: #10b981; border-radius: 2px; flex: none;"></span>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #047857;">Ce que ça gagne</span>
+        <span style="font-size: 13px; color: #334155; line-height: 1.5;">Imbattable la première fois : impossible de se demander par où commencer. C'est aussi le plus petit écart avec le code existant.</span>
+      </div>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <span style="width: 3px; background: #f97316; border-radius: 2px; flex: none;"></span>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #c2410c;">Ce que ça coûte</span>
+        <span style="font-size: 13px; color: #334155; line-height: 1.5;">Un AO ne se déroule pas en ligne droite. Dès la deuxième consultation, le tunnel devient un obstacle : on veut revenir à l'étape 3 six semaines plus tard, pour un seul fournisseur.</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

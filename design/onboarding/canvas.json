@@ -1,0 +1,43 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Parcours" },
+    { "id": "page-2", "name": "Directions" }
+  ],
+  "artboards": [
+    { "file": "Creation.dc.html", "page": "page-1", "title": "1 · Créer l'appel d'offres", "x": 0, "y": 0, "w": 1000, "h": 980 },
+    { "file": "Main.dc.html", "page": "page-1", "title": "2 · Plan de préparation", "x": 1080, "y": 0, "w": 1440, "h": 1420 },
+    { "file": "CahierDesCharges.dc.html", "page": "page-1", "title": "3 · Importer le cahier des charges", "x": 0, "y": 1560, "w": 1440, "h": 1020 },
+    { "file": "Fournisseurs.dc.html", "page": "page-1", "title": "4 · Fournisseurs consultés", "x": 1560, "y": 1560, "w": 1440, "h": 880 },
+    { "file": "Reponses.dc.html", "page": "page-1", "title": "5 · Dépôt d'un fournisseur", "x": 3120, "y": 1560, "w": 1440, "h": 1020 },
+    { "file": "DirectionA.dc.html", "page": "page-2", "title": "Direction A — Le plan de préparation", "x": 0, "y": 0, "w": 560, "h": 780 },
+    { "file": "DirectionB.dc.html", "page": "page-2", "title": "Direction B — L'assistant guidé", "x": 640, "y": 0, "w": 560, "h": 780 },
+    { "file": "DirectionC.dc.html", "page": "page-2", "title": "Direction C — La corbeille de dépôt", "x": 1280, "y": 0, "w": 560, "h": 780 }
+  ],
+  "annotations": [
+    {
+      "id": "note-parcours",
+      "page": "page-1",
+      "x": 0,
+      "y": -190,
+      "w": 900,
+      "text": "Le parcours retenu (direction A, page « Directions »).\n\nLe principe : plus jamais de JSON sur le chemin nominal. Chaque bloc accepte le format dans lequel la matière arrive vraiment — un .docx de CCTP, un classeur Excel rempli par le fournisseur, des PDF — et l'import JSON reste disponible comme voie de secours, à côté du chemin Claude/MCP."
+    },
+    {
+      "id": "note-reprise",
+      "page": "page-1",
+      "x": 3120,
+      "y": 2650,
+      "w": 660,
+      "text": "Le rapprochement est l'écran qui manque aujourd'hui : c'est lui qui remplace « une zone JSON par fournisseur ». Il assume que le fichier reçu ne colle jamais parfaitement, et fait de l'écart une file de vérification plutôt qu'une erreur de parsing."
+    },
+    {
+      "id": "note-directions",
+      "page": "page-2",
+      "x": 0,
+      "y": -150,
+      "w": 900,
+      "text": "Trois structures possibles pour le même contenu. A est construite en hi-fi sur la page « Parcours ».\n\nB et C ne sont pas des repoussoirs : B est le plus petit écart avec le code existant, et C décrit ce que fait déjà le serveur MCP — la question est de savoir laquelle des trois on assume."
+    }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}

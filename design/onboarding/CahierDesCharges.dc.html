@@ -1,0 +1,273 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: Inter, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #0f172a; text-decoration: underline; }
+    a:hover { color: #475569; }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div style="background: #f8fafc; min-height: 1000px; color: #0f172a;">
+
+  <!-- Barre de tâche -->
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; background: #ffffff; border-bottom: 1px solid #e2e8f0;">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; border: 1px solid #e2e8f0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </div>
+      <div style="display: flex; flex-direction: column;">
+        <span style="font-size: 15px; font-weight: 600;">Importer le cahier des charges</span>
+        <span style="font-size: 12px; color: #64748b;">Refonte du poste de travail</span>
+      </div>
+    </div>
+
+    <!-- progression de la tâche -->
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 9999px; background: #171717; color: #ffffff; font-size: 11px; font-weight: 600;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </span>
+        <span style="font-size: 13px; font-weight: 500;">Fichier</span>
+      </div>
+      <div style="width: 24px; height: 1px; background: #cbd5e1;"></div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 9999px; background: #171717; color: #ffffff; font-size: 11px; font-weight: 600;">2</span>
+        <span style="font-size: 13px; font-weight: 500;">Reconnaissance</span>
+      </div>
+      <div style="width: 24px; height: 1px; background: #cbd5e1;"></div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 9999px; background: #f1f5f9; color: #94a3b8; font-size: 11px; font-weight: 600;">3</span>
+        <span style="font-size: 13px; color: #94a3b8;">Confirmation</span>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <button style="height: 36px; padding: 0 14px; border-radius: 6px; border: 1px solid #e2e8f0; background: #ffffff; color: #0f172a; font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer;">Enregistrer et reprendre plus tard</button>
+      <button style="height: 36px; padding: 0 16px; border-radius: 6px; border: none; background: #171717; color: #fafafa; font-size: 14px; font-weight: 500; font-family: inherit; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+        Importer 184 exigences
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fafafa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Corps : deux colonnes -->
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; padding: 24px; align-items: start;">
+
+    <!-- Colonne gauche : le fichier et ce qui a été reconnu -->
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+
+      <!-- fichier déposé -->
+      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 8px; background: #eff6ff; flex: none;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 13h4"/><path d="M10 17h4"/><path d="M10 9h1"/></svg>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0;">
+          <span style="font-size: 14px; font-weight: 500;">CCTP-poste-travail-v3.docx</span>
+          <span style="font-size: 12px; color: #64748b;">2,4 Mo · 96 pages · déposé il y a quelques secondes</span>
+        </div>
+        <button style="height: 32px; padding: 0 10px; border-radius: 6px; border: 1px solid #e2e8f0; background: #ffffff; color: #475569; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; flex: none;">Remplacer</button>
+      </div>
+
+      <!-- reconnaissance -->
+      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); overflow: hidden;">
+        <div style="padding: 16px 16px 12px; border-bottom: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 15px; font-weight: 600;">Ce que nous avons reconnu</span>
+          <span style="font-size: 13px; color: #64748b;">Corrigez ce qui ne va pas — l'aperçu à droite se met à jour.</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px; padding: 16px;">
+
+          <!-- règle 1 -->
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 13px; font-weight: 500; color: #334155;">Les domaines correspondent au style</label>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; height: 40px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #ffffff; flex: 1; font-size: 14px;">
+                Titre 1
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #047857; flex: none;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                6 trouvés
+              </span>
+            </div>
+          </div>
+
+          <!-- règle 2 -->
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 13px; font-weight: 500; color: #334155;">Les sous-domaines correspondent au style</label>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; height: 40px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #ffffff; flex: 1; font-size: 14px;">
+                Titre 2
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #047857; flex: none;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                23 trouvés
+              </span>
+            </div>
+          </div>
+
+          <!-- règle 3 -->
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 13px; font-weight: 500; color: #334155;">Une exigence commence par</label>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="display: flex; align-items: center; height: 40px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #ffffff; flex: 1; font-size: 14px; font-family: ui-monospace, Menlo, monospace;">
+                EX-<span style="color: #94a3b8;">•••</span>
+              </div>
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #047857; flex: none;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                184 trouvées
+              </span>
+            </div>
+          </div>
+
+          <!-- caractère obligatoire -->
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px; background: #f8fafc; border-radius: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 13px; font-weight: 500; color: #334155;">Marquer « obligatoire » sur « DOIT », « devra », « impératif »</span>
+              <span style="font-size: 12px; color: #64748b;">97 exigences seraient marquées obligatoires</span>
+            </div>
+            <div style="width: 40px; height: 22px; border-radius: 9999px; background: #171717; padding: 2px; display: flex; justify-content: flex-end; align-items: center; flex: none;">
+              <div style="width: 18px; height: 18px; border-radius: 9999px; background: #ffffff;"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- avertissement -->
+      <div style="display: flex; gap: 12px; padding: 14px 16px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 1px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px; font-weight: 600; color: #92400e;">7 paragraphes n'ont pas pu être classés</span>
+          <span style="font-size: 13px; color: #a16207; line-height: 1.5;">Ils ressemblent à des exigences mais ne suivent pas la numérotation. Ils seront rattachés au domaine « Non classé » — vous pourrez les déplacer ensuite.</span>
+          <span style="font-size: 13px; font-weight: 500; color: #92400e; text-decoration: underline;">Les examiner un par un</span>
+        </div>
+      </div>
+
+      <!-- autres routes -->
+      <div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; flex-wrap: wrap;">
+        <span style="font-size: 13px; color: #64748b;">Votre cahier des charges est ailleurs&nbsp;?</span>
+        <span style="font-size: 13px; font-weight: 500; text-decoration: underline;">Tableur Excel</span>
+        <span style="color: #cbd5e1;">·</span>
+        <span style="font-size: 13px; font-weight: 500; text-decoration: underline;">Depuis Claude</span>
+        <span style="color: #cbd5e1;">·</span>
+        <span style="font-size: 13px; font-weight: 500; text-decoration: underline;">Fichier JSON</span>
+      </div>
+
+    </div>
+
+    <!-- Colonne droite : aperçu -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); overflow: hidden;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border-bottom: 1px solid #e2e8f0;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <span style="font-size: 15px; font-weight: 600;">Aperçu de l'arborescence</span>
+          <span style="font-size: 12px; color: #64748b;">6 domaines · 23 sous-domaines · 184 exigences</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; color: #64748b;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          Rechercher
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; padding: 8px 4px 12px;">
+
+        <!-- domaine 1 -->
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          <span style="font-size: 12px; font-family: ui-monospace, Menlo, monospace; color: #94a3b8;">DOM1</span>
+          <span style="font-size: 14px; font-weight: 600;">Environnement de travail</span>
+          <span style="font-size: 12px; color: #94a3b8;">42 exigences</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px 7px 34px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          <span style="font-size: 12px; font-family: ui-monospace, Menlo, monospace; color: #94a3b8;">DOM1.1</span>
+          <span style="font-size: 14px; font-weight: 500;">Poste fixe</span>
+          <span style="font-size: 12px; color: #94a3b8;">18</span>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 10px; padding: 7px 12px 7px 56px;">
+          <span style="font-size: 12px; font-family: ui-monospace, Menlo, monospace; color: #94a3b8; flex: none; margin-top: 2px;">EX-014</span>
+          <span style="font-size: 13px; color: #334155; line-height: 1.45;">Le poste doit démarrer et présenter la mire d'authentification en moins de 45 secondes.</span>
+          <span style="display: inline-flex; align-items: center; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 600; background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; flex: none; margin-top: 1px;">OBL</span>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 10px; padding: 7px 12px 7px 56px;">
+          <span style="font-size: 12px; font-family: ui-monospace, Menlo, monospace; color: #94a3b8; flex: none; margin-top: 2px;">EX-015</span>
+          <span style="font-size: 13px; color: #334155; line-height: 1.45;">Le socle logiciel intègre la suite bureautique dans sa version N ou N-1.</span>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 10px; padding: 7px 12px 7px 56px;">
+          <span style="font-size: 12px; font-family: ui-monospace, Menlo, monospace; color: #94a3b8; flex: none; margin-top: 2px;">EX-016</span>
+          <span style="font-size: 13px; color: #334155; line-height: 1.45;">Le chiffrement intégral du disque est actif dès la première ouverture de session.</span>
+          <span style="display: inline-flex; align-items: center; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 600; background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; flex: none; margin-top: 1px;">OBL</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px 7px 34px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          <span style="font-size: 12px; font-family: ui-monospace, Menlo, monospace; color: #94a3b8;">DOM1.2</span>
+          <span style="font-size: 14px; font-weight: 500;">Poste mobile</span>
+          <span style="font-size: 12px; color: #94a3b8;">24</span>
+        </div>
+
+        <div style="height: 1px; background: #f1f5f9; margin: 6px 12px;"></div>
+
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          <span style="font-size: 12px; font-family: ui-monospace, Menlo, monospace; color: #94a3b8;">DOM2</span>
+          <span style="font-size: 14px; font-weight: 600;">Support et assistance</span>
+          <span style="font-size: 12px; color: #94a3b8;">37 exigences</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          <span style="font-size: 12px; font-family: ui-monospace, Menlo, monospace; color: #94a3b8;">DOM3</span>
+          <span style="font-size: 14px; font-weight: 600;">Sécurité et conformité</span>
+          <span style="font-size: 12px; color: #94a3b8;">45 exigences</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          <span style="font-size: 12px; font-family: ui-monospace, Menlo, monospace; color: #94a3b8;">DOM4</span>
+          <span style="font-size: 14px; font-weight: 600;">Déploiement et réversibilité</span>
+          <span style="font-size: 12px; color: #94a3b8;">31 exigences</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          <span style="font-size: 12px; font-family: ui-monospace, Menlo, monospace; color: #94a3b8;">DOM5</span>
+          <span style="font-size: 14px; font-weight: 600;">Engagements de service</span>
+          <span style="font-size: 12px; color: #94a3b8;">21 exigences</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          <span style="font-size: 12px; font-family: ui-monospace, Menlo, monospace; color: #94a3b8;">DOM6</span>
+          <span style="font-size: 14px; font-weight: 600;">Modèle économique</span>
+          <span style="font-size: 12px; color: #94a3b8;">8 exigences</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: #fffbeb; border-radius: 6px; margin: 4px 8px 0;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          <span style="font-size: 14px; font-weight: 500; color: #92400e;">Non classé</span>
+          <span style="font-size: 12px; color: #a16207;">7 paragraphes</span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
