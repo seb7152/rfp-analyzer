@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { verifyRFPAccess } from "@/lib/permissions/rfp-access";
+import {
+  verifyRFPAccess,
+  invalidateRFPAccessCache,
+} from "@/lib/permissions/rfp-access";
 import type { GetRFPAssignmentsResponse } from "@/lib/supabase/types";
 
 /**
@@ -275,6 +278,8 @@ export async function POST(
     if (assignmentError) {
       throw assignmentError;
     }
+
+    invalidateRFPAccessCache(rfpId, user_id);
 
     return NextResponse.json(
       {

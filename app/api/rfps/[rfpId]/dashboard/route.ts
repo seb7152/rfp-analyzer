@@ -3,13 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 import {
   getRequirements,
   getResponsesForRFP,
-  getRFPCompletionPercentage,
   getCategories,
 } from "@/lib/supabase/queries";
 import {
   getVersionSupplierStatuses,
   getActiveSupplierIds,
 } from "@/lib/suppliers/status-cache";
+import { checkRFPAccess } from "@/lib/permissions/rfp-access";
+import { aggregateDashboard } from "@/lib/dashboard/aggregate";
 import type { RFP, ResponseWithSupplier } from "@/lib/supabase/types";
 
 interface DashboardResponse {
@@ -112,290 +113,87 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch RFP details
-    const { data: rfp, error: rfpError } = await supabase
-      .from("rfps")
-      .select("*")
-      .eq("id", rfpId)
-      .single();
+    // RFP row, access check and the active version are independent of each
+    // other: run them together rather than in four sequential round-trips.
+    const [rfpResult, access, activeVersionResult] = await Promise.all([
+      supabase.from("rfps").select("*").eq("id", rfpId).maybeSingle(),
+      checkRFPAccess(rfpId, user.id),
+      versionId
+        ? Promise.resolve({ data: { id: versionId } })
+        : supabase
+            .from("evaluation_versions")
+            .select("id")
+            .eq("rfp_id", rfpId)
+            .eq("is_active", true)
+            .maybeSingle(),
+    ]);
 
-    if (rfpError || !rfp) {
+    const rfp = rfpResult.data;
+    if (rfpResult.error || !rfp) {
       return NextResponse.json({ error: "RFP not found" }, { status: 404 });
     }
 
-    // Verify user access to RFP and get access level
-    const { checkRFPAccess } = await import("@/lib/permissions/rfp-access");
-    const { hasAccess, accessLevel, error } = await checkRFPAccess(
-      rfpId,
-      user.id
-    );
-
-    if (!hasAccess) {
-      if (error?.includes("not found")) {
+    if (!access.hasAccess) {
+      if (access.error?.includes("not found")) {
         return NextResponse.json({ error: "RFP not found" }, { status: 404 });
       }
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    // Fetch requirements
-    const requirements = await getRequirements(rfpId);
-    const totalRequirements = requirements.filter((r) => r.level === 4).length;
+    const completionVersionId = activeVersionResult.data?.id ?? null;
 
-    // Fetch categories
-    const categories = (await getCategories(rfpId)) as any;
+    // Requirements, categories and responses are three independent reads.
+    const [requirements, categories, allResponses] = await Promise.all([
+      getRequirements(rfpId),
+      getCategories(rfpId) as unknown as Promise<
+        Array<{ id: string; title: string; weight?: number | null }>
+      >,
+      getResponsesForRFP(rfpId, undefined, versionId || undefined) as Promise<
+        ResponseWithSupplier[]
+      >,
+    ]);
 
-    // Fetch all responses
-    const allResponses: ResponseWithSupplier[] = await getResponsesForRFP(
-      rfpId,
-      versionId || undefined
-    );
+    // Supplier shortlist for the requested version, and for the version the
+    // completion percentage is measured against (usually the same one).
+    const [versionStatuses, completionStatuses] = await Promise.all([
+      versionId ? getVersionSupplierStatuses(supabase, versionId) : null,
+      completionVersionId
+        ? getVersionSupplierStatuses(supabase, completionVersionId)
+        : null,
+    ]);
 
-    // Calculate global progress
-    const completionPercentage = await getRFPCompletionPercentage(
-      rfpId,
-      versionId || undefined
-    );
-    const evaluatedRequirements = Math.round(
-      (completionPercentage / 100) * totalRequirements
-    );
-
-    // Status distribution
-    const statusDistribution = {
-      pass: allResponses.filter((r) => r.status === "pass").length,
-      partial: allResponses.filter((r) => r.status === "partial").length,
-      fail: allResponses.filter((r) => r.status === "fail").length,
-      pending: allResponses.filter((r) => r.status === "pending").length,
-      roadmap: allResponses.filter((r) => r.status === "roadmap").length,
-    };
-
-    // Average scores by supplier
-    const averageScores: Record<string, number> = {};
-    allResponses.forEach((response) => {
-      const supplierId = response.supplier_id;
-      if (!averageScores[supplierId]) {
-        averageScores[supplierId] = 0;
-      }
-      averageScores[supplierId] +=
-        response.manual_score || response.ai_score || 0;
+    const aggregated = aggregateDashboard({
+      requirements,
+      categories,
+      responses: allResponses as never,
+      activeSupplierIds: versionStatuses
+        ? getActiveSupplierIds(versionStatuses)
+        : undefined,
+      completion: {
+        versionId: completionVersionId,
+        activeSupplierIds: completionStatuses
+          ? getActiveSupplierIds(completionStatuses)
+          : null,
+      },
     });
-    Object.keys(averageScores).forEach((supplierId) => {
-      averageScores[supplierId] /= allResponses.filter(
-        (r) => r.supplier_id === supplierId
-      ).length;
-    });
-
-    // Suppliers analysis
-    let suppliers: string[];
-    let supplierNameMap: Map<string, string> = new Map();
-
-    if (versionId) {
-      // Get active suppliers for this specific version
-      const statuses = await getVersionSupplierStatuses(supabase, versionId);
-      suppliers = Array.from(getActiveSupplierIds(statuses));
-
-      // Build supplier name map from all responses (including removed suppliers for lookup)
-      allResponses.forEach((response) => {
-        if (!supplierNameMap.has(response.supplier_id)) {
-          const supplierName =
-            response.supplier?.name || `Fournisseur ${response.supplier_id}`;
-          supplierNameMap.set(response.supplier_id, supplierName);
-        }
-      });
-    } else {
-      // Get suppliers from responses if no version filter
-      suppliers = [...new Set(allResponses.map((r) => r.supplier_id))];
-    }
-
-    const suppliersData = await Promise.all(
-      suppliers.map(async (supplierId) => {
-        const supplierResponses = allResponses.filter(
-          (r) => r.supplier_id === supplierId
-        );
-        const supplierName =
-          supplierNameMap.get(supplierId) ||
-          supplierResponses[0]?.supplier.name ||
-          `Fournisseur ${supplierId}`;
-
-        // Category scores
-        const categoryScores: Record<string, number> = {};
-        categories.forEach((category: any) => {
-          const categoryReqs = requirements.filter(
-            (r) => r.category_id === category.id
-          );
-          const categoryResponses = supplierResponses.filter((sr) =>
-            categoryReqs.some((cr) => cr.id === sr.requirement_id)
-          );
-          const avgCategoryScore =
-            categoryResponses.reduce(
-              (sum, resp) => sum + (resp.manual_score || resp.ai_score || 0),
-              0
-            ) / Math.max(categoryResponses.length, 1);
-          categoryScores[category.id] = avgCategoryScore;
-        });
-
-        const totalScore = Object.values(categoryScores).reduce(
-          (sum, score) => sum + score,
-          0
-        );
-
-        return {
-          supplierId,
-          supplierName,
-          totalScore,
-          categoryScores,
-          ranking: 0, // To be calculated later
-        };
-      })
-    );
-
-    // Calculate rankings
-    const rankedSuppliers = [...suppliersData].sort(
-      (a, b) => b.totalScore - a.totalScore
-    );
-    rankedSuppliers.forEach((supplier, index) => {
-      supplier.ranking = index + 1;
-    });
-
-    // Performance matrix
-    const supplierNames = rankedSuppliers.map((s: any) => s.supplierName);
-    const categoryNames = categories.map((c: any) => c.title);
-    const scoresMatrix = rankedSuppliers.map((supplier: any) =>
-      categories.map(
-        (category: any) => supplier.categoryScores[category.id] || 0
-      )
-    );
-
-    const performanceMatrix = {
-      suppliers: supplierNames,
-      categories: categoryNames,
-      scores: scoresMatrix,
-    };
-
-    // Ranking with variation (simplified - vs average)
-    const avgTotalScore =
-      rankedSuppliers.reduce((sum, s) => sum + s.totalScore, 0) /
-      rankedSuppliers.length;
-    const ranking = rankedSuppliers.map((supplier) => ({
-      supplierId: supplier.supplierId,
-      supplierName: supplier.supplierName,
-      finalScore: supplier.totalScore,
-      ranking: supplier.ranking,
-      variation: ((supplier.totalScore - avgTotalScore) / avgTotalScore) * 100,
-    }));
-
-    // Categories analysis
-    const categoriesAnalysis = categories.map((category: any) => {
-      const categoryReqs = requirements.filter(
-        (r) => r.category_id === category.id
-      );
-      const categoryResponses = allResponses.filter((ar) =>
-        categoryReqs.some((cr) => cr.id === ar.requirement_id)
-      );
-      const requirementCount = categoryReqs.length;
-      const avgScore =
-        categoryResponses.reduce(
-          (sum, resp) => sum + (resp.manual_score || resp.ai_score || 0),
-          0
-        ) / Math.max(categoryResponses.length, 1);
-      const completionRate =
-        (categoryResponses.filter((r) => r.is_checked).length /
-          Math.max(categoryResponses.length, 1)) *
-        100;
-
-      return {
-        id: category.id,
-        title: category.title,
-        currentWeight: category.weight || 1, // Assuming weight field exists
-        requirementCount,
-        averageScore: avgScore,
-        completionRate,
-      };
-    });
-
-    // Requirements by category
-    const requirementsByCategory: Record<
-      string,
-      Array<{
-        id: string;
-        title: string;
-        currentWeight: number;
-        averageScore: number;
-        status: "pass" | "partial" | "fail" | "pending" | "roadmap";
-      }>
-    > = {};
-    categories.forEach((category: any) => {
-      const categoryReqs = requirements.filter(
-        (r) => r.category_id === category.id
-      );
-      requirementsByCategory[category.id] = categoryReqs.map((req) => {
-        const reqResponses = allResponses.filter(
-          (ar) => ar.requirement_id === req.id
-        );
-        const avgScore =
-          reqResponses.reduce(
-            (sum, resp) => sum + (resp.manual_score || resp.ai_score || 0),
-            0
-          ) / Math.max(reqResponses.length, 1);
-        const checkedCount = reqResponses.filter((r) => r.is_checked).length;
-        const totalCount = reqResponses.length;
-        let status: "pass" | "partial" | "fail" | "pending" | "roadmap" =
-          "pending";
-        if (checkedCount === totalCount && totalCount > 0) status = "pass";
-        else if (checkedCount > 0 && checkedCount < totalCount)
-          status = "partial";
-        else if (checkedCount === 0 && totalCount > 0) status = "pending";
-
-        return {
-          id: req.id,
-          title: req.title,
-          currentWeight: req.weight || 1,
-          averageScore: avgScore,
-          status,
-        };
-      });
-    });
-
-    // Weights configuration (using current weights as default)
-    const weightsConfiguration = {
-      categories: categories.map((cat: any) => ({
-        id: cat.id,
-        title: cat.title,
-        currentWeight: cat.weight || 1,
-        defaultWeight: cat.weight || 1,
-      })),
-      requirements: requirements.map((req) => ({
-        id: req.id,
-        title: req.title,
-        categoryId: req.category_id || "",
-        currentWeight: req.weight || 1,
-        defaultWeight: req.weight || 1,
-      })),
-    };
 
     const response: DashboardResponse = {
       rfp,
-      userAccessLevel: (accessLevel || "viewer") as
+      userAccessLevel: (access.accessLevel || "viewer") as
         | "owner"
         | "evaluator"
         | "viewer"
         | "admin",
       globalProgress: {
-        completionPercentage,
-        totalRequirements,
-        evaluatedRequirements,
-        statusDistribution,
-        averageScores,
+        completionPercentage: aggregated.completionPercentage,
+        totalRequirements: aggregated.totalRequirements,
+        evaluatedRequirements: aggregated.evaluatedRequirements,
+        statusDistribution: aggregated.statusDistribution,
+        averageScores: aggregated.averageScores,
       },
-      suppliersAnalysis: {
-        comparisonTable: rankedSuppliers,
-        performanceMatrix,
-        ranking,
-      },
-      categoriesAnalysis: {
-        categories: categoriesAnalysis,
-        requirementsByCategory,
-      },
-      weightsConfiguration,
+      suppliersAnalysis: aggregated.suppliersAnalysis,
+      categoriesAnalysis: aggregated.categoriesAnalysis,
+      weightsConfiguration: aggregated.weightsConfiguration,
     };
 
     return NextResponse.json(response, { status: 200 });

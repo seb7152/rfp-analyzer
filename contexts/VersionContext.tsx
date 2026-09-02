@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { EvaluationVersionWithStats } from "@/lib/supabase/types";
 
 interface VersionContextType {
@@ -21,84 +22,88 @@ interface VersionProviderProps {
   rfpId: string;
 }
 
+export const versionsQueryKey = (rfpId: string) => ["rfp-versions", rfpId];
+
+/**
+ * Evaluation versions for the current RFP.
+ *
+ * The provider is mounted by the dashboard layout, so it remounts on every
+ * navigation between an RFP's tabs. Backing it with React Query keeps the
+ * version list across those navigations instead of re-running the (previously
+ * N+1) `/versions` request each time.
+ */
 export const VersionProvider: React.FC<VersionProviderProps> = ({
   children,
   rfpId,
 }) => {
-  const [versions, setVersions] = useState<EvaluationVersionWithStats[]>([]);
-  const [activeVersion, setActiveVersion] =
-    useState<EvaluationVersionWithStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchVersions = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
+  const { data, isLoading, error, refetch } = useQuery<
+    EvaluationVersionWithStats[],
+    Error
+  >({
+    queryKey: versionsQueryKey(rfpId),
+    queryFn: async () => {
       const response = await fetch(`/api/rfps/${rfpId}/versions`);
       if (!response.ok) {
         throw new Error("Failed to fetch versions");
       }
+      const payload = await response.json();
+      return (payload.versions || []) as EvaluationVersionWithStats[];
+    },
+    enabled: !!rfpId,
+    staleTime: 1000 * 60 * 2,
+  });
 
-      const data = await response.json();
-      const versionList = data.versions || [];
-      setVersions(versionList);
+  const versions = useMemo(() => data ?? [], [data]);
+  const activeVersion = useMemo(
+    () => versions.find((version) => version.is_active) || null,
+    [versions]
+  );
 
-      // Set active version (find is_active = true)
-      const active = versionList.find(
-        (v: EvaluationVersionWithStats) => v.is_active
-      );
-      setActiveVersion(active || null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      setError(message);
-      console.error("Error fetching versions:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const refreshVersions = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
-  const setActiveVersionId = async (versionId: string) => {
-    try {
+  const setActiveVersionId = useCallback(
+    async (versionId: string) => {
       const response = await fetch(
         `/api/rfps/${rfpId}/versions/${versionId}/activate`,
-        {
-          method: "POST",
-        }
+        { method: "POST" }
       );
 
       if (!response.ok) {
         throw new Error("Failed to activate version");
       }
 
-      await fetchVersions();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      setError(message);
-      console.error("Error setting active version:", err);
-      throw err;
-    }
-  };
+      await queryClient.invalidateQueries({
+        queryKey: versionsQueryKey(rfpId),
+      });
+    },
+    [queryClient, rfpId]
+  );
 
-  // Fetch versions on mount
-  useEffect(() => {
-    fetchVersions();
-  }, [rfpId]);
+  const value = useMemo(
+    () => ({
+      versions,
+      activeVersion,
+      isLoading,
+      error: error ? error.message : null,
+      setActiveVersionId,
+      refreshVersions,
+    }),
+    [
+      versions,
+      activeVersion,
+      isLoading,
+      error,
+      setActiveVersionId,
+      refreshVersions,
+    ]
+  );
 
   return (
-    <VersionContext.Provider
-      value={{
-        versions,
-        activeVersion,
-        isLoading,
-        error,
-        setActiveVersionId,
-        refreshVersions: fetchVersions,
-      }}
-    >
-      {children}
-    </VersionContext.Provider>
+    <VersionContext.Provider value={value}>{children}</VersionContext.Provider>
   );
 };
 

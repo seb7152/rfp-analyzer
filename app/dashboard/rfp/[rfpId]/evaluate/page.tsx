@@ -193,53 +193,54 @@ export default function EvaluatePage({ params }: EvaluatePageProps) {
   }, [allResponses, supplierId, isSingleSupplierView]);
 
   // Fetch RFP data and responses count
+  // This header only needs the RFP row, the access level and a response count.
+  // It used to read them off /dashboard, which loads and aggregates every
+  // requirement, category and response of the RFP to produce them.
   useEffect(() => {
-    const fetchRFPData = async () => {
+    if (!params.rfpId) return;
+
+    let cancelled = false;
+
+    const fetchHeaderData = async () => {
       try {
-        const response = await fetch(`/api/rfps/${params.rfpId}/dashboard`);
-        if (response.ok) {
-          const data = await response.json();
-          setRfpData(data.rfp);
-          setRfpTitle(data.rfp?.title || `RFP ${params.rfpId.slice(0, 8)}`);
-          setUserAccessLevel(data.userAccessLevel || "viewer");
-          setPeerReviewEnabled(data.rfp?.peer_review_enabled ?? false);
-          // Count total responses
-          const total =
-            (data.globalProgress?.statusDistribution?.pass || 0) +
-            (data.globalProgress?.statusDistribution?.partial || 0) +
-            (data.globalProgress?.statusDistribution?.fail || 0) +
-            (data.globalProgress?.statusDistribution?.pending || 0);
-          setResponsesCount(total);
+        const [rfpResponse, suppliersResponse] = await Promise.all([
+          fetch(`/api/rfps/${params.rfpId}`),
+          fetch(`/api/rfps/${params.rfpId}/suppliers`).catch(() => null),
+        ]);
+
+        if (rfpResponse.ok) {
+          const rfp = await rfpResponse.json();
+          if (!cancelled) {
+            setRfpData(rfp);
+            setRfpTitle(rfp?.title || `RFP ${params.rfpId.slice(0, 8)}`);
+            setUserAccessLevel(rfp?.userAccessLevel || "viewer");
+            setPeerReviewEnabled(rfp?.peer_review_enabled ?? false);
+            setResponsesCount(rfp?.responsesCount ?? 0);
+          }
+        }
+
+        if (suppliersResponse?.ok) {
+          const data = await suppliersResponse.json();
+          if (data?.suppliers && !cancelled) {
+            setSuppliers(
+              data.suppliers.map((s: { id: string; name: string }) => ({
+                id: s.id,
+                name: s.name,
+              }))
+            );
+          }
         }
       } catch (error) {
         console.error("Failed to fetch RFP data:", error);
-        setRfpTitle(`RFP ${params.rfpId.slice(0, 8)}`);
+        if (!cancelled) setRfpTitle(`RFP ${params.rfpId.slice(0, 8)}`);
       }
     };
 
-    if (params.rfpId) {
-      fetchRFPData();
-    }
-  }, [params.rfpId]);
+    fetchHeaderData();
 
-  // Fetch suppliers list for the restart-analysis selector
-  useEffect(() => {
-    if (!params.rfpId) return;
-    fetch(`/api/rfps/${params.rfpId}/suppliers`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.suppliers) {
-          setSuppliers(
-            data.suppliers.map((s: { id: string; name: string }) => ({
-              id: s.id,
-              name: s.name,
-            }))
-          );
-        }
-      })
-      .catch(() => {
-        /* non-critical, selector stays hidden */
-      });
+    return () => {
+      cancelled = true;
+    };
   }, [params.rfpId]);
 
   // Redirect if not authenticated

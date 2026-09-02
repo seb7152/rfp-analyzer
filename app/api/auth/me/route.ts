@@ -23,14 +23,18 @@ export async function GET() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    console.log("Auth user:", authUser.id);
+    // The profile row and the memberships are independent reads.
+    const [userResult, orgsResult] = await Promise.all([
+      supabase.from("users").select("*").eq("id", authUser.id).maybeSingle(),
+      supabase
+        .from("user_organizations")
+        .select(
+          "role, organizations(id, name, slug, organization_code, subscription_tier, max_users, max_rfps, settings)"
+        )
+        .eq("user_id", authUser.id),
+    ]);
 
-    // Get user profile
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", authUser.id)
-      .maybeSingle();
+    const { data: user, error: userError } = userResult;
 
     if (userError) {
       console.error("User fetch error:", userError);
@@ -41,22 +45,13 @@ export async function GET() {
     }
 
     if (!user) {
-      console.error("User not found:", authUser.id);
       return NextResponse.json(
         { error: "User profile not found - please create one by registering" },
         { status: 404 }
       );
     }
 
-    console.log("User found:", user.id);
-
-    // Get user's organizations
-    const { data: userOrgs, error: orgsError } = await supabase
-      .from("user_organizations")
-      .select(
-        "role, organizations(id, name, slug, organization_code, subscription_tier, max_users, max_rfps, settings)"
-      )
-      .eq("user_id", authUser.id);
+    const { data: userOrgs, error: orgsError } = orgsResult;
 
     if (orgsError) {
       console.error("Organizations fetch error:", orgsError);
@@ -71,8 +66,6 @@ export async function GET() {
         },
       });
     }
-
-    console.log("Organizations found:", userOrgs?.length || 0);
 
     return NextResponse.json({
       user: {
