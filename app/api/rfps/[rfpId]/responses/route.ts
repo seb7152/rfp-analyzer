@@ -28,7 +28,8 @@ export async function GET(
     const requirementId = searchParams.get("requirementId") || undefined;
     const versionId = searchParams.get("versionId") || undefined;
     const supplierId = searchParams.get("supplierId") || undefined;
-    const includeDocs = searchParams.get("includeDocs") !== "false";
+    const light = searchParams.get("fields") === "light";
+    const includeDocs = !light && searchParams.get("includeDocs") !== "false";
 
     // Verify RFP exists and user has access
     const supabase = await createServerClient();
@@ -51,7 +52,8 @@ export async function GET(
       rfpId,
       requirementId,
       versionId,
-      supplierId
+      supplierId,
+      { fields: light ? "light" : "full" }
     );
 
     // Filter by supplier status to exclude removed suppliers if version is specified

@@ -12,7 +12,18 @@ export interface PreparationSupplier {
   contact_email: string | null;
   responsesTotal: number;
   responsesAnswered: number;
+  responsesScored: number;
   documents: number;
+}
+
+export interface AnalysisStatusSnapshot {
+  jobId?: string;
+  status?: "processing" | "completed" | "failed";
+  startedAt?: string;
+  completedAt?: string;
+  lastUpdatedAt?: string;
+  totalResponses?: number;
+  processedResponses?: number;
 }
 
 export interface PreparationData {
@@ -53,6 +64,13 @@ export interface PreparationData {
     state: PreparationBlockState;
     suppliersWithResponses: number;
     requirementsTotal: number;
+    total: number;
+    answered: number;
+  };
+  analysis: {
+    status: AnalysisStatusSnapshot | null;
+    responsesTotal: number;
+    responsesScored: number;
   };
   weights: {
     state: PreparationBlockState;

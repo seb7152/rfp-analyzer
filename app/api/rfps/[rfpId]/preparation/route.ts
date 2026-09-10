@@ -27,6 +27,8 @@ interface SupplierProgress {
   responsesTotal: number;
   /** Of those, the ones an evaluator has ticked off. */
   responsesAnswered: number;
+  /** Of those, the ones that carry an AI score. */
+  responsesScored: number;
   documents: number;
 }
 
@@ -59,7 +61,7 @@ export async function GET(
       supabase
         .from("rfps")
         .select(
-          "id, title, description, status, peer_review_enabled, created_at, updated_at"
+          "id, title, description, status, peer_review_enabled, created_at, updated_at, analysis_status"
         )
         .eq("id", rfpId)
         .maybeSingle(),
@@ -157,11 +159,12 @@ export async function GET(
     const responseRows = await fetchAllRows<{
       supplier_id: string;
       is_checked: boolean;
+      ai_score: number | null;
     }>(
       () => {
         let query = supabase
           .from("responses")
-          .select("supplier_id, is_checked, id")
+          .select("supplier_id, is_checked, ai_score, id")
           .eq("rfp_id", rfpId);
         if (activeVersion) {
           query = query.eq("version_id", activeVersion.id);
@@ -173,15 +176,21 @@ export async function GET(
 
     const responsesBySupplier = new Map<
       string,
-      { total: number; answered: number }
+      { total: number; answered: number; scored: number }
     >();
+    let responsesScored = 0;
     for (const row of responseRows) {
       const entry = responsesBySupplier.get(row.supplier_id) || {
         total: 0,
         answered: 0,
+        scored: 0,
       };
       entry.total++;
       if (row.is_checked) entry.answered++;
+      if (row.ai_score !== null && row.ai_score !== undefined) {
+        entry.scored++;
+        responsesScored++;
+      }
       responsesBySupplier.set(row.supplier_id, entry);
     }
 
@@ -205,6 +214,7 @@ export async function GET(
         contact_email: supplier.contact_email,
         responsesTotal: counts?.total ?? 0,
         responsesAnswered: counts?.answered ?? 0,
+        responsesScored: counts?.scored ?? 0,
         documents: documentsBySupplier.get(supplier.id) || 0,
       };
     });
@@ -262,6 +272,15 @@ export async function GET(
         state: responsesState,
         suppliersWithResponses,
         requirementsTotal,
+        total: responseRows.length,
+        answered: responseRows.filter((row) => row.is_checked).length,
+      },
+      analysis: {
+        status:
+          (rfp as { analysis_status?: Record<string, unknown> | null })
+            .analysis_status ?? null,
+        responsesTotal: responseRows.length,
+        responsesScored,
       },
       weights: {
         state: weightsState,

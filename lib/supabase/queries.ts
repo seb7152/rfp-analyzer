@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { createClient as createServerClient } from "./server";
 import type { Requirement } from "./types";
 
@@ -1235,7 +1236,8 @@ export async function getResponsesForRFP(
   rfpId: string,
   requirementId?: string,
   versionId?: string,
-  supplierId?: string
+  supplierId?: string,
+  options: { fields?: "full" | "light" } = {}
 ): Promise<
   Array<{
     id: string;
@@ -1268,8 +1270,37 @@ export async function getResponsesForRFP(
 > {
   const supabase = await createServerClient();
 
-  let query = supabase.from("responses").select(
-    `
+  // "light" carries what lists, filters and dashboards need (no free text):
+  // a 200 x 10 consultation is 2000 rows, and the texts are 90 % of the bytes.
+  const columns =
+    options.fields === "light"
+      ? `
+    id,
+    rfp_id,
+    requirement_id,
+    supplier_id,
+    version_id,
+    ai_score,
+    manual_score,
+    status,
+    is_checked,
+    last_modified_by,
+    updated_at,
+    has_ai_comment:ai_comment,
+    has_manual_comment:manual_comment,
+    has_question:question,
+    supplier:suppliers (
+      id,
+      rfp_id,
+      supplier_id_external,
+      name,
+      contact_name,
+      contact_email,
+      contact_phone,
+      created_at
+    )
+  `
+      : `
     id,
     rfp_id,
     requirement_id,
@@ -1296,32 +1327,36 @@ export async function getResponsesForRFP(
       contact_phone,
       created_at
     )
-  `
+  `;
+
+  // Paged: PostgREST caps a single request at 1000 rows.
+  const data = await fetchAllRows<Record<string, unknown>>(
+    () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const table: any = supabase.from("responses");
+      let query = table.select(columns as string).eq("rfp_id", rfpId);
+      if (requirementId) query = query.eq("requirement_id", requirementId);
+      if (versionId) query = query.eq("version_id", versionId);
+      if (supplierId) query = query.eq("supplier_id", supplierId);
+      return query.order("id", { ascending: true });
+    },
+    { label: "responses" }
   );
 
-  query = query.eq("rfp_id", rfpId);
-
-  if (requirementId) {
-    query = query.eq("requirement_id", requirementId);
-  }
-
-  if (versionId) {
-    query = query.eq("version_id", versionId);
-  }
-
-  if (supplierId) {
-    query = query.eq("supplier_id", supplierId);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error("Error fetching responses for RFP:", error);
-    throw new Error(`Failed to fetch responses for RFP: ${error.message}`);
+  if (options.fields === "light") {
+    for (const row of data) {
+      row.has_ai_comment = !!row.has_ai_comment;
+      row.has_manual_comment =
+        typeof row.has_manual_comment === "string" &&
+        (row.has_manual_comment as string).trim().length > 0;
+      row.has_question =
+        typeof row.has_question === "string" &&
+        (row.has_question as string).trim().length > 0;
+    }
   }
 
   // Sort responses by supplier name to maintain consistent order
-  const sortedData = (data || []).sort((a, b) => {
+  const sortedData = (data || []).sort((a: any, b: any) => {
     const supplierA = Array.isArray(a.supplier) ? a.supplier[0] : a.supplier;
     const supplierB = Array.isArray(b.supplier) ? b.supplier[0] : b.supplier;
     const nameA = supplierA?.name || "";

@@ -82,6 +82,7 @@
     "zod": "^4.3.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/busboy": "^1.5.4",
     "@types/html-to-docx": "^1.8.0",
     "@types/lodash": "^4.17.21",

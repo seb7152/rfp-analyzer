@@ -1,28 +1,30 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import dynamic from "next/dynamic";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import dynamic from "next/dynamic";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  ChevronLeft,
-  Check,
-  Clock,
-  FileText,
   FileUp,
-  Upload,
-  Users,
-  SlidersHorizontal,
-  Braces,
+  FileText,
+  Plus,
+  Loader2,
+  ExternalLink,
+  ListTree,
+  Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { usePreparation, type PreparationSupplier } from "@/hooks/use-preparation";
+import { useConsultation } from "@/hooks/use-consultation";
 import { useVersion } from "@/contexts/VersionContext";
-import {
-  usePreparation,
-  type PreparationBlockState,
-  type PreparationSupplier,
-} from "@/hooks/use-preparation";
+import { PageHeader } from "@/components/shell/PageHeader";
+import { PageState } from "@/components/shell/PageState";
+import { StateGlyph, stateLabel } from "@/components/shell/StateGlyph";
+import { LaunchAnalysisDialog } from "@/components/preparation/LaunchAnalysisDialog";
+import type { ChapterState } from "@/hooks/use-consultation";
+import { formatDate, formatDuration } from "@/lib/format";
 
 const DocxImportModal = dynamic(
   () => import("@/components/DocxImportModal").then((m) => m.DocxImportModal),
@@ -40,597 +42,478 @@ interface PreparationHubProps {
   rfpId: string;
 }
 
-function StateBadge({ state }: { state: PreparationBlockState }) {
-  if (state === "done") {
-    return (
-      <Badge className="border-transparent bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-400">
-        Terminé
-      </Badge>
-    );
-  }
-  if (state === "partial") {
-    return (
-      <Badge className="border-transparent bg-orange-50 text-orange-700 hover:bg-orange-50 dark:bg-orange-950 dark:text-orange-400">
-        En cours
-      </Badge>
-    );
-  }
-  return (
-    <Badge variant="secondary" className="font-semibold">
-      À faire
-    </Badge>
-  );
-}
-
-function BlockIcon({
+/** One numbered article of the preparation plan. */
+function Article({
+  number,
+  title,
   state,
-  fallback: Fallback,
+  summary,
+  actions,
+  children,
+  id,
 }: {
-  state: PreparationBlockState;
-  fallback: typeof FileText;
+  number: string;
+  title: string;
+  state: ChapterState;
+  summary?: ReactNode;
+  actions?: ReactNode;
+  children?: ReactNode;
+  id?: string;
 }) {
-  if (state === "done") {
-    return (
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950">
-        <Check className="h-[18px] w-[18px] text-emerald-500" />
-      </div>
-    );
-  }
-  if (state === "partial") {
-    return (
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950">
-        <Clock className="h-[18px] w-[18px] text-orange-500" />
-      </div>
-    );
-  }
   return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
-      <Fallback className="h-[17px] w-[17px] text-slate-500" />
+    <section id={id} aria-labelledby={`art-${number}`} className="border-b border-border">
+      <div className="flex flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <StateGlyph state={state} />
+          <h2 id={`art-${number}`} className="flex items-baseline gap-2 text-base font-semibold">
+            <span className="article-no">{number}</span>
+            <span>{title}</span>
+          </h2>
+          <span className="text-xs text-muted-foreground">{stateLabel(state)}</span>
+          {summary && (
+            <span className="hidden text-sm text-muted-foreground md:inline">
+              · {summary}
+            </span>
+          )}
+        </div>
+        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+      </div>
+      {children && <div className="px-4 pb-4 md:px-6">{children}</div>}
+    </section>
+  );
+}
+
+function Figure({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="flex items-baseline gap-1.5 text-sm">
+      <span className="tnum font-semibold">{value}</span>
+      <span className="text-muted-foreground">{label}</span>
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function AddSupplierForm({
+  rfpId,
+  onAdded,
+}: {
+  rfpId: string;
+  onAdded: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setSaving(true);
+    try {
+      const id = trimmed
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .toUpperCase()
+        .slice(0, 24);
+      const res = await fetch(`/api/rfps/${rfpId}/suppliers/import`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ suppliers: [{ id, name: trimmed }] }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Le fournisseur n'a pas été ajouté.");
+      }
+      setName("");
+      onAdded();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Le fournisseur n'a pas été ajouté.");
+    } finally {
+      setSaving(false);
+    }
+  };
   return (
-    <div className="flex flex-1 flex-col gap-1 rounded-lg bg-slate-50 px-3 py-2.5 dark:bg-slate-900">
-      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-        {label}
-      </span>
-      <span className="text-lg font-semibold tabular-nums">{value}</span>
-    </div>
+    <form onSubmit={submit} className="flex items-center gap-2">
+      <Input
+        aria-label="Nom du fournisseur"
+        placeholder="Nom du fournisseur"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="h-8 w-56"
+      />
+      <Button type="submit" size="sm" variant="outline" disabled={saving || !name.trim()}>
+        {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+        Ajouter
+      </Button>
+    </form>
   );
 }
 
 function SupplierRow({
-  supplier,
   rfpId,
+  supplier,
+  requirementsTotal,
+  readOnly,
+  onUpload,
 }: {
-  supplier: PreparationSupplier;
   rfpId: string;
+  supplier: PreparationSupplier;
+  requirementsTotal: number;
+  readOnly: boolean;
+  onUpload: () => void;
 }) {
-  const initials = supplier.name.slice(0, 2).toUpperCase();
   const hasResponses = supplier.responsesTotal > 0;
-  const complete =
-    hasResponses && supplier.responsesAnswered === supplier.responsesTotal;
-  const ratio = hasResponses
-    ? Math.round((supplier.responsesAnswered / supplier.responsesTotal) * 100)
-    : 0;
-
+  const complete = hasResponses && supplier.responsesTotal >= requirementsTotal;
+  const state: ChapterState = complete ? "done" : hasResponses ? "partial" : "empty";
   return (
-    <div className="grid grid-cols-1 items-center gap-4 border-b border-slate-100 px-5 py-3.5 last:border-b-0 md:grid-cols-[minmax(0,2.1fr)_minmax(0,1.6fr)_minmax(0,1.4fr)_176px] dark:border-slate-800">
-      <div className="flex items-center gap-2.5">
-        <span
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
-            hasResponses
-              ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-              : "bg-slate-100 text-slate-500 dark:bg-slate-800"
-          }`}
-        >
-          {initials}
-        </span>
-        <div className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-medium">{supplier.name}</span>
-          <span className="text-xs text-slate-400">
-            {supplier.supplier_id_external}
-          </span>
+    <tr className="border-t border-border">
+      <td className="py-2 pr-3">
+        <div className="flex items-center gap-2">
+          <StateGlyph state={state} />
+          <span className="font-medium">{supplier.name}</span>
         </div>
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        {hasResponses ? (
-          <>
-            <div className="flex items-center gap-2">
-              {complete && (
-                <Check className="h-[15px] w-[15px] text-emerald-500" />
-              )}
-              <span className="text-[13px] text-slate-600 dark:text-slate-400">
-                {supplier.responsesAnswered} / {supplier.responsesTotal}{" "}
-                exigences
-              </span>
-            </div>
-            {!complete && (
-              <div className="h-1 w-32 overflow-hidden rounded-sm bg-slate-100 dark:bg-slate-800">
-                <div
-                  className="h-1 rounded-sm bg-orange-500"
-                  style={{ width: `${ratio}%` }}
-                />
-              </div>
-            )}
-          </>
-        ) : (
-          <span className="text-[13px] text-slate-400">Rien de déposé</span>
+        {supplier.contact_email && (
+          <span className="block pl-[22px] text-xs text-muted-foreground">
+            {supplier.contact_name ? `${supplier.contact_name} · ` : ""}
+            {supplier.contact_email}
+          </span>
         )}
-      </div>
-
-      <div className="flex items-center gap-2">
-        {supplier.documents > 0 ? (
-          <>
-            <FileText className="h-[15px] w-[15px] text-slate-500" />
-            <Link
-              href={`/dashboard/rfp/${rfpId}/documents`}
-              className="text-[13px] text-slate-600 underline-offset-2 hover:underline dark:text-slate-400"
-            >
-              {supplier.documents} document{supplier.documents > 1 ? "s" : ""}
+      </td>
+      <td className="tnum py-2 pr-3 text-right">
+        {hasResponses ? `${supplier.responsesTotal}/${requirementsTotal}` : "—"}
+      </td>
+      <td className="tnum py-2 pr-3 text-right">
+        {supplier.documents > 0 ? supplier.documents : "—"}
+      </td>
+      <td className="py-2 text-right">
+        <div className="flex justify-end gap-1">
+          <Button variant="ghost" size="xs" onClick={onUpload} disabled={readOnly}>
+            <FileUp className="h-3.5 w-3.5" />
+            Documents
+          </Button>
+          <Button variant={hasResponses ? "ghost" : "outline"} size="xs" asChild disabled={readOnly}>
+            <Link href={`/dashboard/rfp/${rfpId}/import/json?step=4&supplier=${supplier.id}`}>
+              {complete ? "Voir le dépôt" : hasResponses ? "Compléter" : "Déposer les réponses"}
             </Link>
-          </>
-        ) : (
-          <span className="text-[13px] text-slate-400">—</span>
-        )}
-      </div>
-
-      <div className="flex md:justify-end">
-        <Button variant="outline" size="sm" asChild>
-          <Link
-            href={`/dashboard/rfp/${rfpId}/import/json?step=4&supplier=${supplier.id}`}
-          >
-            {hasResponses
-              ? complete
-                ? "Voir le dépôt"
-                : "Compléter"
-              : "Déposer"}
-          </Link>
-        </Button>
-      </div>
-    </div>
+          </Button>
+        </div>
+      </td>
+    </tr>
   );
 }
 
 /**
- * The preparation hub: the four things an RFP needs before it can be
- * evaluated, each showing where it actually stands.
- *
- * Replaces the four-step JSON stepper. Nothing here asks for JSON — the
- * paste-a-payload path stays reachable at ../import/json for the cases the
- * file importers do not cover yet.
+ * The preparation plan: what a consultation needs before evaluation, each
+ * article stating where it stands and offering its one action. The header
+ * names the single next action.
  */
 export function PreparationHub({ rfpId }: PreparationHubProps) {
   const { activeVersion, isLoading: versionsLoading } = useVersion();
+  const queryClient = useQueryClient();
   const { preparation, isLoading, error, refetch } = usePreparation(
     versionsLoading ? null : rfpId,
     activeVersion?.id
   );
+  const { analysis } = useConsultation(rfpId);
 
   const [isDocxImportOpen, setIsDocxImportOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isLaunchOpen, setIsLaunchOpen] = useState(false);
   const hasOpenedDocxImport = useRef(false);
   const hasOpenedUpload = useRef(false);
   if (isDocxImportOpen) hasOpenedDocxImport.current = true;
   if (isUploadOpen) hasOpenedUpload.current = true;
 
-  const blocks = useMemo(() => {
-    if (!preparation) return [];
-    return [
-      preparation.specification.state,
-      preparation.suppliers.state,
-      preparation.responses.state,
-      preparation.weights.state,
-    ];
-  }, [preparation]);
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["preparation", rfpId] });
+    queryClient.invalidateQueries({ queryKey: ["requirements-tree", rfpId] });
+    refetch();
+  };
 
-  const nextStepMessage = useMemo(() => {
+  const next = useMemo(() => {
     if (!preparation) return null;
-    if (preparation.specification.state === "empty") {
+    const p = preparation;
+    if (p.specification.state === "empty") {
       return {
-        title: "Commencez par le cahier des charges",
-        detail:
-          "Tout le reste s'appuie sur l'arborescence des exigences — fournisseurs et réponses viennent après.",
+        title: "Prochaine action : importer le cahier des charges",
+        detail: "Les domaines et les exigences en sont extraits ; fournisseurs et réponses viennent ensuite.",
+        action: { label: "Importer le cahier des charges", onClick: () => setIsDocxImportOpen(true) },
       };
     }
-    if (preparation.suppliers.state === "empty") {
+    if (p.suppliers.state === "empty") {
       return {
-        title: "Ajoutez les fournisseurs consultés",
-        detail:
-          "Chaque fournisseur aura sa colonne de réponses et ses documents.",
+        title: "Prochaine action : déclarer les fournisseurs consultés",
+        detail: "Chaque fournisseur aura sa colonne de réponses et ses documents.",
+        action: { label: "Déclarer un fournisseur", href: "#fournisseurs" },
       };
     }
-    const missing =
-      preparation.suppliers.total -
-      preparation.responses.suppliersWithResponses;
+    const missing = p.suppliers.total - p.responses.suppliersWithResponses;
     if (missing > 0) {
       return {
         title:
           missing === 1
-            ? "Il reste les réponses d'un fournisseur à déposer"
-            : `Il reste les réponses de ${missing} fournisseurs à déposer`,
-        detail:
-          "L'évaluation s'ouvrira dès qu'au moins un fournisseur aura une grille complète.",
+            ? "Prochaine action : déposer les réponses du dernier fournisseur"
+            : `Prochaine action : déposer les réponses de ${missing} fournisseurs`,
+        detail: "L'évaluation s'ouvre dès qu'un fournisseur a une grille complète.",
+        action: { label: "Déposer des réponses", href: "#reponses" },
+      };
+    }
+    if (analysis.status === "processing") {
+      return {
+        title: "Analyse IA en cours",
+        detail: `${analysis.scored}/${analysis.total} réponses notées${analysis.etaSeconds ? `, environ ${formatDuration(analysis.etaSeconds)} restantes` : ""}.`,
+        action: { label: "Suivre l'analyse", href: `/dashboard/rfp/${rfpId}/analyse` },
+      };
+    }
+    if (analysis.scored === 0 && analysis.total > 0) {
+      return {
+        title: "Prochaine action : lancer l'analyse IA",
+        detail: "Chaque réponse reçoit une note et un commentaire, que les experts confirment ou corrigent.",
+        action: { label: "Lancer l'analyse IA", onClick: () => setIsLaunchOpen(true) },
       };
     }
     return {
       title: "La préparation est complète",
-      detail: "Vous pouvez ouvrir l'évaluation quand vous voulez.",
+      detail: "Le référentiel, les fournisseurs et les réponses sont en place.",
+      action: { label: "Ouvrir l'évaluation", href: `/dashboard/rfp/${rfpId}/evaluate` },
     };
-  }, [preparation]);
+  }, [preparation, analysis, rfpId]);
 
   if (isLoading || versionsLoading) {
-    return (
-      <div className="mx-auto flex max-w-6xl flex-col gap-7 px-6 py-8">
-        <Skeleton className="h-9 w-80" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-40 w-full" />
-      </div>
-    );
+    return <PageState kind="loading" title="Chargement du plan de préparation" />;
   }
-
   if (error || !preparation) {
     return (
-      <div className="mx-auto max-w-6xl px-6 py-8">
-        <div className="rounded-xl border border-red-200 bg-red-50 p-5 dark:border-red-900 dark:bg-red-950/30">
-          <p className="text-sm text-red-700 dark:text-red-300">
-            {error?.message || "Impossible de charger l'état de préparation."}
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-3"
-            onClick={() => refetch()}
-          >
-            Réessayer
-          </Button>
-        </div>
-      </div>
+      <PageState
+        kind="error"
+        title="Le plan de préparation n'a pas pu être chargé"
+        description={error?.message}
+        action={<Button variant="outline" onClick={() => refetch()}>Réessayer</Button>}
+      />
     );
   }
 
   const { rfp, specification, suppliers, responses, weights } = preparation;
   const readOnly = preparation.userAccessLevel === "viewer";
-  const canOpenEvaluation = responses.suppliersWithResponses > 0;
+  const canEvaluate = responses.suppliersWithResponses > 0;
+
+  const analysisState: ChapterState =
+    analysis.status === "processing"
+      ? "processing"
+      : analysis.total === 0 || analysis.scored === 0
+        ? "empty"
+        : analysis.scored < analysis.total
+          ? "partial"
+          : "done";
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-7 px-6 py-8 text-slate-900 dark:text-slate-50">
-      <Link
-        href="/dashboard"
-        className="flex w-fit items-center gap-1.5 text-[13px] text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
-      >
-        <ChevronLeft className="h-3.5 w-3.5" />
-        Tous les appels d&apos;offres
-      </Link>
-
-      {/* En-tête */}
-      <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-start">
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-bold leading-tight tracking-tight">
-              {rfp.title}
-            </h1>
-            <Badge variant="secondary" className="font-semibold">
-              Préparation
-            </Badge>
-          </div>
-          <p className="text-sm text-slate-500">
-            {suppliers.total > 0
-              ? `${suppliers.total} fournisseur${suppliers.total > 1 ? "s" : ""} consulté${suppliers.total > 1 ? "s" : ""}`
-              : "Aucun fournisseur pour l'instant"}
-            {preparation.activeVersion
-              ? ` · version ${preparation.activeVersion.version_name}`
-              : ""}
-          </p>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2.5">
-          <Button variant="outline" asChild>
-            <Link href={`/dashboard/rfp/${rfpId}/summary`}>
-              Voir la synthèse
-            </Link>
-          </Button>
-          <Button disabled={!canOpenEvaluation} asChild={canOpenEvaluation}>
-            {canOpenEvaluation ? (
-              <Link href={`/dashboard/rfp/${rfpId}/evaluate`}>
-                Ouvrir l&apos;évaluation
-              </Link>
-            ) : (
-              <span>Ouvrir l&apos;évaluation</span>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* Où on en est */}
-      {nextStepMessage && (
-        <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-950">
-          <div className="flex flex-wrap items-baseline justify-between gap-4">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[15px] font-semibold">
-                {nextStepMessage.title}
-              </span>
-              <span className="text-[13px] text-slate-500">
-                {nextStepMessage.detail}
-              </span>
-            </div>
-            <span className="text-[13px] tabular-nums text-slate-500">
-              {blocks.filter((state) => state === "done").length} blocs sur 4
-            </span>
-          </div>
-          <div className="flex h-1.5 gap-1">
-            {blocks.map((state, index) => (
-              <div
-                key={index}
-                className={`flex-1 rounded-sm ${
-                  state === "done"
-                    ? "bg-emerald-500"
-                    : state === "partial"
-                      ? "bg-orange-500"
-                      : "bg-slate-200 dark:bg-slate-800"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Bloc 1 — Cahier des charges */}
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-950">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
-          <div className="flex items-center gap-3.5">
-            <BlockIcon state={specification.state} fallback={FileText} />
-            <div className="flex flex-col gap-0.5">
-              <span className="text-base font-semibold">
-                Cahier des charges
-              </span>
-              <span className="text-[13px] text-slate-500">
-                {specification.state === "empty" ? (
-                  "Déposez le document qui décrit vos exigences — Word ou Excel."
-                ) : (
-                  <>
-                    {specification.requirements} exigence
-                    {specification.requirements > 1 ? "s" : ""} réparties dans{" "}
-                    {specification.categories} domaine
-                    {specification.categories > 1 ? "s" : ""}
-                    {specification.sourceDocuments[0]?.filename ? (
-                      <>
-                        {" · importées depuis "}
-                        <span className="font-medium text-slate-600 dark:text-slate-400">
-                          {specification.sourceDocuments[0].filename}
-                        </span>
-                      </>
-                    ) : null}
-                  </>
-                )}
-              </span>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2.5">
-            <StateBadge state={specification.state} />
-            {specification.state === "empty" ? (
-              <Button
-                size="sm"
-                disabled={readOnly}
-                onClick={() => setIsDocxImportOpen(true)}
-              >
-                <Upload className="h-3.5 w-3.5" />
-                Importer un document
+    <div className="mx-auto max-w-5xl">
+      <PageHeader
+        number={1}
+        title="Préparation"
+        lead={next?.detail}
+        actions={
+          next?.action && !readOnly ? (
+            "href" in next.action && next.action.href ? (
+              <Button asChild>
+                <Link href={next.action.href}>{next.action.label}</Link>
               </Button>
-            ) : (
-              <>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/dashboard/rfp/${rfpId}/tree-view`}>
-                    Revoir l&apos;arborescence
-                  </Link>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={readOnly}
-                  onClick={() => setIsDocxImportOpen(true)}
-                >
-                  Compléter
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
+            ) : "onClick" in next.action ? (
+              <Button onClick={next.action.onClick}>{next.action.label}</Button>
+            ) : null
+          ) : canEvaluate ? (
+            <Button asChild variant="outline">
+              <Link href={`/dashboard/rfp/${rfpId}/evaluate`}>Ouvrir l'évaluation</Link>
+            </Button>
+          ) : null
+        }
+      >
+        {next && (
+          <p className="mt-2 text-sm font-semibold text-accent-foreground">{next.title}</p>
+        )}
+      </PageHeader>
 
+      <Article
+        number="1.1"
+        title="Cahier des charges et référentiel"
+        state={specification.state}
+        summary={
+          specification.requirements > 0
+            ? `${specification.categories} domaines, ${specification.requirements} exigences`
+            : undefined
+        }
+        actions={
+          specification.state === "done" ? (
+            <>
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/dashboard/rfp/${rfpId}/referentiel`}>
+                  <ListTree className="h-3.5 w-3.5" />
+                  Relire l'arborescence
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setIsDocxImportOpen(true)} disabled={readOnly}>
+                Importer un complément
+              </Button>
+            </>
+          ) : undefined
+        }
+      >
         {specification.state === "empty" ? (
-          <div className="px-5 py-6">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <button
               type="button"
               disabled={readOnly}
               onClick={() => setIsDocxImportOpen(true)}
-              className="flex w-full flex-col items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center transition-colors hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900"
+              className="flex flex-1 items-center gap-3 rounded-md border border-dashed border-input px-4 py-4 text-left transition-colors duration-150 hover:border-primary hover:bg-accent/40 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950">
-                <FileUp className="h-5 w-5 text-slate-600 dark:text-slate-300" />
-              </span>
-              <span className="flex flex-col gap-1">
-                <span className="text-[15px] font-semibold">
-                  Importer votre cahier des charges
-                </span>
-                <span className="text-[13px] text-slate-500">
-                  Word ou Excel — nous en tirons les domaines et les exigences.
+              <FileUp className="h-5 w-5 shrink-0 text-muted-foreground" />
+              <span>
+                <span className="block text-sm font-semibold">Importer le cahier des charges</span>
+                <span className="block text-xs text-muted-foreground">
+                  Document Word ; les domaines et les exigences sont détectés et relus avant import.
                 </span>
               </span>
             </button>
+            <div className="flex flex-col gap-1 text-sm">
+              <Link href={`/dashboard/rfp/${rfpId}/import/json`} className="text-muted-foreground hover:text-foreground">
+                Depuis un tableur ou un fichier JSON
+              </Link>
+              <Link href="/dashboard/settings/tokens" className="text-muted-foreground hover:text-foreground">
+                Depuis un agent externe (jeton d'accès)
+              </Link>
+            </div>
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2 px-5 py-3.5">
-            <Stat label="Domaines" value={specification.categories} />
-            <Stat label="Exigences" value={specification.requirements} />
-            <Stat label="Obligatoires" value={specification.mandatory} />
-            <Stat label="Facultatives" value={specification.optional} />
-          </div>
-        )}
-      </section>
-
-      {/* Bloc 2 — Fournisseurs */}
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-950">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
-          <div className="flex items-center gap-3.5">
-            <BlockIcon state={suppliers.state} fallback={Users} />
-            <div className="flex flex-col gap-0.5">
-              <span className="text-base font-semibold">
-                Fournisseurs consultés
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <Figure label="domaines" value={specification.categories} />
+            <Figure label="exigences" value={specification.requirements} />
+            <Figure label="obligatoires" value={specification.mandatory} />
+            <Figure label="facultatives" value={specification.optional} />
+            {specification.sourceDocuments.length > 0 && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <FileText className="h-3.5 w-3.5" />
+                {specification.sourceDocuments.map((d) => d.filename).filter(Boolean).join(", ")}
               </span>
-              <span className="text-[13px] text-slate-500">
-                {suppliers.total === 0
-                  ? "Ajoutez les entreprises que vous avez consultées."
-                  : `${suppliers.total} fournisseur${suppliers.total > 1 ? "s" : ""} · contact renseigné pour ${suppliers.withContact} d'entre eux`}
-              </span>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2.5">
-            <StateBadge state={suppliers.state} />
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/dashboard/rfp/${rfpId}/summary`}>
-                {suppliers.total === 0 ? "Ajouter" : "Gérer la liste"}
-              </Link>
-            </Button>
-          </div>
-        </div>
-
-        {suppliers.total > 0 && (
-          <div className="flex flex-wrap gap-2 px-5 py-3.5">
-            {suppliers.items.map((supplier) => (
-              <span
-                key={supplier.id}
-                className="inline-flex h-8 items-center gap-2 rounded-full border border-slate-200 py-0 pl-1.5 pr-3 text-[13px] dark:border-slate-800"
-              >
-                <span className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-slate-900 text-[10px] font-semibold text-white dark:bg-slate-100 dark:text-slate-900">
-                  {supplier.name.slice(0, 2).toUpperCase()}
-                </span>
-                {supplier.name}
-              </span>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Bloc 3 — Réponses */}
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-950">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
-          <div className="flex items-center gap-3.5">
-            <BlockIcon state={responses.state} fallback={FileUp} />
-            <div className="flex flex-col gap-0.5">
-              <span className="text-base font-semibold">
-                Réponses des fournisseurs
-              </span>
-              <span className="text-[13px] text-slate-500">
-                {suppliers.total === 0
-                  ? "Disponible une fois les fournisseurs ajoutés."
-                  : `${responses.suppliersWithResponses} fournisseur${responses.suppliersWithResponses > 1 ? "s" : ""} sur ${suppliers.total} ${responses.suppliersWithResponses > 1 ? "ont" : "a"} déposé des réponses`}
-              </span>
-            </div>
-          </div>
-          <StateBadge state={responses.state} />
-        </div>
-
-        {suppliers.total > 0 && (
-          <>
-            <div className="hidden grid-cols-[minmax(0,2.1fr)_minmax(0,1.6fr)_minmax(0,1.4fr)_176px] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-2.5 md:grid dark:border-slate-800 dark:bg-slate-900">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                Fournisseur
-              </span>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                Grille de réponses
-              </span>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                Pièces jointes
-              </span>
-              <span />
-            </div>
-
-            {suppliers.items.map((supplier) => (
-              <SupplierRow
-                key={supplier.id}
-                supplier={supplier}
-                rfpId={rfpId}
-              />
-            ))}
-
-            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 bg-slate-50 px-5 py-3.5 dark:border-slate-800 dark:bg-slate-900">
-              <span className="text-[13px] text-slate-500">
-                Les pièces jointes d&apos;un fournisseur (mémoire technique,
-                annexes) se déposent avec les documents de l&apos;appel
-                d&apos;offres.
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={readOnly}
-                onClick={() => setIsUploadOpen(true)}
-              >
-                <FileUp className="h-3.5 w-3.5" />
-                Déposer des documents
-              </Button>
-            </div>
-          </>
-        )}
-      </section>
-
-      {/* Bloc 4 — Pondérations */}
-      <section className="rounded-xl border border-slate-200 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-950">
-        <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
-          <div className="flex items-center gap-3.5">
-            <BlockIcon state={weights.state} fallback={SlidersHorizontal} />
-            <div className="flex flex-col gap-0.5">
-              <span className="text-base font-semibold">Pondérations</span>
-              <span className="text-[13px] text-slate-500">
-                {weights.customisedRequirements > 0
-                  ? `${weights.customisedRequirements} exigence${weights.customisedRequirements > 1 ? "s" : ""} pondérée${weights.customisedRequirements > 1 ? "s" : ""} différemment.`
-                  : "Toutes les exigences comptent pour 1. Ajustable à tout moment, y compris après l'évaluation."}
-              </span>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2.5">
-            {weights.state === "empty" ? (
-              <Badge
-                variant="outline"
-                className="border-slate-200 text-slate-500"
-              >
-                Facultatif
-              </Badge>
-            ) : (
-              <StateBadge state={weights.state} />
             )}
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/dashboard/rfp/${rfpId}/summary?tab=weights`}>
-                {weights.state === "empty" ? "Définir" : "Ajuster"}
-              </Link>
-            </Button>
           </div>
-        </div>
-      </section>
+        )}
+      </Article>
 
-      {/* Voie de secours */}
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 dark:border-slate-800 dark:bg-slate-950">
-        <Braces className="h-4 w-4 text-slate-400" />
-        <span className="text-[13px] text-slate-500">
-          Vos données sont déjà structurées ailleurs&nbsp;?
-        </span>
-        <Link
-          href={`/dashboard/rfp/${rfpId}/import/json`}
-          className="text-[13px] font-medium underline underline-offset-2"
-        >
-          Import JSON
-        </Link>
-        <span className="text-slate-300">·</span>
-        <Link
-          href="/dashboard/settings/tokens"
-          className="text-[13px] font-medium underline underline-offset-2"
-        >
-          Depuis Claude
-        </Link>
-      </div>
+      <Article
+        id="fournisseurs"
+        number="1.2"
+        title="Fournisseurs consultés"
+        state={suppliers.state}
+        summary={suppliers.total > 0 ? `${suppliers.total} déclarés` : undefined}
+        actions={!readOnly ? <AddSupplierForm rfpId={rfpId} onAdded={refresh} /> : undefined}
+      >
+        {suppliers.total === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Aucun fournisseur déclaré. Chaque fournisseur ajouté reçoit une grille de {specification.requirements || "n"} réponses à déposer.
+          </p>
+        ) : null}
+      </Article>
+
+      <Article
+        id="reponses"
+        number="1.3"
+        title="Réponses des fournisseurs"
+        state={responses.state}
+        summary={
+          suppliers.total > 0
+            ? `${responses.suppliersWithResponses}/${suppliers.total} fournisseurs avec réponses`
+            : undefined
+        }
+        actions={
+          suppliers.total > 0 && !readOnly ? (
+            <Button variant="outline" size="sm" onClick={() => setIsUploadOpen(true)}>
+              <FileUp className="h-3.5 w-3.5" />
+              Déposer des documents
+            </Button>
+          ) : undefined
+        }
+      >
+        {suppliers.total === 0 ? (
+          <p className="text-sm text-muted-foreground">Déclarez d'abord les fournisseurs.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <th className="py-1 pr-3 font-semibold">Fournisseur</th>
+                  <th className="py-1 pr-3 text-right font-semibold">Réponses</th>
+                  <th className="py-1 pr-3 text-right font-semibold">Documents</th>
+                  <th className="py-1" />
+                </tr>
+              </thead>
+              <tbody>
+                {suppliers.items.map((s) => (
+                  <SupplierRow
+                    key={s.id}
+                    rfpId={rfpId}
+                    supplier={s}
+                    requirementsTotal={responses.requirementsTotal}
+                    readOnly={readOnly}
+                    onUpload={() => setIsUploadOpen(true)}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Article>
+
+      <Article
+        number="1.4"
+        title="Analyse IA"
+        state={analysisState}
+        summary={
+          analysis.total > 0 ? `${analysis.scored}/${analysis.total} réponses notées` : undefined
+        }
+        actions={
+          canEvaluate && !readOnly ? (
+            analysis.status === "processing" ? (
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/dashboard/rfp/${rfpId}/analyse`}>Suivre l'analyse</Link>
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setIsLaunchOpen(true)}>
+                <Sparkles className="h-3.5 w-3.5" />
+                {analysis.scored > 0 ? "Relancer" : "Lancer l'analyse IA"}
+              </Button>
+            )
+          ) : undefined
+        }
+      >
+        {!canEvaluate && (
+          <p className="text-sm text-muted-foreground">
+            L'analyse se lance une fois des réponses déposées.
+          </p>
+        )}
+      </Article>
+
+      <Article
+        number="1.5"
+        title="Pondérations"
+        state={weights.state === "done" ? "done" : "neutral"}
+        summary={
+          weights.state === "done"
+            ? `${weights.customisedRequirements} exigences pondérées`
+            : "facultatif, poids identiques par défaut"
+        }
+        actions={
+          <Button variant="ghost" size="sm" asChild>
+            <Link href={`/dashboard/rfp/${rfpId}/parametres#ponderations`}>
+              Régler les pondérations
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        }
+      />
+
+      <p className="px-4 py-3 text-xs text-muted-foreground md:px-6">
+        Consultation créée le {formatDate(rfp.created_at)}
+        {preparation.activeVersion ? ` · version ${preparation.activeVersion.version_name}` : ""}.
+      </p>
 
       {hasOpenedDocxImport.current && (
         <DocxImportModal
@@ -638,20 +521,27 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
           isOpen={isDocxImportOpen}
           onOpenChange={(open) => {
             setIsDocxImportOpen(open);
-            if (!open) refetch();
+            if (!open) refresh();
           }}
         />
       )}
-
       {hasOpenedUpload.current && (
         <DocumentUploadModal
           rfpId={rfpId}
           rfpTitle={rfp.title}
           isOpen={isUploadOpen}
           onOpenChange={setIsUploadOpen}
-          onUploadSuccess={() => refetch()}
+          onUploadSuccess={refresh}
         />
       )}
+      <LaunchAnalysisDialog
+        rfpId={rfpId}
+        open={isLaunchOpen}
+        onOpenChange={setIsLaunchOpen}
+        suppliers={suppliers.items}
+        responsesTotal={analysis.total}
+        responsesScored={analysis.scored}
+      />
     </div>
   );
 }

@@ -12,6 +12,11 @@ export interface TreeNode {
   code: string;
   title: string;
   level: number;
+  short_name?: string;
+  description?: string;
+  is_mandatory?: boolean;
+  is_optional?: boolean;
+  tags?: string[];
   children?: TreeNode[];
 }
 

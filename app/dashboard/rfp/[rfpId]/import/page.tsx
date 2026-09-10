@@ -1,15 +1,6 @@
-import { PreparationHub } from "@/components/preparation/PreparationHub";
+import { redirect } from "next/navigation";
 
-interface ImportPageProps {
-  params: {
-    rfpId: string;
-  };
-}
-
-export default function ImportPage({ params }: ImportPageProps) {
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <PreparationHub rfpId={params.rfpId} />
-    </div>
-  );
+/** The preparation hub moved to its own chapter route. */
+export default function ImportPage({ params }: { params: { rfpId: string } }) {
+  redirect(`/dashboard/rfp/${params.rfpId}/preparation`);
 }

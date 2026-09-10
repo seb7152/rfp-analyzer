@@ -1,9 +1,9 @@
 "use client";
 
-import { Navbar } from "@/components/Navbar";
-import { useAuth } from "@/hooks/use-auth";
-import { VersionProvider } from "@/contexts/VersionContext";
 import { useParams } from "next/navigation";
+import { useAuth } from "@/hooks/use-auth";
+import { TopBar } from "@/components/shell/TopBar";
+import { VersionProvider } from "@/contexts/VersionContext";
 
 export default function DashboardLayout({
   children,
@@ -12,31 +12,28 @@ export default function DashboardLayout({
 }) {
   const { isLoading } = useAuth();
   const params = useParams();
-  const rfpId = params?.rfpId as string | undefined;
+  const rfpId = typeof params?.rfpId === "string" ? params.rfpId : null;
 
-  // Wrap with VersionProvider if we're on an RFP page
-  const content = (
-    <>
-      <Navbar />
-      <main className="min-h-screen bg-white dark:bg-slate-950">
-        {isLoading ? (
-          <div className="flex items-center justify-center min-h-screen">
-            <div className="space-y-4">
-              <div className="h-12 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="h-12 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-            </div>
-          </div>
-        ) : (
-          children
-        )}
-      </main>
-    </>
+  const content = isLoading ? (
+    <div className="mx-auto max-w-5xl space-y-3 p-6" aria-busy="true">
+      <div className="h-5 w-1/3 animate-pulse rounded-sm bg-muted" />
+      <div className="h-4 w-2/3 animate-pulse rounded-sm bg-muted" />
+      <div className="h-40 w-full animate-pulse rounded-sm bg-muted" />
+    </div>
+  ) : (
+    children
   );
 
-  // Only provide VersionContext when we're on an RFP page
-  if (rfpId) {
-    return <VersionProvider rfpId={rfpId}>{content}</VersionProvider>;
-  }
-
-  return content;
+  return (
+    <>
+      <TopBar />
+      <div className="min-h-[calc(100vh-3rem)] bg-background">
+        {rfpId ? (
+          <VersionProvider rfpId={rfpId}>{content}</VersionProvider>
+        ) : (
+          content
+        )}
+      </div>
+    </>
+  );
 }
