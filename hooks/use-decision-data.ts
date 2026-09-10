@@ -83,7 +83,13 @@ export function useDecisionData(rfpId: string, tcoPeriod = 3) {
   const tree = treeQuery.tree;
   const responses = lightQuery.data?.responses ?? [];
   const weights = weightsQuery.data;
-  const suppliers = consultation.preparation?.suppliers.items ?? [];
+  // Suppliers removed from the active version have no responses in it:
+  // the decision only ranks those still in the consultation.
+  const suppliers = useMemo(() => {
+    const items = consultation.preparation?.suppliers.items ?? [];
+    const present = new Set(responses.map((r) => r.supplier_id));
+    return present.size > 0 ? items.filter((s) => present.has(s.id)) : items;
+  }, [consultation.preparation, responses]);
 
   const computed = useMemo(() => {
     if (!weights || tree.length === 0) return null;
@@ -177,7 +183,10 @@ export function useDecisionData(rfpId: string, tcoPeriod = 3) {
     bySupplier: computed?.bySupplier ?? new Map<string, Map<string, ResponseLight>>(),
     weightOf: computed?.weightOf ?? ((_id: string) => 1),
     financial,
-    financialLoading: financialVersions.isLoading || financialSummary.isLoading,
+    financialLoading:
+      financialVersions.isLoading ||
+      (financialVersionIds.length > 0 && financialSummary.isLoading),
+    financialError: (financialVersions.error ?? financialSummary.error) as Error | null,
     hasFinancial: financialVersionIds.length > 0,
     bestTechnical,
     bestFinancial,

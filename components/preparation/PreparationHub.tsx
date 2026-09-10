@@ -9,7 +9,6 @@ import {
   FileText,
   Plus,
   Loader2,
-  ExternalLink,
   ListTree,
   Sparkles,
 } from "lucide-react";
@@ -47,6 +46,7 @@ function Article({
   number,
   title,
   state,
+  stateText,
   summary,
   actions,
   children,
@@ -55,6 +55,7 @@ function Article({
   number: string;
   title: string;
   state: ChapterState;
+  stateText?: string;
   summary?: ReactNode;
   actions?: ReactNode;
   children?: ReactNode;
@@ -69,7 +70,7 @@ function Article({
             <span className="article-no">{number}</span>
             <span>{title}</span>
           </h2>
-          <span className="text-xs text-muted-foreground">{stateLabel(state)}</span>
+          <span className="text-xs text-muted-foreground">{stateText ?? stateLabel(state)}</span>
           {summary && (
             <span className="hidden text-sm text-muted-foreground md:inline">
               · {summary}
@@ -466,6 +467,15 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
         number="1.4"
         title="Analyse IA"
         state={analysisState}
+        stateText={
+          analysisState === "processing"
+            ? "En cours"
+            : analysisState === "partial"
+              ? "Partielle"
+              : analysisState === "done"
+                ? "Terminée"
+                : "À lancer"
+        }
         summary={
           analysis.total > 0 ? `${analysis.scored}/${analysis.total} réponses notées` : undefined
         }
@@ -504,7 +514,6 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
           <Button variant="ghost" size="sm" asChild>
             <Link href={`/dashboard/rfp/${rfpId}/parametres#ponderations`}>
               Régler les pondérations
-              <ExternalLink className="h-3.5 w-3.5" />
             </Link>
           </Button>
         }

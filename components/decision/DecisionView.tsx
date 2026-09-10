@@ -213,6 +213,10 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
                 {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                 Exporter le livrable
               </Button>
+            ) : data.access === "viewer" ? (
+              <span className="text-xs text-muted-foreground" title="Le pilote doit d'abord définir un modèle d'export">
+                Export non configuré
+              </span>
             ) : (
               <Button size="sm" variant="outline" asChild>
                 <Link href={`/dashboard/rfp/${rfpId}/export`}>Préparer l'export</Link>
@@ -296,10 +300,10 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
                 const node = data.tree.find((n) => n.id === row.id)!;
                 return (
                   <tr key={row.id} className="border-t border-border">
-                    <td className="sticky left-0 bg-background py-1.5 pr-3">
-                      <span className="article-no mr-2">{row.code}</span>
-                      <span>{row.title}</span>
-                      <span className="tnum ml-2 text-xs text-muted-foreground">{row.requirementCount} exig.</span>
+                    <td className="sticky left-0 min-w-[200px] max-w-[320px] bg-background py-1.5 pr-3">
+                      <span className="article-no block whitespace-nowrap md:mr-2 md:inline">{row.code}</span>
+                      <span className="line-clamp-2">{row.title}</span>
+                      <span className="tnum block text-xs text-muted-foreground md:ml-2 md:inline">{row.requirementCount} exig.</span>
                     </td>
                     <td className="tnum py-1.5 pr-3 text-right text-muted-foreground">{row.weight}</td>
                     {suppliers.map((s) => {
@@ -334,6 +338,8 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
       <Section id="financier" number="4.3" title="Technique et financier" lead="Le mieux-disant technique face au mieux-disant financier, sur le coût total de possession à 3 ans.">
         {data.financialLoading ? (
           <p className="text-sm text-muted-foreground">Chargement du volet financier</p>
+        ) : data.financialError ? (
+          <p className="text-sm text-muted-foreground">Volet financier indisponible : {data.financialError.message}</p>
         ) : !data.hasFinancial || data.financial.length === 0 ? (
           <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <span>Volet financier non renseigné.</span>

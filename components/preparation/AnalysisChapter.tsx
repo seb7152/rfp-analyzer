@@ -76,7 +76,15 @@ export function AnalysisChapter({ rfpId }: { rfpId: string }) {
       <section className="border-b border-border px-4 py-4 md:px-6" aria-live="polite">
         <div className="flex items-baseline justify-between">
           <span className="text-sm font-semibold">
-            {processing ? "En cours" : analysis.status === "failed" ? "Interrompue" : analysis.scored > 0 ? "Terminée" : "Non lancée"}
+            {processing
+              ? "En cours"
+              : analysis.status === "failed"
+                ? "Interrompue"
+                : analysis.scored === 0
+                  ? "Non lancée"
+                  : analysis.scored < analysis.total
+                    ? "Partielle"
+                    : "Terminée"}
           </span>
           <span className="tnum text-sm text-muted-foreground">
             {analysis.scored}/{analysis.total} · {percent} %
