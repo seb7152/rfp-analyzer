@@ -9,7 +9,9 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:e2e": "playwright test",
+    "test:e2e:desktop": "playwright test --project=setup --project=desktop"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
