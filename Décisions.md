@@ -38,3 +38,76 @@ Format des entrées : **D-nn — Titre**.
 - **Parcours / persona.** Les trois parcours.
 - **Options écartées.** La sortie « canon » (tableau de bord shadcn à cartes et onglets) : c'est précisément la forme que le doc UX et le brief rejettent. Le terminal de salle de marché (n° 4) : fond sombre par défaut incompatible avec l'usage en comité sur vidéoprojecteur (doc UX §5).
 - **Caduque si.** Le produit adopte une charte graphique d'entreprise : les tokens de `styles/globals.css` sont le seul point de changement.
+
+## D-04 — Fondations : une palette, une échelle typographique, une échelle d'espacement, une seule librairie
+
+- **Décision.** Tous les tokens vivent dans `styles/globals.css` (papier/encre, accent bleu encre `--primary`, quatre couleurs d'état `--status-*` avec variante « soft », échelle séquentielle des notes `--scale-0..5`, ombre d'overlay unique). Thème sombre = mêmes rôles, valeurs inversées. Typographie : Source Sans 3 (une seule famille, chiffres tabulaires par défaut), échelle fixe 11/12/13/14/15/16/18/22/28/36 px (`tailwind.config.ts`). Espacement : grille 4 px de Tailwind, valeurs 1–16 seulement. Rayon 4 px (`md` = 2 px), aucune ombre portée hors overlays. Composants : la librairie shadcn/Radix de `components/ui` reste la seule ; `button`, `card`, `input`, `textarea`, `badge`, `tabs`, `dialog`, `sheet`, `popover`, `select`, `dropdown-menu` ont été ramenés aux tokens (plus d'ombres, plus de `slate-*` en dur). MUI n'est plus importé par aucun écran atteignable (il ne servait que la page `synthesis`, désormais redirigée).
+- **Parcours / persona.** Les trois.
+- **Options écartées.** Remplacer shadcn par une nouvelle librairie (coût sans bénéfice pour un outil dense ; les primitives Radix sont accessibles). Conserver Inter (police par défaut des gabarits générés ; Source Sans 3 garde une largeur compacte et des chiffres tabulaires natifs).
+- **Caduque si.** Une charte d'entreprise impose une police ou une palette : seuls `globals.css` et `app/layout.tsx` changent.
+
+## D-05 — Modèle de navigation : le sommaire de la consultation
+
+- **Décision.** La progression est le squelette (doc UX §2 et reco n° 1). Une consultation est un dossier dont le rail gauche (240 px) est le sommaire : **1 Préparation** (sous-entrées Référentiel, Documents), **2 Analyse IA**, **3 Évaluation** (sous-entrée Avancement), **4 Décision** (sous-entrées Financier, Soutenances), **5 Restitution**, puis **Paramètres** séparé par un filet. Chaque chapitre porte un glyphe d'état (à faire / en cours / terminé / en analyse) et un chiffre court. Sur mobile, le rail est un panneau latéral derrière un bouton ; l'espace d'évaluation n'affiche pas la ligne de chapitre pour garder l'écran. Le rail dépend du rôle : le pilote voit tout ; l'expert voit Évaluation, Décision, Restitution ; le lecteur voit Décision et Restitution. Ouvrir `/dashboard/rfp/[id]` sans chapitre redirige vers le chapitre pertinent (`landingHref`) : lecteur → Décision, expert → Évaluation, pilote → premier chapitre inachevé.
+- **Parcours / persona.** Tous ; répond aux frictions 1 et 2 du doc UX §3.
+- **Options écartées.** Barre d'onglets horizontale (c'est l'existant à dix onglets) ; stepper linéaire bloquant (Sophie revient en arrière, doc UX « elle y reviendra »).
+- **Caduque si.** Une septième phase apparaît (ex. négociation) : ajouter un chapitre dans `buildChapters`.
+
+## D-06 — Sort des dix onglets de la synthèse
+
+- **Décision.** `summary/page.tsx` devient une table de redirection ; chaque onglet a un chapitre hôte : Tableau de bord → `/suivi` ; Pondérations, Analystes, Versions, Paramètres → `/parametres` (sections ancrées) ; Exigences → `/referentiel` ; Analyse (heatmaps) → `/decision` ; Soutenances → `/soutenances` ; Export → `/export` ; Financier → `/financial-grid`. Les composants d'origine (`WeightsTab`, `AnalystsTab`, `SettingsTab`, `VersionsTab`, `SuppliersTab`, `RequirementsTab`, `ExportTab`, `PresentationAnalysisSection`) sont hébergés tels quels dans le nouveau shell. Aucune fonction supprimée. `/dashboard/overview`, `/synthesis` et `/import` redirigent.
+- **Parcours / persona.** Sophie (pilotage vs configuration, reco n° 2).
+- **Options écartées.** Réécrire chaque onglet dans le nouveau style (hors périmètre : ce sont des écrans de configuration).
+- **Caduque si.** Les hôtes sont refondus un à un : supprimer alors la redirection correspondante.
+
+## D-07 — Trois décisions par exigence ramenées à un geste : la note
+
+- **Décision.** Le geste de l'expert est la note (rail 0–5, demi-point par la touche ½). Le statut qualitatif en découle (`lib/scoring.ts` : ≥ 4 conforme, 2 à 3,5 partiel, < 2 non conforme ; `roadmap` reste un tampon explicite choisi dans le menu du tampon). Cliquer une note écrit en **une seule requête** `manual_score`, `status` dérivé et `is_checked = true`. « Valider » confirme la proposition IA sans saisir de note (statut dérivé de la note IA, `is_checked = true`). « IA x,x » ramène à la note IA. Le tampon reste modifiable à la main pour les cas limites.
+- **Parcours / persona.** Marc (doc UX §4, reco n° 4).
+- **Options écartées.** Dériver la note du statut (perte d'information, la pondération a besoin d'un nombre) ; supprimer la note manuelle (fonction existante).
+- **Caduque si.** Le métier veut des seuils différents : ils sont dans `deriveStatus`, seul endroit.
+
+## D-08 — La sidebar devient la file de travail
+
+- **Décision.** Le panneau gauche de l'évaluation est une file : onglets **À faire / Faites / Toutes** avec compteurs (une exigence est « faite » quand toutes ses réponses sont `is_checked`), recherche, filtres persistés par consultation (domaines, statut, plage de note, question, commentaire, discussion ouverte, fournisseur). Les exigences sont groupées par domaine avec en-tête collant ; la sélection est un filet d'encre de 2 px. ← → (ou j/k) passent à l'exigence suivante ; la réponse suivante est préchargée. L'URL porte `requirementId` (partageable) et `supplierId` (file d'un seul fournisseur).
+- **Parcours / persona.** Marc.
+- **Options écartées.** Filtre « mes exigences » par assignation : le modèle de données n'assigne pas par domaine (proposé dans REFONTE.md).
+- **Caduque si.** L'assignation par domaine arrive : ajouter un onglet « Les miennes ».
+
+## D-09 — Comparaison côte à côte, saisie rapide en mobile, preuve à un clic
+
+- **Décision.** Desktop : une colonne par fournisseur (300 px minimum, défilement horizontal au-delà), même échelle et même largeur pour tous (apport « folio botanique »). Mobile : les fournisseurs sont empilés, navigation par boutons Précédente/Suivante et par balayage. La preuve : signets du fournisseur listés sous la réponse (document, page, extrait), clic → document ouvert à la page (panneau PDF sur desktop, nouvel onglet sur mobile) ; bouton documents du fournisseur ; lien « Ouvrir dans le cahier des charges (p. N) » dans le détail de l'exigence.
+- **Parcours / persona.** Marc (« le geste de confiance », doc UX §4).
+- **Options écartées.** Cartes accordéon (l'existant ; cache la comparaison).
+- **Caduque si.** Les réponses portent un jour leur citation (proposition REFONTE.md) : la remplacer par le renvoi direct.
+
+## D-10 — Hors ligne : la mutation s'exécute hors réseau et se met en file
+
+- **Décision.** `useResponseMutation` passe en `networkMode: "always"` et n'attend plus l'annulation des requêtes en vol : sans cela React Query mettait la mutation en pause jusqu'au retour du réseau et la file locale n'était jamais alimentée (constaté au test Playwright). L'indicateur « Hors ligne · n en attente » vit dans la barre du chapitre ; la file est rejouée au retour du réseau par `useOfflineSync` (inchangé).
+- **Parcours / persona.** Marc en mobilité.
+- **Caduque si.** Un service worker prend le relais.
+
+## D-11 — Scénarisation de l'attente IA
+
+- **Décision.** Avant : un dialogue nomme le périmètre, le volume et un ordre de grandeur de durée. Pendant : une ligne d'état sous la barre supérieure (« Analyse IA en cours · 120/648 réponses notées · environ 4 min restantes »), alimentée par le nombre réel de réponses portant une note IA (rafraîchi toutes les 5 s) ; l'estimation vient du débit mesuré ; le titre de l'onglet porte le pourcentage ; le chapitre 2 détaille par fournisseur. Après : toast, notification navigateur si autorisée, invalidation des réponses. En échec : ligne rouge avec lien vers le chapitre.
+- **Parcours / persona.** Sophie (friction 3, reco n° 6).
+- **Options écartées.** Se fier à `analysis_status.processedResponses` (jamais écrit par les callbacks ; proposition de correction dans REFONTE.md).
+- **Caduque si.** Les callbacks écrivent l'avancement : la ligne d'état lira le champ au lieu de compter.
+
+## D-12 — Vue sponsor : « Décision », une page de lecture, un chemin de renvois
+
+- **Décision.** `/decision` est la page d'atterrissage du lecteur et le chapitre 4 du pilote. Quatre articles : 4.1 classement technique (moyenne pondérée, couverture, répartition des statuts), 4.2 notes par domaine (heatmap sur l'échelle séquentielle bleue, jamais rouge/vert seul), 4.3 technique et financier (écart entre mieux-disant technique et financier sur le TCO 3 ans, ou état « volet financier non renseigné »), export du livrable en en-tête (génération XLSX si une configuration existe ; pour un lecteur sans configuration : « Export non configuré »). Le drill-down est un panneau latéral dont le fil d'Ariane est la chaîne de renvois : fournisseur › domaine › exigence › réponse › citation (signets) › document à la page. Mode « Présenter » : plein écran, une idée par écran, typographie agrandie. Impression : styles print.
+- **Parcours / persona.** Claire (doc UX §5, reco n° 3).
+- **Options écartées.** Réutiliser les onglets Analyse du pilote (actions d'édition partout) ; un radar par défaut (le radar existant dépend de configurations par étiquettes, reste accessible via `/test`).
+- **Caduque si.** Une restitution PDF native arrive côté serveur.
+
+## D-13 — Accueil unique
+
+- **Décision.** `/dashboard` = organisation (rôle, code, liens Membres et Jetons d'accès) + table des consultations (statut, avancement de l'évaluation, date, suppression protégée par confirmation). `/dashboard/overview` redirige. Les onglets Organisation / Intégrations / Compte disparaissent : leurs contenus vivent dans `/dashboard/organizations`, `/dashboard/settings/tokens` et le menu utilisateur.
+- **Parcours / persona.** Sophie (friction 1).
+- **Caduque si.** —
+
+## D-14 — Ce qui reste dans l'ancien style (cohabitation acceptée)
+
+- Pages hôtes `/parametres`, `/referentiel`, `/export`, `/soutenances`, `/financial-grid`, `/tree-view`, `/import/json`, `/documents` : composants d'origine sous le nouveau shell et les nouveaux tokens. À reprendre pour terminer l'harmonisation : cartes KPI de `WeightsTab`, tableaux `SuppliersTab` / `AnalystsTab` / `VersionsTab`, l'assistant JSON, les modales d'import DOCX et de dépôt de documents, `RFPSwitcher` / `VersionSwitcher` / `OrganizationSwitcher` (fonctionnels, style intermédiaire), la page de connexion (bouton indigo), `ThreadPanel`, `PDFViewerSheet`.
+- Écrans non terminés : aucun écran refondu n'affiche de donnée factice. Le mode présentation de la décision est un plein écran typographique, pas un diaporama section par section.

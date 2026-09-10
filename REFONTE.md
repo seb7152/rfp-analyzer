@@ -1,0 +1,69 @@
+# REFONTE — propositions backend, bugs hors périmètre, résultats de tests
+
+Branche `refonte-ui`. Le journal des décisions UX est dans `Décisions.md`.
+
+## 1. Propositions backend non implémentées
+
+Le brief interdit tout changement de schéma, de contrat d'API ou d'auth. Les points ci-dessous en relèvent ; ils sont décrits, pas codés.
+
+### P-1 — Assignation des analystes par domaine
+- **Constat.** `rfp_user_assignments` porte seulement `access_level` ; aucune portée par catégorie. Le doc UX (§3 « Assigner les analystes aux domaines », §4 « 40 exigences sur mon domaine ») suppose une file « mes exigences » impossible à calculer.
+- **Proposition.** Table `rfp_user_category_assignments (rfp_id, user_id, category_id)` ou colonne `category_ids uuid[]` sur `rfp_user_assignments` ; `GET /assignments` renvoie les domaines ; la file de travail gagne un onglet « Les miennes » et le suivi une colonne « domaines / retard ».
+
+### P-2 — Avancement réel de l'analyse IA
+- **Constat.** `rfps.analysis_status` est documenté avec `startedAt`, `totalResponses`, `processedResponses`, mais les callbacks (`app/api/rfps/[rfpId]/analyze/callback`, edge `analyze-callback`) n'écrivent que `{ jobId, status, lastUpdatedAt }`. L'interface compte donc les réponses portant une note IA (D-11).
+- **Proposition.** L'edge function `analyze-rfp` écrit `startedAt` et `totalResponses` au lancement ; les callbacks incrémentent `processedResponses` (`jsonb_set` ou RPC atomique) et posent `completedAt`. La ligne d'état lira ces champs. Déploiement : `npx supabase functions deploy analyze-rfp` et `analyze-callback` (non fait ici : déploiement en production).
+
+### P-3 — Citation source portée par la réponse
+- **Constat.** `responses` n'a ni document, ni page, ni extrait ; la preuve n'existe que par les annotations « bookmark » posées à la main. Le drill-down du sponsor s'arrête donc à la réponse quand aucun signet n'a été créé.
+- **Proposition.** Colonnes `source_document_id uuid`, `source_page int`, `source_quote text` sur `responses`, alimentées par N8N au moment de l'analyse (le prompt peut demander la citation) et par l'import des réponses. Le renvoi devient direct : score › citation.
+
+### P-4 — Sémantique de la note finale
+- **Constat.** Le tableau de bord serveur utilise `manual_score || ai_score` (une note manuelle de 0 est ignorée) ; les écrans et l'export utilisent `??` ou la note manuelle seule. La refonte a centralisé la règle côté client (`lib/scoring.ts` : `manual ?? ai`).
+- **Proposition.** Aligner `app/api/rfps/[rfpId]/dashboard/route.ts` (lignes 179, 230, 297, 336) et `export/generate` sur `manual ?? ai`, et exposer la pondération dans `/dashboard` (le `totalScore` actuel est une somme non pondérée des moyennes de catégories).
+
+### P-5 — Réponses : pagination et champs
+- **Fait (compatible).** `GET /api/rfps/[rfpId]/responses` pagine désormais côté serveur (plus de plafond silencieux à 1 000 lignes) et accepte `fields=light` (sans les textes) pour la file de travail, le suivi et la décision. `GET /preparation` renvoie en plus `responses.total/answered` et `analysis.{status,responsesTotal,responsesScored}`.
+- **Proposition.** Ajouter un index `(rfp_id, version_id, supplier_id)` sur `responses` si le plan d'exécution le justifie à 200 × 10.
+
+### P-6 — Droits à deux niveaux
+- **Frictions constatées.** Aucun hook client ne donne le niveau d'accès sur la consultation ; chaque page le lit dans une réponse d'API différente (la refonte l'unifie via `useConsultation().access`, lu dans `/preparation`). Un évaluateur d'organisation sans ligne `rfp_user_assignments` n'a aucun accès ; le rôle « viewer » d'organisation et l'accès « viewer » de consultation ne se recoupent pas ; l'IA est refusée aux évaluateurs (`canUseAIFeatures`) sans message. Proposition : un endpoint `GET /api/rfps/[rfpId]/me` renvoyant la résultante des deux niveaux, et un message « demander l'accès au pilote » à la place des affordances mortes.
+
+### P-7 — Route `/api/auth/login`
+- **Bug.** Le profil échoue avec « more than one relationship was found for 'users' and 'user_organizations' » (double clé étrangère). La page de connexion n'utilise pas cette route (elle appelle Supabase directement), mais `useAuth().login` oui. Correction : préciser la relation dans le `select` (`user_organizations!user_organizations_user_id_fkey`).
+
+### P-8 — Clé de service en local
+- Les routes `response-threads`, `review-statuses` et `review-status` exigent `SUPABASE_SERVICE_ROLE_KEY`, absente de `.env.local` (qui contient des valeurs placeholder pour l'URL et la clé anonyme). En local, les discussions et le peer review renvoient 500 ; les écrans les tolèrent. `.env.development.local` (ignoré par git) a été créé avec l'URL et la clé anonyme réelles pour faire tourner l'application.
+
+## 2. Bugs hors périmètre constatés, non traités
+
+- `financial-grid/page.tsx` : le bouton retour poussait vers `/dashboard/rfp/[id]` (404 avant la refonte ; désormais une redirection par phase).
+- `app/dashboard/rfp/[rfpId]/test/page.tsx` : page de développement (radar) sans lien entrant, conservée.
+- `components/VersionSelector.tsx`, `RequirementTree.tsx`, `RequirementDetails.tsx`, `RequirementHeader.tsx`, `TableTree.tsx`, `dashboard/GlobalProgressCard.tsx`, `response-threads/ThreadIndicator.tsx` : code mort, conservé.
+- `RequirementsTab` : les déplacements, ajouts et suppressions de nœuds ne sont pas persistés (seuls étiquettes et marqueurs le sont) ; la « relecture et correction de l'arborescence » est donc partielle côté données.
+- `Sidebar.tsx` / `EvaluationFilters.tsx` (ancienne évaluation, plus montés) : quatre filtres n'étaient jamais appliqués.
+- `POST /api/rfps/[rfpId]/analyze` : ignore le corps de la requête (prompt et périmètre perdus) ; la refonte passe par l'edge function.
+- `analyze/callback` : la vérification du jeton Bearer est commentée.
+- `app/dashboard/rfp/[rfpId]/documents/page.tsx` : redirige vers `/auth/login` (route inexistante, la vraie est `/login`).
+- `SuppliersTab` : deux lectures identiques des fournisseurs, logique dupliquée.
+- `npm test` et `npm run lint` (CLAUDE.md) : aucun script `test`, ESLint non configuré (`next lint` demande une configuration interactive).
+- Sécurité (advisor Supabase) : RLS désactivée sur `organizations`, `requirements`, `categories`, `defense_analyses`, `presentation_analyses`. À traiter avec des politiques avant activation.
+- Page de connexion : bouton indigo, hors périmètre, non repeinte.
+
+## 3. Données de test
+
+Trois comptes créés le 2026-09-11 dans l'organisation « Test & recette » (`da355d9f-…`), assignés aux consultations `Support L1 Finance - Accor`, `Test SmartParking`, `Test Praem Maintenance` : `e2e.pilote@`, `e2e.expert@`, `e2e.sponsor@rfp-analyzer.test` (mot de passe dans `.env.test.local`). Nettoyage :
+
+```sql
+delete from rfp_user_assignments where user_id in (select id from users where email like 'e2e.%@rfp-analyzer.test');
+delete from user_organizations where user_id in (select id from users where email like 'e2e.%@rfp-analyzer.test');
+delete from users where email like 'e2e.%@rfp-analyzer.test';
+delete from auth.identities where user_id in (select id from auth.users where email like 'e2e.%@rfp-analyzer.test');
+delete from auth.users where email like 'e2e.%@rfp-analyzer.test';
+```
+
+Les tests d'évaluation modifient une réponse puis la remettent dans son état initial ; le test de création supprime la consultation créée.
+
+## 4. Résultats de tests
+
+_(complété en fin de session, voir ci-dessous)_
