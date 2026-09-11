@@ -11,6 +11,10 @@ import {
   Loader2,
   ListTree,
   Sparkles,
+  Braces,
+  ChevronDown,
+  FileType2,
+  Terminal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -18,6 +22,13 @@ import { Input } from "@/components/ui/input";
 import { usePreparation, type PreparationSupplier } from "@/hooks/use-preparation";
 import { useConsultation } from "@/hooks/use-consultation";
 import { useVersion } from "@/contexts/VersionContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { PageState } from "@/components/shell/PageState";
 import { StateGlyph, stateLabel } from "@/components/shell/StateGlyph";
@@ -76,6 +87,70 @@ function Article({
       </div>
       {children && <div className="border-t border-border px-4 py-3 md:px-5">{children}</div>}
     </section>
+  );
+}
+
+/**
+ * The three ways a référentiel enters the application, named on one menu:
+ * the Word document (the everyday path), structured JSON, an external agent
+ * through the MCP endpoint and an access token.
+ */
+function ImportMenu({
+  rfpId,
+  label,
+  variant = "outline",
+  disabled,
+  onWord,
+}: {
+  rfpId: string;
+  label: string;
+  variant?: "outline" | "ghost";
+  disabled?: boolean;
+  onWord: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild disabled={disabled}>
+        <Button variant={variant} size="sm" data-arrow="true">
+          {label}
+          <ChevronDown className="h-3.5 w-3.5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80">
+        <DropdownMenuLabel>Sources du référentiel</DropdownMenuLabel>
+        <DropdownMenuItem className="items-start gap-2.5 py-2" onSelect={onWord}>
+          <FileType2 className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="flex flex-col gap-0.5">
+            <span className="font-medium">Document Word</span>
+            <span className="text-xs text-muted-foreground">
+              Domaines et exigences détectés, relus avant import.
+            </span>
+          </span>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="items-start gap-2.5 py-2">
+          <Link href={`/dashboard/rfp/${rfpId}/import/json`}>
+            <Braces className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="flex flex-col gap-0.5">
+              <span className="font-medium">JSON</span>
+              <span className="text-xs text-muted-foreground">
+                Structure, exigences, fournisseurs et réponses, collés étape par étape.
+              </span>
+            </span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="items-start gap-2.5 py-2">
+          <Link href="/dashboard/settings/tokens">
+            <Terminal className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="flex flex-col gap-0.5">
+              <span className="font-medium">Agent externe</span>
+              <span className="text-xs text-muted-foreground">
+                Un jeton d&apos;accès ouvre le connecteur MCP à un agent qui écrit le référentiel.
+              </span>
+            </span>
+          </Link>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -346,15 +421,27 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
                   Relire l'arborescence
                 </Link>
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setIsDocxImportOpen(true)} disabled={readOnly}>
-                Importer un complément
-              </Button>
+              <ImportMenu
+                rfpId={rfpId}
+                label="Importer un complément"
+                variant="ghost"
+                disabled={readOnly}
+                onWord={() => setIsDocxImportOpen(true)}
+              />
             </>
-          ) : undefined
+          ) : (
+            <ImportMenu
+              rfpId={rfpId}
+              label="Autres sources"
+              variant="ghost"
+              disabled={readOnly}
+              onWord={() => setIsDocxImportOpen(true)}
+            />
+          )
         }
       >
         {specification.state === "empty" ? (
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3">
             <button
               type="button"
               disabled={readOnly}
@@ -369,14 +456,6 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
                 </span>
               </span>
             </button>
-            <div className="flex flex-col gap-1 text-sm">
-              <Link href={`/dashboard/rfp/${rfpId}/import/json`} className="text-muted-foreground hover:text-foreground">
-                Depuis un tableur ou un fichier JSON
-              </Link>
-              <Link href="/dashboard/settings/tokens" className="text-muted-foreground hover:text-foreground">
-                Depuis un agent externe (jeton d'accès)
-              </Link>
-            </div>
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">

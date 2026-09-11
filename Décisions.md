@@ -137,3 +137,10 @@ Format des entrées : **D-nn — Titre**.
 - **Parcours / persona.** Les trois ; retours utilisateur sur les captures de la direction Atelier.
 - **Options écartées.** Garder les numéros dans le seul sommaire (le mode replié redevenait une liste de chiffres sans signification) ; passer les codes du référentiel en sans-serif (ils perdaient leur alignement en colonne dans la file de travail) ; faire des pondérations une étape bloquante de la prochaine action (elle est facultative, la chaîne se serait bloquée sur un réglage volontairement laissé par défaut).
 - **Caduque si.** Le référentiel cesse de porter des codes, ou une charte impose une numérotation de chapitres.
+
+## D-17 — Les sources du référentiel nommées sur un menu
+
+- **Décision.** L'article « Cahier des charges et référentiel » porte un menu « Importer un complément » (« Autres sources » quand rien n'est encore importé) qui nomme les trois entrées réelles : document Word (`DocxImportModal`, le chemin courant), JSON (l'assistant par étapes `/import/json` : structure, exigences, fournisseurs, réponses), agent externe (jeton d'accès puis connecteur MCP `/api/mcp`, avec `import_structure`, `import_requirements` et le dépôt de fichier `POST /api/mcp/import-file`). Chaque entrée porte une phrase qui dit ce qu'elle attend. Le lien « Depuis un tableur ou un fichier JSON » est supprimé : aucun import de tableur n'existe, ni XLSX ni CSV, le libellé promettait une capacité absente.
+- **Parcours / persona.** Sophie (friction 2 : la consultation ne démarre pas toujours par un Word).
+- **Options écartées.** Garder les deux liens sous la zone de dépôt (invisibles dès que le référentiel est importé, donc inutilisables pour un complément) ; ajouter un import de tableur (développement, hors périmètre : proposé dans REFONTE.md).
+- **Caduque si.** Un import XLSX ou CSV est développé : il devient une quatrième entrée du même menu.
