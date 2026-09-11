@@ -80,10 +80,11 @@ export default function RfpLayout({ children }: { children: ReactNode }) {
               >
                 <Menu className="h-4 w-4" />
               </Button>
-              <span className="min-w-0 truncate text-sm font-medium">
-                {current
-                  ? `${current.number !== null ? `${current.number}. ` : ""}${current.label}`
-                  : (title ?? "")}
+              <span className="flex min-w-0 items-baseline gap-2 truncate text-sm font-medium">
+                {current?.number !== null && current?.number !== undefined && (
+                  <span className="article-no">{current.number}</span>
+                )}
+                <span className="truncate">{current ? current.label : (title ?? "")}</span>
               </span>
             </div>
           )}

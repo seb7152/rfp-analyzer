@@ -273,8 +273,8 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
       };
     }
     return {
-      title: "La préparation est complète",
-      detail: "Le référentiel, les fournisseurs et les réponses sont en place.",
+      title: "Prochaine action : ouvrir l'évaluation",
+      detail: "La préparation est complète : référentiel, fournisseurs et réponses sont en place.",
       action: { label: "Ouvrir l'évaluation", href: `/dashboard/rfp/${rfpId}/evaluate` },
     };
   }, [preparation, analysis, rfpId]);

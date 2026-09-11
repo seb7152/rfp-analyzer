@@ -23,6 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { ScoreControl } from "@/components/evaluation/ScoreControl";
 import { StatusStamp } from "@/components/evaluation/StatusStamp";
 import { AudioRecorder } from "@/components/AudioRecorder";
@@ -206,13 +207,50 @@ export function ResponseColumn({
       {/* En-tête : fournisseur, note, tampon */}
       <header className="flex items-center gap-2 border-b border-border px-3 py-2">
         <h3 className="min-w-0 flex-1 truncate text-sm font-semibold">{response.supplier.name}</h3>
-        <span
-          className={cn("tnum text-lg font-semibold leading-none", score === null && "text-muted-foreground")}
-          aria-label={`Note ${formatScore(score)} sur 5${isManual ? ", manuelle" : ", IA"}`}
-        >
-          {formatScore(score)}
-          <span className="text-xs font-normal text-muted-foreground">/5</span>
-        </span>
+        <HoverCard openDelay={150} closeDelay={80}>
+          <HoverCardTrigger asChild>
+            <button
+              type="button"
+              onClick={() => {
+                const first = bookmarks[0];
+                if (first) onOpenBookmark(first);
+                else if (!noDocs) onOpenDocuments(response.supplier_id);
+              }}
+              disabled={noDocs && bookmarks.length === 0}
+              className={cn(
+                "tnum rounded-sm text-lg font-semibold leading-none underline decoration-border decoration-1 underline-offset-4 transition-colors duration-150 hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:no-underline",
+                score === null && "text-muted-foreground"
+              )}
+              aria-label={`Note ${formatScore(score)} sur 5${isManual ? ", manuelle" : ", IA"}. Ouvrir la preuve dans le document`}
+            >
+              {formatScore(score)}
+              <span className="text-xs font-normal text-muted-foreground">/5</span>
+            </button>
+          </HoverCardTrigger>
+          <HoverCardContent align="end" className="w-72 p-3 text-xs">
+            {bookmarks.length > 0 ? (
+              <>
+                <p className="font-semibold">
+                  {(bookmarks[0] as PDFAnnotation & { documentName?: string }).documentName ?? "Document"} · p. {bookmarks[0].pageNumber}
+                </p>
+                {bookmarks[0].highlightedText && (
+                  <p className="mt-1 text-muted-foreground">« {bookmarks[0].highlightedText} »</p>
+                )}
+                {bookmarks.length > 1 && (
+                  <p className="mt-1 text-muted-foreground">{bookmarks.length - 1} autre{bookmarks.length > 2 ? "s" : ""} passage{bookmarks.length > 2 ? "s" : ""} cité{bookmarks.length > 2 ? "s" : ""}</p>
+                )}
+                <p className="mt-1 text-accent-foreground">Cliquer pour ouvrir à la page</p>
+              </>
+            ) : (
+              <>
+                <p className="font-semibold">Aucun passage cité</p>
+                <p className="mt-1 text-muted-foreground">
+                  {noDocs ? "Ce fournisseur n'a déposé aucun document." : "Cliquer pour ouvrir les documents du fournisseur et poser un signet."}
+                </p>
+              </>
+            )}
+          </HoverCardContent>
+        </HoverCard>
         {canEdit ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

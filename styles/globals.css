@@ -54,7 +54,7 @@
     --scale-1: 224 45% 90%;
     --scale-2: 224 48% 80%;
     --scale-3: 224 50% 66%;
-    --scale-4: 224 54% 50%;
+    --scale-4: 224 54% 46%;
     --scale-5: 224 58% 34%;
 
     --chart-1: 224 58% 34%;
@@ -67,28 +67,28 @@
   }
 
   .dark {
-    --background: 222 16% 9%;
-    --foreground: 220 12% 92%;
-    --card: 222 16% 9%;
-    --card-foreground: 220 12% 92%;
-    --popover: 222 16% 12%;
-    --popover-foreground: 220 12% 92%;
+    --background: 220 4% 9%;
+    --foreground: 220 6% 92%;
+    --card: 220 4% 9%;
+    --card-foreground: 220 6% 92%;
+    --popover: 220 4% 12%;
+    --popover-foreground: 220 6% 92%;
 
     --primary: 214 72% 74%;
     --primary-foreground: 222 30% 10%;
 
-    --secondary: 222 14% 14%;
-    --secondary-foreground: 220 12% 92%;
-    --muted: 222 14% 14%;
-    --muted-foreground: 220 8% 66%;
-    --accent: 222 36% 20%;
-    --accent-foreground: 222 70% 80%;
+    --secondary: 220 4% 14%;
+    --secondary-foreground: 220 6% 92%;
+    --muted: 220 4% 14%;
+    --muted-foreground: 220 4% 66%;
+    --accent: 216 30% 20%;
+    --accent-foreground: 214 70% 80%;
 
     --destructive: 0 60% 62%;
     --destructive-foreground: 0 0% 10%;
 
-    --border: 222 12% 22%;
-    --input: 222 12% 28%;
+    --border: 220 4% 22%;
+    --input: 220 4% 30%;
     --ring: 214 72% 74%;
 
     --status-pass: 152 45% 62%;
@@ -99,10 +99,10 @@
     --status-fail-soft: 0 35% 17%;
     --status-roadmap: 264 45% 74%;
     --status-roadmap-soft: 264 25% 18%;
-    --status-pending: 220 8% 62%;
-    --status-pending-soft: 222 12% 16%;
+    --status-pending: 220 4% 62%;
+    --status-pending-soft: 220 4% 16%;
 
-    --scale-0: 222 14% 14%;
+    --scale-0: 220 4% 14%;
     --scale-1: 224 30% 22%;
     --scale-2: 224 40% 32%;
     --scale-3: 224 50% 44%;

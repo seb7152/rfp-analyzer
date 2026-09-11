@@ -34,10 +34,10 @@ function ProgressCell({ rfpId }: { rfpId: string }) {
   }
   const value = Math.round(percentage ?? 0);
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 whitespace-nowrap">
       <span
         aria-hidden
-        className="h-1.5 w-16 overflow-hidden rounded-sm bg-muted"
+        className="hidden h-1.5 w-16 overflow-hidden rounded-sm bg-muted md:block"
       >
         <span
           className="block h-full bg-primary"
@@ -168,7 +168,7 @@ export function ConsultationsTable({
                       )}
                     </td>
                     <td className="px-3 py-2.5">
-                      <span className={cn("stamp", status.className)}>{status.label}</span>
+                      <span className={cn("stamp whitespace-nowrap", status.className)}>{status.label}</span>
                     </td>
                     <td className="px-3 py-2.5">
                       <ProgressCell rfpId={rfp.id} />

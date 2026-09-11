@@ -44,7 +44,7 @@ const SCALE_CLASSES = [
   "bg-scale-0 text-foreground",
   "bg-scale-1 text-foreground",
   "bg-scale-2 text-foreground",
-  "bg-scale-3 text-background",
+  "bg-scale-3 text-foreground",
   "bg-scale-4 text-background",
   "bg-scale-5 text-background",
 ];

@@ -256,7 +256,10 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
                     </td>
                     <td className="tnum py-2.5 text-right text-muted-foreground">{s.scored}/{s.total}</td>
                     <td className="hidden py-2.5 pl-4 md:table-cell">
-                      <span className="flex h-2 w-40 overflow-hidden rounded-sm bg-muted" aria-label={(["pass", "partial", "fail", "roadmap"] as ResponseStatus[]).map((k) => `${STATUS_META[k].label} ${s.statuses[k]}`).join(", ")}>
+                      <span className="tnum mr-2 text-xs text-muted-foreground" aria-hidden>
+                        {(["pass", "partial", "fail", "roadmap"] as ResponseStatus[]).map((k) => s.statuses[k]).join(" · ")}
+                      </span>
+                      <span className="inline-flex h-2 w-32 overflow-hidden rounded-sm bg-muted align-middle" aria-label={(["pass", "partial", "fail", "roadmap"] as ResponseStatus[]).map((k) => `${STATUS_META[k].label} ${s.statuses[k]}`).join(", ")}>
                         {(["pass", "partial", "fail", "roadmap"] as ResponseStatus[]).map((k) => (
                           <span
                             key={k}
@@ -273,6 +276,7 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
           </table>
         </div>
         <p className="mt-2 hidden flex-wrap gap-3 text-xs text-muted-foreground md:flex">
+          <span>Répartition, dans l'ordre :</span>
           {(["pass", "partial", "fail", "roadmap"] as ResponseStatus[]).map((k) => (
             <span key={k} className="inline-flex items-center gap-1">
               <span className={cn("inline-block h-2 w-2 rounded-sm", k === "pass" && "bg-status-pass", k === "partial" && "bg-status-partial", k === "fail" && "bg-status-fail", k === "roadmap" && "bg-status-roadmap")} />

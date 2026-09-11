@@ -196,11 +196,15 @@ export function DrillDown({ rfpId, versionId, target, onClose, responsesOf, weig
                       {bookmarks.length === 0 ? (
                         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                           <span>Aucun passage cité.</span>
-                          {response.supplier.has_documents !== false && (
-                            <Button variant="outline" size="xs" onClick={() => onOpenDocument(target.supplier.id, null, null)}>
-                              <FileText className="h-3.5 w-3.5" /> Ouvrir les documents
-                            </Button>
-                          )}
+                          <Button
+                            variant="outline"
+                            size="xs"
+                            disabled={response.supplier.has_documents === false}
+                            title={response.supplier.has_documents === false ? "Ce fournisseur n'a déposé aucun document" : undefined}
+                            onClick={() => onOpenDocument(target.supplier.id, null, null)}
+                          >
+                            <FileText className="h-3.5 w-3.5" /> Ouvrir les documents du fournisseur
+                          </Button>
                         </div>
                       ) : (
                         <ul className="space-y-1">
