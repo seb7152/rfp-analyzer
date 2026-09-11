@@ -1,119 +1,158 @@
 ---
 name: RFP Analyzer
-description: Le dossier de consultation — typographie administrative à articles numérotés, papier et encre, un seul bleu d'action.
+description: L'atelier — fond gris, panneaux blancs, un seul bleu ardoise, bouton d'action en encre, Geist et chiffres mono, chapitres numérotés et rails repliables.
 colors:
-  papier: "hsl(40 20% 99%)"
-  encre: "hsl(222 22% 13%)"
-  encre-bleue: "hsl(216 62% 36%)"
-  encre-bleue-texte: "hsl(216 62% 30%)"
-  lavis-bleu: "hsl(216 55% 94%)"
-  second-plan: "hsl(222 16% 95%)"
-  encre-grise: "hsl(222 10% 40%)"
-  filet: "hsl(222 14% 86%)"
-  filet-saisie: "hsl(222 14% 80%)"
-  blanc-popover: "hsl(0 0% 100%)"
-  conforme: "hsl(152 52% 30%)"
-  conforme-lavis: "hsl(152 40% 93%)"
-  partiel: "hsl(34 78% 34%)"
-  partiel-lavis: "hsl(38 70% 92%)"
-  non-conforme: "hsl(0 62% 42%)"
-  non-conforme-lavis: "hsl(0 60% 95%)"
-  roadmap: "hsl(264 32% 42%)"
-  roadmap-lavis: "hsl(264 30% 94%)"
-  a-evaluer: "hsl(222 10% 46%)"
-  a-evaluer-lavis: "hsl(222 16% 94%)"
-  echelle-0: "hsl(222 16% 95%)"
-  echelle-1: "hsl(224 45% 90%)"
-  echelle-2: "hsl(224 48% 80%)"
-  echelle-3: "hsl(224 50% 66%)"
-  echelle-4: "hsl(224 54% 46%)"
-  echelle-5: "hsl(224 58% 34%)"
-  papier-charbon: "hsl(220 4% 9%)"
+  fond: "hsl(240 6% 97%)"
+  panneau: "hsl(0 0% 100%)"
+  rail: "hsl(0 0% 98%)"
+  encre: "hsl(240 4% 9%)"
+  encre-grise: "hsl(240 4% 40%)"
+  second-plan: "hsl(240 5% 95%)"
+  filet: "hsl(240 5% 90%)"
+  filet-saisie: "hsl(240 5% 85%)"
+  ardoise: "hsl(217 38% 48%)"
+  ardoise-texte: "hsl(217 40% 34%)"
+  lavis-ardoise: "hsl(217 45% 94%)"
+  action: "hsl(240 4% 9%)"
+  alerte: "hsl(3 62% 46%)"
+  conforme: "hsl(150 50% 34%)"
+  conforme-lavis: "hsl(150 40% 94%)"
+  partiel: "hsl(38 80% 38%)"
+  partiel-lavis: "hsl(40 70% 93%)"
+  non-conforme: "hsl(3 62% 46%)"
+  non-conforme-lavis: "hsl(3 60% 95%)"
+  roadmap: "hsl(258 38% 50%)"
+  roadmap-lavis: "hsl(258 35% 95%)"
+  a-evaluer: "hsl(240 4% 55%)"
+  a-evaluer-lavis: "hsl(240 5% 94%)"
+  echelle-0: "hsl(240 5% 94%)"
+  echelle-1: "hsl(217 40% 90%)"
+  echelle-2: "hsl(217 40% 80%)"
+  echelle-3: "hsl(217 40% 66%)"
+  echelle-4: "hsl(217 40% 50%)"
+  echelle-5: "hsl(217 42% 36%)"
+  fond-charbon: "hsl(220 6% 7%)"
+  panneau-charbon: "hsl(220 5% 10%)"
   encre-claire: "hsl(220 6% 92%)"
-  encre-bleue-sombre: "hsl(214 72% 74%)"
-  filet-sombre: "hsl(220 4% 22%)"
+  ardoise-claire: "hsl(214 62% 70%)"
+  lavis-ardoise-sombre: "hsl(216 30% 19%)"
+  filet-charbon: "hsl(220 5% 17%)"
 typography:
   headline:
-    fontFamily: "Source Sans 3, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "18px"
-    fontWeight: 600
-    lineHeight: "24px"
-  title:
-    fontFamily: "Source Sans 3, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "16px"
-    fontWeight: 600
-    lineHeight: "22px"
-  body:
-    fontFamily: "Source Sans 3, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "13px"
-    fontWeight: 400
-    lineHeight: "18px"
-    fontFeature: "tnum"
-  label:
-    fontFamily: "Source Sans 3, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "12px"
-    fontWeight: 600
-    lineHeight: "16px"
-    letterSpacing: "0.025em"
-  article-no:
-    fontFamily: "Source Sans 3, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "12px"
-    fontWeight: 600
-    lineHeight: "16px"
-    letterSpacing: "0.02em"
-  meta:
-    fontFamily: "Source Sans 3, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "11px"
-    fontWeight: 400
-    lineHeight: "14px"
-  figure:
-    fontFamily: "Source Sans 3, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Geist Sans, ui-sans-serif, system-ui, sans-serif"
     fontSize: "22px"
     fontWeight: 600
     lineHeight: "28px"
+    letterSpacing: "-0.01em"
+  title:
+    fontFamily: "Geist Sans, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "16px"
+    fontWeight: 600
+    lineHeight: "22px"
+  subtitle:
+    fontFamily: "Geist Sans, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "15px"
+    fontWeight: 600
+    lineHeight: "20px"
+  body:
+    fontFamily: "Geist Sans, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 400
+    lineHeight: "18px"
+    letterSpacing: "-0.005em"
+    fontFeature: "tnum"
+  reading:
+    fontFamily: "Geist Sans, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 400
+    lineHeight: "19px"
+  label:
+    fontFamily: "Geist Sans, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "12px"
+    fontWeight: 500
+    lineHeight: "16px"
+  meta:
+    fontFamily: "Geist Sans, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "11px"
+    fontWeight: 400
+    lineHeight: "14px"
+  article-no:
+    fontFamily: "Geist Mono, ui-monospace, monospace"
+    fontSize: "12px"
+    fontWeight: 500
+    lineHeight: "16px"
+    letterSpacing: "0"
+  figure:
+    fontFamily: "Geist Mono, ui-monospace, monospace"
+    fontSize: "16px"
+    fontWeight: 600
+    lineHeight: "16px"
     fontFeature: "tnum"
 rounded:
-  none: "0px"
-  stamp: "2px"
-  control: "2px"
-  overlay: "4px"
+  sm: "4px"
+  md: "6px"
+  lg: "8px"
+  pill: "999px"
 spacing:
+  "0.5": "2px"
   "1": "4px"
+  "1.5": "6px"
   "2": "8px"
+  "2.5": "10px"
   "3": "12px"
+  "3.5": "14px"
   "4": "16px"
   "5": "20px"
   "6": "24px"
+  "8": "32px"
   "16": "64px"
-  top-bar: "48px"
-  strip: "32px"
-  rail: "240px"
+  barre-laterale: "232px"
+  barre-laterale-repliee: "56px"
+  file: "300px"
+  file-repliee: "44px"
+  barre-mobile: "44px"
+  accueil-max: "1200px"
+  colonne-activite: "340px"
 components:
   button-primary:
-    backgroundColor: "{colors.encre-bleue}"
-    textColor: "{colors.papier}"
-    rounded: "{rounded.control}"
+    backgroundColor: "{colors.action}"
+    textColor: "{colors.panneau}"
+    rounded: "{rounded.md}"
     padding: "0 12px"
     height: "36px"
     typography: "{typography.body}"
   button-primary-hover:
-    backgroundColor: "hsl(216 62% 36% / 0.9)"
+    backgroundColor: "hsl(240 4% 9% / 0.9)"
   button-outline:
-    backgroundColor: "{colors.papier}"
-    textColor: "{colors.encre-bleue-texte}"
-    rounded: "{rounded.control}"
+    backgroundColor: "{colors.fond}"
+    textColor: "{colors.ardoise-texte}"
+    rounded: "{rounded.md}"
     padding: "0 12px"
     height: "36px"
   button-outline-hover:
-    backgroundColor: "{colors.lavis-bleu}"
+    backgroundColor: "{colors.lavis-ardoise}"
   button-ghost:
     backgroundColor: "transparent"
-    textColor: "{colors.encre-bleue-texte}"
-    rounded: "{rounded.control}"
+    textColor: "{colors.ardoise-texte}"
+    rounded: "{rounded.md}"
     padding: "0 12px"
     height: "36px"
   button-ghost-hover:
-    backgroundColor: "{colors.lavis-bleu}"
+    backgroundColor: "{colors.lavis-ardoise}"
+  button-dim:
+    backgroundColor: "transparent"
+    textColor: "{colors.encre-grise}"
+    rounded: "{rounded.md}"
+    padding: "0 12px"
+    height: "36px"
+  button-dim-hover:
+    textColor: "{colors.encre}"
+  button-destructive:
+    backgroundColor: "{colors.alerte}"
+    textColor: "{colors.panneau}"
+    rounded: "{rounded.md}"
+    padding: "0 12px"
+    height: "36px"
   button-sm:
     height: "32px"
     padding: "0 10px"
@@ -123,258 +162,307 @@ components:
     padding: "0 8px"
     typography: "{typography.label}"
   input:
-    backgroundColor: "{colors.papier}"
+    backgroundColor: "{colors.fond}"
     textColor: "{colors.encre}"
-    rounded: "{rounded.control}"
+    rounded: "{rounded.md}"
     padding: "4px 12px"
     height: "36px"
+    typography: "{typography.reading}"
+  textarea:
+    backgroundColor: "{colors.fond}"
+    textColor: "{colors.encre}"
+    rounded: "{rounded.md}"
+    padding: "8px 12px"
+    height: "60px"
+    typography: "{typography.reading}"
+  panel:
+    backgroundColor: "{colors.panneau}"
+    textColor: "{colors.encre}"
+    rounded: "{rounded.lg}"
+    padding: "16px"
+  panel-header:
+    backgroundColor: "{colors.panneau}"
+    textColor: "{colors.encre}"
+    padding: "10px 16px"
     typography: "{typography.body}"
-  stamp-conforme:
-    backgroundColor: "{colors.conforme-lavis}"
-    textColor: "{colors.conforme}"
-    rounded: "{rounded.stamp}"
-    padding: "0 6px"
-    height: "24px"
+  stamp:
+    backgroundColor: "{colors.second-plan}"
+    textColor: "{colors.encre}"
+    rounded: "{rounded.pill}"
+    padding: "0 8px"
+    height: "22px"
     typography: "{typography.label}"
-  stamp-partiel:
-    backgroundColor: "{colors.partiel-lavis}"
-    textColor: "{colors.partiel}"
-    rounded: "{rounded.stamp}"
-    padding: "0 6px"
-    height: "24px"
-    typography: "{typography.label}"
-  stamp-non-conforme:
-    backgroundColor: "{colors.non-conforme-lavis}"
-    textColor: "{colors.non-conforme}"
-    rounded: "{rounded.stamp}"
-    padding: "0 6px"
-    height: "24px"
-    typography: "{typography.label}"
-  stamp-roadmap:
-    backgroundColor: "{colors.roadmap-lavis}"
-    textColor: "{colors.roadmap}"
-    rounded: "{rounded.stamp}"
-    padding: "0 6px"
-    height: "24px"
-    typography: "{typography.label}"
-  stamp-a-evaluer:
-    backgroundColor: "transparent"
-    textColor: "{colors.a-evaluer}"
-    rounded: "{rounded.stamp}"
-    padding: "0 6px"
-    height: "24px"
+  badge:
+    backgroundColor: "{colors.encre}"
+    textColor: "{colors.fond}"
+    rounded: "{rounded.sm}"
+    padding: "2px 6px"
     typography: "{typography.label}"
   rail-item:
     backgroundColor: "transparent"
-    textColor: "{colors.encre}"
-    padding: "6px 12px"
+    textColor: "{colors.encre-grise}"
+    rounded: "{rounded.md}"
+    padding: "0 10px"
+    height: "32px"
     typography: "{typography.body}"
+  rail-item-hover:
+    backgroundColor: "hsl(217 45% 94% / 0.6)"
+    textColor: "{colors.encre}"
   rail-item-active:
-    backgroundColor: "{colors.lavis-bleu}"
-    textColor: "{colors.encre-bleue-texte}"
+    backgroundColor: "{colors.lavis-ardoise}"
+    textColor: "{colors.encre}"
+  queue-row:
+    backgroundColor: "transparent"
+    textColor: "{colors.encre}"
+    rounded: "{rounded.md}"
+    padding: "6px 10px"
+    typography: "{typography.body}"
+  queue-row-selected:
+    backgroundColor: "{colors.lavis-ardoise}"
   score-cell:
-    backgroundColor: "{colors.papier}"
+    backgroundColor: "{colors.fond}"
     textColor: "{colors.encre}"
     height: "32px"
     width: "34px"
     typography: "{typography.body}"
   score-cell-manual:
-    backgroundColor: "{colors.encre-bleue}"
-    textColor: "{colors.papier}"
+    backgroundColor: "{colors.ardoise}"
+    textColor: "{colors.panneau}"
   score-cell-ai:
-    backgroundColor: "{colors.lavis-bleu}"
-    textColor: "{colors.encre-bleue-texte}"
+    backgroundColor: "{colors.lavis-ardoise}"
+    textColor: "{colors.ardoise-texte}"
   heatmap-cell:
-    rounded: "{rounded.none}"
+    rounded: "{rounded.sm}"
     height: "36px"
     typography: "{typography.body}"
-  card:
-    backgroundColor: "{colors.papier}"
+  tab:
+    backgroundColor: "transparent"
+    textColor: "{colors.encre-grise}"
+    height: "36px"
+    padding: "0 2px"
+    typography: "{typography.body}"
+  tab-active:
     textColor: "{colors.encre}"
-    rounded: "{rounded.control}"
-    padding: "20px"
+  dialog:
+    backgroundColor: "{colors.fond}"
+    textColor: "{colors.encre}"
+    rounded: "{rounded.lg}"
+    padding: "24px"
+    width: "512px"
+  popover:
+    backgroundColor: "{colors.panneau}"
+    textColor: "{colors.encre}"
+    rounded: "{rounded.md}"
+    padding: "16px"
+    width: "288px"
+  menu-item:
+    backgroundColor: "transparent"
+    textColor: "{colors.encre}"
+    rounded: "{rounded.sm}"
+    padding: "6px 8px"
+    typography: "{typography.body}"
+  menu-item-focus:
+    backgroundColor: "{colors.lavis-ardoise}"
+    textColor: "{colors.ardoise-texte}"
 ---
 
 # Design System: RFP Analyzer
 
 ## Overview
 
-**Creative North Star: « Le dossier de consultation »**
+**Creative North Star: « L'atelier »**
 
-L'interface est la table des matières et les articles d'un dossier de consultation, dans la typographie administrative française du DCE et de l'avis de marché. Une consultation est un dossier numéroté ; ses phases sont des chapitres (1 Préparation, 2 Analyse IA, 3 Évaluation, 4 Décision, 5 Restitution) ; ses domaines et exigences sont des articles (1.1, 1.3, 4.2, R-12). Le rail gauche est un sommaire, jamais une barre d'onglets ; le contenu est une suite d'articles séparés par des filets, jamais une grille de cartes. Avec le contenu retiré, la page se lit encore comme un dossier numéroté avec un sommaire à gauche.
+L'interface est un plan de travail : un fond gris clair sur lequel sont posés des panneaux blancs, chacun un objet net (rayon 8 px, filet de 1 px, ombre d'un pixel). La structure du dossier de consultation est conservée (D-05, D-07, D-08, D-09, D-12) : une consultation reste un sommaire de chapitres numérotés (3 Évaluation, 4 Décision, 5 Restitution), ses domaines et exigences restent des articles à code mono (`REQ-FUN`, `R-12`, `4.2`). Ce qui a changé avec la direction « Atelier » (D-15), c'est la surface : les filets pleine largeur ont laissé place au panneau comme unique conteneur, les tampons carrés à des pastilles à point coloré, Source Sans 3 à Geist Sans et Geist Mono, la barre supérieure à une barre latérale de 232 px qui porte l'organisation, la navigation et le compte.
 
-Le monde est fait de papier et d'encre : un fond papier presque blanc (charbon en thème sombre), une encre quasi noire, un seul bleu encre institutionnel réservé à l'action primaire et à la sélection courante. Quatre couleurs d'état sont des tampons carrés, chacun avec glyphe et libellé. La hiérarchie est portée par la taille et la graisse, les séparateurs sont des filets de 1 px, les surfaces sont plates ; la seule ombre existante appartient aux panneaux flottants. Une seule famille, Source Sans 3, chiffres tabulaires partout. La densité est celle d'un outil de travail : 13 px pour le texte courant, 14 px par défaut, lignes de tableau de 36 à 44 px.
+Un seul accent, le bleu ardoise : sélection courante, progression, liens de renvoi, note manuelle. Le bouton d'action primaire n'est pas bleu : il est en encre pleine, ce qui le rend visible sans concurrencer la sélection. Les quatre couleurs d'état existent en teinte et en lavis mais ne portent jamais un fond de pastille : la pastille reste grise, seul son point de 7 px prend la couleur. La hiérarchie tient à la taille, à la graisse (400 / 500 / 600) et au mono : tout ce qui est code ou chiffre passe en Geist Mono à chiffres tabulaires. La densité est celle d'un outil utilisé plusieurs heures par jour : corps 13 px, lignes de 28 à 36 px, panneaux latéraux repliables au clavier (`[` et `]`) pour rendre l'écran aux colonnes de réponse.
 
-L'interaction signature est le renvoi : tout score est un lien vers sa preuve. Survol : l'extrait cité ; clic : le document à la page. Le panneau de détail de la décision porte un fil d'Ariane « Renvois » (fournisseur › domaine › exigence › réponse › citation). Le mouvement se limite à 150 ms de transition de couleur ou de bordure sur changement d'état ; il n'y a aucune séquence d'entrée sur les écrans, et `prefers-reduced-motion` est honoré globalement.
-
-Refus confirmés par la direction (D-03) et par le code livré : pas de cartes KPI ni de tableau de bord à vignettes, pas de barre de dix onglets, pas de tableur brut ; pas de dégradés, pas d'ombres portées sur les surfaces, pas de coins arrondis au-delà de 4 px ; pas de couleur seule pour signifier un état ; pas de ton promotionnel ni de point d'exclamation dans les libellés.
+Le mouvement est réduit à ce qui informe : 150 ms de couleur ou de bordure sur changement d'état, 150 ms de largeur quand un rail se replie, 150 à 200 ms de fondu et de glissement pour ce qui flotte, 500 ms de largeur pour une barre de progression. Aucune séquence d'entrée, aucune translation au survol ; `prefers-reduced-motion` neutralise tout. Refus confirmés par D-15 et par le code : plus de tampons carrés, plus de capitales espacées en en-tête de tableau, plus de barre supérieure, pas de dégradés ni d'ombre portée sur une surface au repos, pas de couleur seule pour un état, pas de ton promotionnel.
 
 **Key Characteristics:**
-- Numérotation d'articles (`1`, `1.3`, `4.2`, `R-12`) comme identité récurrente, en 12 px semi-gras gris encre.
-- Sommaire fixe de 240 px à gauche ; sélection = filet d'encre bleue de 2 px à gauche + lavis bleu.
-- Un seul bouton primaire bleu encre par écran, en haut à droite de l'en-tête de chapitre.
-- Tampons d'état carrés (2 px) : glyphe + libellé en capitales 12 px, teinte + lavis.
-- Échelle séquentielle bleue à six pas (0 → 5) pour toute note, du papier vers l'encre bleue.
-- Filets de 1 px comme unique séparateur ; aucune boîte, aucune ombre hors panneaux flottants.
-- Chiffres tabulaires par défaut, formats français (`4,0`, `52 %`, `27 févr. 2026`, `—` pour l'absence).
+- Fond gris `fond` et panneaux blancs `.panel` (rayon 8 px, filet, ombre 1 px) comme unique conteneur ; barre latérale et pieds de colonne sur `rail`.
+- Un accent, l'ardoise, pour la sélection (`lavis-ardoise`), la progression et la note manuelle ; le bouton d'action est en encre pleine.
+- Geist Sans 13 px pour le texte, Geist Mono pour les codes d'article (`.article-no`, 12 px 500 gris) et les chiffres (`.num`, tabulaires).
+- Pastilles d'état `.stamp` : pilule grise de 22 px, point coloré de 7 px, libellé 12 px 500 ; points d'état de 8 px dans le sommaire.
+- Chapitres numérotés (numéro mono à gauche du titre 22 px), articles 4.1 / 4.2 / 4.3 en panneaux titrés 16 px.
+- Rails repliables et mémorisés : sommaire 232 → 56 px (`[`), file de travail 300 → 44 px (`]`).
+- Chiffres tabulaires et formats français (`4,0`, `52 %`, `11 sept., 12:26`, `—` pour l'absence) via `lib/format.ts`.
 
 ## Colors
 
-Une palette d'encre sur papier, chaque valeur passe par une variable HSL de `styles/globals.css` ; les triplets HSL sont la source normative (le thème sombre redéfinit les mêmes rôles).
+Une palette de gris neutres (teinte 240) sur laquelle se pose une seule ardoise ; tout passe par les variables HSL de `styles/globals.css`, dont les triplets sont la source normative, le thème sombre redéfinissant les mêmes rôles sur un charbon de teinte 220.
 
 ### Primary
-- **Encre bleue** (`encre-bleue`) : l'unique accent. Fond du seul bouton primaire, cellule de note manuelle sur le rail 0–5, filet de sélection de 2 px dans le sommaire et la file de travail, barre de progression sous la bande d'analyse, caret et `accent-color` du navigateur, anneau de focus. En thème sombre il s'éclaircit (`encre-bleue-sombre`) et son texte inversé devient encre.
-- **Encre bleue texte** (`encre-bleue-texte`) : couleur des liens de renvoi et des boutons `outline`/`ghost` ; texte des surfaces en lavis bleu.
-- **Lavis bleu** (`lavis-bleu`) : fond de la sélection courante (chapitre actif, exigence active, cellule de note IA non confirmée), de la bande « Analyse IA en cours », de la sélection de texte, et du survol des lignes (`/40` à `/60`). En thème sombre : `hsl(216 30% 20%)`.
+- **Ardoise** (`ardoise`) : l'unique accent. Cellule de note manuelle du rail 0–5, remplissage des barres de progression, points de phase franchis, filet bas de l'onglet actif, contour de 2 px d'une cellule de heatmap survolée, marque IA sous la cellule proposée (à 60 %), icônes de signal (discussion, commentaire, question), compteur de discussions, chargeur, caret, `accent-color` et anneau de focus. En thème sombre : **Ardoise claire** (`ardoise-claire`), texte inversé en charbon.
+- **Ardoise texte** (`ardoise-texte`) : couleur des boutons `outline` et `ghost`, des liens de preuve (« Document · p. 12 »), du texte de la bande d'analyse, de la note IA non confirmée sur le rail, du compteur « à faire » de la file repliée. Sombre : `hsl(214 62% 78%)`.
+- **Lavis ardoise** (`lavis-ardoise`) : fond de la sélection courante (chapitre actif, ligne de file sélectionnée, cellule de note IA, cellule « ½ » active, élément de menu focalisé), de la bande « Analyse IA en cours », de la sélection de texte, et des survols (`/40` sur une ligne de panneau, `/50` sur une ligne de file, `/60` sur un élément de rail ou un bouton de signal). Sombre : **Lavis ardoise sombre** (`lavis-ardoise-sombre`).
 
 ### Secondary
-- **Échelle séquentielle 0 → 5** (`echelle-0` … `echelle-5`) : six pas du papier grisé à l'encre bleue profonde, réservés aux notes (heatmap 4.2, pastilles de note dans le panneau de renvois). Le texte passe à la couleur papier à partir du pas 4. Une note absente prend `echelle-0` avec le texte gris encre. Thème sombre : mêmes six rôles, du charbon `hsl(220 4% 14%)` au bleu clair `hsl(222 70% 74%)`.
+- **Échelle 0 → 5** (`echelle-0` … `echelle-5`) : six pas du gris clair à l'ardoise profonde, réservés aux notes (heatmap 4.2). Le texte passe à la couleur `fond` à partir du pas 4 ; une note absente prend `echelle-0` avec le texte gris. Sombre : du charbon `hsl(220 5% 13%)` à l'ardoise claire `hsl(214 62% 72%)`, le texte s'inverse de la même façon.
 
 ### Tertiary
-- **Conforme** (`conforme` / `conforme-lavis`) : vert profond ; tampon ✓ CONFORME, glyphe « terminé » du sommaire, mention « Évaluée ».
-- **Partiel** (`partiel` / `partiel-lavis`) : ocre ; tampon ◐ PARTIEL, glyphe « en cours » (carré à moitié rempli), statut « En cours » d'une consultation.
-- **Non conforme** (`non-conforme` / `non-conforme-lavis`) : rouge brique ; tampon ✕ NON CONFORME, bande « Analyse IA interrompue », commentaires bloquants. Même valeur que `--destructive`.
-- **Roadmap** (`roadmap` / `roadmap-lavis`) : violet grisé ; tampon → ROADMAP, choisi explicitement dans le menu du tampon.
-- **À évaluer** (`a-evaluer` / `a-evaluer-lavis`) : gris ; tampon — À ÉVALUER, sans fond, bordure filet.
+- **Conforme** (`conforme` / `conforme-lavis`) : vert ; point de pastille, point « terminé » du sommaire, mention « Évaluée », segment de répartition, chiffre « 6/6 » d'une exigence faite, avatar de ton 2.
+- **Partiel** (`partiel` / `partiel-lavis`) : ocre ; point de pastille, point « en cours » du sommaire, statut « En cours » d'une consultation, avatar de ton 3.
+- **Non conforme** (`non-conforme` / `non-conforme-lavis`) : rouge brique ; point de pastille, compteur de discussion bloquante, bande « Analyse IA interrompue » (fond lavis, bordure à 40 %, texte plein). Même valeur que `alerte` (`--destructive`).
+- **Roadmap** (`roadmap` / `roadmap-lavis`) : violet grisé ; point de pastille, choisi explicitement dans le menu, avatar de ton 4.
+- **À évaluer** (`a-evaluer` / `a-evaluer-lavis`) : gris ; point de pastille par défaut, statut « Archivée ».
 
 ### Neutral
-- **Papier** (`papier`) : fond de page, des cartes et des champs. Thème sombre : **Papier charbon** (`papier-charbon`).
-- **Blanc popover** (`blanc-popover`) : fond des menus, popovers et listes déroulantes. Thème sombre : `hsl(220 4% 12%)`.
-- **Encre** (`encre`) : texte courant, titres, badges pleins. Thème sombre : **Encre claire** (`encre-claire`).
-- **Encre grise** (`encre-grise`) : texte secondaire, numéros d'article, en-têtes de colonnes, méta. Thème sombre : `hsl(220 4% 66%)`.
-- **Second plan** (`second-plan`) : fond du rail (`/60`), de la file de travail (`/40`), des en-têtes de domaine collants, des squelettes de chargement et des pistes de barres. Thème sombre : `hsl(220 4% 14%)`.
-- **Filet** (`filet`) : tous les séparateurs, bordures de cartes et de tableaux, ascenseurs. Thème sombre : **Filet sombre** (`filet-sombre`).
-- **Filet de saisie** (`filet-saisie`) : bordure des champs, des boutons `outline`, du rail 0–5, et de la zone de dépôt en pointillé. Thème sombre : `hsl(220 4% 30%)`.
+- **Fond** (`fond`) : le plan de travail, fond de page ; aussi fond des champs, des boutons `outline`, des cellules de note au repos et des dialogues. Sombre : **Fond charbon** (`fond-charbon`).
+- **Panneau** (`panneau`) : fond des panneaux, des popovers, des menus, de la barre de recherche ⌘K et des en-têtes collants de la heatmap. Sombre : **Panneau charbon** (`panneau-charbon`), popover à `hsl(220 5% 12%)`.
+- **Rail** (`rail`) : fond des barres latérales, de la file de travail et de ses en-têtes de groupe collants, des pieds de colonne de réponse et de la barre mobile. Sombre : même valeur que le fond charbon.
+- **Encre** (`encre`) : texte courant et titres. Sombre : **Encre claire** (`encre-claire`).
+- **Encre grise** (`encre-grise`) : texte secondaire, codes d'article, en-têtes de colonnes, méta, éléments de rail au repos, icônes de signal. Sombre : `hsl(220 4% 64%)`.
+- **Second plan** (`second-plan`) : fond des pastilles, du filtre segmenté actif, des pistes de barre de progression, des squelettes de chargement. Sombre : `hsl(220 5% 13%)`.
+- **Filet** (`filet`) : bordure des panneaux, séparateurs de lignes et d'en-têtes, filets des barres latérales, soulignement au repos de la note de colonne, ascenseurs. Sombre : **Filet charbon** (`filet-charbon`).
+- **Filet de saisie** (`filet-saisie`) : bordure des champs, des boutons `outline`, du rail 0–5, du filtre segmenté, du point « à faire » du sommaire (1,5 px), des connecteurs de phase non franchis. Sombre : `hsl(220 5% 24%)`.
+- **Action** (`action`) : fond du bouton primaire, carré d'initiales de l'organisation, badge `default`. Sombre : encre claire, texte charbon.
 
 ### Named Rules
-**La règle de l'encre unique.** Le bleu encre plein n'apparaît que sur l'action primaire (une par écran), la note manuelle confirmée, le filet de sélection et les barres de progression. Tout autre usage passe par le lavis ou par le texte bleu.
+**La règle de l'ardoise unique.** L'ardoise est la couleur de ce qui est choisi ou en cours : sélection, progression, note manuelle, lien de preuve. Elle n'est jamais le fond d'un bouton d'action, qui est en encre. Aucune deuxième teinte d'accent n'existe.
 
-**La règle du tampon.** Une couleur d'état n'est jamais seule : elle accompagne toujours un glyphe distinct et un libellé (`✓ Conforme`, `◐ Partiel`, `✕ Non conforme`, `→ Roadmap`, `— À évaluer`). Les répartitions en barre gardent leur légende textuelle.
+**La règle du point.** Une couleur d'état vit dans un point de 7 ou 8 px accompagné d'un libellé ou d'un chiffre ; la pastille qui le porte reste grise. Les répartitions en barre gardent leur légende textuelle et leurs compteurs `20 · 0 · 0 · 0`.
 
-**La règle de l'échelle bleue.** Une note se lit sur l'échelle séquentielle 0 → 5, jamais en rouge/vert. Les couleurs d'état sont réservées aux statuts, les six bleus aux notes.
+**La règle de l'échelle.** Une note se lit sur les six pas de l'échelle, jamais en rouge/vert ; les couleurs d'état sont réservées aux statuts.
 
 ## Typography
 
 **Display Font:** aucune ; il n'y a pas de rôle d'affichage.
-**Body Font:** Source Sans 3 (chargée par `next/font`, graisses 400/600/700), repli `ui-sans-serif, system-ui, sans-serif`.
-**Label/Mono Font:** aucune famille distincte ; les chiffres sont tabulaires (`font-variant-numeric: tabular-nums` sur `body`, utilitaire `.tnum`).
+**Body Font:** Geist Sans (paquet `geist`, variable `--font-geist-sans`), repli `ui-sans-serif, system-ui, sans-serif`.
+**Label/Mono Font:** Geist Mono (`--font-geist-mono`), repli `ui-monospace, monospace`, pour les codes d'article et tous les chiffres (`.num`).
 
-**Character :** une seule famille compacte, humaniste et administrative ; la hiérarchie tient à la taille et à la graisse (400 pour le courant, 600 pour tout ce qui est titre, chiffre ou libellé, 700 réservé au mot-symbole « RFP Analyzer »). L'échelle est fixe en pixels : 11 / 12 / 13 / 14 / 15 / 16 / 18 / 22 / 28 / 36.
+**Character :** une grotesque neutre resserrée d'un demi-centième (`letter-spacing: -0.005em` sur `body`), en trois graisses (400 courant, 500 libellés et navigation, 600 titres et chiffres), doublée d'un mono qui donne aux codes et aux notes une voix d'instrument. Chiffres tabulaires partout (`font-variant-numeric: tabular-nums` sur `body`). L'échelle est fixe en pixels : 11 / 12 / 13 / 15 / 16 / 18 / 22 / 28 / 36 ; les interlignes sont fixés dans `tailwind.config.ts` (14 / 16 / 18–19 / 20–22 / 22 / 24 / 28 / 34 / 42).
 
 ### Hierarchy
-- **Headline** (600, 18 px / 24 px) : titre de chapitre dans `PageHeader`, précédé du numéro d'article en 13 px. En mode « Présenter » les titres d'article montent à 28 px.
-- **Title** (600, 16 px / 22 px) : titre d'article dans la vue Décision (4.1, 4.2, 4.3), titre des blocs d'état (`PageState`), nom du fournisseur en tête de colonne d'évaluation reste à 13 px.
-- **Figure** (600, 22 px / 28 px, tabulaire) : la note finale dans le panneau de renvois ; 16 px dans la colonne de réponse. Le dénominateur `/5` reste en 12–13 px 400 gris encre.
-- **Body** (400, 13 px / 18 px) : texte courant des écrans refondus (réponses, analyses IA, cellules de tableau, libellés de navigation), paragraphes d'introduction limités à 70 ch. Le `body` HTML est à 14 px / 1,45 ; les composants descendent à 13 px.
-- **Label** (600, 12 px / 16 px, capitales, interlettrage 0,025 em) : en-têtes de colonnes de tableau, tampons d'état, mention OBLIGATOIRE.
-- **Article-no** (600, 12 px / 16 px, interlettrage 0,02 em, gris encre) : numéro d'article et code d'exigence, toujours en tête de ligne, jamais seul.
-- **Meta** (400, 11 px / 14 px) : compteurs de la file de travail, sous-compte `11/12` d'une cellule de heatmap, indice de défilement.
+- **Headline** (600, 22 px / 28 px, −0,01 em) : titre de chapitre dans `PageHeader` et titre « Consultations » de l'accueil, précédé du numéro d'article en mono 13 px. En mode « Présenter » les titres d'article montent à 28 px.
+- **Title** (600, 16 px / 22 px) : titre d'article dans la Décision (4.1, 4.2, 4.3), titre d'article de la préparation, titre de l'exigence sélectionnée (13 px sous 768 px), titre d'un panneau latéral.
+- **Subtitle** (600, 15 px / 20 px) : titre d'une carte de consultation sur l'accueil.
+- **Figure** (600, 16 px, mono, tabulaire) : la note en tête de colonne de réponse, soulignée ; le dénominateur `/5` reste en 12 px 400 gris. Les notes de heatmap et du rail 0–5 sont en 13 px 600 tabulaires.
+- **Body** (400, 13 px / 18 px) : tout texte courant, libellés de navigation, cellules de tableau, champs. Les textes de réponse et d'analyse IA prennent l'interligne de lecture de 19 px (`reading`) ; les paragraphes d'introduction sont limités à 70 ch, les descriptions d'exigence à 75 ch.
+- **Label** (500, 12 px / 16 px, casse normale) : en-têtes de colonnes de tableau, libellés de pastille, libellés de section dans une colonne (« Réponse », « Analyse IA », en 600), onglets de filtre, méta de carte. Pas de capitales, pas d'interlettrage.
+- **Article-no** (500, 12 px / 16 px, mono, gris) : code de domaine ou d'exigence, numéro de chapitre ou d'article ; toujours à gauche d'un titre ou d'un libellé, jamais seul.
+- **Meta** (400, 11 px / 14 px) : chiffre court d'un chapitre (`90 %`), compteur `1/6` d'une exigence, dernière activité d'une carte, raccourci `⌘K`, indice de défilement, sous-compte `11/12` d'une cellule de heatmap.
 
 ### Named Rules
-**La règle du numéro d'article.** Tout titre de chapitre, d'article, de domaine ou d'exigence commence par son numéro en `article-no`, aligné à la ligne de base du titre, séparé par 8 px.
+**La règle du numéro mono.** Tout chapitre, article, domaine ou exigence commence par son numéro ou son code en `article-no`, sur la même ligne de base que son titre, séparé de 8 px.
 
-**La règle du chiffre tabulaire.** Toute donnée numérique est en chiffres tabulaires, alignée à droite dans les tableaux, formatée en français par `lib/format.ts` (`4,0`, `52 %`, `1 h 05`, `—` pour l'absence).
+**La règle du chiffre mono.** Toute donnée numérique est en Geist Mono tabulaire (`.num` ou `.tnum`), alignée à droite dans les tableaux, formatée en français par `lib/format.ts`.
+
+**La règle de la casse normale.** Un en-tête de colonne est en 12 px 500 gris, en casse normale ; les capitales espacées n'appartiennent plus au système.
 
 ## Layout
 
-Le gabarit est celui du dossier : une barre supérieure fixe de 48 px (mot-symbole, fil d'Ariane organisation › consultation › version, thème, utilisateur), sous laquelle une bande d'analyse de 32 px n'apparaît que pendant une analyse IA ; à gauche un rail collant de 240 px (sommaire titré par la consultation, chapitres numérotés avec glyphe d'état et chiffre court, « Paramètres » séparé par un filet, retour « Toutes les consultations » en pied) ; à droite la colonne de contenu, centrée, plafonnée à 1024 px (`max-w-5xl` : préparation, analyse, suivi) ou 1152 px (`max-w-6xl` : accueil, décision, référentiel). Le mode « Présenter » de la décision lève le plafond.
+Le gabarit est celui d'un atelier à deux plans : à gauche une barre latérale collante de 232 px sur fond `rail` fermée par un filet, à droite le plan de travail gris qui reçoit les panneaux. Hors consultation, la barre latérale porte le sélecteur d'organisation (36 px, carré d'initiales 24 px en encre), trois entrées de navigation (32 px, icône 16 px), et en pied la ligne du compte (avatar 24 px, nom, menu : organisations, jetons, thème, déconnexion). Dans une consultation, elle devient le sommaire : lien de retour « Consultations » (28 px, 12 px gris), titre de la consultation en 13 px 600 sur deux lignes maximum avec sélecteur, statut et version en 12 px gris dessous, puis les chapitres (32 px, numéro mono 12 px sur 12 px, libellé 13 px, chiffre court 11 px mono, point d'état 8 px), leurs sous-entrées (28 px, rentrées de 32 px), « Paramètres » après un filet, et le compte en pied. Le sommaire se replie à 56 px (`[`) : chaque chapitre devient un carré de 36 px avec son numéro et un point de 6 px en haut à droite, le libellé passe en infobulle ; l'état est mémorisé par navigateur.
 
-Chaque chapitre s'ouvre par un `PageHeader` (numéro + titre, phrase d'introduction en 13 px gris encre limitée à 70 ch, une seule action primaire à droite) fermé par un filet. Le contenu est une suite d'articles (`<section>`) séparés par des filets, avec un en-tête d'article de 12 px de padding vertical et un corps rentré des mêmes 16 px (mobile) ou 24 px (≥ 768 px) que l'en-tête. Les tableaux sont pleine largeur, en-têtes de colonnes en capitales 12 px, lignes séparées par un filet, cellules de 8 à 10 px de padding vertical.
+Le contenu est centré et plafonné : 1024 px (`max-w-5xl`) pour la préparation, l'analyse et le suivi ; 1152 px (`max-w-6xl`) pour la décision et les paramètres ; 1200 px pour l'accueil, dont la grille passe à deux colonnes (`1fr` + 340 px) à partir de 1024 px. Chaque chapitre s'ouvre par un `PageHeader` (numéro + titre 22 px, phrase d'introduction 13 px gris, au plus une action primaire à droite, 16 px de marge horizontale, 32 px à partir de 768 px) et se compose de panneaux empilés à 16 px d'écart, chacun un article numéroté (`<section class="panel">`, 16 px de padding, 20 px horizontal à partir de 768 px, en-tête `article-no` + titre 16 px). Un panneau de liste (« Aujourd'hui », « Activité récente », tableau du suivi) a un en-tête de 10 px / 16 px fermé par un filet et des lignes de 12 px / 16 px séparées par des filets, sans padding de panneau.
 
-L'espace d'évaluation est la seule composition à trois colonnes : la file de travail à gauche (fond second plan `/40`, onglets À faire / Faites / Toutes, recherche, groupes par domaine à en-tête collant), puis les colonnes de réponse de largeur identique, une par fournisseur, séparées par des filets ; le rail 0–5 et les actions sont dans un pied de colonne à fond second plan. Le panneau de renvois de la décision est un `Sheet` de droite de 576 px maximum, plein écran sur mobile.
+L'espace d'évaluation est la seule composition pleine hauteur : une barre de chapitre de 40 px sur `rail` (numéro, titre, compteur, lien « Discussions »), puis trois plans : la file de travail de 300 px (fond `rail`, onglets À faire / Faites / Toutes, recherche 32 px, bouton de filtres, groupes par domaine à en-tête collant, lignes de 2 × 6 px + 10 px), l'en-tête de l'exigence (code mono, fil du domaine, pastille « Obligatoire », titre 16 px, compteur `1/3` et flèches), et les colonnes de réponse, une par fournisseur, panneaux de largeur égale à 300 px minimum avec défilement horizontal au-delà. La file se replie à 44 px (`]`) : un bouton, un compteur « à faire » en pilule ardoise, un libellé vertical ; le texte des réponses gagne alors quatre lignes (12 au lieu de 8). Le panneau de renvois de la décision est un `Sheet` de droite de 576 px maximum.
 
-Rythme : grille de 4 px, valeurs utilisées 4 / 6 / 8 / 12 / 16 / 20 / 24 et 64 px (`PageState`). Hauteurs de contrôle : 28 / 32 / 36 / 40 px ; tampons 24 px ; cellule de heatmap 36 px (48 px en présentation).
+Rythme : grille de 2 px, valeurs reprises 2 / 4 / 6 / 8 / 10 / 12 / 14 / 16 / 20 / 24 / 32 et 64 px (`PageState`). Hauteurs de contrôle : 28 / 32 / 36 / 40 px ; pastilles 22 px ; cellule de note 32 × 34 px ; cellule de heatmap 36 px ; lignes de rail 32 px ; lignes de tableau 36 à 44 px.
 
-Responsive : le seuil est 768 px (`md`). Sous ce seuil, le rail devient un panneau latéral gauche de 288 px derrière un bouton « Ouvrir le sommaire » dans une ligne de chapitre de 40 px ; l'espace d'évaluation supprime cette ligne, empile les colonnes de réponse, réserve un pied « Précédente / 1/3 / Suivante » et accepte le balayage ; les tableaux larges passent dans `ScrollX` (ombres de bord en filet et indication textuelle 11 px) et masquent leurs colonnes secondaires (`hidden md:table-cell`) ; les champs passent à 14 px pour éviter le zoom iOS. Impression : fond blanc, texte noir 12 px, éléments `.no-print` retirés.
+Responsive : le seuil est 768 px (`md`). Sous ce seuil, la barre latérale disparaît au profit d'une barre de 44 px sur `rail` (bouton menu `ghost`, nom de l'organisation ou numéro + libellé du chapitre courant), et le sommaire s'ouvre dans un panneau gauche de 288 px ; l'espace d'évaluation supprime cette barre, met la file dans un panneau de 88 vw, empile les colonnes de réponse avec un pied « Précédente / 1/3 / Suivante » et le balayage ; les cartes de consultation passent en une colonne ; les tableaux larges passent dans `ScrollX` (fondu de bord de 12 px du fond vers transparent, filet, indice 11 px) et masquent leurs colonnes secondaires (`hidden md:table-cell`). Le mode « Présenter » de la décision (`presentation` variant) donne à chaque article la hauteur de l'écran, 40 px de padding vertical, titres 28 px et texte 16–18 px. Impression : fond blanc, texte noir 12 px, éléments `.no-print` retirés.
 
 ## Elevation & Depth
 
-Le système est plat. La profondeur vient de trois moyens : les filets de 1 px (`filet`), le second plan légèrement grisé pour les zones de navigation et de commande (rail, file, pieds de colonne, en-têtes collants), et le lavis bleu pour la sélection. Aucune surface de page ne porte d'ombre, aucun dégradé décoratif n'existe (le seul dégradé est le fondu de bord de `ScrollX`, du papier vers transparent sur 12 px).
+Le système est tonal, avec une ombre minimale. Trois plans : le fond gris, les zones de commande sur `rail` (à peine plus claires que le fond en thème clair, confondues avec lui en sombre), et les panneaux blancs qui s'en détachent par leur filet et une ombre d'un pixel. La sélection est un lavis, jamais une ombre. Aucun dégradé décoratif n'existe : le seul dégradé est le fondu de bord de `ScrollX`.
 
 ### Shadow Vocabulary
-- **Overlay** (`box-shadow: 0 12px 32px -12px hsl(222 30% 10% / 0.28)`, sombre : `0 12px 32px -12px hsl(0 0% 0% / 0.6)`) : réservée aux surfaces flottantes qui quittent le plan du dossier : dialogues, panneaux latéraux, popovers, menus, listes déroulantes. Les dialogues et panneaux ajoutent un voile `black/80` derrière eux.
+- **Panneau** (`box-shadow: 0 1px 2px hsl(240 10% 10% / 0.04)`, sombre : `none`) : la seule ombre au repos, portée par `.panel` et par lui seul ; en thème sombre elle disparaît, le filet suffit.
+- **Overlay** (`box-shadow: 0 12px 32px -12px hsl(240 20% 10% / 0.25)`, sombre : `0 12px 32px -12px hsl(0 0% 0% / 0.6)`) : ce qui quitte le plan de travail : dialogues, panneaux latéraux, popovers, cartes au survol, listes déroulantes. Dialogues et panneaux latéraux ajoutent un voile `black/80`.
 
 ### Named Rules
-**La règle du plan unique.** Une ombre signifie « hors du dossier ». Une carte, un tableau, un en-tête ou une ligne n'en porte jamais ; seule `shadow-overlay` existe, et seulement sur ce qui flotte.
+**La règle du pixel.** Un panneau porte une ombre d'un pixel et pas davantage ; une ligne, un bouton, un champ ou une cellule n'en portent aucune. Seul ce qui flotte prend `shadow-overlay`.
 
 ## Shapes
 
-Rayon de base de 4 px, décliné en trois pas : 0 px (`rounded-sm` : badges, squelettes, pistes de barres, pastilles de note, cellules de heatmap, avatar d'initiales), 2 px (`rounded-md` : boutons, champs, rail 0–5, cartes, menus ; les tampons fixent explicitement 2 px) et 4 px (`rounded-lg` : dialogues uniquement). Les formes sont donc carrées à l'œil ; rien n'est en pilule ni circulaire hormis l'indicateur de chargement.
+Rayon de base de 8 px (`--radius`), décliné en trois pas et une pilule : 8 px (`rounded-lg`) pour les panneaux, les dialogues et les grands squelettes ; 6 px (`rounded-md`) pour tout ce qui se clique ou se saisit (boutons, champs, éléments de rail et de file, rail 0–5, menus, popovers, filtre segmenté, carré d'initiales de l'organisation) ; 4 px (`rounded-sm`) pour les badges, les cellules de heatmap, les éléments de menu, la touche `⌘K`, les petits squelettes et la marque IA sous une cellule ; pilule (`rounded-full`) pour les pastilles d'état, les avatars, les points de phase et d'état, les barres de progression et les compteurs.
 
-Les bordures sont des filets de 1 px : `filet` pour séparer, `filet-saisie` pour ce qui se saisit ou se clique (champs, `outline`, rail 0–5), pointillé pour la zone de dépôt de fichier. La sélection est un filet gauche de 2 px en encre bleue ; l'onglet actif, un filet bas de 2 px en encre bleue. Les glyphes d'état du sommaire sont des carrés de 14 px à rayon 2 px : plein vert coché (terminé), ocre à moitié rempli (en cours), vide à bordure `filet-saisie` (à faire), chargeur bleu en rotation (en analyse).
+Les bordures sont des filets de 1 px : `filet` pour les panneaux et les séparateurs, `filet-saisie` pour ce qui se saisit (champs, `outline`, rail 0–5, filtre segmenté). La sélection dans un rail ou une file est un fond lavis sur un rectangle à coins 6 px, plus de filet gauche. L'onglet actif porte un filet bas de 2 px ardoise ; une cellule de heatmap survolée, un contour de 2 px ardoise ; la note d'une colonne, un soulignement fin décalé de 4 px. Les phases d'une consultation sont cinq points de 8 px (10 px pour la phase courante) reliés par des traits de 2 × 14 px.
 
 ## Components
 
 ### Buttons
-Caractère : discrets, à hauteur de ligne, un seul plein par écran.
-- **Shape :** coins à peine cassés (2 px) ; texte 13 px 500 pour `md`/`lg`, 12 px pour `sm`/`xs` ; icônes Lucide 16 px (14 px en `sm`/`xs`), à 60 % d'opacité dans les variantes `outline`, `ghost`, `secondary` et `dashed`.
-- **Primary :** fond encre bleue, texte papier, 36 px de haut, 12 px de padding horizontal (`lg` : 40 px / 16 px ; `sm` : 32 px / 10 px ; `xs` : 28 px / 8 px). Un seul par écran, à droite de l'en-tête de chapitre ou en pied de colonne (« Statuer », « Valider »).
-- **Hover / Focus :** survol à 90 % d'opacité du fond ; focus visible en anneau de 2 px encre bleue décalé de 2 px ; transition couleur/ombre 150 ms.
-- **Disabled / Loading :** 60 % d'opacité, pointeur inactif ; en chargement, l'icône est remplacée par un chargeur en rotation de même taille, le libellé reste.
-- **Outline :** fond papier, filet de saisie, texte bleu ; survol en lavis bleu. C'est la variante d'action secondaire (« Imprimer », « Présenter », « Réessayer »).
-- **Ghost :** sans fond ni bordure, texte bleu ; survol en lavis bleu. Actions de ligne et icônes de barre.
-- **Dim :** gris encre, passe à l'encre au survol ; liens textuels de faible poids.
-- **Link :** texte bleu sans padding ; les liens en ligne prennent un soulignement décalé de 2 px au survol.
-- **Destructive :** fond rouge brique, texte papier ; seulement dans une confirmation.
+Caractère : bas, sobres, un seul plein par écran, en encre.
+- **Shape :** coins 6 px ; texte 13 px 500 (`md`/`lg`), 12 px (`sm`/`xs`) ; icônes Lucide 16 px (14 px en `sm`/`xs`), à 60 % d'opacité dans `outline`, `ghost`, `secondary` et `dashed`.
+- **Primary :** fond encre `action`, texte blanc, 36 px de haut, 12 px de padding horizontal (`lg` : 40 / 16 ; `sm` : 32 / 10 ; `xs` : 28 / 8 ; `icon` : 36 × 36). « Nouvelle consultation » en haut à droite de l'accueil, « Valider » ou « Statuer » (28 px, 12 px) au pied d'une colonne de réponse.
+- **Hover / Focus :** survol à 90 % d'opacité du fond ; focus visible en anneau de 2 px ardoise décalé de 2 px ; transition couleur et ombre 150 ms.
+- **Disabled / Loading :** 60 % d'opacité, pointeur inactif ; en chargement, l'icône devient un chargeur en rotation, le libellé reste.
+- **Outline :** fond `fond`, filet de saisie, texte ardoise ; survol lavis. Actions secondaires (« Imprimer », « Présenter », « Réessayer », filtres).
+- **Ghost :** sans fond ni bordure, texte ardoise ; survol lavis. Boutons d'icône de barre et de colonne (gris quand `mode="icon"`).
+- **Dim :** gris, passe à l'encre au survol ; liens de faible poids.
+- **Link :** texte ardoise sans padding ; soulignement décalé de 4 px au survol.
+- **Destructive :** fond rouge brique, texte blanc ; seulement dans une confirmation.
 
-### Stamps (tampons d'état)
-- **Style :** `inline-flex`, 24 px de haut, 6 px de padding, coins 2 px, capitales 12 px 600 interlettrées ; couleur d'état pour le texte, bordure de la même teinte à 50 %, fond en lavis. `À évaluer` est gris, sans fond, bordure filet.
-- **State :** toujours glyphe + libellé ; en version courte, le libellé reste pour les lecteurs d'écran et l'abréviation (C, P, NC, R, —) s'affiche. Utilisé comme filtre, un tampon inactif passe à 50 % d'opacité. Les statuts de consultation (En cours, Terminée, Archivée) réutilisent les classes partiel / conforme / à évaluer.
+### Stamps (pastilles d'état)
+- **Style :** `inline-flex`, 22 px de haut, pilule, fond `second-plan`, 8 px de padding, point de 7 px à gauche (6 px d'écart), libellé 13 px → 12 px 500 en encre. Le point prend `conforme`, `partiel`, `non-conforme`, `roadmap` ou `a-evaluer` ; le fond et le texte ne changent pas.
+- **State :** toujours point + libellé (« Conforme », « Partiel », « Non conforme », « Roadmap », « À évaluer ») ; en version courte le libellé reste pour les lecteurs d'écran. En filtre, une pastille inactive passe à 50 % d'opacité. Les statuts de consultation (En cours, Terminée, Archivée) réutilisent partiel / conforme / à évaluer. Dans une colonne de réponse, la pastille est un déclencheur de menu.
 
 ### Badges
-- **Style :** coins 0 px, 12 px 600, 6 px de padding ; `default` = encre pleine sur papier, `secondary` = second plan, `outline` = filet. Réservés aux mentions courtes (OBLIGATOIRE), jamais à un état.
+- **Style :** coins 4 px, 12 px 600, 6 px / 2 px de padding ; `default` = encre pleine sur fond, `secondary` = second plan, `outline` = filet. Réservés aux mentions courtes (« Obligatoire » en pastille grise dans l'en-tête d'exigence ; « Oblig. » en 11 px 600 capitales dans la file), jamais à un état.
 
-### Cards / Containers
-- **Corner Style :** 2 px.
-- **Background :** papier ; l'en-tête et le pied sont séparés du corps par un filet.
-- **Shadow Strategy :** aucune (voir Elevation & Depth).
+### Panels (`.panel`)
+- **Corner Style :** 8 px.
+- **Background :** blanc `panneau` ; sur le fond gris.
+- **Shadow Strategy :** `shadow-panel` (voir Elevation & Depth) ; aucune en thème sombre.
 - **Border :** filet de 1 px.
-- **Internal Padding :** 20 px ; en-tête et pied de 56 px de haut minimum. Dans les écrans refondus, la carte est rare : un article séparé par des filets lui est préféré.
+- **Internal Padding :** 16 px (20 px horizontal à partir de 768 px) pour un article ; un panneau de liste n'a pas de padding et ses lignes portent 12 px / 16 px. L'ancien `Card` (`rounded-md`, 20 px, en-tête 56 px) survit dans les écrans hérités, jamais dans les écrans refondus.
 
 ### Inputs / Fields
-- **Style :** 36 px de haut (32 px en contexte dense), filet de saisie, fond papier, coins 2 px, 12 px de padding horizontal, texte 13 px (14 px sous 768 px), placeholder gris encre. Zone de texte : 60 px minimum, 8 px de padding vertical.
-- **Focus :** bordure encre bleue + anneau de 2 px encre bleue à 25 %, transition 150 ms.
+- **Style :** 36 px de haut (32 px en contexte dense : recherche de la file, sélecteurs de filtre), filet de saisie, fond `fond`, coins 6 px, 12 px de padding horizontal, texte 13 px, placeholder gris. Zone de texte : 60 px minimum (56 px dans une colonne), 8 px de padding vertical.
+- **Focus :** bordure ardoise + anneau de 2 px ardoise à 25 %, transition 150 ms.
 - **Error / Disabled :** `aria-invalid` passe la bordure en rouge brique ; désactivé à 60 % d'opacité, curseur interdit.
-- **Select :** même gabarit, focus en anneau de 1 px ; liste déroulante sur fond popover avec ombre overlay, option survolée en lavis bleu.
+- **Search ⌘K :** bouton de 32 px, fond `panneau`, filet de saisie, 260 px maximum, loupe 14 px, touche `⌘K` en mono 11 px dans un cadre 4 px ; la bordure passe à l'ardoise au survol ; ouvre un dialogue `cmdk`.
+- **Select :** même gabarit ; liste déroulante sur `panneau` avec ombre overlay, option focalisée en lavis.
 
 ### Navigation
-- **Barre supérieure :** 48 px, fond papier, filet bas ; mot-symbole 13 px 700 ; fil d'Ariane 13 px avec chevrons 14 px gris encre ; sélecteurs de consultation et de version en `outline` ; bascule de thème et menu utilisateur (initiales dans un carré 24 px second plan) en `ghost`.
-- **Sommaire (rail) :** 240 px, fond second plan à 60 %, titre 13 px 600 sur deux lignes maximum avec statut 12 px gris dessous. Chaque chapitre : numéro `article-no` aligné à droite sur 16 px, libellé 13 px 500, chiffre court 12 px gris, glyphe d'état 14 px. Repos : filet gauche transparent ; survol : lavis bleu 60 % ; actif : filet gauche 2 px encre bleue + lavis bleu + texte bleu (`aria-current="page"`). Sous-entrées rentrées à 36 px, gris encre, actives en encre avec filet gauche bleu. Transition 150 ms.
-- **Onglets :** liste à filet bas, déclencheurs 36 px, texte 13 px 500 gris encre, actif en encre avec filet bas de 2 px bleu ; les compteurs sont en 12 px gris tabulaire. Même dessin pour les filtres de l'accueil et de la file de travail.
-- **Bande d'analyse :** 32 px, fond lavis bleu, texte bleu ; chargeur 14 px, compteur tabulaire, estimation en gris, lien « Suivre » souligné à droite, barre de progression de 2 px encre bleue au bord bas (transition de largeur 500 ms). En échec : fond lavis rouge, bordure rouge à 40 %, texte rouge.
-- **Mobile :** ligne de chapitre de 40 px (bouton menu `ghost` + numéro + libellé courant) ; sommaire dans un panneau gauche de 288 px.
+- **Barre latérale d'organisation :** 232 px, fond `rail`, 10 px de padding ; entrées de 32 px à coins 6 px, texte 13 px gris, icône 16 px ; survol lavis 60 % + encre ; active lavis + 500 + encre (`aria-current="page"`). Transition 150 ms.
+- **Sommaire de consultation :** même dessin ; un chapitre actif ou dont une sous-entrée est active prend le lavis ; les sous-entrées (28 px, rentrées de 32 px) n'ont pas de fond, seulement 500 + encre. Le point d'état : vert plein (terminé), ocre plein (en cours), vide à bordure de saisie 1,5 px (à faire), chargeur ardoise 14 px (en analyse), toujours doublé d'un libellé `sr-only`. Replié à 56 px : carrés de 36 px, numéro mono, point de 6 px, infobulle.
+- **Barre mobile :** 44 px, fond `rail`, filet bas, bouton menu `ghost` 16 px, titre 13 px 500 ; sommaire dans un panneau de 288 px.
+- **Onglets :** liste de 36 px à filet bas, déclencheurs 13 px 500 gris, actif en encre avec filet bas de 2 px ardoise ; compteurs en 12 px mono gris. Même dessin pour les onglets de la file (600 quand actif).
+- **Filtre segmenté :** groupe `role="tablist"` dans un cadre de saisie à coins 6 px, segments 12 px de 10 px / 4 px, actif sur `second-plan` en 500, compteur mono gris.
+- **Bande d'analyse :** 32 px, fond lavis, texte ardoise 13 px ; chargeur 14 px, compteur tabulaire, estimation grise, lien « Suivre » souligné à droite, barre de progression de 2 px ardoise au bord bas (largeur en 500 ms). En échec : fond lavis rouge, bordure rouge à 40 %, texte rouge.
+
+### File de travail (signature)
+Fond `rail`, 300 px. Onglets en tête (À faire / Faites / Toutes avec compteurs), recherche 32 px avec bouton de filtres (primaire quand des filtres sont actifs, avec compteur). Groupes par domaine à en-tête collant sur `rail` (code mono, titre 12 px 500, compteur mono à droite). Lignes : coins 6 px, 6 px / 10 px de padding, code mono sur 56 px, titre 13 px / 18 px sur deux lignes, sous-ligne 11 px (« Oblig. », compteur `1/6` en vert quand tout est fait, icônes de signal 12 px ardoise) ; survol lavis 50 %, sélection lavis plein. Repliée à 44 px : bouton `outline` 32 px, compteur « à faire » en pilule lavis 24 px, libellé vertical 11 px.
+
+### Colonne de réponse (signature)
+Un panneau par fournisseur. En-tête (10 px / 14 px, filet bas) : nom 13 px 600, note mono 16 px 600 soulignée d'un filet (ardoise au survol) avec `/5` en 12 px gris, pastille d'état à menu. La carte de renvoi au survol de la note (256 px, ombre overlay, 12 px) montre le document, la page et l'extrait entre guillemets français, puis « Cliquer pour ouvrir à la page ». Corps (12 px / 14 px, sections à 14 px d'écart) : libellé « Réponse » 12 px 600 gris avec boutons d'icône 28 px, texte 13 px / 19 px tronqué à 8 lignes (12 quand la file est repliée) sur une hauteur réservée pour que « Analyse IA » commence à la même hauteur dans toutes les colonnes, « Lire la suite » 12 px ; preuves en liste 12 px ardoise (signet 12 px, « Document · p. N », extrait gris) ; « Analyse IA · 4,0/5 » puis texte tronqué à 5 lignes. Pied sur `rail` (filet haut, 10 px / 14 px) : rail 0–5 et « IA 4,0 » ; seconde ligne de 32 px avec « Valider » (encre, 28 px) ou « Évaluée » en vert avec retour ; à droite les signaux : bouton discussions 28 px avec compteur en pilule 18 px (ardoise, rouge si bloquante), commentaire et question 28 × 28 px marqués d'un point ardoise de 6 px quand renseignés, fond lavis 60 % au survol ; les zones de saisie (56 px) se déploient dessous.
 
 ### Rail de notation 0–5 (signature)
-Le geste unique de l'expert. Un groupe `role="group"` « Note sur 5 » : six cellules contiguës de 32 × 34 px (28 × 28 px en `sm`) dans un cadre à filet de saisie, séparées par des filets, chiffres 13 px 600 tabulaires. Repos : papier ; survol : lavis 60 % ; note manuelle : encre bleue pleine, chiffre papier (`aria-pressed`) ; note IA non confirmée : lavis bleu, chiffre bleu ; proposition IA sur une autre cellule : trait de 2 px encre bleue à 60 % au bas de la cellule. À droite, une cellule « ½ » de même gabarit (active en lavis), puis, quand la note est manuelle, un lien 12 px « IA 4,0 » ou « Effacer » qui revient à la proposition. Désactivé : 60 % d'opacité. Le statut se déduit de la note et se lit dans le tampon d'en-tête, modifiable par un menu.
+Un groupe « Note sur 5 » : six cellules contiguës de 32 × 34 px (28 × 28 px en `sm`) dans un cadre de saisie à coins 6 px, séparées par des filets de saisie, chiffres 13 px 600 tabulaires. Repos : fond `fond` ; survol : lavis 60 % ; note manuelle : ardoise pleine, chiffre blanc (`aria-pressed`) ; note IA non confirmée : lavis, chiffre ardoise ; proposition IA sur une autre cellule : trait de 2 px ardoise à 60 % au bas de la cellule. À droite, une cellule « ½ » de même gabarit (lavis quand active, gris sinon), puis, quand la note est manuelle, un lien 12 px « IA 4,0 » ou « Effacer » qui revient à la proposition. Désactivé : 60 % d'opacité. Le statut se déduit de la note (`lib/scoring.ts`) et se lit dans la pastille d'en-tête.
 
-### Renvoi (signature)
-Tout score est un lien vers sa preuve. En tête de colonne, la note (16 px 600 tabulaire) est soulignée en filet fin décalé de 4 px ; le soulignement passe en encre bleue au survol, une carte au survol (288 px, 12 px, ombre overlay) montre le document, la page et l'extrait entre guillemets français, puis « Cliquer pour ouvrir à la page ». Dans la décision, une cellule de heatmap survolée ou focalisée prend un contour de 2 px encre bleue (transition 150 ms) ; le clic ouvre le panneau de renvois dont l'en-tête est le fil « Renvois » (12 px gris, chevrons 12 px, numéros d'article, dernier maillon en encre) ; les lignes du panneau se survolent en lavis 40 %, les titres d'exigence sont bleus et se soulignent ; les preuves sont des liens « Document · p. 12 » avec l'extrait en gris dessous.
+### Heatmap et renvoi (signature)
+Tableau 4.2 : première colonne collante sur `panneau` (code mono, titre 13 px, « n exig. » 11 px gris), poids, une cellule par fournisseur : bouton de 36 px à coins 4 px, 2 px d'écart, 13 px 600 tabulaire sur l'échelle 0 → 5, sous-compte `11/12` en 11 px à 80 % ; survol ou focus : contour de 2 px ardoise (150 ms). Le clic ouvre le panneau de renvois (576 px) dont l'en-tête est le fil fournisseur › domaine › exigence ; les lignes se survolent en lavis 40 %, les codes sont en mono, les preuves sont des liens « Document · p. 12 » avec l'extrait gris dessous.
 
-### Tableaux du dossier
-En-tête de colonnes 12 px capitales 600 gris encre ; lignes séparées par un filet, padding vertical 8–10 px ; survol de ligne en lavis 40 % (150 ms) quand la ligne est cliquable ; la première colonne porte le numéro d'article ; les nombres sont alignés à droite ; une barre de progression est une piste second plan de 6–8 px, coins 0 px, remplie d'encre bleue ; les répartitions de statut sont une barre segmentée de 128 × 8 px avec légende textuelle. Un tableau plus large que l'écran est enveloppé dans `ScrollX`.
+### Accueil (signature)
+Panneau « Aujourd'hui » : lignes de 44 px (icône 16 px ardoise, phrase 13 px avec chiffres mono en 600, chevron gris ou barre de progression 140 × 6 px). Cartes de consultation : panneau en trois colonnes (`1.7fr / 1fr / 170px`, 16–20 px de padding) : titre 15 px 600 avec pastille de statut, cinq points de phase, méta 12 px avec icônes 14 px ; progression par fournisseur (nom sur 76 px, barre 110 × 6 px, pourcentage mono) ; avatars empilés (−6 px, bordure 2 px `panneau`) et dernière activité 11 px ; corbeille `ghost` révélée au survol. Panneau « Activité récente » : lignes 12 px avec avatar 22 px, nom 600, chiffre mono, date à droite.
 
 ### États de page (`PageState`)
-Un seul dessin pour vide, chargement et erreur : bloc de 448 px maximum, aligné à gauche, 64 px de padding vertical, icône 20 px (chargeur bleu en rotation, triangle rouge, boîte grise), titre 14 px 600, description 13 px gris, une action. Les squelettes sont des rectangles second plan à coins 0 px en pulsation. Les vides de tableau sont une phrase grise dans la première cellule ; les vides de zone, une phrase 13 px gris en italique.
+Un seul dessin pour vide, chargement et erreur : bloc de 448 px maximum, aligné à gauche, 24 px / 64 px de padding, icône 20 px (chargeur ardoise en rotation, triangle rouge, boîte grise), titre 13 px 600, description 13 px gris, une action. Les squelettes sont des rectangles `second-plan` en pulsation (coins 4 px, 8 px pour un panneau). Un panneau vide est une phrase 13 px grise de 16 px / 32 px de padding.
 
 ### Surfaces flottantes
-Dialogue : papier, filet, coins 4 px, 24 px de padding, ombre overlay, 512 px maximum, entrée fondu + zoom 95 % sur 200 ms. Panneau latéral (`Sheet`) : papier, filet, ombre overlay, glisse depuis le bord (ouverture 500 ms, fermeture 300 ms), 384 px maximum (576 px pour le panneau de renvois). Popover 288 px et menus : fond popover, filet, coins 2 px, ombre overlay, éléments 13 px de 30 px de haut survolés en lavis bleu.
+Dialogue : fond `fond`, filet, coins 8 px, 24 px de padding, ombre overlay, 512 px maximum, entrée fondu + zoom 95 % sur 200 ms, voile `black/80`. Panneau latéral (`Sheet`) : fond `fond`, filet, ombre overlay, glisse depuis le bord en 200 ms, se ferme en 150 ms, 384 px maximum (576 px pour le panneau de renvois, 288 px pour le sommaire mobile). Popover 288 px et carte au survol 256 px : fond `panneau`, filet, coins 6 px, 16 px de padding, ombre overlay, fondu + zoom. Menus et listes : fond `panneau`, filet, coins 6 px, 4 px de padding, éléments 13 px de 30 px de haut à coins 4 px focalisés en lavis. Palette ⌘K : dialogue sans padding, champ de 44 px, groupes titrés en 12 px 500 gris.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** commencer tout titre de chapitre, d'article ou d'exigence par son numéro en `article-no` (12 px 600 gris encre), séparé du titre par 8 px.
-- **Do** séparer les blocs par un filet de 1 px `filet` ; un article est une `<section>` fermée par un filet, pas une carte.
-- **Do** réserver l'encre bleue pleine à l'unique bouton primaire, à la note manuelle, au filet de sélection de 2 px et aux barres de progression ; utiliser le lavis bleu pour la sélection et le survol.
-- **Do** accompagner toute couleur d'état d'un glyphe et d'un libellé (tampon `.stamp`) ; lire les notes sur l'échelle bleue 0 → 5, jamais en rouge/vert.
-- **Do** écrire tout nombre en chiffres tabulaires et au format français via `lib/format.ts` (`4,0`, `52 %`, `27 févr. 2026`, `—` pour l'absence).
-- **Do** limiter le mouvement à 150 ms de transition de couleur ou de bordure sur changement d'état, et à la rotation du chargeur ; honorer `prefers-reduced-motion`.
+- **Do** poser tout contenu dans un `.panel` (blanc, coins 8 px, filet, ombre d'un pixel) sur le fond gris ; un article est un panneau titré par son numéro, pas une suite de filets pleine largeur.
+- **Do** commencer tout chapitre, article, domaine ou exigence par son numéro ou son code en `article-no` (mono 12 px 500 gris), séparé du titre par 8 px.
+- **Do** réserver l'ardoise à la sélection (lavis), à la progression, à la note manuelle et aux liens de preuve ; le bouton d'action primaire est en encre `action`, un seul par écran.
+- **Do** signifier un état par une pastille `.stamp` grise à point coloré et libellé, ou par un point de 8 px doublé d'un libellé ; lire les notes sur l'échelle 0 → 5.
+- **Do** écrire tout nombre en Geist Mono tabulaire (`.num`) et au format français via `lib/format.ts` (`4,0`, `52 %`, `11 sept., 12:26`, `—` pour l'absence).
+- **Do** écrire les en-têtes de colonnes en 12 px 500 gris et en casse normale.
+- **Do** limiter le mouvement à 150 ms de couleur ou de bordure sur changement d'état, 150 ms de largeur pour un rail qui se replie, 150 à 200 ms pour ce qui flotte, 500 ms pour une barre de progression ; honorer `prefers-reduced-motion`.
+- **Do** rendre les rails repliables (sommaire 56 px, file 44 px) au clavier et mémoriser l'état ; réserver la hauteur du texte de réponse pour que les colonnes s'alignent.
 - **Do** rendre chaque état vide, en chargement ou en erreur par `PageState` ou par une phrase grise à sa place ; une seule action par état.
 - **Do** utiliser le vocabulaire métier (consultation, exigence, domaine, fournisseur, pondération, soutenance, référentiel, livrable) dans un ton neutre, sans point d'exclamation.
 
 ### Don't:
-- **Don't** introduire une deuxième couleur d'action, un dégradé, ou une ombre sur une surface de page ; `shadow-overlay` n'existe que pour ce qui flotte.
-- **Don't** dépasser 4 px de rayon ; pas de pilule, pas de cercle hors chargeur.
-- **Don't** composer un chapitre en grille de cartes KPI ni en barre d'onglets multiple ; le sommaire de gauche est la seule navigation de chapitre.
-- **Don't** utiliser une valeur de couleur brute (`slate-*`, hex) dans un écran refondu ; toute couleur passe par les variables de `styles/globals.css`.
-- **Don't** ajouter une séquence d'entrée, un effet de survol par translation ou une animation décorative.
+- **Don't** colorer le fond ou le texte d'une pastille avec une couleur d'état ; seule sa pointe est colorée.
+- **Don't** introduire une deuxième couleur d'accent, un bouton d'action bleu, un dégradé, ou une ombre au-delà de `shadow-panel` sur une surface au repos ; `shadow-overlay` n'existe que pour ce qui flotte.
+- **Don't** dépasser 8 px de rayon hors pilules (pastilles, avatars, points, barres de progression, compteurs).
+- **Don't** écrire un en-tête de tableau ou un libellé en capitales espacées ; ni revenir aux tampons carrés ou à Source Sans 3.
+- **Don't** réintroduire une barre supérieure ou une barre d'onglets de chapitres ; la barre latérale de 232 px est la seule navigation.
+- **Don't** utiliser une valeur de couleur brute (`slate-*`, `gray-*`, `zinc-*`, hex) dans un écran refondu ; toute couleur passe par les variables de `styles/globals.css`.
+- **Don't** ajouter une séquence d'entrée, un survol par translation ou une animation décorative.
 - **Don't** montrer un score sans son renvoi : un score est un lien vers l'extrait cité et le document à la page.
+- **Don't** appliquer ce système aux écrans hérités hébergés sous le shell (grille financière, vue arborescente, documents, onglets de paramètres : `WeightsTab`, `AnalystsTab`, `SettingsTab`, `VersionsTab`, `SuppliersTab`, `RequirementsTab`, `ExportTab`) : ils gardent leur style d'origine (D-06, D-14) jusqu'à leur refonte.

@@ -291,10 +291,10 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
           <table className="w-full min-w-[560px] border-collapse text-sm presentation:text-lg">
             <thead>
               <tr>
-                <th className="sticky left-0 z-10 bg-card py-2 pr-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground presentation:text-sm">Domaine</th>
-                <th className="py-2 pr-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground presentation:text-sm">Poids</th>
+                <th className="sticky left-0 z-10 bg-card py-2 pr-3 text-left text-xs font-medium text-muted-foreground presentation:text-sm">Domaine</th>
+                <th className="py-2 pr-3 text-right text-xs font-medium text-muted-foreground presentation:text-sm">Poids</th>
                 {suppliers.map((s) => (
-                  <th key={s.id} className="min-w-[88px] py-2 px-1 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground presentation:text-sm">
+                  <th key={s.id} className="min-w-[88px] py-2 px-1 text-center text-xs font-medium text-muted-foreground presentation:text-sm">
                     <span className="line-clamp-2">{s.name}</span>
                   </th>
                 ))}

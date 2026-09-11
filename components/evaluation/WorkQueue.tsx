@@ -92,7 +92,7 @@ export function WorkQueue({
         <span className="num inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-accent px-1.5 text-xs font-semibold text-accent-foreground" title={`${counts.todo} exigences à faire`}>
           {counts.todo}
         </span>
-        <span className="text-2xs uppercase tracking-wide text-muted-foreground [writing-mode:vertical-rl] rotate-180">
+        <span className="text-2xs font-medium text-muted-foreground [writing-mode:vertical-rl] rotate-180">
           {label} · {tab === "todo" ? counts.todo : tab === "done" ? counts.done : counts.all} sur {counts.all}
         </span>
       </div>
@@ -320,7 +320,7 @@ export function WorkQueue({
                     <span className="min-w-0 flex-1">
                       <span className="line-clamp-2 text-sm leading-[18px] text-foreground">{it.title}</span>
                       <span className="mt-0.5 flex items-center gap-2 text-2xs text-muted-foreground">
-                        {it.isMandatory && <span className="font-semibold uppercase">Oblig.</span>}
+                        {it.isMandatory && <span className="font-medium">Obligatoire</span>}
                         {review && review !== "draft" && <span>{REVIEW_LABEL[review]}</span>}
                         {openThreadIds.has(it.id) && <MessageSquare className="h-3 w-3 text-primary" aria-label="Discussion ouverte" />}
                         {it.hasComment && <StickyNote className="h-3 w-3 text-primary" aria-label="Commentaire" />}
