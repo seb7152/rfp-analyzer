@@ -44,7 +44,7 @@ Le brief interdit tout changement de schéma, de contrat d'API ou d'auth. Les po
 - `Sidebar.tsx` / `EvaluationFilters.tsx` (ancienne évaluation, plus montés) : quatre filtres n'étaient jamais appliqués.
 - `POST /api/rfps/[rfpId]/analyze` : ignore le corps de la requête (prompt et périmètre perdus) ; la refonte passe par l'edge function.
 - `analyze/callback` : la vérification du jeton Bearer est commentée.
-- `app/dashboard/rfp/[rfpId]/documents/page.tsx` : redirige vers `/auth/login` (route inexistante, la vraie est `/login`).
+- `app/dashboard/rfp/[rfpId]/documents/page.tsx` : redirigeait vers `/auth/login` (route inexistante) ; corrigé vers `/login` (point d'entrée du parcours 1).
 - `SuppliersTab` : deux lectures identiques des fournisseurs, logique dupliquée.
 - `npm test` et `npm run lint` (CLAUDE.md) : aucun script `test`, ESLint non configuré (`next lint` demande une configuration interactive).
 - Sécurité (advisor Supabase) : RLS désactivée sur `organizations`, `requirements`, `categories`, `defense_analyses`, `presentation_analyses`. À traiter avec des politiques avant activation.
@@ -66,4 +66,27 @@ Les tests d'évaluation modifient une réponse puis la remettent dans son état 
 
 ## 4. Résultats de tests
 
-_(complété en fin de session, voir ci-dessous)_
+Session du 2026-09-11, branche `refonte-ui`, base Supabase réelle (org « Test & recette »), serveur `next dev` local.
+
+| Vérification | Résultat |
+|---|---|
+| `npx tsc --noEmit` | 0 erreur |
+| `npm run build` | succès (exit 0) |
+| `npm run lint` | non exécutable : ESLint n'est pas configuré dans le dépôt (état antérieur, inchangé) |
+| `npm test` | aucun script `test` dans le dépôt (état antérieur, inchangé) |
+| `npx playwright test` (setup + desktop 1440×900 + mobile iPhone 13) | **15/15 verts** : parcours 1 (2 tests × 2), parcours 2 (3 tests × 2, dont hors ligne → file → rejeu), parcours 3 (1 test × 2) |
+| Détecteur `impeccable detect` sur les cibles refondues | 0 signalement |
+| Vérification fonctionnelle indépendante (agent Sonnet, contexte neuf) | 17 contrôles supplémentaires verts sur les trois personas, redirections d'anciens liens vérifiées ; un avertissement React de clé dans `SuppliersTab` corrigé |
+| Revue des captures (agent Sonnet, contexte neuf, liste anti-gabarit) | aucune violation de la liste sur les écrans refondus ; défilement horizontal mobile sans affordance (corrigé : `ScrollX`, colonnes masquées sous 768 px), double croix du panneau de renvois (corrigé), popover de filtres trop haut sur mobile (corrigé) ; chaîne anglaise et cartes KPI relevées sur `/parametres` et `/referentiel` (composants hérités, hors périmètre, listés en D-14) |
+
+Performance mesurée en mode développement (non représentatif de la production), desktop, LCP via `PerformanceObserver` :
+
+| Écran | LCP | Titre visible |
+|---|---|---|
+| `/preparation` (pilote) | 0,86 s | 1,08 s |
+| `/evaluate` (expert) | 1,1 s (1,1–2,0 s selon les runs) | 1,14 s |
+| `/decision` (sponsor) | 1,12 s | 1,6 s |
+
+Interactions : la note s'écrit en une requête PUT (optimiste, < 200 ms perçus) ; l'exigence suivante est préchargée. Charge 200 × 10 : la file de travail lit les réponses sans leurs textes (`fields=light`, paginé serveur) ; les colonnes d'une exigence ne chargent que ses réponses.
+
+Bugs relevés par la vérification et non traités (hors périmètre) : valeurs flottantes non arrondies dans les champs de pondération de `WeightsTab` (`45.039999999999999`) ; note fournisseur affichée sur 20 dans `SuppliersTab` alors que le produit note sur 5 ailleurs.
