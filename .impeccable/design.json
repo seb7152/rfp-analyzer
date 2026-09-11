@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-11T00:00:00Z",
+  "title": "Design System: RFP Analyzer",
+  "extensions": {
+    "colorMeta": {
+      "encre-bleue": {
+        "role": "primary",
+        "displayName": "Encre bleue",
+        "canonical": "hsl(216 62% 36%)",
+        "dark": "hsl(214 72% 74%)",
+        "tonalRamp": ["hsl(216 62% 15%)", "hsl(216 62% 25%)", "hsl(216 62% 36%)", "hsl(216 62% 46%)", "hsl(216 62% 58%)", "hsl(216 62% 70%)", "hsl(216 62% 82%)", "hsl(216 55% 94%)"]
+      },
+      "encre-bleue-texte": {
+        "role": "primary",
+        "displayName": "Encre bleue texte",
+        "canonical": "hsl(216 62% 30%)",
+        "dark": "hsl(214 70% 80%)",
+        "tonalRamp": ["hsl(216 62% 15%)", "hsl(216 62% 22%)", "hsl(216 62% 30%)", "hsl(216 62% 42%)", "hsl(216 62% 54%)", "hsl(216 62% 68%)", "hsl(216 62% 82%)", "hsl(216 55% 94%)"]
+      },
+      "lavis-bleu": {
+        "role": "primary",
+        "displayName": "Lavis bleu",
+        "canonical": "hsl(216 55% 94%)",
+        "dark": "hsl(216 30% 20%)",
+        "tonalRamp": ["hsl(216 55% 15%)", "hsl(216 55% 28%)", "hsl(216 55% 40%)", "hsl(216 55% 55%)", "hsl(216 55% 70%)", "hsl(216 55% 82%)", "hsl(216 55% 90%)", "hsl(216 55% 96%)"]
+      },
+      "echelle-0": { "role": "secondary", "displayName": "Échelle 0", "canonical": "hsl(222 16% 95%)", "dark": "hsl(220 4% 14%)", "tonalRamp": ["hsl(222 16% 95%)", "hsl(224 45% 90%)", "hsl(224 48% 80%)", "hsl(224 50% 66%)", "hsl(224 54% 46%)", "hsl(224 58% 34%)"] },
+      "echelle-1": { "role": "secondary", "displayName": "Échelle 1", "canonical": "hsl(224 45% 90%)", "dark": "hsl(224 30% 22%)", "tonalRamp": ["hsl(222 16% 95%)", "hsl(224 45% 90%)", "hsl(224 48% 80%)", "hsl(224 50% 66%)", "hsl(224 54% 46%)", "hsl(224 58% 34%)"] },
+      "echelle-2": { "role": "secondary", "displayName": "Échelle 2", "canonical": "hsl(224 48% 80%)", "dark": "hsl(224 40% 32%)", "tonalRamp": ["hsl(222 16% 95%)", "hsl(224 45% 90%)", "hsl(224 48% 80%)", "hsl(224 50% 66%)", "hsl(224 54% 46%)", "hsl(224 58% 34%)"] },
+      "echelle-3": { "role": "secondary", "displayName": "Échelle 3", "canonical": "hsl(224 50% 66%)", "dark": "hsl(224 50% 44%)", "tonalRamp": ["hsl(222 16% 95%)", "hsl(224 45% 90%)", "hsl(224 48% 80%)", "hsl(224 50% 66%)", "hsl(224 54% 46%)", "hsl(224 58% 34%)"] },
+      "echelle-4": { "role": "secondary", "displayName": "Échelle 4", "canonical": "hsl(224 54% 46%)", "dark": "hsl(224 60% 58%)", "tonalRamp": ["hsl(222 16% 95%)", "hsl(224 45% 90%)", "hsl(224 48% 80%)", "hsl(224 50% 66%)", "hsl(224 54% 46%)", "hsl(224 58% 34%)"] },
+      "echelle-5": { "role": "secondary", "displayName": "Échelle 5", "canonical": "hsl(224 58% 34%)", "dark": "hsl(222 70% 74%)", "tonalRamp": ["hsl(222 16% 95%)", "hsl(224 45% 90%)", "hsl(224 48% 80%)", "hsl(224 50% 66%)", "hsl(224 54% 46%)", "hsl(224 58% 34%)"] },
+      "conforme": { "role": "tertiary", "displayName": "Conforme", "canonical": "hsl(152 52% 30%)", "dark": "hsl(152 45% 62%)", "soft": "hsl(152 40% 93%)", "softDark": "hsl(152 30% 16%)", "tonalRamp": ["hsl(152 52% 15%)", "hsl(152 52% 22%)", "hsl(152 52% 30%)", "hsl(152 52% 40%)", "hsl(152 52% 52%)", "hsl(152 45% 66%)", "hsl(152 40% 82%)", "hsl(152 40% 93%)"] },
+      "partiel": { "role": "tertiary", "displayName": "Partiel", "canonical": "hsl(34 78% 34%)", "dark": "hsl(38 75% 66%)", "soft": "hsl(38 70% 92%)", "softDark": "hsl(38 40% 16%)", "tonalRamp": ["hsl(34 78% 15%)", "hsl(34 78% 24%)", "hsl(34 78% 34%)", "hsl(34 78% 44%)", "hsl(36 78% 56%)", "hsl(38 75% 68%)", "hsl(38 70% 82%)", "hsl(38 70% 92%)"] },
+      "non-conforme": { "role": "tertiary", "displayName": "Non conforme", "canonical": "hsl(0 62% 42%)", "dark": "hsl(0 65% 68%)", "soft": "hsl(0 60% 95%)", "softDark": "hsl(0 35% 17%)", "tonalRamp": ["hsl(0 62% 15%)", "hsl(0 62% 28%)", "hsl(0 62% 42%)", "hsl(0 62% 52%)", "hsl(0 62% 62%)", "hsl(0 62% 74%)", "hsl(0 60% 86%)", "hsl(0 60% 95%)"] },
+      "roadmap": { "role": "tertiary", "displayName": "Roadmap", "canonical": "hsl(264 32% 42%)", "dark": "hsl(264 45% 74%)", "soft": "hsl(264 30% 94%)", "softDark": "hsl(264 25% 18%)", "tonalRamp": ["hsl(264 32% 15%)", "hsl(264 32% 28%)", "hsl(264 32% 42%)", "hsl(264 32% 52%)", "hsl(264 35% 62%)", "hsl(264 40% 74%)", "hsl(264 30% 86%)", "hsl(264 30% 94%)"] },
+      "a-evaluer": { "role": "tertiary", "displayName": "À évaluer", "canonical": "hsl(222 10% 46%)", "dark": "hsl(220 4% 62%)", "soft": "hsl(222 16% 94%)", "softDark": "hsl(220 4% 16%)", "tonalRamp": ["hsl(222 10% 15%)", "hsl(222 10% 25%)", "hsl(222 10% 35%)", "hsl(222 10% 46%)", "hsl(222 10% 58%)", "hsl(222 12% 70%)", "hsl(222 14% 84%)", "hsl(222 16% 94%)"] },
+      "papier": { "role": "neutral", "displayName": "Papier", "canonical": "hsl(40 20% 99%)", "dark": "hsl(220 4% 9%)", "tonalRamp": ["hsl(40 20% 15%)", "hsl(40 20% 30%)", "hsl(40 20% 45%)", "hsl(40 20% 60%)", "hsl(40 20% 75%)", "hsl(40 20% 88%)", "hsl(40 20% 95%)", "hsl(40 20% 99%)"] },
+      "encre": { "role": "neutral", "displayName": "Encre", "canonical": "hsl(222 22% 13%)", "dark": "hsl(220 6% 92%)", "tonalRamp": ["hsl(222 22% 13%)", "hsl(222 22% 22%)", "hsl(222 18% 32%)", "hsl(222 14% 44%)", "hsl(222 12% 58%)", "hsl(222 12% 72%)", "hsl(222 14% 86%)", "hsl(222 16% 95%)"] },
+      "encre-grise": { "role": "neutral", "displayName": "Encre grise", "canonical": "hsl(222 10% 40%)", "dark": "hsl(220 4% 66%)", "tonalRamp": ["hsl(222 10% 15%)", "hsl(222 10% 25%)", "hsl(222 10% 32%)", "hsl(222 10% 40%)", "hsl(222 10% 52%)", "hsl(222 10% 66%)", "hsl(222 12% 82%)", "hsl(222 16% 95%)"] },
+      "second-plan": { "role": "neutral", "displayName": "Second plan", "canonical": "hsl(222 16% 95%)", "dark": "hsl(220 4% 14%)", "tonalRamp": ["hsl(222 16% 15%)", "hsl(222 16% 28%)", "hsl(222 16% 42%)", "hsl(222 16% 56%)", "hsl(222 16% 70%)", "hsl(222 16% 82%)", "hsl(222 16% 90%)", "hsl(222 16% 95%)"] },
+      "filet": { "role": "neutral", "displayName": "Filet", "canonical": "hsl(222 14% 86%)", "dark": "hsl(220 4% 22%)", "tonalRamp": ["hsl(222 14% 15%)", "hsl(222 14% 28%)", "hsl(222 14% 42%)", "hsl(222 14% 56%)", "hsl(222 14% 70%)", "hsl(222 14% 80%)", "hsl(222 14% 86%)", "hsl(222 14% 95%)"] },
+      "filet-saisie": { "role": "neutral", "displayName": "Filet de saisie", "canonical": "hsl(222 14% 80%)", "dark": "hsl(220 4% 30%)", "tonalRamp": ["hsl(222 14% 15%)", "hsl(222 14% 28%)", "hsl(222 14% 42%)", "hsl(222 14% 56%)", "hsl(222 14% 70%)", "hsl(222 14% 80%)", "hsl(222 14% 86%)", "hsl(222 14% 95%)"] },
+      "blanc-popover": { "role": "neutral", "displayName": "Blanc popover", "canonical": "hsl(0 0% 100%)", "dark": "hsl(220 4% 12%)", "tonalRamp": ["hsl(0 0% 15%)", "hsl(0 0% 30%)", "hsl(0 0% 45%)", "hsl(0 0% 60%)", "hsl(0 0% 75%)", "hsl(0 0% 88%)", "hsl(0 0% 95%)", "hsl(0 0% 100%)"] },
+      "papier-charbon": { "role": "neutral", "displayName": "Papier charbon (thème sombre)", "canonical": "hsl(220 4% 9%)", "tonalRamp": ["hsl(220 4% 9%)", "hsl(220 4% 14%)", "hsl(220 4% 22%)", "hsl(220 4% 30%)", "hsl(220 4% 45%)", "hsl(220 4% 62%)", "hsl(220 4% 78%)", "hsl(220 6% 92%)"] },
+      "encre-claire": { "role": "neutral", "displayName": "Encre claire (thème sombre)", "canonical": "hsl(220 6% 92%)", "tonalRamp": ["hsl(220 4% 9%)", "hsl(220 4% 14%)", "hsl(220 4% 22%)", "hsl(220 4% 30%)", "hsl(220 4% 45%)", "hsl(220 4% 62%)", "hsl(220 4% 78%)", "hsl(220 6% 92%)"] },
+      "encre-bleue-sombre": { "role": "primary", "displayName": "Encre bleue (thème sombre)", "canonical": "hsl(214 72% 74%)", "tonalRamp": ["hsl(214 72% 15%)", "hsl(214 72% 25%)", "hsl(214 72% 36%)", "hsl(214 72% 48%)", "hsl(214 72% 60%)", "hsl(214 72% 74%)", "hsl(214 70% 84%)", "hsl(214 60% 94%)"] },
+      "filet-sombre": { "role": "neutral", "displayName": "Filet (thème sombre)", "canonical": "hsl(220 4% 22%)", "tonalRamp": ["hsl(220 4% 9%)", "hsl(220 4% 14%)", "hsl(220 4% 22%)", "hsl(220 4% 30%)", "hsl(220 4% 45%)", "hsl(220 4% 62%)", "hsl(220 4% 78%)", "hsl(220 6% 92%)"] }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Titre de chapitre", "purpose": "PageHeader : numéro d'article + titre, 18/24 semi-gras ; 28 px en mode Présenter." },
+      "title": { "displayName": "Titre d'article", "purpose": "Sections 4.1, 4.2, 4.3 de la décision et titres de PageState, 16/22 semi-gras." },
+      "figure": { "displayName": "Chiffre", "purpose": "Note finale dans le panneau de renvois (22 px) ; 16 px en tête de colonne d'évaluation. Tabulaire." },
+      "body": { "displayName": "Courant", "purpose": "Texte des écrans refondus : réponses, analyses IA, cellules, navigation. 13/18, 70 ch maximum pour les paragraphes." },
+      "label": { "displayName": "Libellé", "purpose": "En-têtes de colonnes et tampons : 12/16 semi-gras, capitales, interlettrage 0,025 em." },
+      "article-no": { "displayName": "Numéro d'article", "purpose": "Numéro de chapitre, d'article, code de domaine ou d'exigence : 12 px semi-gras gris encre, interlettrage 0,02 em, en tête de ligne." },
+      "meta": { "displayName": "Méta", "purpose": "Compteurs, sous-comptes de cellule, indices de défilement : 11/14." }
+    },
+    "shadows": [
+      { "name": "overlay", "value": "0 12px 32px -12px hsl(222 30% 10% / 0.28)", "dark": "0 12px 32px -12px hsl(0 0% 0% / 0.6)", "purpose": "Unique ombre du système ; réservée aux surfaces flottantes (dialogue, panneau latéral, popover, menu, liste déroulante)." }
+    ],
+    "motion": [
+      { "name": "state-transition", "value": "150ms", "properties": "color, background-color, border-color, outline", "purpose": "Tout changement d'état (survol, sélection, focus, filtre). Pas de séquence d'entrée sur les écrans." },
+      { "name": "progress-width", "value": "width 500ms", "purpose": "Barre de progression de la bande d'analyse IA." },
+      { "name": "spin", "value": "rotate 1s linear infinite", "purpose": "Chargeur Loader2 : seul mouvement continu autorisé." },
+      { "name": "overlay-enter", "value": "200ms fade + zoom 95%", "purpose": "Dialogues, popovers, menus (Radix / tailwindcss-animate)." },
+      { "name": "sheet-slide", "value": "open 500ms / close 300ms ease-in-out", "purpose": "Panneaux latéraux (sommaire mobile, panneau de renvois)." },
+      { "name": "reduced-motion", "value": "prefers-reduced-motion: reduce → durations 0.01ms, iteration 1, scroll-behavior auto", "purpose": "Honoré globalement dans styles/globals.css." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px", "purpose": "Seuil desktop/mobile : rail visible, colonnes secondaires de tableau, padding 24 px." },
+      { "name": "content-5xl", "value": "1024px", "purpose": "Plafond de la colonne de contenu : préparation, analyse, suivi." },
+      { "name": "content-6xl", "value": "1152px", "purpose": "Plafond de la colonne de contenu : accueil, décision, référentiel." }
+    ],
+    "browser": {
+      "selection": "background hsl(var(--accent)), color hsl(var(--accent-foreground))",
+      "caret": "hsl(var(--primary))",
+      "accentColor": "hsl(var(--primary))",
+      "focusVisible": "outline 2px solid hsl(var(--ring)), offset 2px",
+      "scrollbar": "thin, thumb hsl(var(--border)) 8px radius 4px, track transparent"
+    }
+  },
+  "components": [
+    {
+      "name": "Bouton primaire",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "L'unique action pleine d'un écran, à droite de l'en-tête de chapitre ou en pied de colonne.",
+      "html": "<button class=\"ds-btn-primary\">Ouvrir l'évaluation</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 500; line-height: 18px; color: hsl(var(--primary-foreground, 0 0% 100%)); background: hsl(var(--primary, 216 62% 36%)); border: none; border-radius: 2px; cursor: pointer; transition: color 150ms, background-color 150ms, box-shadow 150ms; } .ds-btn-primary:hover { background: hsl(var(--primary, 216 62% 36%) / 0.9); } .ds-btn-primary:focus-visible { outline: 2px solid hsl(var(--ring, 216 62% 36%)); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.6; pointer-events: none; }"
+    },
+    {
+      "name": "Bouton outline",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Action secondaire : filet de saisie, texte bleu, lavis au survol.",
+      "html": "<button class=\"ds-btn-outline\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"opacity:.6\"><polyline points=\"6 9 6 2 18 2 18 9\"/><path d=\"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2\"/><rect x=\"6\" y=\"14\" width=\"12\" height=\"8\"/></svg>Imprimer</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 500; line-height: 18px; color: hsl(var(--accent-foreground, 216 62% 30%)); background: hsl(var(--background, 40 20% 99%)); border: 1px solid hsl(var(--input, 222 14% 80%)); border-radius: 2px; cursor: pointer; transition: color 150ms, background-color 150ms; } .ds-btn-outline:hover { background: hsl(var(--accent, 216 55% 94%)); } .ds-btn-outline:focus-visible { outline: 2px solid hsl(var(--ring, 216 62% 36%)); outline-offset: 2px; } .ds-btn-outline:disabled { opacity: 0.6; pointer-events: none; }"
+    },
+    {
+      "name": "Bouton ghost",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Action de ligne ou d'icône : sans bordure, lavis bleu au survol.",
+      "html": "<button class=\"ds-btn-ghost\">Commenter</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 10px; font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; font-size: 12px; font-weight: 500; line-height: 16px; color: hsl(var(--accent-foreground, 216 62% 30%)); background: transparent; border: none; border-radius: 2px; cursor: pointer; transition: color 150ms, background-color 150ms; } .ds-btn-ghost:hover { background: hsl(var(--accent, 216 55% 94%)); } .ds-btn-ghost:focus-visible { outline: 2px solid hsl(var(--ring, 216 62% 36%)); outline-offset: 2px; } .ds-btn-ghost:disabled { opacity: 0.6; pointer-events: none; }"
+    },
+    {
+      "name": "Champ de saisie",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Champ texte : filet de saisie, fond papier, focus en bordure bleue + anneau 25 %.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Nom du fournisseur\" />",
+      "css": ".ds-input { display: flex; width: 100%; max-width: 280px; height: 36px; padding: 4px 12px; font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 18px; color: hsl(var(--foreground, 222 22% 13%)); background: hsl(var(--background, 40 20% 99%)); border: 1px solid hsl(var(--input, 222 14% 80%)); border-radius: 2px; transition: border-color 150ms, box-shadow 150ms; } .ds-input::placeholder { color: hsl(var(--muted-foreground, 222 10% 40%)); } .ds-input:focus-visible { outline: none; border-color: hsl(var(--ring, 216 62% 36%)); box-shadow: 0 0 0 2px hsl(var(--ring, 216 62% 36%) / 0.25); } .ds-input[aria-invalid=\"true\"] { border-color: hsl(var(--destructive, 0 62% 42%)); } .ds-input:disabled { opacity: 0.6; cursor: not-allowed; }"
+    },
+    {
+      "name": "Tampon d'état",
+      "kind": "chip",
+      "refersTo": "stamp-conforme",
+      "description": "Statut d'une réponse : carré 2 px, glyphe + libellé en capitales, teinte + lavis. Cinq variantes.",
+      "html": "<span class=\"ds-stamp ds-stamp-pass\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 6 9 17 4 12\"/></svg>Conforme</span> <span class=\"ds-stamp ds-stamp-partial\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><circle cx=\"12\" cy=\"12\" r=\"1\" fill=\"currentColor\"/></svg>Partiel</span> <span class=\"ds-stamp ds-stamp-fail\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\"><path d=\"M18 6 6 18M6 6l12 12\"/></svg>Non conforme</span> <span class=\"ds-stamp ds-stamp-roadmap\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14M12 5l7 7-7 7\"/></svg>Roadmap</span> <span class=\"ds-stamp ds-stamp-pending\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\"><path d=\"M5 12h14\"/></svg>À évaluer</span>",
+      "css": ".ds-stamp { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 6px; margin-right: 6px; font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; font-size: 12px; font-weight: 600; line-height: 16px; letter-spacing: 0.025em; text-transform: uppercase; border: 1px solid; border-radius: 2px; } .ds-stamp-pass { color: hsl(var(--status-pass, 152 52% 30%)); border-color: hsl(var(--status-pass, 152 52% 30%) / 0.5); background: hsl(var(--status-pass-soft, 152 40% 93%)); } .ds-stamp-partial { color: hsl(var(--status-partial, 34 78% 34%)); border-color: hsl(var(--status-partial, 34 78% 34%) / 0.5); background: hsl(var(--status-partial-soft, 38 70% 92%)); } .ds-stamp-fail { color: hsl(var(--status-fail, 0 62% 42%)); border-color: hsl(var(--status-fail, 0 62% 42%) / 0.5); background: hsl(var(--status-fail-soft, 0 60% 95%)); } .ds-stamp-roadmap { color: hsl(var(--status-roadmap, 264 32% 42%)); border-color: hsl(var(--status-roadmap, 264 32% 42%) / 0.5); background: hsl(var(--status-roadmap-soft, 264 30% 94%)); } .ds-stamp-pending { color: hsl(var(--status-pending, 222 10% 46%)); border-color: hsl(var(--border, 222 14% 86%)); background: transparent; }"
+    },
+    {
+      "name": "Sommaire de la consultation",
+      "kind": "nav",
+      "refersTo": "rail-item",
+      "description": "Le rail gauche de 240 px : chapitres numérotés, glyphe d'état, chiffre court ; actif = filet gauche 2 px encre bleue + lavis.",
+      "html": "<nav class=\"ds-rail\" aria-label=\"Sommaire de la consultation\"><div class=\"ds-rail-head\"><div class=\"ds-rail-title\">Support L1 Finance</div><div class=\"ds-rail-status\">En cours · version 3</div></div><ol class=\"ds-rail-list\"><li><a class=\"ds-rail-item\" href=\"#\"><span class=\"ds-article-no\">1</span><span class=\"ds-rail-label\">Préparation</span><span class=\"ds-rail-figure\">22 exig.</span><span class=\"ds-glyph ds-glyph-done\"><svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 6 9 17 4 12\"/></svg></span></a></li><li><a class=\"ds-rail-item\" href=\"#\"><span class=\"ds-article-no\">2</span><span class=\"ds-rail-label\">Analyse IA</span><span class=\"ds-rail-figure\">66/154</span><span class=\"ds-glyph ds-glyph-partial\"><span></span></span></a></li><li><a class=\"ds-rail-item ds-rail-item-active\" href=\"#\" aria-current=\"page\"><span class=\"ds-article-no\">3</span><span class=\"ds-rail-label\">Évaluation</span><span class=\"ds-rail-figure\">90 %</span><span class=\"ds-glyph ds-glyph-partial\"><span></span></span></a></li><li><a class=\"ds-rail-item\" href=\"#\"><span class=\"ds-article-no\">4</span><span class=\"ds-rail-label\">Décision</span><span class=\"ds-glyph ds-glyph-todo\"></span></a></li><li><a class=\"ds-rail-item\" href=\"#\"><span class=\"ds-article-no\">5</span><span class=\"ds-rail-label\">Restitution</span><span class=\"ds-glyph ds-glyph-todo\"></span></a></li><li class=\"ds-rail-sep\"><a class=\"ds-rail-item\" href=\"#\"><span class=\"ds-article-no\"></span><span class=\"ds-rail-label\">Paramètres</span></a></li></ol></nav>",
+      "css": ".ds-rail { width: 240px; font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 18px; color: hsl(var(--foreground, 222 22% 13%)); background: hsl(var(--secondary, 222 16% 95%) / 0.6); border-right: 1px solid hsl(var(--border, 222 14% 86%)); } .ds-rail-head { padding: 12px 16px; border-bottom: 1px solid hsl(var(--border, 222 14% 86%)); } .ds-rail-title { font-weight: 600; line-height: 20px; } .ds-rail-status { margin-top: 2px; font-size: 12px; line-height: 16px; color: hsl(var(--muted-foreground, 222 10% 40%)); } .ds-rail-list { list-style: none; margin: 0; padding: 8px 0; } .ds-rail-sep { margin-top: 8px; padding-top: 8px; border-top: 1px solid hsl(var(--border, 222 14% 86%)); } .ds-rail-item { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-left: 2px solid transparent; text-decoration: none; color: inherit; transition: color 150ms, background-color 150ms, border-color 150ms; } .ds-rail-item:hover { background: hsl(var(--accent, 216 55% 94%) / 0.6); } .ds-rail-item:focus-visible { outline: 2px solid hsl(var(--ring, 216 62% 36%)); outline-offset: -2px; } .ds-rail-item-active { border-left-color: hsl(var(--primary, 216 62% 36%)); background: hsl(var(--accent, 216 55% 94%)); color: hsl(var(--accent-foreground, 216 62% 30%)); } .ds-article-no { width: 16px; text-align: right; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; color: hsl(var(--muted-foreground, 222 10% 40%)); } .ds-rail-label { flex: 1; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-rail-figure { font-size: 12px; font-variant-numeric: tabular-nums; color: hsl(var(--muted-foreground, 222 10% 40%)); } .ds-glyph { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border: 1px solid; border-radius: 2px; overflow: hidden; } .ds-glyph-done { color: hsl(var(--background, 40 20% 99%)); background: hsl(var(--status-pass, 152 52% 30%)); border-color: hsl(var(--status-pass, 152 52% 30%)); } .ds-glyph-partial { border-color: hsl(var(--status-partial, 34 78% 34%)); justify-content: flex-start; } .ds-glyph-partial span { width: 50%; height: 100%; background: hsl(var(--status-partial, 34 78% 34%)); } .ds-glyph-todo { border-color: hsl(var(--input, 222 14% 80%)); }"
+    },
+    {
+      "name": "Rail de notation 0–5",
+      "kind": "custom",
+      "refersTo": "score-cell",
+      "description": "Le geste unique de l'expert : six cellules, note manuelle en encre pleine, proposition IA en trait bleu, cellule ½.",
+      "html": "<div class=\"ds-score\" role=\"group\" aria-label=\"Note sur 5\"><div class=\"ds-score-rail\"><button class=\"ds-score-cell\">0</button><button class=\"ds-score-cell\">1</button><button class=\"ds-score-cell\">2</button><button class=\"ds-score-cell ds-score-cell-ai\">3</button><button class=\"ds-score-cell ds-score-cell-manual\" aria-pressed=\"true\">4</button><button class=\"ds-score-cell\">5</button></div><button class=\"ds-score-half\" aria-label=\"Ajouter un demi-point\">½</button><button class=\"ds-score-reset\">IA 3,0</button></div>",
+      "css": ".ds-score { display: inline-flex; align-items: center; gap: 4px; font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; font-variant-numeric: tabular-nums; } .ds-score-rail { display: inline-flex; overflow: hidden; border: 1px solid hsl(var(--input, 222 14% 80%)); border-radius: 2px; } .ds-score-cell { position: relative; height: 32px; min-width: 34px; padding: 0; font: inherit; font-size: 13px; font-weight: 600; color: hsl(var(--foreground, 222 22% 13%)); background: hsl(var(--background, 40 20% 99%)); border: none; border-right: 1px solid hsl(var(--input, 222 14% 80%)); cursor: pointer; transition: color 150ms, background-color 150ms; } .ds-score-cell:last-child { border-right: none; } .ds-score-cell:hover { background: hsl(var(--accent, 216 55% 94%) / 0.6); } .ds-score-cell:focus-visible { outline: 2px solid hsl(var(--ring, 216 62% 36%)); outline-offset: -2px; } .ds-score-cell-manual, .ds-score-cell-manual:hover { color: hsl(var(--primary-foreground, 0 0% 100%)); background: hsl(var(--primary, 216 62% 36%)); } .ds-score-cell-ai::after { content: ''; position: absolute; left: 4px; right: 4px; bottom: 2px; height: 2px; background: hsl(var(--primary, 216 62% 36%) / 0.6); } .ds-score-half { height: 32px; padding: 0 6px; font: inherit; font-size: 13px; font-weight: 600; color: hsl(var(--muted-foreground, 222 10% 40%)); background: hsl(var(--background, 40 20% 99%)); border: 1px solid hsl(var(--input, 222 14% 80%)); border-radius: 2px; cursor: pointer; transition: color 150ms, background-color 150ms; } .ds-score-half:hover { background: hsl(var(--accent, 216 55% 94%) / 0.6); } .ds-score-half:disabled { opacity: 0.4; cursor: not-allowed; } .ds-score-reset { margin-left: 4px; padding: 0; font: inherit; font-size: 12px; color: hsl(var(--muted-foreground, 222 10% 40%)); background: none; border: none; cursor: pointer; text-underline-offset: 2px; } .ds-score-reset:hover { color: hsl(var(--foreground, 222 22% 13%)); text-decoration: underline; }"
+    },
+    {
+      "name": "Cellule de heatmap (échelle bleue)",
+      "kind": "custom",
+      "refersTo": "heatmap-cell",
+      "description": "Note d'un domaine pour un fournisseur sur l'échelle séquentielle 0 → 5 ; le survol dessine le contour de renvoi.",
+      "html": "<div class=\"ds-heat\"><button class=\"ds-heat-cell ds-scale-1\">1,0</button><button class=\"ds-heat-cell ds-scale-2\">2,5</button><button class=\"ds-heat-cell ds-scale-3\">3,0 <small>11/12</small></button><button class=\"ds-heat-cell ds-scale-4\">3,8</button><button class=\"ds-heat-cell ds-scale-5\">5,0</button><button class=\"ds-heat-cell ds-scale-0 ds-heat-empty\">— <small>0/3</small></button></div>",
+      "css": ".ds-heat { display: grid; grid-template-columns: repeat(6, 88px); gap: 4px; font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; } .ds-heat-cell { display: flex; align-items: center; justify-content: center; height: 36px; font: inherit; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; border: none; border-radius: 0; cursor: pointer; transition: outline 150ms; } .ds-heat-cell small { margin-left: 4px; font-size: 11px; font-weight: 400; opacity: 0.8; } .ds-heat-cell:hover { outline: 2px solid hsl(var(--primary, 216 62% 36%)); } .ds-heat-cell:focus-visible { outline: 2px solid hsl(var(--ring, 216 62% 36%)); } .ds-scale-0 { background: hsl(var(--scale-0, 222 16% 95%)); color: hsl(var(--foreground, 222 22% 13%)); } .ds-scale-1 { background: hsl(var(--scale-1, 224 45% 90%)); color: hsl(var(--foreground, 222 22% 13%)); } .ds-scale-2 { background: hsl(var(--scale-2, 224 48% 80%)); color: hsl(var(--foreground, 222 22% 13%)); } .ds-scale-3 { background: hsl(var(--scale-3, 224 50% 66%)); color: hsl(var(--foreground, 222 22% 13%)); } .ds-scale-4 { background: hsl(var(--scale-4, 224 54% 46%)); color: hsl(var(--background, 40 20% 99%)); } .ds-scale-5 { background: hsl(var(--scale-5, 224 58% 34%)); color: hsl(var(--background, 40 20% 99%)); } .ds-heat-empty { color: hsl(var(--muted-foreground, 222 10% 40%)); }"
+    },
+    {
+      "name": "En-tête de chapitre",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "PageHeader : numéro d'article + titre 18 px, phrase d'introduction, prochaine action en bleu, un seul bouton primaire à droite, filet de fermeture.",
+      "html": "<header class=\"ds-page-header\"><div><h1 class=\"ds-page-title\"><span class=\"ds-page-no\">1</span><span>Préparation</span></h1><p class=\"ds-page-lead\">La préparation est complète : référentiel, fournisseurs et réponses sont en place.</p><p class=\"ds-page-next\">Prochaine action : ouvrir l'évaluation</p></div><button class=\"ds-btn-primary\">Ouvrir l'évaluation</button></header>",
+      "css": ".ds-page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 24px; font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; color: hsl(var(--foreground, 222 22% 13%)); border-bottom: 1px solid hsl(var(--border, 222 14% 86%)); } .ds-page-title { display: flex; align-items: baseline; gap: 8px; margin: 0; font-size: 18px; font-weight: 600; line-height: 24px; } .ds-page-no { font-size: 13px; font-weight: 600; letter-spacing: 0.02em; color: hsl(var(--muted-foreground, 222 10% 40%)); } .ds-page-lead { max-width: 70ch; margin: 4px 0 0; font-size: 13px; line-height: 18px; color: hsl(var(--muted-foreground, 222 10% 40%)); } .ds-page-next { margin: 8px 0 0; font-size: 13px; line-height: 18px; font-weight: 600; color: hsl(var(--accent-foreground, 216 62% 30%)); } .ds-btn-primary { display: inline-flex; align-items: center; height: 36px; padding: 0 12px; font: inherit; font-size: 13px; font-weight: 500; color: hsl(var(--primary-foreground, 0 0% 100%)); background: hsl(var(--primary, 216 62% 36%)); border: none; border-radius: 2px; cursor: pointer; transition: background-color 150ms; } .ds-btn-primary:hover { background: hsl(var(--primary, 216 62% 36%) / 0.9); } .ds-btn-primary:focus-visible { outline: 2px solid hsl(var(--ring, 216 62% 36%)); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Le dossier de consultation",
+    "overview": "L'interface est la table des matières et les articles d'un dossier de consultation, dans la typographie administrative française du DCE et de l'avis de marché. Une consultation est un dossier numéroté ; ses phases sont des chapitres (1 Préparation, 2 Analyse IA, 3 Évaluation, 4 Décision, 5 Restitution) ; ses domaines et exigences sont des articles (1.1, 1.3, 4.2, R-12). Le rail gauche est un sommaire, jamais une barre d'onglets ; le contenu est une suite d'articles séparés par des filets, jamais une grille de cartes. Avec le contenu retiré, la page se lit encore comme un dossier numéroté avec un sommaire à gauche.\n\nLe monde est fait de papier et d'encre : un fond papier presque blanc (charbon en thème sombre), une encre quasi noire, un seul bleu encre institutionnel réservé à l'action primaire et à la sélection courante. Quatre couleurs d'état sont des tampons carrés, chacun avec glyphe et libellé. La hiérarchie est portée par la taille et la graisse, les séparateurs sont des filets de 1 px, les surfaces sont plates ; la seule ombre existante appartient aux panneaux flottants. Une seule famille, Source Sans 3, chiffres tabulaires partout. La densité est celle d'un outil de travail : 13 px pour le texte courant, 14 px par défaut, lignes de tableau de 36 à 44 px.\n\nL'interaction signature est le renvoi : tout score est un lien vers sa preuve. Survol : l'extrait cité ; clic : le document à la page. Le panneau de détail de la décision porte un fil d'Ariane « Renvois » (fournisseur › domaine › exigence › réponse › citation). Le mouvement se limite à 150 ms de transition de couleur ou de bordure sur changement d'état ; il n'y a aucune séquence d'entrée sur les écrans, et `prefers-reduced-motion` est honoré globalement.",
+    "keyCharacteristics": [
+      "Numérotation d'articles (`1`, `1.3`, `4.2`, `R-12`) comme identité récurrente, en 12 px semi-gras gris encre.",
+      "Sommaire fixe de 240 px à gauche ; sélection = filet d'encre bleue de 2 px à gauche + lavis bleu.",
+      "Un seul bouton primaire bleu encre par écran, en haut à droite de l'en-tête de chapitre.",
+      "Tampons d'état carrés (2 px) : glyphe + libellé en capitales 12 px, teinte + lavis.",
+      "Échelle séquentielle bleue à six pas (0 → 5) pour toute note, du papier vers l'encre bleue.",
+      "Filets de 1 px comme unique séparateur ; aucune boîte, aucune ombre hors panneaux flottants.",
+      "Chiffres tabulaires par défaut, formats français (`4,0`, `52 %`, `27 févr. 2026`, `—` pour l'absence)."
+    ],
+    "rules": [
+      { "name": "La règle de l'encre unique", "body": "Le bleu encre plein n'apparaît que sur l'action primaire (une par écran), la note manuelle confirmée, le filet de sélection et les barres de progression. Tout autre usage passe par le lavis ou par le texte bleu.", "section": "colors" },
+      { "name": "La règle du tampon", "body": "Une couleur d'état n'est jamais seule : elle accompagne toujours un glyphe distinct et un libellé (`✓ Conforme`, `◐ Partiel`, `✕ Non conforme`, `→ Roadmap`, `— À évaluer`). Les répartitions en barre gardent leur légende textuelle.", "section": "colors" },
+      { "name": "La règle de l'échelle bleue", "body": "Une note se lit sur l'échelle séquentielle 0 → 5, jamais en rouge/vert. Les couleurs d'état sont réservées aux statuts, les six bleus aux notes.", "section": "colors" },
+      { "name": "La règle du numéro d'article", "body": "Tout titre de chapitre, d'article, de domaine ou d'exigence commence par son numéro en `article-no`, aligné à la ligne de base du titre, séparé par 8 px.", "section": "typography" },
+      { "name": "La règle du chiffre tabulaire", "body": "Toute donnée numérique est en chiffres tabulaires, alignée à droite dans les tableaux, formatée en français par `lib/format.ts` (`4,0`, `52 %`, `1 h 05`, `—` pour l'absence).", "section": "typography" },
+      { "name": "La règle du plan unique", "body": "Une ombre signifie « hors du dossier ». Une carte, un tableau, un en-tête ou une ligne n'en porte jamais ; seule `shadow-overlay` existe, et seulement sur ce qui flotte.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do commencer tout titre de chapitre, d'article ou d'exigence par son numéro en `article-no` (12 px 600 gris encre), séparé du titre par 8 px.",
+      "Do séparer les blocs par un filet de 1 px `filet` ; un article est une `<section>` fermée par un filet, pas une carte.",
+      "Do réserver l'encre bleue pleine à l'unique bouton primaire, à la note manuelle, au filet de sélection de 2 px et aux barres de progression ; utiliser le lavis bleu pour la sélection et le survol.",
+      "Do accompagner toute couleur d'état d'un glyphe et d'un libellé (tampon `.stamp`) ; lire les notes sur l'échelle bleue 0 → 5, jamais en rouge/vert.",
+      "Do écrire tout nombre en chiffres tabulaires et au format français via `lib/format.ts` (`4,0`, `52 %`, `27 févr. 2026`, `—` pour l'absence).",
+      "Do limiter le mouvement à 150 ms de transition de couleur ou de bordure sur changement d'état, et à la rotation du chargeur ; honorer `prefers-reduced-motion`.",
+      "Do rendre chaque état vide, en chargement ou en erreur par `PageState` ou par une phrase grise à sa place ; une seule action par état.",
+      "Do utiliser le vocabulaire métier (consultation, exigence, domaine, fournisseur, pondération, soutenance, référentiel, livrable) dans un ton neutre, sans point d'exclamation."
+    ],
+    "donts": [
+      "Don't introduire une deuxième couleur d'action, un dégradé, ou une ombre sur une surface de page ; `shadow-overlay` n'existe que pour ce qui flotte.",
+      "Don't dépasser 4 px de rayon ; pas de pilule, pas de cercle hors chargeur.",
+      "Don't composer un chapitre en grille de cartes KPI ni en barre d'onglets multiple ; le sommaire de gauche est la seule navigation de chapitre.",
+      "Don't utiliser une valeur de couleur brute (`slate-*`, hex) dans un écran refondu ; toute couleur passe par les variables de `styles/globals.css`.",
+      "Don't ajouter une séquence d'entrée, un effet de survol par translation ou une animation décorative.",
+      "Don't montrer un score sans son renvoi : un score est un lien vers l'extrait cité et le document à la page."
+    ]
+  }
+}

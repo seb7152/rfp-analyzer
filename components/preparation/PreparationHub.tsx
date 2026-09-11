@@ -66,7 +66,7 @@ function Article({
       <div className="flex flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <StateGlyph state={state} />
-          <h2 id={`art-${number}`} className="flex items-baseline gap-2 text-base font-semibold">
+          <h2 id={`art-${number}`} className="flex items-baseline gap-2 text-lg font-semibold">
             <span className="article-no">{number}</span>
             <span>{title}</span>
           </h2>

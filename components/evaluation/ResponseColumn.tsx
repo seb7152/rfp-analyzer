@@ -216,9 +216,9 @@ export function ResponseColumn({
                 if (first) onOpenBookmark(first);
                 else if (!noDocs) onOpenDocuments(response.supplier_id);
               }}
-              disabled={noDocs && bookmarks.length === 0}
+              aria-disabled={noDocs && bookmarks.length === 0}
               className={cn(
-                "tnum rounded-sm text-lg font-semibold leading-none underline decoration-border decoration-1 underline-offset-4 transition-colors duration-150 hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:no-underline",
+                "tnum rounded-sm text-lg font-semibold leading-none underline decoration-border decoration-1 underline-offset-4 transition-colors duration-150 hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-disabled:cursor-default",
                 score === null && "text-muted-foreground"
               )}
               aria-label={`Note ${formatScore(score)} sur 5${isManual ? ", manuelle" : ", IA"}. Ouvrir la preuve dans le document`}
