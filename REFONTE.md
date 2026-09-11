@@ -71,11 +71,13 @@ Session du 2026-09-11, branche `refonte-ui`, base Supabase réelle (org « Test 
 | Vérification | Résultat |
 |---|---|
 | `npx tsc --noEmit` | 0 erreur |
-| `npm run build` | succès (exit 0) |
+| `npm run build` | succès (exit 0, relancé après le dernier correctif) ; deux avertissements « Dynamic server usage » sur `/api/auth/me`, antérieurs et sans effet |
 | `npm run lint` | non exécutable : ESLint n'est pas configuré dans le dépôt (état antérieur, inchangé) |
 | `npm test` | aucun script `test` dans le dépôt (état antérieur, inchangé) |
 | `npx playwright test` (setup + desktop 1440×900 + mobile iPhone 13) | **15/15 verts** : parcours 1 (2 tests × 2), parcours 2 (3 tests × 2, dont hors ligne → file → rejeu), parcours 3 (1 test × 2) |
 | Détecteur `impeccable detect` sur les cibles refondues | 0 signalement |
+| Revue de finition `impeccable` (agent relecteur, contexte neuf) | disposition initiale « fix », 8 corrections matérielles (renvoi sur la note, fond sombre charbon, libellé du chapitre 4, contraste de la heatmap, accueil mobile, première ligne du hub, répartition lisible sans couleur, preuve de la ligne d'état IA) ; toutes appliquées et scorées « resolved » au passage de verdict (deux tours) |
+| Documentation | `DESIGN.md` + `.impeccable/design.json` écrits depuis le build ; dérives mineures relevées par le documenteur et corrigées (titres d'article 16 px partout, panneaux à 200 ms) ; variantes héritées de `button` (`mono`, rayons `lg/full`) et de `card` (`accent`) conservées pour les écrans hors périmètre |
 | Vérification fonctionnelle indépendante (agent Sonnet, contexte neuf) | 17 contrôles supplémentaires verts sur les trois personas, redirections d'anciens liens vérifiées ; un avertissement React de clé dans `SuppliersTab` corrigé |
 | Revue des captures (agent Sonnet, contexte neuf, liste anti-gabarit) | aucune violation de la liste sur les écrans refondus ; défilement horizontal mobile sans affordance (corrigé : `ScrollX`, colonnes masquées sous 768 px), double croix du panneau de renvois (corrigé), popover de filtres trop haut sur mobile (corrigé) ; chaîne anglaise et cartes KPI relevées sur `/parametres` et `/referentiel` (composants hérités, hors périmètre, listés en D-14) |
 
