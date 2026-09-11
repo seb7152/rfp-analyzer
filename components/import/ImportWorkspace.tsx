@@ -137,6 +137,8 @@ export function ImportWorkspace({ rfpId }: { rfpId: string }) {
 
   const context = useMemo<ImportContext>(
     () => ({
+      rfpId,
+      origin: typeof window === "undefined" ? "" : window.location.origin,
       categoryCodes,
       categoryTitles,
       requirementCodes,
@@ -145,7 +147,7 @@ export function ImportWorkspace({ rfpId }: { rfpId: string }) {
         ? { externalId: supplier.supplier_id_external, name: supplier.name }
         : undefined,
     }),
-    [categoryCodes, categoryTitles, requirementCodes, suppliers, supplier]
+    [rfpId, categoryCodes, categoryTitles, requirementCodes, suppliers, supplier]
   );
 
   const preview: Preview | null = useMemo(

@@ -60,6 +60,9 @@ test.describe("Parcours 1 — importer des jeux de données (Sophie)", () => {
       await page.getByRole("button", { name: "Format attendu" }).click();
       await expect(page.getByRole("dialog")).toContainText("Tu convertis un tableau en JSON d'import");
       await expect(page.getByRole("button", { name: "Copier le prompt" })).toBeVisible();
+      await page.getByRole("tab", { name: "Prompt · agent" }).click();
+      await expect(page.getByRole("dialog")).toContainText("connecteur MCP");
+      await expect(page.getByRole("dialog")).toContainText("import_structure");
       await page.keyboard.press("Escape");
 
       // Exigences : le domaine importé est reconnu, l'inconnu est refusé.

@@ -15,6 +15,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DATASETS,
+  buildAgentPrompt,
   buildPrompt,
   buildSchema,
   type DatasetId,
@@ -54,15 +55,15 @@ function CopyBlock({ text, label }: { text: string; label: string }) {
         onClick={copy}
         aria-label={label}
         title={done ? "Copié" : label}
-        className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="absolute right-2.5 top-2.5 z-10 text-muted-foreground/70 transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {done ? (
-          <Check className="h-3.5 w-3.5 text-status-pass" />
+          <Check className="h-4 w-4 text-status-pass" />
         ) : (
-          <Copy className="h-3.5 w-3.5" />
+          <Copy className="h-4 w-4" />
         )}
       </button>
-      <pre className="max-h-[46vh] w-full overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-rail p-3 pr-11 font-mono text-2xs leading-[16px] text-foreground">
+      <pre className="max-h-[46vh] w-full overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-rail p-3 pr-9 font-mono text-2xs leading-[16px] text-foreground">
         {text}
       </pre>
     </div>
@@ -84,6 +85,7 @@ export function FormatDialog({
 }) {
   const spec = DATASETS[dataset];
   const prompt = buildPrompt(dataset, context);
+  const agentPrompt = buildAgentPrompt(dataset, context);
   const schema = JSON.stringify(buildSchema(dataset), null, 2);
 
   return (
@@ -98,14 +100,16 @@ export function FormatDialog({
         <DialogHeader>
           <DialogTitle>Format attendu · {spec.label.toLowerCase()}</DialogTitle>
           <DialogDescription>
-            Le prompt contient le schéma et le vocabulaire de cette consultation. Collez-le dans un
-            assistant avec votre tableur : la sortie s&apos;importe telle quelle.
+            Deux chemins : un prompt qui produit le fichier à déposer ici, un prompt pour un agent
+            qui écrit directement par le connecteur. Les deux portent le vocabulaire de cette
+            consultation.
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="prompt">
           <TabsList>
-            <TabsTrigger value="prompt">Prompt</TabsTrigger>
+            <TabsTrigger value="prompt">Prompt · fichier</TabsTrigger>
+            <TabsTrigger value="agent">Prompt · agent</TabsTrigger>
             <TabsTrigger value="schema">Schéma JSON</TabsTrigger>
             <TabsTrigger value="champs">Champs</TabsTrigger>
           </TabsList>
@@ -115,6 +119,14 @@ export function FormatDialog({
               À coller dans un assistant, suivi du tableau à convertir.
             </p>
             <CopyBlock text={prompt} label="Copier le prompt" />
+          </TabsContent>
+
+          <TabsContent value="agent" className="mt-3">
+            <p className="pb-2 text-xs text-muted-foreground">
+              Pour un assistant connecté au connecteur MCP : il écrit lui-même, sans passer par
+              cet écran.
+            </p>
+            <CopyBlock text={agentPrompt} label="Copier le prompt pour l'agent" />
           </TabsContent>
 
           <TabsContent value="schema" className="mt-3">

@@ -39,6 +39,10 @@ export interface Preview {
 }
 
 export interface ImportContext {
+  /** The consultation an agent has to name in every call. */
+  rfpId: string;
+  /** Origin of this installation, for the MCP endpoint. */
+  origin: string;
   categoryTitles: string[];
   categoryCodes: string[];
   requirementCodes: string[];
@@ -573,6 +577,131 @@ export function buildPrompt(id: DatasetId, ctx: ImportContext): string {
     JSON.stringify(spec.example, null, 2),
     ``,
     `Le tableau à convertir suit.`
+  );
+
+  return lines.join("\n");
+}
+
+const MCP_TOOL: Record<DatasetId, string> = {
+  domaines: "import_structure",
+  exigences: "import_requirements",
+  fournisseurs: "",
+  reponses: "import_supplier_responses",
+};
+
+const MCP_IMPORT_TYPE: Record<DatasetId, string> = {
+  domaines: "structure",
+  exigences: "requirements",
+  fournisseurs: "",
+  reponses: "supplier_responses",
+};
+
+/**
+ * The other way in: an agent connected to this installation's MCP endpoint
+ * writes the dataset itself. Same rules, but the agent needs the token, the
+ * consultation's identity and the name of the tool to call.
+ */
+export function buildAgentPrompt(id: DatasetId, ctx: ImportContext): string {
+  const spec = DATASETS[id];
+  const tool = MCP_TOOL[id];
+  const lines: string[] = [];
+
+  lines.push(
+    `Tu importes des données dans RFP Analyzer par son connecteur MCP.`,
+    `Jeu de données : ${spec.label.toLowerCase()}.`,
+    ``,
+    `Connexion :`,
+    `- Serveur MCP : ${ctx.origin || "https://<installation>"}/api/mcp`,
+    `- En-tête : Authorization: Bearer <jeton>, un jeton personnel qui commence par « rfpa_ ».`,
+    `- Si tu n'as pas ce jeton, demande-le à l'utilisateur : il le crée dans Jetons d'accès,`,
+    `  dans son compte. Ne l'écris jamais dans un fichier, un message ou un journal.`,
+    `- Consultation visée : rfp_id = ${ctx.rfpId}`,
+    ``
+  );
+
+  if (!tool) {
+    lines.push(
+      `Le connecteur n'expose pas d'import de fournisseurs : déclare-les dans l'application,`,
+      `puis reviens pour les réponses.`
+    );
+    return lines.join("\n");
+  }
+
+  lines.push(
+    `Méthode : la conversion doit être la plus déterministe possible. Établis d'abord la`,
+    `correspondance entre les colonnes de la source et les champs ci-dessous, puis applique-la à`,
+    `toutes les lignes sans exception. Dès que la source est longue ou irrégulière, écris et`,
+    `exécute un script qui produit le JSON sur disque, puis appelle get_import_command`,
+    `(rfp_id, import_type = "${MCP_IMPORT_TYPE[id]}", file_path) : il rend une commande curl qui`,
+    `téléverse le fichier sans que son contenu passe par ton contexte. Pour un petit volume,`,
+    `${tool} accepte le tableau en ligne.`,
+    `N'invente aucune valeur : un champ inconnu est omis, jamais deviné. Ne reformule pas les`,
+    `textes, reprends-les tels quels.`,
+    ``,
+    `Outil : ${tool}`,
+    `- rfp_id : ${ctx.rfpId}`
+  );
+
+  if (id === "domaines") {
+    lines.push(
+      `- categories : le tableau d'objets décrit ci-dessous (ou file_content / file_url).`,
+      `- mode : « append » par défaut ; « replace » efface la structure existante, ne l'emploie`,
+      `  que si l'utilisateur le demande explicitement.`
+    );
+  }
+  if (id === "exigences") {
+    lines.push(
+      `- requirements : le tableau d'objets décrit ci-dessous (ou file_content / file_url).`,
+      `- mode : « append » par défaut ; « replace » efface les exigences existantes.`
+    );
+  }
+  if (id === "reponses") {
+    lines.push(
+      ctx.supplier
+        ? `- supplier_name : ${ctx.supplier.name}`
+        : `- supplier_name : le nom du fournisseur, demandé à l'utilisateur s'il manque.`,
+      `- responses : le tableau d'objets décrit ci-dessous (ou file_content / file_url).`,
+      `- version_id : à omettre, la version active est prise.`
+    );
+  }
+
+  lines.push(``, `Champs :`);
+  for (const f of spec.fields) {
+    const required =
+      id === "domaines" && f.name === "short_name"
+        ? "facultatif par ce chemin"
+        : id === "reponses" && f.name === "response_text"
+          ? "requis par ce chemin"
+          : f.required
+            ? "requis"
+            : "facultatif";
+    lines.push(`- ${f.name} (${f.type}, ${required}) : ${f.description}`);
+  }
+
+  if (id === "exigences") {
+    const domains = ctx.categoryCodes.map((code, i) => `${code} — ${ctx.categoryTitles[i] ?? ""}`.trim());
+    lines.push(
+      ``,
+      `Règle : category_name reprend exactement le code ou le titre d'un domaine existant.`,
+      ...(domains.length > 0
+        ? [`Domaines existants :`, ...domains.map((d) => `- ${d}`)]
+        : [`Aucun domaine n'est encore importé : commence par import_structure.`])
+    );
+  }
+  if (id === "reponses" && ctx.requirementCodes.length > 0) {
+    const codes = ctx.requirementCodes.slice(0, 400);
+    lines.push(
+      ``,
+      `Règle : requirement_id_external reprend exactement le code d'une exigence existante.`,
+      `Codes existants :`,
+      codes.join(", ") + (ctx.requirementCodes.length > codes.length ? ", …" : "")
+    );
+  }
+
+  lines.push(
+    ``,
+    `Rends compte à la fin : ce qui a été créé, ce qui a été mis à jour, ce qui a été refusé et`,
+    `pourquoi. En cas de refus, corrige la source et rejoue, ne contourne pas la règle.`
   );
 
   return lines.join("\n");
