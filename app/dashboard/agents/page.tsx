@@ -100,7 +100,7 @@ export default function AgentsPage() {
           />
         ) : (
           <>
-            <div className="hidden grid-cols-[minmax(0,1.6fr)_220px_110px_120px_180px_36px] gap-4 px-5 py-2.5 text-xs font-medium text-muted-foreground md:grid">
+            <div className="hidden grid-cols-[minmax(0,1.6fr)_220px_110px_120px_180px_36px] gap-4 px-5 py-2.5 text-xs font-medium text-muted-foreground lg:grid">
               <span>Agent</span>
               <span>Modèle</span>
               <span>Raisonnement</span>
@@ -115,7 +115,7 @@ export default function AgentsPage() {
                   <li key={a.id} className="border-t border-border">
                     <Link
                       href={`/dashboard/agents/${a.id}`}
-                      className="grid items-center gap-2 px-4 py-3.5 transition-colors duration-150 hover:bg-accent/40 md:grid-cols-[minmax(0,1.6fr)_220px_110px_120px_180px_36px] md:gap-4 md:px-5"
+                      className="grid items-center gap-2 px-4 py-3.5 transition-colors duration-150 hover:bg-accent/40 lg:grid-cols-[minmax(0,1.6fr)_220px_110px_120px_180px_36px] lg:gap-4 md:px-5"
                     >
                       <span className="flex min-w-0 items-start gap-3">
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground">
@@ -131,7 +131,7 @@ export default function AgentsPage() {
                       </span>
                       <span className="num inline-flex h-6 max-w-full items-center truncate rounded-md border border-border bg-rail px-2 text-xs text-muted-foreground">{a.model_id}</span>
                       <span className="text-sm text-muted-foreground">{REASONING_LABEL[a.reasoning_effort] ?? a.reasoning_effort}</span>
-                      <span className="num text-sm md:text-right">{a.consultations}</span>
+                      <span className="num text-sm lg:text-right">{a.consultations}</span>
                       <span className="flex flex-col gap-1">
                         {rate === null ? (
                           <span className="text-xs text-muted-foreground">Aucune proposition décidée</span>
@@ -147,7 +147,7 @@ export default function AgentsPage() {
                           <span className="block h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${rate ?? 0}%` }} />
                         </span>
                       </span>
-                      <ChevronRight className="hidden h-4 w-4 text-muted-foreground md:block" />
+                      <ChevronRight className="hidden h-4 w-4 text-muted-foreground lg:block" />
                     </Link>
                   </li>
                 );

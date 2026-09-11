@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Archive, ArchiveRestore, ArrowLeft, Eye, RotateCcw } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, Eye, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,10 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ModelPicker } from "@/components/agents/ModelPicker";
-import { useCatalogue, useSaveAgent, type AgentInput } from "@/hooks/use-agents";
+import { useCatalogue, useDraftPrompt, useSaveAgent, type AgentInput } from "@/hooks/use-agents";
 import { PREAMBLE } from "@/lib/agents/prompt";
 import { REASONING_EFFORTS, type Agent, type AgentVersionWithMeta, type ReasoningEffort } from "@/lib/agents/types";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export const REASONING_LABEL: Record<ReasoningEffort, string> = {
@@ -54,6 +54,7 @@ export function AgentForm({
   const router = useRouter();
   const catalogue = useCatalogue();
   const save = useSaveAgent(organizationId);
+  const draft = useDraftPrompt(organizationId);
   const [form, setForm] = useState<AgentInput>({
     name: agent?.name ?? "",
     description: agent?.description ?? "",
@@ -62,6 +63,7 @@ export function AgentForm({
     reasoning_effort: agent?.reasoning_effort ?? "high",
   });
   const [contextOpen, setContextOpen] = useState(false);
+  const [proposal, setProposal] = useState<{ prompt: string; cost: number } | null>(null);
   const [reading, setReading] = useState<AgentVersionWithMeta | null>(null);
   const [restoring, setRestoring] = useState<AgentVersionWithMeta | null>(null);
 
@@ -89,6 +91,17 @@ export function AgentForm({
   const nextVersion = agent ? agent.current_version + 1 : 1;
   const disabled = !canEdit || save.isPending;
   const promptChars = form.system_prompt.length;
+  const canDraft = canEdit && !save.isPending && !draft.isPending && form.description.trim().length > 0;
+
+  /** Asks a model for a draft; the proposal is shown before anything replaces the prompt. */
+  const generate = async () => {
+    try {
+      const result = await draft.mutateAsync({ name: form.name, description: form.description, currentPrompt: form.system_prompt });
+      setProposal({ prompt: result.prompt, cost: result.cost });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "La proposition n'a pas pu être générée.");
+    }
+  };
 
   // Oldest first, to describe each version against the previous one.
   const ordered = useMemo(() => [...versions].sort((a, b) => a.version_number - b.version_number), [versions]);
@@ -282,12 +295,25 @@ export function AgentForm({
 
         {/* Volet prompt */}
         <section className="panel flex min-h-[520px] min-w-0 flex-col">
-          <div className="flex items-center gap-3 border-b border-border px-4 py-3 md:px-5">
-            <h2 className="text-base font-semibold">Prompt système</h2>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border px-4 py-3 md:px-5">
+            <h2 className="whitespace-nowrap text-base font-semibold">Prompt système</h2>
             <span className="flex-1" />
-            <span className="num text-xs text-muted-foreground">
+            <span className="num whitespace-nowrap text-xs text-muted-foreground">
               {promptChars.toLocaleString("fr-FR")} caractères · ~{Math.ceil(promptChars / 4).toLocaleString("fr-FR")} tokens
             </span>
+            {canEdit && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={generate}
+                disabled={!canDraft}
+                title={form.description.trim() ? undefined : "Renseignez d'abord la description courte."}
+              >
+                <Sparkles className="h-4 w-4" />
+                {draft.isPending ? "Rédaction…" : form.system_prompt.trim() ? "Réécrire avec l'IA" : "Proposer avec l'IA"}
+              </Button>
+            )}
           </div>
           <Textarea
             aria-label="Prompt système"
@@ -339,6 +365,47 @@ export function AgentForm({
               <p className="text-muted-foreground">Les codes du lot courant, 12 exigences au plus, seules à recevoir une proposition.</p>
             </li>
           </ol>
+        </DialogContent>
+      </Dialog>
+
+      {/* Proposition de prompt */}
+      <Dialog open={!!proposal} onOpenChange={(o) => !o && setProposal(null)}>
+        <DialogContent className="max-w-2xl">
+          {proposal && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Proposition de prompt</DialogTitle>
+                <DialogDescription>
+                  Rédigée à partir du nom et de la description courte{form.system_prompt.trim() ? " et du prompt actuel" : ""}. Rien n&apos;est enregistré tant que vous n&apos;enregistrez pas la fiche.
+                  {proposal.cost > 0 ? ` Coût : ${formatUsd(proposal.cost, 3)}.` : ""}
+                </DialogDescription>
+              </DialogHeader>
+              <Textarea
+                aria-label="Proposition de prompt"
+                value={proposal.prompt}
+                onChange={(e) => setProposal({ ...proposal, prompt: e.target.value })}
+                className="max-h-[60vh] min-h-[320px] font-mono text-[13px] leading-5"
+              />
+              <DialogFooter>
+                <Button type="button" variant="ghost" onClick={generate} disabled={draft.isPending}>
+                  <Sparkles className="h-4 w-4" />
+                  {draft.isPending ? "Rédaction…" : "Une autre proposition"}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setProposal(null)}>
+                  Annuler
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setForm({ ...form, system_prompt: proposal.prompt });
+                    setProposal(null);
+                  }}
+                >
+                  {form.system_prompt.trim() ? "Remplacer le prompt" : "Utiliser cette proposition"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

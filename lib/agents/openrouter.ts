@@ -11,7 +11,7 @@ const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 const CATALOGUE_TTL_MS = 6 * 60 * 60 * 1000;
 
 export const DEFAULT_MODEL_ID =
-  process.env.OPENROUTER_DEFAULT_MODEL || "anthropic/claude-opus-5";
+  process.env.OPENROUTER_DEFAULT_MODEL || "anthropic/claude-sonnet-5";
 
 function attributionHeaders(): Record<string, string> {
   return {

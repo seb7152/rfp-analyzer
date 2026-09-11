@@ -88,3 +88,19 @@ export function useSaveAgent(organizationId: string) {
     },
   });
 }
+
+/** A draft of the system prompt from the name and short description; nothing is saved. */
+export function useDraftPrompt(organizationId: string) {
+  return useMutation<{ prompt: string; model: string | null; cost: number }, Error, { name: string; description: string; currentPrompt?: string }>({
+    mutationFn: async ({ name, description, currentPrompt }) => {
+      const res = await fetch("/api/agents/draft-prompt", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organization_id: organizationId, name, description, current_prompt: currentPrompt || undefined }),
+      });
+      if (!res.ok) throw new Error(await readError(res, "La proposition n'a pas pu être générée."));
+      return res.json();
+    },
+  });
+}
