@@ -216,7 +216,6 @@ export function EvaluationWorkspace({ rfpId }: { rfpId: string }) {
     return map;
   }, [annotations]);
   const selectedItem = queue.items.find((it) => it.id === selectedId) ?? null;
-  const supplierNames = useMemo(() => responses.map((r) => r.supplier.name), [responses]);
 
   // Agents' proposals on the selected requirement, one card per answer.
   const findingsQuery = useAgentFindings(rfpId, selectedId, versionId ?? null);
@@ -501,7 +500,6 @@ export function EvaluationWorkspace({ rfpId }: { rfpId: string }) {
                 rfpId={rfpId}
                 response={r}
                 requirement={{ id: selectedId, title: selectedItem.title, description: detail?.description ?? "" }}
-                supplierNames={supplierNames}
                 access={access}
                 canEdit={canEdit}
                 bookmarks={bookmarks}

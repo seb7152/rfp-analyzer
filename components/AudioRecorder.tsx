@@ -1,167 +1,148 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { Mic, Square, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Loader2, Mic, Square } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { transcribeRecording, type AssistTarget } from "@/hooks/use-ai-assist";
+import { preferredMimeType, recordingToWav } from "@/lib/audio/wav";
 import { cn } from "@/lib/utils";
 
-interface AudioRecorderProps {
-  onTranscriptionComplete: (text: string) => void;
-  className?: string;
-  disabled?: boolean;
-}
+/** Beyond this the WAV would exceed what the route accepts. */
+const MAX_SECONDS = 120;
 
+/**
+ * Dictation of a comment or question. One click records, the next stops;
+ * the recording is converted to WAV in the browser and sent to the
+ * organisation's transcription model, whose text streams into the field as
+ * it is produced (`onText`), then `onDone` fires with the whole text.
+ */
 export function AudioRecorder({
-  onTranscriptionComplete,
+  target,
+  onStart,
+  onText,
+  onDone,
   className,
   disabled = false,
-}: AudioRecorderProps) {
-  const [isRecording, setIsRecording] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const { toast } = useToast();
+}: {
+  target: AssistTarget;
+  /** Fired when recording starts: the caller notes what the field already holds. */
+  onStart?: () => void;
+  onText: (text: string) => void;
+  onDone: (text: string) => void;
+  className?: string;
+  disabled?: boolean;
+}) {
+  const [phase, setPhase] = useState<"idle" | "recording" | "converting" | "transcribing">("idle");
+  const [seconds, setSeconds] = useState(0);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<number | null>(null);
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (mediaRecorderRef.current && isRecording) {
-        mediaRecorderRef.current.stop();
-        mediaRecorderRef.current.stream
-          .getTracks()
-          .forEach((track) => track.stop());
+      if (timerRef.current) window.clearInterval(timerRef.current);
+      const r = recorderRef.current;
+      if (r && r.state !== "inactive") {
+        r.onstop = null;
+        r.stop();
+        r.stream.getTracks().forEach((t) => t.stop());
       }
     };
-  }, [isRecording]);
+  }, []);
 
-  const startRecording = async () => {
+  const start = async () => {
+    if (typeof MediaRecorder === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      toast.error("Ce navigateur ne permet pas l'enregistrement audio.");
+      return;
+    }
+    let stream: MediaStream;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "audio/webm",
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      toast.error("Microphone inaccessible. Vérifiez l'autorisation du navigateur.");
+      return;
+    }
+    const mimeType = preferredMimeType();
+    const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    recorderRef.current = recorder;
+    chunksRef.current = [];
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data);
+    };
+    recorder.onstop = () => {
+      stream.getTracks().forEach((t) => t.stop());
+      void send(new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" }));
+    };
+    onStart?.();
+    recorder.start();
+    setSeconds(0);
+    setPhase("recording");
+    timerRef.current = window.setInterval(() => {
+      setSeconds((s) => {
+        if (s + 1 >= MAX_SECONDS) stop();
+        return s + 1;
       });
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
+    }, 1000);
+  };
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, {
-          type: "audio/webm",
-        });
-        await sendAudioForTranscription(audioBlob);
-
-        // Stop all tracks
-        stream.getTracks().forEach((track) => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch (err) {
-      console.error("Error starting recording:", err);
-      toast({
-        title: "Erreur d'accès au microphone",
-        description:
-          "Impossible d'accéder au microphone. Vérifiez les permissions.",
-        variant: "destructive",
-      });
+  const stop = () => {
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    const r = recorderRef.current;
+    if (r && r.state !== "inactive") {
+      setPhase("converting");
+      r.stop();
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      setIsProcessing(true);
-    }
-  };
-
-  const sendAudioForTranscription = async (audioBlob: Blob) => {
+  const send = async (recording: Blob) => {
     try {
-      const formData = new FormData();
-      formData.append("audio", audioBlob, "recording.webm");
-      formData.append("mode", "transcript");
-
-      const response = await fetch("/api/transcribe", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Échec de la transcription");
-      }
-
-      const data = await response.json();
-      if (data.text) {
-        onTranscriptionComplete(data.text);
-      } else {
-        throw new Error("Aucun texte transcrit");
-      }
+      const wav = await recordingToWav(recording);
+      setPhase("transcribing");
+      const text = await transcribeRecording(target, wav, onText);
+      onDone(text);
     } catch (err) {
-      console.error("Error transcribing audio:", err);
-      toast({
-        title: "Échec de la transcription",
-        description:
-          "Une erreur s'est produite lors de la transcription de l'audio.",
-        variant: "destructive",
-      });
+      toast.error(err instanceof Error ? err.message : "La transcription a échoué.");
     } finally {
-      setIsProcessing(false);
+      setPhase("idle");
+      recorderRef.current = null;
     }
   };
 
-  const handleClick = () => {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
-  };
+  const recording = phase === "recording";
+  const busy = phase === "converting" || phase === "transcribing";
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn("flex items-center gap-1", className)}>
+      {recording && (
+        <span className="num text-xs text-status-fail" aria-live="polite">
+          {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}
+        </span>
+      )}
       <Button
         type="button"
         variant="ghost"
-        size="icon"
-        onClick={handleClick}
-        disabled={disabled || isProcessing}
-        className={cn(
-          "h-8 w-8 rounded-full transition-all",
-          isRecording && "bg-red-500 hover:bg-red-600 text-white animate-pulse",
-          isProcessing && "opacity-50 cursor-not-allowed"
-        )}
+        size="xs"
+        mode="icon"
+        onClick={recording ? stop : start}
+        disabled={disabled || busy}
+        aria-label={recording ? "Arrêter la dictée" : "Dicter"}
         title={
-          isRecording
-            ? "Arrêter l'enregistrement"
-            : "Démarrer l'enregistrement vocal"
+          recording
+            ? "Arrêter la dictée"
+            : phase === "transcribing"
+              ? "Transcription en cours"
+              : phase === "converting"
+                ? "Préparation de l'enregistrement"
+                : "Dicter (2 min au plus)"
         }
+        className={cn("h-7 w-7 rounded-full", recording && "bg-status-fail text-white hover:bg-status-fail hover:text-white")}
       >
-        {isProcessing ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : isRecording ? (
-          <Square className="h-3 w-3" />
-        ) : (
-          <Mic className="h-4 w-4" />
-        )}
+        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : recording ? <Square className="h-3 w-3" /> : <Mic className="h-3.5 w-3.5" />}
       </Button>
-
-      {/* Recording animation */}
-      {isRecording && (
-        <div className="absolute -top-1 -right-1">
-          <span className="flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-          </span>
-        </div>
-      )}
     </div>
   );
 }

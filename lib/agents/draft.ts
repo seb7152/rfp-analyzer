@@ -48,7 +48,7 @@ export async function draftSystemPrompt(input: DraftInput): Promise<DraftResult>
       { role: "system", content: DRAFT_SYSTEM },
       { role: "user", content: lines.join("\n") },
     ],
-    reasoning: "none",
+    reasoning: null,
     jsonSchema: null,
     maxTokens: 2_000,
     timeoutMs: 90_000,

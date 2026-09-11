@@ -148,5 +148,7 @@ export interface CatalogueModel {
   completion_price: number;
   structured_outputs: boolean;
   reasoning: boolean;
+  /** Accepts audio content parts: usable for dictation. */
+  audio_input: boolean;
   created: number;
 }

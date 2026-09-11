@@ -22,27 +22,33 @@ export function perMillion(pricePerToken: number): string {
  * length, the prices per million tokens and structured-output support.
  * When the catalogue is down the recorded identifier stays and is shown raw.
  */
+export type ModelPurpose = "agent" | "audio" | "text";
+
 export function ModelPicker({
   value,
   onChange,
   models,
   error,
   disabled,
+  purpose = "agent",
 }: {
   value: string;
   onChange: (modelId: string) => void;
   models: CatalogueModel[] | null;
   error: string | null;
   disabled?: boolean;
+  /** "agent": whole domains, large context flagged; "audio": models taking audio; "text": any model. */
+  purpose?: ModelPurpose;
 }) {
   const [open, setOpen] = useState(false);
-  const [onlyLarge, setOnlyLarge] = useState(true);
+  const [onlyLarge, setOnlyLarge] = useState(purpose === "agent");
+  const contextMatters = purpose === "agent";
 
   const current = models?.find((m) => m.id === value) ?? null;
   const visible = useMemo(() => {
-    const list = (models ?? []).filter((m) => !onlyLarge || m.context_length >= MIN_CONTEXT);
+    const list = (models ?? []).filter((m) => (purpose !== "audio" || m.audio_input) && (!onlyLarge || m.context_length >= MIN_CONTEXT));
     return [...list].sort((a, b) => b.created - a.created);
-  }, [models, onlyLarge]);
+  }, [models, onlyLarge, purpose]);
 
   return (
     <div className="space-y-2">
@@ -62,10 +68,14 @@ export function ModelPicker({
           <Command>
             <CommandInput placeholder="Nom ou fournisseur (anthropic, openai, google…)" />
             <div className="flex items-center gap-2 border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
-              <label className="inline-flex items-center gap-1.5">
-                <input type="checkbox" checked={onlyLarge} onChange={(e) => setOnlyLarge(e.target.checked)} className="h-3.5 w-3.5" />
-                Contexte de {formatTokens(MIN_CONTEXT)} tokens au moins
-              </label>
+              {contextMatters ? (
+                <label className="inline-flex items-center gap-1.5">
+                  <input type="checkbox" checked={onlyLarge} onChange={(e) => setOnlyLarge(e.target.checked)} className="h-3.5 w-3.5" />
+                  Contexte de {formatTokens(MIN_CONTEXT)} tokens au moins
+                </label>
+              ) : (
+                <span>{purpose === "audio" ? "Modèles acceptant l'audio en entrée" : "Tous les modèles du catalogue"}</span>
+              )}
               <span className="num ml-auto">{visible.length} modèles</span>
             </div>
             <CommandList className="max-h-72">
@@ -87,7 +97,7 @@ export function ModelPicker({
                       <span className="block truncate text-xs text-muted-foreground">{m.name}</span>
                     </span>
                     <span className="num shrink-0 text-right text-xs text-muted-foreground">
-                      <span className={cn("block", m.context_length < MIN_CONTEXT && "text-status-partial")}>{formatTokens(m.context_length)} ctx</span>
+                      <span className={cn("block", contextMatters && m.context_length < MIN_CONTEXT && "text-status-partial")}>{formatTokens(m.context_length)} ctx</span>
                       <span className="block">
                         {perMillion(m.prompt_price)} / {perMillion(m.completion_price)} par M
                       </span>
@@ -105,7 +115,7 @@ export function ModelPicker({
         <dl className="grid grid-cols-3 gap-2 text-xs">
           <div>
             <dt className="text-muted-foreground">Contexte</dt>
-            <dd className={cn("num font-semibold", current.context_length < MIN_CONTEXT && "text-status-partial")}>{formatTokens(current.context_length)}</dd>
+            <dd className={cn("num font-semibold", contextMatters && current.context_length < MIN_CONTEXT && "text-status-partial")}>{formatTokens(current.context_length)}</dd>
           </div>
           <div>
             <dt className="text-muted-foreground">Prix / M tokens</dt>
@@ -123,7 +133,7 @@ export function ModelPicker({
       ) : value ? (
         <p className="text-xs text-muted-foreground">Modèle absent du catalogue : conservé tel quel.</p>
       ) : null}
-      {current && current.context_length < MIN_CONTEXT && (
+      {contextMatters && current && current.context_length < MIN_CONTEXT && (
         <p className="text-xs text-status-partial">Contexte de {formatTokens(current.context_length)} tokens : un domaine entier peut ne pas tenir.</p>
       )}
     </div>

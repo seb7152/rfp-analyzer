@@ -20,8 +20,7 @@ import {
 import { SupplierBookmarks } from "@/components/SupplierBookmarks";
 import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
 import { ResponseFocusModal } from "@/components/ResponseFocusModal";
-import { AudioRecorder } from "@/components/AudioRecorder";
-import { TextEnhancer } from "@/components/TextEnhancer";
+import { FieldAssist } from "@/components/evaluation/FieldAssist";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -106,9 +105,6 @@ export function SupplierResponseCard({
   collapsible = true,
   hasDocuments,
   requirementId,
-  requirementTitle = "",
-  requirementDescription = "",
-  supplierNames = [],
   onOpenBookmark,
   rfpId,
   onAICommentUpdate,
@@ -536,31 +532,18 @@ export function SupplierResponseCard({
                   className="text-sm h-24 pr-10"
                 />
                 <div className="absolute bottom-2 right-2">
-                  {!manualComment.trim() ? (
-                    <AudioRecorder
-                      onTranscriptionComplete={(text) => {
+                  <FieldAssist
+                      className="flex items-center gap-0.5"
+                      target={{ rfpId: rfpId ?? "", supplierId, field: "comment" }}
+                      value={manualComment}
+                      onChange={(text) => onCommentChange?.(text)}
+                      onCommit={(text) => {
                         onCommentChange?.(text);
                         setTimeout(() => {
                           onCommentBlur?.();
                         }, 100);
                       }}
                     />
-                  ) : (
-                    <TextEnhancer
-                      currentText={manualComment}
-                      responseText={responseText}
-                      requirementText={`${requirementTitle}\n\n${requirementDescription}`}
-                      supplierName={supplierName}
-                      supplierNames={supplierNames}
-                      userAccessLevel={userAccessLevel}
-                      onEnhancementComplete={(enhancedText) => {
-                        onCommentChange?.(enhancedText);
-                        setTimeout(() => {
-                          onCommentBlur?.();
-                        }, 100);
-                      }}
-                    />
-                  )}
                 </div>
               </div>
             </div>
@@ -586,31 +569,18 @@ export function SupplierResponseCard({
                   className="text-sm h-24 pr-10"
                 />
                 <div className="absolute bottom-2 right-2">
-                  {!questionText.trim() ? (
-                    <AudioRecorder
-                      onTranscriptionComplete={(text) => {
+                  <FieldAssist
+                      className="flex items-center gap-0.5"
+                      target={{ rfpId: rfpId ?? "", supplierId, field: "question" }}
+                      value={questionText}
+                      onChange={(text) => onQuestionChange?.(text)}
+                      onCommit={(text) => {
                         onQuestionChange?.(text);
                         setTimeout(() => {
                           onQuestionBlur?.();
                         }, 100);
                       }}
                     />
-                  ) : (
-                    <TextEnhancer
-                      currentText={questionText}
-                      responseText={responseText}
-                      requirementText={`${requirementTitle}\n\n${requirementDescription}`}
-                      supplierName={supplierName}
-                      supplierNames={supplierNames}
-                      userAccessLevel={userAccessLevel}
-                      onEnhancementComplete={(enhancedText) => {
-                        onQuestionChange?.(enhancedText);
-                        setTimeout(() => {
-                          onQuestionBlur?.();
-                        }, 100);
-                      }}
-                    />
-                  )}
                 </div>
               </div>
             </div>

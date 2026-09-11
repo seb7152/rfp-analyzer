@@ -28,8 +28,7 @@ import {
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { ScoreControl } from "@/components/evaluation/ScoreControl";
 import { StatusStamp } from "@/components/evaluation/StatusStamp";
-import { AudioRecorder } from "@/components/AudioRecorder";
-import { TextEnhancer } from "@/components/TextEnhancer";
+import { FieldAssist } from "@/components/evaluation/FieldAssist";
 import { ResponseFocusModal } from "@/components/ResponseFocusModal";
 import type { ResponseWithSupplier } from "@/hooks/use-responses";
 import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
@@ -47,7 +46,6 @@ export interface ResponseColumnProps {
   rfpId: string;
   response: ResponseWithSupplier;
   requirement: { id: string; title: string; description: string };
-  supplierNames: string[];
   access: RFPAccessLevel;
   canEdit: boolean;
   bookmarks: PDFAnnotation[];
@@ -162,7 +160,6 @@ export function ResponseColumn({
   rfpId,
   response,
   requirement,
-  supplierNames,
   access,
   canEdit,
   bookmarks,
@@ -522,24 +519,16 @@ export function ResponseColumn({
                 onBlur={() => {
                   if (comment !== (response.manual_comment ?? "")) onComment(comment);
                 }}
-                className="min-h-[56px] pr-9 text-sm"
+                className="min-h-[56px] pr-16 text-sm"
               />
               {canEdit && (
-                <div className="absolute bottom-1.5 right-1.5">
-                  {!comment.trim() ? (
-                    <AudioRecorder onTranscriptionComplete={(t) => { setComment(t); onComment(t); }} />
-                  ) : (
-                    <TextEnhancer
-                      currentText={comment}
-                      responseText={response.response_text ?? ""}
-                      requirementText={`${requirement.title}\n\n${requirement.description}`}
-                      supplierName={response.supplier.name}
-                      supplierNames={supplierNames}
-                      userAccessLevel={access}
-                      onEnhancementComplete={(t) => { setComment(t); onComment(t); }}
-                    />
-                  )}
-                </div>
+                <FieldAssist
+                  className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5"
+                  target={{ rfpId, supplierId: response.supplier_id, field: "comment" }}
+                  value={comment}
+                  onChange={setComment}
+                  onCommit={onComment}
+                />
               )}
             </div>
             <div className="relative">
@@ -552,24 +541,16 @@ export function ResponseColumn({
                 onBlur={() => {
                   if (question !== (response.question ?? "")) onQuestion(question);
                 }}
-                className="min-h-[56px] pr-9 text-sm"
+                className="min-h-[56px] pr-16 text-sm"
               />
               {canEdit && (
-                <div className="absolute bottom-1.5 right-1.5">
-                  {!question.trim() ? (
-                    <AudioRecorder onTranscriptionComplete={(t) => { setQuestion(t); onQuestion(t); }} />
-                  ) : (
-                    <TextEnhancer
-                      currentText={question}
-                      responseText={response.response_text ?? ""}
-                      requirementText={`${requirement.title}\n\n${requirement.description}`}
-                      supplierName={response.supplier.name}
-                      supplierNames={supplierNames}
-                      userAccessLevel={access}
-                      onEnhancementComplete={(t) => { setQuestion(t); onQuestion(t); }}
-                    />
-                  )}
-                </div>
+                <FieldAssist
+                  className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5"
+                  target={{ rfpId, supplierId: response.supplier_id, field: "question" }}
+                  value={question}
+                  onChange={setQuestion}
+                  onCommit={onQuestion}
+                />
               )}
             </div>
           </div>

@@ -35,6 +35,7 @@ interface RawModel {
   context_length?: number | null;
   pricing?: { prompt?: string; completion?: string };
   supported_parameters?: string[];
+  architecture?: { input_modalities?: string[] };
   top_provider?: { context_length?: number | null; max_completion_tokens?: number | null };
 }
 
@@ -61,6 +62,7 @@ async function fetchCatalogue(): Promise<CatalogueModel[]> {
       completion_price: Number(m.pricing?.completion ?? 0),
       structured_outputs: (m.supported_parameters ?? []).includes("structured_outputs"),
       reasoning: (m.supported_parameters ?? []).includes("reasoning"),
+      audio_input: (m.architecture?.input_modalities ?? []).includes("audio"),
       created: m.created ?? 0,
     }));
   if (models.length === 0) throw new Error("Catalogue OpenRouter vide.");
@@ -105,11 +107,19 @@ export async function findCatalogueModel(modelId: string): Promise<CatalogueMode
 
 // ─── Chat completion (streamed) ─────────────────────────────────────────────
 
-export interface ContentPart {
+export interface TextPart {
   type: "text";
   text: string;
   cache_control?: { type: "ephemeral" };
 }
+
+/** Audio goes in base64; OpenRouter accepts no URL for it. */
+export interface AudioPart {
+  type: "input_audio";
+  input_audio: { data: string; format: "wav" | "mp3" | "m4a" | "ogg" | "flac" | "webm" };
+}
+
+export type ContentPart = TextPart | AudioPart;
 
 export interface ChatMessage {
   role: "system" | "user";
@@ -154,10 +164,13 @@ export class CompletionTimeoutError extends Error {
 export interface CompletionRequest {
   model: string;
   messages: ChatMessage[];
-  reasoning: ReasoningEffort;
+  /** null: nothing sent, the model decides (the helpers do not need reasoning). */
+  reasoning: ReasoningEffort | null;
   jsonSchema: Record<string, unknown> | null;
   maxTokens: number;
   timeoutMs: number;
+  /** Called with each piece of text as it arrives, for callers that relay the stream. */
+  onDelta?: (text: string) => void;
 }
 
 function describeHttpError(status: number, body: string): string {
@@ -196,6 +209,19 @@ function describeHttpError(status: number, body: string): string {
  * cost arrive in the last event.
  */
 export async function streamChatCompletion(req: CompletionRequest): Promise<CompletionResult> {
+  try {
+    return await runCompletion(req);
+  } catch (err) {
+    // Some models refuse to have their reasoning switched off (Gemini Flash):
+    // once more without the parameter, the model reasons as it likes.
+    if (err instanceof OpenRouterError && err.status === 400 && req.reasoning !== null && /reasoning/i.test(err.message) && /mandatory|cannot be disabled|not supported/i.test(err.message)) {
+      return runCompletion({ ...req, reasoning: null });
+    }
+    throw err;
+  }
+}
+
+async function runCompletion(req: CompletionRequest): Promise<CompletionResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), req.timeoutMs);
 
@@ -207,7 +233,7 @@ export async function streamChatCompletion(req: CompletionRequest): Promise<Comp
     usage: { include: true },
   };
   // Models that do not reason ignore this parameter without error.
-  body.reasoning = req.reasoning === "none" ? { enabled: false } : { effort: req.reasoning };
+  if (req.reasoning !== null) body.reasoning = req.reasoning === "none" ? { enabled: false } : { effort: req.reasoning };
   if (req.jsonSchema) {
     body.response_format = {
       type: "json_schema",
@@ -280,7 +306,10 @@ export async function streamChatCompletion(req: CompletionRequest): Promise<Comp
     if (chunk.id) result.id = chunk.id;
     if (chunk.model) result.model = chunk.model;
     const choice = chunk.choices?.[0];
-    if (choice?.delta?.content) result.content += choice.delta.content;
+    if (choice?.delta?.content) {
+      result.content += choice.delta.content;
+      req.onDelta?.(choice.delta.content);
+    }
     if (choice?.finish_reason) result.finish_reason = choice.finish_reason;
     if (choice?.error?.message) streamError = choice.error.message;
     if (chunk.usage) {

@@ -39,6 +39,8 @@ npx supabase secrets set MY_VAR=value --project-ref ixxmjmxfzipxmlwmqods
 
 Les agents appellent OpenRouter depuis l'application (`lib/agents/`, `app/api/agents/**`, `app/api/rfps/[rfpId]/agents/**`), sans N8N ni edge function. Variables d'environnement Vercel : `SUPABASE_SECRET_KEY` (clé secrète `sb_secret_…`, ou `SUPABASE_SERVICE_ROLE_KEY` en repli), `OPENROUTER_API_KEY`, `OPENROUTER_DEFAULT_MODEL` (défaut `anthropic/claude-sonnet-5` ; modèle des nouveaux agents et de la rédaction assistée du prompt), `AGENT_WORKER_SECRET`, `NEXT_PUBLIC_APP_URL`. Le travailleur `POST /api/agents/worker` (`maxDuration = 300`, en-tête `x-agent-worker-secret`) est déclenché à chaque lancement et par le job `pg_cron` de `supabase/sql/agent_worker_cron.sql` (à appliquer à la main, placeholders à remplir). Schéma : migration `supabase/migrations/20260911_create_agents.sql`.
 
+Dictée et remise en forme des commentaires et questions (`app/api/ai/{transcribe,rewrite,settings}`, `lib/ai/`) : même clé OpenRouter, audio envoyé en WAV 16 kHz mono (converti dans le navigateur, `lib/audio/wav.ts`), réponse en flux texte. Modèles et prompts par organisation dans `organization_ai_settings` (page Agents & IA), défauts `OPENROUTER_TRANSCRIPTION_MODEL` / `OPENROUTER_REWRITE_MODEL`. L'ancien webhook N8N de transcription n'est plus utilisé.
+
 ### Keep-alive Supabase (anti-suspension)
 
 La fonction `health-check` (voir `supabase/functions/health-check`) fait un ping léger sur la table `rfps` pour maintenir l'activité du projet Supabase et éviter la mise en pause automatique après 7 jours d'inactivité (limite du plan gratuit).

@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/dashboard", label: "Consultations", icon: FolderOpen, exact: true },
   { href: "/dashboard/organizations", label: "Organisation et membres", icon: Users, exact: false },
-  { href: "/dashboard/agents", label: "Agents", icon: Bot, exact: false },
+  { href: "/dashboard/agents", label: "Agents & IA", icon: Bot, exact: false },
   { href: "/dashboard/settings/tokens", label: "Jetons d'accès", icon: KeyRound, exact: false },
 ];
 

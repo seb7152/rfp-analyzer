@@ -104,3 +104,50 @@ export function useDraftPrompt(organizationId: string) {
     },
   });
 }
+
+export interface AiSettingsInput {
+  transcription_model_id: string;
+  transcription_prompt: string;
+  rewrite_model_id: string;
+  rewrite_prompt: string;
+  vocabulary: string;
+}
+
+export interface AiSettingsPayload {
+  settings: AiSettingsInput & { updated_at: string | null };
+  defaults: AiSettingsInput;
+  role: "admin" | "evaluator" | "viewer";
+}
+
+export const aiSettingsKey = (organizationId: string) => ["ai-settings", organizationId] as const;
+
+/** Dictation and rewriting settings of the organisation, defaults filled in. */
+export function useAiSettings(organizationId: string | null) {
+  return useQuery<AiSettingsPayload, Error>({
+    queryKey: aiSettingsKey(organizationId ?? ""),
+    queryFn: async () => {
+      const res = await fetch(`/api/ai/settings?organizationId=${organizationId}`, { credentials: "include" });
+      if (!res.ok) throw new Error(await readError(res, "Les réglages IA n'ont pas pu être chargés."));
+      return res.json();
+    },
+    enabled: !!organizationId,
+    staleTime: 30_000,
+  });
+}
+
+export function useSaveAiSettings(organizationId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<AiSettingsPayload, Error, AiSettingsInput>({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/ai/settings", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organization_id: organizationId, ...input }),
+      });
+      if (!res.ok) throw new Error(await readError(res, "Les réglages n'ont pas pu être enregistrés."));
+      return res.json();
+    },
+    onSuccess: (data) => queryClient.setQueryData(aiSettingsKey(organizationId), data),
+  });
+}
