@@ -134,7 +134,7 @@ export function DrillDown({ rfpId, versionId, target, onClose, responsesOf, weig
                           onClick={() => setRequirementId(node.id)}
                         >
                           <td className="px-4 py-2">
-                            <span className="article-no mr-2">{node.code}</span>
+                            <span className="article-no mr-2 whitespace-nowrap">{node.code}</span>
                             <span className="text-accent-foreground underline-offset-2 hover:underline">{node.title}</span>
                           </td>
                           <td className="tnum px-2 py-2 text-right text-muted-foreground">{weightOf(node.id)}</td>

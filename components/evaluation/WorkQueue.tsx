@@ -191,7 +191,7 @@ export function WorkQueue({
                   {domains.map((d) => {
                     const checked = filters.domains.includes(d.id);
                     return (
-                      <label key={d.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                      <label key={d.id} className="flex min-w-0 cursor-pointer items-center gap-2 text-sm" title={`${d.code} ${d.title}`}>
                         <Checkbox
                           checked={checked}
                           onCheckedChange={(v) =>
@@ -200,8 +200,8 @@ export function WorkQueue({
                             })
                           }
                         />
-                        <span className="article-no">{d.code}</span>
-                        <span className="truncate">{d.title}</span>
+                        <span className="article-no shrink-0 whitespace-nowrap">{d.code}</span>
+                        <span className="min-w-0 flex-1 truncate">{d.title}</span>
                       </label>
                     );
                   })}
