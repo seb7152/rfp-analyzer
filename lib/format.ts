@@ -50,6 +50,25 @@ export function formatCurrency(value: number | null | undefined): string {
   }).format(value);
 }
 
+/** OpenRouter bills in US dollars; shown with two decimals, French format. */
+export function formatUsd(value: number | null | undefined, digits = 2): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(value);
+}
+
+/** Token counts read better in thousands: 84 200 → « 84 k ». */
+export function formatTokens(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  if (value < 1000) return String(value);
+  const k = value / 1000;
+  return `${k >= 100 ? Math.round(k) : k.toFixed(1).replace(".", ",")} k`;
+}
+
 export function plural(count: number, singular: string, pluralForm?: string) {
   return count > 1 ? (pluralForm ?? `${singular}s`) : singular;
 }

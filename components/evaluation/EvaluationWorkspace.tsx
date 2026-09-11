@@ -25,6 +25,8 @@ import { useResponses, type ResponseWithSupplier } from "@/hooks/use-responses";
 import { useResponseMutation } from "@/hooks/use-response-mutation";
 import { usePeerReviewStatuses, usePeerReviewMutation } from "@/hooks/use-peer-review";
 import { useResponseThreads } from "@/hooks/use-response-threads";
+import { useAgentFindings, useFindingDecision } from "@/hooks/use-agent-findings";
+import type { AgentFindingWithAgent } from "@/lib/agents/types";
 import { useRequirementAnnotations } from "@/components/pdf/hooks/useRequirementAnnotations";
 import { useRequirementDocument } from "@/hooks/use-requirement-document";
 import { useOnlineStatus } from "@/hooks/use-online-status";
@@ -214,6 +216,31 @@ export function EvaluationWorkspace({ rfpId }: { rfpId: string }) {
   }, [annotations]);
   const selectedItem = queue.items.find((it) => it.id === selectedId) ?? null;
   const supplierNames = useMemo(() => responses.map((r) => r.supplier.name), [responses]);
+
+  // Agents' proposals on the selected requirement, one card per answer.
+  const findingsQuery = useAgentFindings(rfpId, selectedId, versionId ?? null);
+  const findingsByResponse = useMemo(() => {
+    const map = new Map<string, AgentFindingWithAgent[]>();
+    for (const f of findingsQuery.data?.findings ?? []) {
+      const list = map.get(f.response_id) ?? [];
+      list.push(f);
+      map.set(f.response_id, list);
+    }
+    return map;
+  }, [findingsQuery.data]);
+  const decision = useFindingDecision(rfpId, versionId ?? null);
+  const decide = (f: AgentFindingWithAgent, action: "accept" | "reject", reason?: string) => {
+    if (!selectedId) return;
+    decision.mutate(
+      { findingId: f.id, responseId: f.response_id, requirementId: selectedId, action, reason },
+      {
+        onSuccess: () => {
+          if (!isOnline) toast.info("Décision enregistrée hors ligne ; elle sera envoyée au retour du réseau.");
+          else toast.success(action === "accept" ? "Proposition acceptée : note IA et fil de discussion mis à jour." : "Proposition rejetée.");
+        },
+      }
+    );
+  };
 
   // Writes: one PUT per gesture, optimistic, queued offline.
   const mutation = useResponseMutation();
@@ -481,6 +508,11 @@ export function EvaluationWorkspace({ rfpId }: { rfpId: string }) {
                 onOpenDocuments={(supplierId) => openSupplierDocuments(supplierId)}
                 onOpenBookmark={(b) => b.supplierId && openSupplierDocuments(b.supplierId, b.documentId, b.pageNumber)}
                 onOpenThreads={() => openThreadsFor(r)}
+                findings={findingsByResponse.get(r.id) ?? []}
+                onAcceptFinding={(f) => decide(f, "accept")}
+                onRejectFinding={(f, reason) => decide(f, "reject", reason)}
+                decisionPending={decision.isPending}
+                decisionDisabledReason={canEdit ? null : "Réservé aux évaluateurs de la consultation."}
               />
             );
           })}

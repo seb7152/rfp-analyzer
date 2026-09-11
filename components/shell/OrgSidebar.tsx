@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronsUpDown, FolderOpen, KeyRound, Users, Check } from "lucide-react";
+import { ChevronsUpDown, FolderOpen, KeyRound, Users, Check, Bot } from "lucide-react";
 import { useOrganization } from "@/hooks/use-organization";
 import {
   DropdownMenu,
@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/dashboard", label: "Consultations", icon: FolderOpen, exact: true },
   { href: "/dashboard/organizations", label: "Organisation et membres", icon: Users, exact: false },
+  { href: "/dashboard/agents", label: "Agents", icon: Bot, exact: false },
   { href: "/dashboard/settings/tokens", label: "Jetons d'accès", icon: KeyRound, exact: false },
 ];
 

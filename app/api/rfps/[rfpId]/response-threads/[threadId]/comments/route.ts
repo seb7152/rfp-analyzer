@@ -62,7 +62,9 @@ export async function GET(
         author_id,
         edited_at,
         created_at,
-        updated_at
+        updated_at,
+        agent_finding_id,
+        agent_findings(decided_at, agent_runs(agent_versions(version_number, agents(name))))
       `
       )
       .eq("thread_id", threadId)
@@ -111,6 +113,15 @@ export async function GET(
       created_at: c.created_at,
       updated_at: c.updated_at,
       author: usersMap[c.author_id] || { email: "", display_name: null },
+      // Provenance of a comment created by accepting an agent's proposal.
+      agent_finding_id: c.agent_finding_id ?? null,
+      agent_origin: c.agent_findings
+        ? {
+            agent_name: c.agent_findings.agent_runs?.agent_versions?.agents?.name ?? "Agent",
+            version_number: c.agent_findings.agent_runs?.agent_versions?.version_number ?? null,
+            accepted_at: c.agent_findings.decided_at ?? c.created_at,
+          }
+        : null,
     }));
 
     return NextResponse.json(

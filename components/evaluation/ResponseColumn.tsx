@@ -39,6 +39,9 @@ import type { RFPAccessLevel } from "@/types/user";
 import { finalScore, STATUS_META, STATUS_ORDER, type ResponseStatus } from "@/lib/scoring";
 import { formatScore } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { FindingCard } from "@/components/agents/FindingCard";
+import { findQuoteRange } from "@/lib/agents/quotes";
+import type { AgentFindingWithAgent } from "@/lib/agents/types";
 
 export interface ResponseColumnProps {
   rfpId: string;
@@ -63,6 +66,13 @@ export interface ResponseColumnProps {
   layout: "column" | "card";
   /** Lines of response kept visible before « Lire la suite ». */
   responseLines?: number;
+  /** Agents' proposals on this answer, newest first. */
+  findings?: AgentFindingWithAgent[];
+  onAcceptFinding?: (finding: AgentFindingWithAgent) => void;
+  onRejectFinding?: (finding: AgentFindingWithAgent, reason: string) => void;
+  decisionPending?: boolean;
+  /** When set, Accept / Reject are disabled and this says why. */
+  decisionDisabledReason?: string | null;
 }
 
 function ClampedText({
@@ -70,15 +80,19 @@ function ClampedText({
   lines,
   empty,
   fixed = false,
+  highlight = null,
 }: {
   text: string | null;
   lines: number;
   empty: string;
   /** Reserve the full height even for short text, so sibling columns align. */
   fixed?: boolean;
+  /** Range of the text to mark (a quoted passage); opens the text. */
+  highlight?: { start: number; end: number } | null;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLParagraphElement>(null);
+  const markRef = useRef<HTMLElement>(null);
   const [overflows, setOverflows] = useState(false);
   const LINE = 19;
   useEffect(() => {
@@ -86,6 +100,12 @@ function ClampedText({
     if (!el) return;
     setOverflows(el.scrollHeight > el.clientHeight + 1);
   }, [text, open, lines]);
+  useEffect(() => {
+    if (!highlight) return;
+    setOpen(true);
+    const id = window.setTimeout(() => markRef.current?.scrollIntoView({ block: "center", behavior: "smooth" }), 50);
+    return () => window.clearTimeout(id);
+  }, [highlight]);
   if (!text || !text.trim()) {
     return (
       <p className="text-sm italic text-muted-foreground" style={fixed ? { minHeight: lines * LINE } : undefined}>
@@ -104,7 +124,17 @@ function ClampedText({
             : { lineHeight: `${LINE}px`, display: "-webkit-box", WebkitLineClamp: lines, WebkitBoxOrient: "vertical", overflow: "hidden" }
         }
       >
-        {text}
+        {highlight && highlight.start < highlight.end ? (
+          <>
+            {text.slice(0, highlight.start)}
+            <mark ref={markRef} className="rounded-sm bg-accent px-0.5 text-foreground ring-1 ring-primary/40">
+              {text.slice(highlight.start, highlight.end)}
+            </mark>
+            {text.slice(highlight.end)}
+          </>
+        ) : (
+          text
+        )}
       </p>
       {(overflows || open) && (
         <button
@@ -146,8 +176,18 @@ export function ResponseColumn({
   onOpenThreads,
   layout,
   responseLines = 8,
+  findings = [],
+  onAcceptFinding,
+  onRejectFinding,
+  decisionPending = false,
+  decisionDisabledReason = null,
 }: ResponseColumnProps) {
   const queryClient = useQueryClient();
+  const [activeQuote, setActiveQuote] = useState<string | null>(null);
+  const highlight = activeQuote && response.response_text ? findQuoteRange(response.response_text, activeQuote) : null;
+  useEffect(() => {
+    setActiveQuote(null);
+  }, [response.id]);
   const analyze = useAnalyzeResponse();
   const hasAI = canUseAIFeatures(access);
   const [comment, setComment] = useState(response.manual_comment ?? "");
@@ -306,7 +346,7 @@ export function ResponseColumn({
               </Button>
             </div>
           </div>
-          <ClampedText text={response.response_text} lines={responseLines} empty="Aucune réponse fournie." fixed />
+          <ClampedText text={response.response_text} lines={responseLines} empty="Aucune réponse fournie." fixed highlight={highlight} />
         </div>
 
         {bookmarks.length > 0 && (
@@ -355,6 +395,25 @@ export function ResponseColumn({
           </div>
           <ClampedText text={response.ai_comment} lines={5} empty="Pas encore d'analyse IA." />
         </div>
+
+        {findings.length > 0 && (
+          <div className="space-y-2" aria-label="Propositions des agents">
+            {findings.map((f) => (
+              <FindingCard
+                key={f.id}
+                finding={f}
+                currentAiScore={response.ai_score}
+                canDecide={canEdit && !decisionDisabledReason && !!onAcceptFinding}
+                disabledReason={decisionDisabledReason}
+                activeQuote={activeQuote}
+                onQuote={setActiveQuote}
+                onAccept={() => onAcceptFinding?.(f)}
+                onReject={(reason) => onRejectFinding?.(f, reason)}
+                pending={decisionPending}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Le geste, puis les signaux */}

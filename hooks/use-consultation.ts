@@ -134,7 +134,7 @@ export function buildChapters(
       state: analysisState,
       figure:
         analysis.total > 0 ? `${analysis.scored}/${analysis.total}` : null,
-      entries: [],
+      entries: [{ label: "Agents", href: rfpHref(rfpId, "agents") }],
     });
   }
 

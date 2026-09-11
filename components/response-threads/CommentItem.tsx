@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Edit2, Trash2 } from "lucide-react";
+import { Bot, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatDateTime } from "@/lib/format";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { ThreadCommentWithAuthor } from "@/types/response-thread";
@@ -117,6 +118,15 @@ export function CommentItem({
             )}
           </div>
 
+          {comment.agent_origin && (
+            <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Bot className="h-3 w-3" aria-hidden />
+              Proposé par l&apos;agent {comment.agent_origin.agent_name}
+              {comment.agent_origin.version_number ? ` v${comment.agent_origin.version_number}` : ""}, accepté par{" "}
+              {comment.author?.display_name || comment.author?.email || "un évaluateur"} le{" "}
+              {formatDateTime(comment.agent_origin.accepted_at)}
+            </p>
+          )}
           <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 whitespace-pre-wrap">
             {comment.content}
           </p>
