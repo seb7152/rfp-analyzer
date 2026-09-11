@@ -128,12 +128,12 @@ function ImportMenu({
           </span>
         </DropdownMenuItem>
         <DropdownMenuItem asChild className="items-start gap-2.5 py-2">
-          <Link href={`/dashboard/rfp/${rfpId}/import/json`}>
+          <Link href={`/dashboard/rfp/${rfpId}/import`}>
             <Braces className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="flex flex-col gap-0.5">
-              <span className="font-medium">JSON</span>
+              <span className="font-medium">Fichier JSON</span>
               <span className="text-xs text-muted-foreground">
-                Structure, exigences, fournisseurs et réponses, collés étape par étape.
+                Domaines, exigences, fournisseurs et réponses, avec aperçu avant écriture.
               </span>
             </span>
           </Link>
@@ -262,7 +262,7 @@ function SupplierRow({
             Documents
           </Button>
           <Button variant={hasResponses ? "ghost" : "outline"} size="xs" asChild disabled={readOnly}>
-            <Link href={`/dashboard/rfp/${rfpId}/import/json?step=4&supplier=${supplier.id}`}>
+            <Link href={`/dashboard/rfp/${rfpId}/import?dataset=reponses&supplier=${supplier.id}`}>
               {complete ? "Voir le dépôt" : hasResponses ? "Compléter" : "Déposer les réponses"}
             </Link>
           </Button>

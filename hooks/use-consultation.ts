@@ -123,6 +123,7 @@ export function buildChapters(
       entries: [
         { label: "Référentiel", href: rfpHref(rfpId, "referentiel") },
         { label: "Documents", href: rfpHref(rfpId, "documents") },
+        { label: "Import", href: rfpHref(rfpId, "import") },
       ],
     });
     chapters.push({

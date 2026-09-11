@@ -1,6 +1,17 @@
-import { redirect } from "next/navigation";
+"use client";
 
-/** The preparation hub moved to its own chapter route. */
-export default function ImportPage({ params }: { params: { rfpId: string } }) {
-  redirect(`/dashboard/rfp/${params.rfpId}/preparation`);
+import { Suspense } from "react";
+import { useParams } from "next/navigation";
+import { ImportWorkspace } from "@/components/import/ImportWorkspace";
+import { PageState } from "@/components/shell/PageState";
+
+/** Chapitre 1 · Import : les quatre jeux de données et leur lecture. */
+export default function ImportPage() {
+  const params = useParams();
+  const rfpId = params.rfpId as string;
+  return (
+    <Suspense fallback={<PageState kind="loading" title="Chargement des jeux de données" />}>
+      <ImportWorkspace rfpId={rfpId} />
+    </Suspense>
+  );
 }

@@ -32,6 +32,10 @@ Le brief interdit tout changement de schéma, de contrat d'API ou d'auth. Les po
 ### P-7 — Route `/api/auth/login`
 - **Bug.** Le profil échoue avec « more than one relationship was found for 'users' and 'user_organizations' » (double clé étrangère). La page de connexion n'utilise pas cette route (elle appelle Supabase directement), mais `useAuth().login` oui. Correction : préciser la relation dans le `select` (`user_organizations!user_organizations_user_id_fkey`).
 
+### P-9 — Import : un rapport ligne à ligne
+- `POST /categories/import`, `/requirements/import`, `/suppliers/import` et `/responses/import` valident le payload en bloc (`lib/supabase/validators.ts`) : une ligne fautive et rien n'est importé, avec un message global en anglais. L'atelier d'import contourne en appliquant les mêmes règles côté client et en n'envoyant que les lignes valides, ce qui écrit les règles à deux endroits. Proposition : renvoyer `{ created, updated, skipped, errors: [{ line, field, reason }] }` et accepter un payload partiel. Les libellés d'erreur gagneraient à être en français, côté serveur comme côté client.
+- Import de tableur : toujours absent. Le « Format attendu » de l'atelier fournit un prompt et un JSON Schema pour convertir un XLSX à l'extérieur ; un import natif reste à arbitrer.
+
 ### P-8 — Clé de service en local
 - Les routes `response-threads`, `review-statuses` et `review-status` exigent `SUPABASE_SERVICE_ROLE_KEY`, absente de `.env.local` (qui contient des valeurs placeholder pour l'URL et la clé anonyme). En local, les discussions et le peer review renvoient 500 ; les écrans les tolèrent. `.env.development.local` (ignoré par git) a été créé avec l'URL et la clé anonyme réelles pour faire tourner l'application.
 
@@ -49,8 +53,7 @@ Le brief interdit tout changement de schéma, de contrat d'API ou d'auth. Les po
 - `npm test` et `npm run lint` (CLAUDE.md) : aucun script `test`, ESLint non configuré (`next lint` demande une configuration interactive).
 - Sécurité (advisor Supabase) : RLS désactivée sur `organizations`, `requirements`, `categories`, `defense_analyses`, `presentation_analyses`. À traiter avec des politiques avant activation.
 - Page de connexion : bouton indigo, hors périmètre, non repeinte.
-- Import de tableur : inexistant. L'assistant `/import/json` ne prend que du JSON collé (aucun sélecteur de fichier, aucun XLSX ni CSV) ; l'ancien libellé « Depuis un tableur ou un fichier JSON » promettait une capacité absente, il a été corrigé. Un import XLSX/CSV (colonnes vers exigences, prévisualisation) reste à développer.
-- `ImportWithStepper` et `/import/json` : écran d'origine, non refondu (couleurs `slate-*` en dur, `bg-slate-50`, zones de collage JSON sans validation de schéma lisible). Il devient plus visible depuis le menu des sources du référentiel.
+- Import de tableur : inexistant côté application. Le dépôt se fait en JSON ; l'atelier d'import fournit un prompt et un JSON Schema pour convertir un tableur à l'extérieur (D-18). L'ancien libellé « Depuis un tableur ou un fichier JSON » promettait une capacité absente, il a été corrigé.
 - `contexts/VersionContext.tsx` : les erreurs sont des chaînes anglaises (« Failed to fetch versions », « Failed to activate version ») stockées dans le contexte mais affichées nulle part ; `setActiveVersionId` rejette sans que l'appelant historique (`VersionSwitcher`) le capte. Le sommaire refondu capte le rejet et affiche un message français ; la réécriture du contexte (React Query, messages français, état de chargement pendant l'activation) reste à faire.
 - Activation d'une version : `POST /api/rfps/[rfpId]/versions/[versionId]/activate` change la version active pour toute la consultation, donc pour tous les utilisateurs. Rien dans l'interface ne le dit au moment du choix. À trancher : confirmation explicite, ou version active par utilisateur (changement de schéma, hors périmètre).
 

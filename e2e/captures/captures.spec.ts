@@ -39,6 +39,19 @@ test.describe("captures pilote", () => {
     await shot(page, "preparation");
     await shot(page, "preparation", { dark: true });
 
+    await page.goto(`/dashboard/rfp/${RFP_EMPTY_ID}/import?dataset=exigences`);
+    await settle(page);
+    await page.getByRole("button", { name: "Coller du JSON" }).click();
+    await page.getByLabel("JSON à importer").fill(
+      JSON.stringify([
+        { code: "R-900", title: "Supervision des équipements", description: "Supervision en temps réel.", category_name: "DOM1.1", is_mandatory: true },
+        { code: "R-901", title: "Astreinte 24/7", description: "Astreinte permanente.", category_name: "Astreinte" },
+      ])
+    );
+    await settle(page);
+    await shot(page, "import");
+    await shot(page, "import", { dark: true });
+
     await page.goto(`/dashboard/rfp/${RFP_ID}/analyse`);
     await settle(page);
     await shot(page, "analyse");
