@@ -49,6 +49,8 @@ Le brief interdit tout changement de schéma, de contrat d'API ou d'auth. Les po
 - `npm test` et `npm run lint` (CLAUDE.md) : aucun script `test`, ESLint non configuré (`next lint` demande une configuration interactive).
 - Sécurité (advisor Supabase) : RLS désactivée sur `organizations`, `requirements`, `categories`, `defense_analyses`, `presentation_analyses`. À traiter avec des politiques avant activation.
 - Page de connexion : bouton indigo, hors périmètre, non repeinte.
+- `contexts/VersionContext.tsx` : les erreurs sont des chaînes anglaises (« Failed to fetch versions », « Failed to activate version ») stockées dans le contexte mais affichées nulle part ; `setActiveVersionId` rejette sans que l'appelant historique (`VersionSwitcher`) le capte. Le sommaire refondu capte le rejet et affiche un message français ; la réécriture du contexte (React Query, messages français, état de chargement pendant l'activation) reste à faire.
+- Activation d'une version : `POST /api/rfps/[rfpId]/versions/[versionId]/activate` change la version active pour toute la consultation, donc pour tous les utilisateurs. Rien dans l'interface ne le dit au moment du choix. À trancher : confirmation explicite, ou version active par utilisateur (changement de schéma, hors périmètre).
 
 ## 3. Données de test
 
