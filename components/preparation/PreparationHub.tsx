@@ -182,11 +182,11 @@ function SupplierRow({
       <td className="tnum py-2 pr-3 text-right">
         {hasResponses ? `${supplier.responsesTotal}/${requirementsTotal}` : "—"}
       </td>
-      <td className="tnum py-2 pr-3 text-right">
+      <td className="tnum hidden py-2 pr-3 text-right md:table-cell">
         {supplier.documents > 0 ? supplier.documents : "—"}
       </td>
       <td className="py-2 text-right">
-        <div className="flex justify-end gap-1">
+        <div className="flex flex-wrap justify-end gap-1">
           <Button variant="ghost" size="xs" onClick={onUpload} disabled={readOnly}>
             <FileUp className="h-3.5 w-3.5" />
             Documents
@@ -436,13 +436,13 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
         {suppliers.total === 0 ? (
           <p className="text-sm text-muted-foreground">Déclarez d'abord les fournisseurs.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-sm">
+          <div>
+            <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="py-1 pr-3 font-semibold">Fournisseur</th>
                   <th className="py-1 pr-3 text-right font-semibold">Réponses</th>
-                  <th className="py-1 pr-3 text-right font-semibold">Documents</th>
+                  <th className="hidden py-1 pr-3 text-right font-semibold md:table-cell">Documents</th>
                   <th className="py-1" />
                 </tr>
               </thead>

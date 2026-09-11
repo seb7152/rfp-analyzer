@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronRight, FileText, Bookmark, X, ArrowLeft } from "lucide-react";
+import { ChevronRight, FileText, Bookmark, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -76,7 +76,7 @@ export function DrillDown({ rfpId, versionId, target, onClose, responsesOf, weig
         <SheetTitle className="sr-only">Détail</SheetTitle>
         {target && (
           <>
-            <header className="border-b border-border px-4 py-3">
+            <header className="border-b border-border px-4 py-3 pr-10">
               <nav aria-label="Renvois" className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                 <span>{target.supplier.name}</span>
                 <ChevronRight className="h-3 w-3" />
@@ -109,9 +109,6 @@ export function DrillDown({ rfpId, versionId, target, onClose, responsesOf, weig
                     <span className="tnum ml-2 text-muted-foreground">{formatScore(target.domainScore)}/5</span>
                   </h2>
                 )}
-                <Button variant="ghost" size="xs" mode="icon" className="ml-auto" aria-label="Fermer" onClick={() => { setRequirementId(null); onClose(); }}>
-                  <X className="h-4 w-4" />
-                </Button>
               </div>
             </header>
 

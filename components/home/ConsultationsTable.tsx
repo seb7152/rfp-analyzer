@@ -115,14 +115,14 @@ export function ConsultationsTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-sm">
+      <div>
+        <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
               <th className="px-4 py-2 font-semibold md:px-6">Consultation</th>
               <th className="px-3 py-2 font-semibold">Statut</th>
               <th className="px-3 py-2 font-semibold">Évaluation</th>
-              <th className="px-3 py-2 font-semibold">Créée le</th>
+              <th className="hidden px-3 py-2 font-semibold md:table-cell">Créée le</th>
               {canDelete && <th className="px-3 py-2" />}
             </tr>
           </thead>
@@ -173,7 +173,7 @@ export function ConsultationsTable({
                     <td className="px-3 py-2.5">
                       <ProgressCell rfpId={rfp.id} />
                     </td>
-                    <td className="tnum px-3 py-2.5 text-muted-foreground">
+                    <td className="tnum hidden px-3 py-2.5 text-muted-foreground md:table-cell">
                       {formatDate(rfp.created_at)}
                     </td>
                     {canDelete && (

@@ -117,7 +117,7 @@ export function WorkQueue({
               {activeFilterCount > 0 && <span className="tnum text-xs">{activeFilterCount}</span>}
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-80 space-y-4 p-4">
+          <PopoverContent align="end" className="max-h-[70vh] w-80 space-y-4 overflow-y-auto p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold">Filtres</span>
               {activeFilterCount > 0 && (

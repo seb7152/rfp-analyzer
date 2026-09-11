@@ -31,7 +31,8 @@ test.describe("Parcours 3 — décider et restituer (Claire)", () => {
 
     // Technique et financier, puis restitution.
     await expect(page.locator("#financier")).toContainText(/Technique et financier/);
-    await expect(page.getByText(/Exporter le livrable|Préparer l'export/)).toBeVisible();
+    // Le sponsor est en lecture ("viewer") : pas de CTA d'export actionnable, seulement l'état.
+    await expect(page.getByText("Export non configuré")).toBeVisible();
 
     if (!isMobile(page)) {
       await expect(page.getByRole("button", { name: "Présenter" })).toBeVisible();

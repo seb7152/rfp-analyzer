@@ -15,6 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { STATUS_META, scaleClass, type ResponseStatus } from "@/lib/scoring";
 import { formatCurrency, formatScore } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { ScrollX } from "@/components/shell/ScrollX";
 
 interface ExportConfiguration {
   id: string;
@@ -227,16 +228,16 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
       />
 
       <Section id="classement" number="4.1" title="Classement technique" lead="Moyenne pondérée des notes par exigence, sur 5. La couverture indique la part des exigences notées.">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-sm presentation:text-lg">
+        <div>
+          <table className="w-full text-sm presentation:text-lg">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground presentation:text-sm">
                 <th className="w-8 py-2 font-semibold">#</th>
                 <th className="py-2 font-semibold">Fournisseur</th>
                 <th className="py-2 text-right font-semibold">Note</th>
-                <th className="w-48 py-2 font-semibold"></th>
-                <th className="py-2 text-right font-semibold">Couverture</th>
-                <th className="py-2 pl-4 font-semibold">Répartition</th>
+                <th className="hidden w-48 py-2 font-semibold md:table-cell"></th>
+                <th className="py-2 text-right font-semibold">Couv.</th>
+                <th className="hidden py-2 pl-4 font-semibold md:table-cell">Répartition</th>
               </tr>
             </thead>
             <tbody>
@@ -248,13 +249,13 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
                     <td className="tnum py-2.5 text-muted-foreground">{s.rank}</td>
                     <td className="py-2.5">{s.name}</td>
                     <td className="tnum py-2.5 text-right">{formatScore(s.score)}</td>
-                    <td className="py-2.5 pl-3">
+                    <td className="hidden py-2.5 pl-3 md:table-cell">
                       <span className="block h-2 w-full overflow-hidden rounded-sm bg-muted" aria-hidden>
                         <span className="block h-full bg-primary" style={{ width: `${pct}%` }} />
                       </span>
                     </td>
                     <td className="tnum py-2.5 text-right text-muted-foreground">{s.scored}/{s.total}</td>
-                    <td className="py-2.5 pl-4">
+                    <td className="hidden py-2.5 pl-4 md:table-cell">
                       <span className="flex h-2 w-40 overflow-hidden rounded-sm bg-muted" aria-label={(["pass", "partial", "fail", "roadmap"] as ResponseStatus[]).map((k) => `${STATUS_META[k].label} ${s.statuses[k]}`).join(", ")}>
                         {(["pass", "partial", "fail", "roadmap"] as ResponseStatus[]).map((k) => (
                           <span
@@ -271,7 +272,7 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
             </tbody>
           </table>
         </div>
-        <p className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
+        <p className="mt-2 hidden flex-wrap gap-3 text-xs text-muted-foreground md:flex">
           {(["pass", "partial", "fail", "roadmap"] as ResponseStatus[]).map((k) => (
             <span key={k} className="inline-flex items-center gap-1">
               <span className={cn("inline-block h-2 w-2 rounded-sm", k === "pass" && "bg-status-pass", k === "partial" && "bg-status-partial", k === "fail" && "bg-status-fail", k === "roadmap" && "bg-status-roadmap")} />
@@ -282,11 +283,11 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
       </Section>
 
       <Section id="domaines" number="4.2" title="Notes par domaine" lead="Chaque cellule est la moyenne pondérée du domaine pour un fournisseur. Cliquez une cellule pour descendre jusqu'aux exigences et aux passages cités.">
-        <div className="overflow-x-auto">
+        <ScrollX hint={`Faites défiler vers la droite : ${suppliers.length} fournisseurs.`}>
           <table className="w-full min-w-[560px] border-collapse text-sm presentation:text-lg">
             <thead>
               <tr>
-                <th className="sticky left-0 bg-background py-2 pr-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground presentation:text-sm">Domaine</th>
+                <th className="sticky left-0 z-10 bg-background py-2 pr-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground presentation:text-sm">Domaine</th>
                 <th className="py-2 pr-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground presentation:text-sm">Poids</th>
                 {suppliers.map((s) => (
                   <th key={s.id} className="min-w-[88px] py-2 px-1 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground presentation:text-sm">
@@ -300,7 +301,7 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
                 const node = data.tree.find((n) => n.id === row.id)!;
                 return (
                   <tr key={row.id} className="border-t border-border">
-                    <td className="sticky left-0 min-w-[200px] max-w-[320px] bg-background py-1.5 pr-3">
+                    <td className="sticky left-0 z-10 min-w-[150px] max-w-[320px] bg-background py-1.5 pr-3 md:min-w-[200px]">
                       <span className="article-no block whitespace-nowrap md:mr-2 md:inline">{row.code}</span>
                       <span className="line-clamp-2">{row.title}</span>
                       <span className="tnum block text-xs text-muted-foreground md:ml-2 md:inline">{row.requirementCount} exig.</span>
@@ -332,7 +333,7 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
               })}
             </tbody>
           </table>
-        </div>
+        </ScrollX>
       </Section>
 
       <Section id="financier" number="4.3" title="Technique et financier" lead="Le mieux-disant technique face au mieux-disant financier, sur le coût total de possession à 3 ans.">
@@ -358,7 +359,7 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
                     }${gap.tcoGap !== null ? ` pour ${formatCurrency(gap.tcoGap)} d'écart de TCO` : ""}.`}
               </p>
             )}
-            <div className="overflow-x-auto">
+            <ScrollX>
               <table className="w-full min-w-[560px] text-sm presentation:text-lg">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground presentation:text-sm">
@@ -388,7 +389,7 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
                   })}
                 </tbody>
               </table>
-            </div>
+            </ScrollX>
           </>
         )}
       </Section>

@@ -145,7 +145,7 @@ export function buildChapters(
   chapters.push({
     id: "arbitrage",
     number: 4,
-    label: "Arbitrage",
+    label: "Décision",
     href: rfpHref(rfpId, "decision"),
     state: evaluationDone ? "done" : p.responses.answered > 0 ? "partial" : "empty",
     figure: null,

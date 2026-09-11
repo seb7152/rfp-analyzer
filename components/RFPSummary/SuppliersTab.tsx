@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { useVersion } from "@/contexts/VersionContext";
 import {
   Table,
@@ -388,9 +388,8 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
             </TableHeader>
             <TableBody>
               {suppliersWithCurrentRanking.map((supplier) => (
-                <>
+                <Fragment key={supplier.id}>
                   <TableRow
-                    key={supplier.id}
                     className="cursor-pointer hover:bg-gray-50"
                     onClick={() =>
                       setExpandedSupplier(
@@ -513,7 +512,7 @@ export function SuppliersTab({ rfpId }: SuppliersTabProps) {
                         </TableCell>
                       </TableRow>
                     )}
-                </>
+                </Fragment>
               ))}
             </TableBody>
           </Table>
