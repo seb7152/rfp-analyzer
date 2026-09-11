@@ -606,12 +606,18 @@ export function buildAgentPrompt(id: DatasetId, ctx: ImportContext): string {
   const tool = MCP_TOOL[id];
   const lines: string[] = [];
 
+  const local = /localhost|127\.0\.0\.1|\[::1\]/.test(ctx.origin);
+
   lines.push(
     `Tu importes des données dans RFP Analyzer par son connecteur MCP.`,
     `Jeu de données : ${spec.label.toLowerCase()}.`,
     ``,
     `Connexion :`,
     `- Serveur MCP : ${ctx.origin || "https://<installation>"}/api/mcp`,
+    ...(local
+      ? [`  (adresse locale à cette machine : un agent qui tourne ailleurs doit viser l'adresse`,
+         `  publique de l'installation.)`]
+      : []),
     `- En-tête : Authorization: Bearer <jeton>, un jeton personnel qui commence par « rfpa_ ».`,
     `- Si tu n'as pas ce jeton, demande-le à l'utilisateur : il le crée dans Jetons d'accès,`,
     `  dans son compte. Ne l'écris jamais dans un fichier, un message ou un journal.`,
