@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft, ChevronsLeft, ChevronsRight, ChevronsUpDown, Check, Layers, Settings } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Chapter } from "@/hooks/use-consultation";
 import { useRFPs } from "@/hooks/use-rfps";
@@ -53,6 +54,16 @@ export function ConsultationRail({
   const router = useRouter();
   const { rfps } = useRFPs();
   const { versions, activeVersion, setActiveVersionId } = useVersion();
+
+  const switchVersion = async (versionId: string) => {
+    try {
+      await setActiveVersionId(versionId);
+    } catch {
+      toast.error("La version n'a pas pu être activée.", {
+        description: "Vérifiez votre connexion, puis réessayez.",
+      });
+    }
+  };
 
   const settings = chapters.find((c) => c.id === "parametres");
   const numbered = chapters.filter((c) => c.id !== "parametres");
@@ -140,7 +151,7 @@ export function ConsultationRail({
                       <DropdownMenuContent align="start" className="w-64">
                         <DropdownMenuLabel>Versions de l&apos;évaluation</DropdownMenuLabel>
                         {versions.map((v) => (
-                          <DropdownMenuItem key={v.id} className="gap-2" onSelect={() => !v.is_active && setActiveVersionId(v.id)}>
+                          <DropdownMenuItem key={v.id} className="gap-2" onSelect={() => { if (!v.is_active) void switchVersion(v.id); }}>
                             <span className="num text-2xs text-muted-foreground">V{v.version_number}</span>
                             <span className="flex-1 truncate">{v.version_name || "Sans nom"}</span>
                             {v.is_active && <Check className="h-4 w-4 text-primary" />}
