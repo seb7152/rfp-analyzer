@@ -495,8 +495,16 @@ export function buildPrompt(id: DatasetId, ctx: ImportContext): string {
     `Tu convertis un tableau en JSON d'import pour un outil d'évaluation d'appels d'offres.`,
     `Jeu de données : ${spec.label.toLowerCase()}.`,
     ``,
-    `Réponds uniquement avec un tableau JSON, sans commentaire ni texte autour, sans bloc de code.`,
-    `Un objet par ligne du tableau. N'invente aucune valeur : un champ inconnu est omis, jamais deviné.`,
+    `Méthode : la conversion doit être la plus déterministe possible. Établis d'abord la`,
+    `correspondance entre les colonnes du tableau et les champs ci-dessous, puis applique-la à`,
+    `toutes les lignes sans exception. Dès que le tableau est long, irrégulier ou réparti sur`,
+    `plusieurs feuilles, écris et exécute un script qui le lit et produit le JSON, plutôt que de`,
+    `transcrire les lignes une à une : une transcription manuelle dérive d'une ligne à l'autre.`,
+    `N'invente aucune valeur : un champ inconnu est omis, jamais deviné. Ne reformule pas les`,
+    `textes, reprends-les tels quels.`,
+    ``,
+    `Sortie : un tableau JSON, un objet par ligne du tableau, sans commentaire ni texte autour,`,
+    `sans bloc de code — ou un fichier .json contenant ce tableau.`,
     ``,
     `Champs :`
   );

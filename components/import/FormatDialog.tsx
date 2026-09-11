@@ -21,24 +21,51 @@ import {
   type ImportContext,
 } from "@/lib/import/datasets";
 
-function CopyButton({ text, label }: { text: string; label: string }) {
+/** A block of text with the discreet copy affordance in its top-right corner. */
+function CopyBlock({ text, label }: { text: string; label: string }) {
   const [done, setDone] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Presse-papiers refusé (contexte non sécurisé, fenêtre sans focus) : on repasse
+      // par la sélection, qui marche partout.
+      const area = document.createElement("textarea");
+      area.value = text;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(area);
+      if (!ok) {
+        toast.error("La copie a échoué.", { description: "Sélectionnez le texte pour le copier." });
+        return;
+      }
+    }
+    setDone(true);
+    window.setTimeout(() => setDone(false), 2000);
+  };
   return (
-    <Button
-      size="sm"
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(text);
-          setDone(true);
-          window.setTimeout(() => setDone(false), 2000);
-        } catch {
-          toast.error("La copie a échoué.", { description: "Sélectionnez le texte pour le copier." });
-        }
-      }}
-    >
-      {done ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-      {done ? "Copié" : label}
-    </Button>
+    <div className="relative">
+      <button
+        type="button"
+        onClick={copy}
+        aria-label={label}
+        title={done ? "Copié" : label}
+        className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {done ? (
+          <Check className="h-3.5 w-3.5 text-status-pass" />
+        ) : (
+          <Copy className="h-3.5 w-3.5" />
+        )}
+      </button>
+      <pre className="max-h-[46vh] w-full overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-rail p-3 pr-11 font-mono text-2xs leading-[16px] text-foreground">
+        {text}
+      </pre>
+    </div>
   );
 }
 
@@ -84,27 +111,17 @@ export function FormatDialog({
           </TabsList>
 
           <TabsContent value="prompt" className="mt-3">
-            <div className="flex items-center justify-between gap-3 pb-2">
-              <p className="text-xs text-muted-foreground">
-                À coller dans un assistant, suivi du tableau à convertir.
-              </p>
-              <CopyButton text={prompt} label="Copier le prompt" />
-            </div>
-            <pre className="max-h-[46vh] w-full overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-rail p-3 font-mono text-2xs leading-[16px] text-foreground">
-              {prompt}
-            </pre>
+            <p className="pb-2 text-xs text-muted-foreground">
+              À coller dans un assistant, suivi du tableau à convertir.
+            </p>
+            <CopyBlock text={prompt} label="Copier le prompt" />
           </TabsContent>
 
           <TabsContent value="schema" className="mt-3">
-            <div className="flex items-center justify-between gap-3 pb-2">
-              <p className="text-xs text-muted-foreground">
-                JSON Schema, pour un agent ou une génération contrainte.
-              </p>
-              <CopyButton text={schema} label="Copier le schéma" />
-            </div>
-            <pre className="max-h-[46vh] w-full overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-rail p-3 font-mono text-2xs leading-[16px] text-foreground">
-              {schema}
-            </pre>
+            <p className="pb-2 text-xs text-muted-foreground">
+              JSON Schema, pour un agent ou une génération contrainte.
+            </p>
+            <CopyBlock text={schema} label="Copier le schéma" />
           </TabsContent>
 
           <TabsContent value="champs" className="mt-3">
