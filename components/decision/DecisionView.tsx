@@ -24,13 +24,11 @@ interface ExportConfiguration {
 }
 
 function Section({
-  number,
   title,
   lead,
   children,
   id,
 }: {
-  number: string;
   title: string;
   lead?: string;
   children: React.ReactNode;
@@ -38,10 +36,7 @@ function Section({
 }) {
   return (
     <section id={id} aria-labelledby={`${id}-title`} className="panel mx-4 scroll-mt-4 px-4 py-4 md:mx-8 md:px-5 presentation:min-h-screen presentation:py-10">
-      <h2 id={`${id}-title`} className="flex items-baseline gap-2 text-lg font-semibold presentation:text-3xl">
-        <span className="article-no presentation:text-lg">{number}</span>
-        {title}
-      </h2>
+      <h2 id={`${id}-title`} className="text-lg font-semibold presentation:text-3xl">{title}</h2>
       {lead && <p className="mt-1 max-w-[70ch] text-sm text-muted-foreground presentation:text-lg">{lead}</p>}
       <div className="mt-4">{children}</div>
     </section>
@@ -193,7 +188,6 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
       className={cn("mx-auto flex max-w-6xl flex-col gap-4 bg-background pb-8", presentation && "presentation max-w-none overflow-y-auto")}
     >
       <PageHeader
-        number={4}
         title="Décision"
         lead={lead}
         className="no-print"
@@ -227,7 +221,7 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
         }
       />
 
-      <Section id="classement" number="4.1" title="Classement technique" lead="Moyenne pondérée des notes par exigence, sur 5. La couverture indique la part des exigences notées.">
+      <Section id="classement" title="Classement technique" lead="Moyenne pondérée des notes par exigence, sur 5. La couverture indique la part des exigences notées.">
         <div>
           <table className="w-full text-sm presentation:text-lg">
             <thead>
@@ -286,7 +280,7 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
         </p>
       </Section>
 
-      <Section id="domaines" number="4.2" title="Notes par domaine" lead="Chaque cellule est la moyenne pondérée du domaine pour un fournisseur. Cliquez une cellule pour descendre jusqu'aux exigences et aux passages cités.">
+      <Section id="domaines" title="Notes par domaine" lead="Chaque cellule est la moyenne pondérée du domaine pour un fournisseur. Cliquez une cellule pour descendre jusqu'aux exigences et aux passages cités.">
         <ScrollX hint={`Faites défiler vers la droite : ${suppliers.length} fournisseurs.`}>
           <table className="w-full min-w-[560px] border-collapse text-sm presentation:text-lg">
             <thead>
@@ -340,7 +334,7 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
         </ScrollX>
       </Section>
 
-      <Section id="financier" number="4.3" title="Technique et financier" lead="Le mieux-disant technique face au mieux-disant financier, sur le coût total de possession à 3 ans.">
+      <Section id="financier" title="Technique et financier" lead="Le mieux-disant technique face au mieux-disant financier, sur le coût total de possession à 3 ans.">
         {data.financialLoading ? (
           <p className="text-sm text-muted-foreground">Chargement du volet financier</p>
         ) : data.financialError ? (

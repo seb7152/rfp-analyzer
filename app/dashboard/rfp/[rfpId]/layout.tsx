@@ -75,10 +75,8 @@ export default function RfpLayout({ children }: { children: ReactNode }) {
             <Button variant="ghost" size="sm" mode="icon" aria-label="Ouvrir le sommaire" onClick={() => setRailOpen(true)}>
               <Menu className="h-4 w-4" />
             </Button>
-            <span className="flex min-w-0 items-baseline gap-2 truncate text-sm font-medium">
-              {current?.number !== null && current?.number !== undefined && (
-                <span className="article-no">{current.number}</span>
-              )}
+            <span className="flex min-w-0 items-center gap-2 truncate text-sm font-medium">
+              {current && <current.icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
               <span className="truncate">{current ? current.label : (title ?? "")}</span>
             </span>
           </div>

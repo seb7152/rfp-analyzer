@@ -513,9 +513,7 @@ export function EvaluationWorkspace({ rfpId }: { rfpId: string }) {
             <span className="text-sm font-semibold">Évaluation</span>
           </Button>
         ) : (
-          <h1 className="flex items-baseline gap-2 text-sm font-semibold">
-            <span className="article-no">3</span> Évaluation
-          </h1>
+          <h1 className="text-sm font-semibold">Évaluation</h1>
         )}
         <span className="tnum text-xs text-muted-foreground">
           {queue.counts.done}/{queue.counts.all} exigences évaluées

@@ -2,6 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  ClipboardList,
+  FileOutput,
+  ListChecks,
+  Scale,
+  Settings,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react";
 import { usePreparation, type PreparationData } from "@/hooks/use-preparation";
 import { useAnalyzeStatus } from "@/hooks/use-analyze-status";
 import { useVersion } from "@/contexts/VersionContext";
@@ -28,7 +37,7 @@ export interface ChapterEntry {
 
 export interface Chapter {
   id: ChapterId;
-  number: number | null;
+  icon: LucideIcon;
   label: string;
   href: string;
   state: ChapterState;
@@ -103,7 +112,7 @@ export function buildChapters(
   if (canPilot) {
     chapters.push({
       id: "preparation",
-      number: 1,
+      icon: ClipboardList,
       label: "Préparation",
       href: rfpHref(rfpId, "preparation"),
       state: preparationState(p),
@@ -118,7 +127,7 @@ export function buildChapters(
     });
     chapters.push({
       id: "analyse",
-      number: 2,
+      icon: Sparkles,
       label: "Analyse IA",
       href: rfpHref(rfpId, "analyse"),
       state: analysisState,
@@ -131,7 +140,7 @@ export function buildChapters(
   if (canEvaluate) {
     chapters.push({
       id: "evaluation",
-      number: 3,
+      icon: ListChecks,
       label: "Évaluation",
       href: rfpHref(rfpId, "evaluate"),
       state: evaluationState,
@@ -144,7 +153,7 @@ export function buildChapters(
 
   chapters.push({
     id: "arbitrage",
-    number: 4,
+    icon: Scale,
     label: "Décision",
     href: rfpHref(rfpId, "decision"),
     state: evaluationDone ? "done" : p.responses.answered > 0 ? "partial" : "empty",
@@ -157,7 +166,7 @@ export function buildChapters(
 
   chapters.push({
     id: "restitution",
-    number: 5,
+    icon: FileOutput,
     label: "Restitution",
     href: rfpHref(rfpId, "export"),
     state: "neutral",
@@ -168,7 +177,7 @@ export function buildChapters(
   if (canPilot) {
     chapters.push({
       id: "parametres",
-      number: null,
+      icon: Settings,
       label: "Paramètres",
       href: rfpHref(rfpId, "parametres"),
       state: "neutral",

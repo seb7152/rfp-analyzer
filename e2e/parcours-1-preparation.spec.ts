@@ -23,10 +23,13 @@ test.describe("Parcours 1 — préparer une consultation (Sophie)", () => {
     await expect(page.getByText("Prochaine action : importer le cahier des charges")).toBeVisible();
     await expect(page.getByRole("button", { name: "Importer le cahier des charges" }).first()).toBeVisible();
 
-    // Les articles du plan sont numérotés et à faire.
-    await expect(page.getByRole("heading", { name: /1\.1.*Cahier des charges/ })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /1\.2.*Fournisseurs/ })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /1\.3.*Réponses/ })).toBeVisible();
+    // Les étapes du plan, dans l'ordre : référentiel, pondérations, fournisseurs, réponses.
+    await expect(page.getByRole("heading", { name: "Cahier des charges et référentiel" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pondérations" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Fournisseurs consultés" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Réponses des fournisseurs" })).toBeVisible();
+    const titres = await page.getByRole("heading", { level: 2 }).allInnerTexts();
+    expect(titres.indexOf("Pondérations")).toBeLessThan(titres.indexOf("Fournisseurs consultés"));
 
     // Déclarer un fournisseur depuis le plan.
     await page.getByLabel("Nom du fournisseur").fill("Fournisseur E2E");

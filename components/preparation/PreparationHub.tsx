@@ -41,9 +41,8 @@ interface PreparationHubProps {
   rfpId: string;
 }
 
-/** One numbered article of the preparation plan. */
+/** One step of the preparation plan. */
 function Article({
-  number,
   title,
   state,
   stateText,
@@ -52,24 +51,20 @@ function Article({
   children,
   id,
 }: {
-  number: string;
   title: string;
   state: ChapterState;
   stateText?: string;
   summary?: ReactNode;
   actions?: ReactNode;
   children?: ReactNode;
-  id?: string;
+  id: string;
 }) {
   return (
-    <section id={id} aria-labelledby={`art-${number}`} className="panel scroll-mt-4 overflow-hidden">
+    <section id={id} aria-labelledby={`art-${id}`} className="panel scroll-mt-4 overflow-hidden">
       <div className="flex flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-5">
         <div className="flex min-w-0 items-center gap-3">
           <StateGlyph state={state} />
-          <h2 id={`art-${number}`} className="flex items-baseline gap-2 text-lg font-semibold">
-            <span className="article-no">{number}</span>
-            <span>{title}</span>
-          </h2>
+          <h2 id={`art-${id}`} className="text-lg font-semibold">{title}</h2>
           <span className="text-xs text-muted-foreground">{stateText ?? stateLabel(state)}</span>
           {summary && (
             <span className="hidden text-sm text-muted-foreground md:inline">
@@ -309,7 +304,6 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-3 pb-8 md:gap-4">
       <PageHeader
-        number={1}
         title="Préparation"
         lead={next?.detail}
         actions={
@@ -335,7 +329,7 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
 
       <div className="flex flex-col gap-3 px-4 md:px-8">
       <Article
-        number="1.1"
+        id="referentiel"
         title="Cahier des charges et référentiel"
         state={specification.state}
         summary={
@@ -401,8 +395,34 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
       </Article>
 
       <Article
+        id="ponderations"
+        title="Pondérations"
+        state={weights.state === "done" ? "done" : "neutral"}
+        stateText={weights.state === "done" ? "Réglées" : "Poids identiques"}
+        summary={
+          weights.state === "done"
+            ? `${weights.customisedRequirements} exigences pondérées`
+            : undefined
+        }
+        actions={
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/dashboard/rfp/${rfpId}/parametres#ponderations`}>
+              {weights.state === "done" ? "Ajuster les pondérations" : "Régler les pondérations"}
+            </Link>
+          </Button>
+        }
+      >
+        {weights.state !== "done" && (
+          <p className="max-w-[70ch] text-sm text-muted-foreground">
+            Les poids déterminent la note globale et le classement. Sans réglage, toutes les
+            exigences comptent autant ; les régler maintenant évite de rejouer les arbitrages
+            après l&apos;évaluation.
+          </p>
+        )}
+      </Article>
+
+      <Article
         id="fournisseurs"
-        number="1.2"
         title="Fournisseurs consultés"
         state={suppliers.state}
         summary={suppliers.total > 0 ? `${suppliers.total} déclarés` : undefined}
@@ -417,7 +437,6 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
 
       <Article
         id="reponses"
-        number="1.3"
         title="Réponses des fournisseurs"
         state={responses.state}
         summary={
@@ -465,7 +484,7 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
       </Article>
 
       <Article
-        number="1.4"
+        id="analyse"
         title="Analyse IA"
         state={analysisState}
         stateText={
@@ -501,29 +520,10 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
           </p>
         )}
       </Article>
-
-      <Article
-        number="1.5"
-        title="Pondérations"
-        state={weights.state === "done" ? "done" : "neutral"}
-        summary={
-          weights.state === "done"
-            ? `${weights.customisedRequirements} exigences pondérées`
-            : "facultatif, poids identiques par défaut"
-        }
-        actions={
-          <Button variant="ghost" size="sm" asChild>
-            <Link href={`/dashboard/rfp/${rfpId}/parametres#ponderations`}>
-              Régler les pondérations
-            </Link>
-          </Button>
-        }
-      />
       </div>
 
       <p className="px-4 text-xs text-muted-foreground md:px-8">
-        Consultation créée le {formatDate(rfp.created_at)}
-        {preparation.activeVersion ? ` · version ${preparation.activeVersion.version_name}` : ""}.
+        Consultation créée le {formatDate(rfp.created_at)}.
       </p>
 
       {hasOpenedDocxImport.current && (

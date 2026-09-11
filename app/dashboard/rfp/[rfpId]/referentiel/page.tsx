@@ -21,7 +21,6 @@ export default function ReferentielPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4 pb-8">
       <PageHeader
-        number="1.1"
         title="Référentiel des exigences"
         lead="Relisez l'arborescence issue de l'import : domaines, exigences, marqueurs obligatoire / facultatif et étiquettes. Les corrections de structure se font dans la vue arbre."
         actions={

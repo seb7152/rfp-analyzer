@@ -127,3 +127,13 @@ Format des entrées : **D-nn — Titre**.
 - **Parcours / persona.** Les trois ; l'accueil et l'évaluation d'abord.
 - **Options écartées.** B « Console » (sombre par défaut, mauvais en comité sur vidéoprojecteur) ; C « Tableau » (plus aéré, mais plus de défilement à dix fournisseurs) ; conserver Source Sans 3 et les tampons carrés (lecture « administrative » jugée datée).
 - **Caduque si.** Une charte d'entreprise arrive : `styles/globals.css`, `app/layout.tsx` (police) et `.stamp` sont les seuls points de changement.
+
+## D-16 — Fin de la numérotation d'articles, la version devient un objet visible
+
+- **Décision.** Les numéros que l'interface s'était donnés (chapitres 1 à 5, articles 1.1 à 1.5, sections 4.1 à 4.3, en-têtes « 3.1 ») disparaissent. Les chapitres du sommaire portent une icône (préparation, analyse, évaluation, décision, restitution, paramètres) : elle sert d'identifiant en mode replié, là où le numéro servait. Les codes affichés en mono restent : ce sont les codes réels du référentiel client (domaines, exigences), pas une numérotation d'interface.
+  - *Pondérations.* L'étape passe de la cinquième à la deuxième place du plan de préparation, après le référentiel et avant les fournisseurs : les poids déterminent la note globale et le classement, les régler après coup oblige à rejouer les arbitrages. L'étape reste facultative (poids identiques par défaut) et n'entre pas dans la chaîne « prochaine action », qui ne nomme que les étapes bloquantes.
+  - *Version.* Le sélecteur de version quitte la ligne de statut et devient un contrôle visible sous le titre du sommaire (« V2 · Pré-analyse »), présent même avec une seule version, avec accès à « Gérer les versions ». Les cartes de l'accueil portent la même mention, en lecture seule. La ligne de pied du plan de préparation ne répète plus la version.
+  - *États de chargement.* `PageState` est centré (horizontalement et dans la hauteur utile) au lieu d'être aligné à gauche ; la grille financière utilise le même composant au lieu d'un spinner plein écran.
+- **Parcours / persona.** Les trois ; retours utilisateur sur les captures de la direction Atelier.
+- **Options écartées.** Garder les numéros dans le seul sommaire (le mode replié redevenait une liste de chiffres sans signification) ; passer les codes du référentiel en sans-serif (ils perdaient leur alignement en colonne dans la file de travail) ; faire des pondérations une étape bloquante de la prochaine action (elle est facultative, la chaîne se serait bloquée sur un réglage volontairement laissé par défaut).
+- **Caduque si.** Le référentiel cesse de porter des codes, ou une charte impose une numérotation de chapitres.

@@ -124,7 +124,6 @@ export default function SuiviPage() {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4 pb-8">
       <PageHeader
-        number="3.1"
         title="Avancement de l'évaluation"
         lead={
           total === 0

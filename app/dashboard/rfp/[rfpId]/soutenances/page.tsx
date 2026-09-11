@@ -14,7 +14,6 @@ export default function SoutenancesPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4 pb-8">
       <PageHeader
-        number="4.2"
         title="Soutenances"
         lead="Briefs par fournisseur, transcripts et rapports d'analyse des soutenances."
       />

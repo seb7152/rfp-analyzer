@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowLeft, ChevronsLeft, ChevronsRight, ChevronsUpDown, Check, Settings } from "lucide-react";
+import { ArrowLeft, ChevronsLeft, ChevronsRight, ChevronsUpDown, Check, Layers, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Chapter } from "@/hooks/use-consultation";
 import { useRFPs } from "@/hooks/use-rfps";
@@ -35,8 +35,8 @@ function isActive(pathname: string, href: string) {
 }
 
 /**
- * The consultation's table of contents: numbered chapters with a state dot
- * and a short figure. Collapses to 56 px (number + dot) with the `[` key.
+ * The consultation's table of contents: one line per chapter with its icon,
+ * a state dot and a short figure. Collapses to 56 px (icon + dot) with `[`.
  */
 export function ConsultationRail({
   rfpId,
@@ -55,7 +55,7 @@ export function ConsultationRail({
   const { versions, activeVersion, setActiveVersionId } = useVersion();
 
   const settings = chapters.find((c) => c.id === "parametres");
-  const numbered = chapters.filter((c) => c.number !== null);
+  const numbered = chapters.filter((c) => c.id !== "parametres");
 
   return (
     <nav
@@ -118,36 +118,42 @@ export function ConsultationRail({
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                {versions.length > 1 ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button type="button" className="mt-0.5 text-xs text-muted-foreground hover:text-foreground" aria-label="Changer de version">
-                        {statusLabel}
-                        {activeVersion ? ` · version ${activeVersion.version_number}` : ""}
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-64">
-                      <DropdownMenuLabel>Versions</DropdownMenuLabel>
-                      {versions.map((v) => (
-                        <DropdownMenuItem key={v.id} className="gap-2" onSelect={() => !v.is_active && setActiveVersionId(v.id)}>
-                          <span className="flex-1 truncate">
-                            {v.version_number}. {v.version_name || "Sans nom"}
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  {statusLabel && <span className="text-xs text-muted-foreground">{statusLabel}</span>}
+                  {activeVersion && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex h-6 max-w-full items-center gap-1 rounded-md border border-border bg-card px-1.5 text-xs text-muted-foreground transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label={`Version ${activeVersion.version_number} — changer de version`}
+                          title="Version de l'évaluation"
+                        >
+                          <Layers className="h-3 w-3 shrink-0" />
+                          <span className="truncate">
+                            V{activeVersion.version_number}
+                            {activeVersion.version_name ? ` · ${activeVersion.version_name}` : ""}
                           </span>
-                          {v.is_active && <Check className="h-4 w-4 text-primary" />}
+                          <ChevronsUpDown className="h-3 w-3 shrink-0" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-64">
+                        <DropdownMenuLabel>Versions de l&apos;évaluation</DropdownMenuLabel>
+                        {versions.map((v) => (
+                          <DropdownMenuItem key={v.id} className="gap-2" onSelect={() => !v.is_active && setActiveVersionId(v.id)}>
+                            <span className="num text-2xs text-muted-foreground">V{v.version_number}</span>
+                            <span className="flex-1 truncate">{v.version_name || "Sans nom"}</span>
+                            {v.is_active && <Check className="h-4 w-4 text-primary" />}
+                          </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link href={`/dashboard/rfp/${rfpId}/parametres#versions`}>Gérer les versions</Link>
                         </DropdownMenuItem>
-                      ))}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link href={`/dashboard/rfp/${rfpId}/parametres#versions`}>Gérer les versions</Link>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {statusLabel}
-                    {activeVersion ? ` · version ${activeVersion.version_number}` : ""}
-                  </p>
-                )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
               </>
             )}
           </div>
@@ -165,6 +171,7 @@ export function ConsultationRail({
           : numbered.map((chapter) => {
               const active = isActive(pathname, chapter.href);
               const entryActive = chapter.entries.some((e) => isActive(pathname, e.href));
+              const Icon = chapter.icon;
               return (
                 <li key={chapter.id}>
                   <Link
@@ -180,7 +187,7 @@ export function ConsultationRail({
                         : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
                     )}
                   >
-                    <span className={cn("num w-3 text-center text-xs", active ? "text-foreground" : "text-muted-foreground")}>{chapter.number}</span>
+                    <Icon className={cn("h-4 w-4 shrink-0", active || entryActive ? "text-foreground" : "text-muted-foreground")} />
                     {collapsed ? (
                       <span className="absolute right-1.5 top-1.5">
                         <StateGlyph state={chapter.state} className="h-1.5 w-1.5" />
@@ -205,7 +212,7 @@ export function ConsultationRail({
                               onClick={onNavigate}
                               aria-current={ea ? "page" : undefined}
                               className={cn(
-                                "flex h-7 items-center rounded-md pl-8 pr-2.5 text-sm transition-colors duration-150",
+                                "flex h-7 items-center rounded-md pl-9 pr-2.5 text-sm transition-colors duration-150",
                                 ea ? "font-medium text-foreground" : "text-muted-foreground hover:text-foreground"
                               )}
                             >

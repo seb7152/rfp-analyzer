@@ -25,7 +25,7 @@ export function PageState({
       role={kind === "error" ? "alert" : "status"}
       aria-busy={kind === "loading" || undefined}
       className={cn(
-        "mx-auto flex max-w-md flex-col items-start gap-2 px-6 py-16",
+        "mx-auto flex min-h-[45vh] w-full max-w-md flex-col items-center justify-center gap-2 px-6 py-12 text-center",
         className
       )}
     >

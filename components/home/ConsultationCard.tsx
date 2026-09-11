@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ListChecks, MessageSquare, Sparkles, Trash2 } from "lucide-react";
+import { Layers, ListChecks, MessageSquare, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/shell/UserMenu";
 import { PHASE_LABELS, type ConsultationOverview } from "@/hooks/use-consultations-overview";
@@ -71,6 +71,16 @@ export function ConsultationCard({
             <Link href={item.href} className="hover:underline underline-offset-4">{rfp.title}</Link>
           </h3>
           <span className={cn("stamp", status.className)}>{status.label}</span>
+          {p?.activeVersion && (
+            <span
+              className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground"
+              title="Version de l'évaluation en cours"
+            >
+              <Layers className="h-3 w-3" />
+              V{p.activeVersion.version_number}
+              {p.activeVersion.version_name ? ` · ${p.activeVersion.version_name}` : ""}
+            </span>
+          )}
         </div>
         {item.isLoading ? (
           <div className="h-3 w-40 animate-pulse rounded-sm bg-muted" />

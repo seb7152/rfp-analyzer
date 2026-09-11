@@ -56,7 +56,6 @@ export function AnalysisChapter({ rfpId }: { rfpId: string }) {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4 pb-8">
       <PageHeader
-        number={2}
         title="Analyse IA"
         lead={lead}
         actions={
