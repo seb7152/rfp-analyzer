@@ -43,7 +43,8 @@ export async function POST(request: NextRequest, { params }: { params: { rfpId: 
     if (error) return error;
     const access = await requireRfpAccess(params.rfpId, user.id, EVALUATOR);
     if (access.error) return access.error;
-    const parsed = bodySchema.safeParse(await request.json());
+    const body = await request.json().catch(() => null);
+    const parsed = bodySchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: "Action invalide." }, { status: 400 });
 
     const { data: finding, error: fError } = await supabase

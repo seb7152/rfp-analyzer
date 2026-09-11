@@ -18,15 +18,19 @@ import {
   type SupplierRow,
 } from "./context";
 import { contextLength, estimateTokens, type DomainDescription } from "./prompt";
-import type { CatalogueModel } from "./types";
+import type { CatalogueModel, ReasoningEffort } from "./types";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const BATCH_SIZE = 12;
-/** Rough output per requirement (justification, quotes, questions, risks). */
-const COMPLETION_TOKENS_PER_REQUIREMENT = 350;
+/**
+ * Rough output per requirement (justification, quotes, questions, risks),
+ * by reasoning level: reasoning tokens are billed as output. Measured on
+ * Claude Haiku 4.5 at "high": about 1 250 tokens per requirement.
+ */
+const COMPLETION_TOKENS_PER_REQUIREMENT: Record<ReasoningEffort, number> = { none: 350, medium: 700, high: 1250 };
 
 export interface PlannedRun {
-  agent: { id: string; name: string; model_id: string; current_version: number };
+  agent: { id: string; name: string; model_id: string; current_version: number; reasoning_effort: ReasoningEffort };
   agentVersionId: string;
   supplier: SupplierRow;
   category: CategoryRow;
@@ -41,13 +45,13 @@ export interface AssignmentRow {
   id: string;
   agent_id: string;
   category_id: string;
-  agents: { id: string; name: string; model_id: string; current_version: number; archived_at: string | null } | null;
+  agents: { id: string; name: string; model_id: string; current_version: number; reasoning_effort: ReasoningEffort; archived_at: string | null } | null;
 }
 
 export async function loadAssignments(db: Db, rfpId: string): Promise<AssignmentRow[]> {
   const { data, error } = await db
     .from("rfp_agent_assignments")
-    .select("id, agent_id, category_id, agents(id, name, model_id, current_version, archived_at)")
+    .select("id, agent_id, category_id, agents(id, name, model_id, current_version, reasoning_effort, archived_at)")
     .eq("rfp_id", rfpId);
   if (error) throw new Error(`Affectations illisibles : ${error.message}`);
   return (data ?? []) as unknown as AssignmentRow[];
@@ -98,7 +102,13 @@ export async function planRuns(db: Db, rfpId: string, versionId: string): Promis
       const withResponse = domain.leaves.map((l) => l.id).filter((id) => responses.has(id));
       if (withResponse.length === 0) continue;
       runs.push({
-        agent: { id: a.agents!.id, name: a.agents!.name, model_id: a.agents!.model_id, current_version: a.agents!.current_version },
+        agent: {
+          id: a.agents!.id,
+          name: a.agents!.name,
+          model_id: a.agents!.model_id,
+          current_version: a.agents!.current_version,
+          reasoning_effort: a.agents!.reasoning_effort,
+        },
         agentVersionId: version.id,
         supplier,
         category,
@@ -147,7 +157,7 @@ export function estimateRuns(planned: PlannedRun[], catalogue: CatalogueModel[] 
     const requirements = r.batches.reduce((n, b) => n + b.length, 0);
     const contextTokens = estimateTokens(r.contextChars);
     const prompt_tokens = contextTokens * r.batches.length;
-    const completion_tokens = requirements * COMPLETION_TOKENS_PER_REQUIREMENT;
+    const completion_tokens = requirements * COMPLETION_TOKENS_PER_REQUIREMENT[r.agent.reasoning_effort];
     const cost = model ? prompt_tokens * model.prompt_price + completion_tokens * model.completion_price : null;
     return {
       agent_id: r.agent.id,
