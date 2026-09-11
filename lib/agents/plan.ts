@@ -19,6 +19,7 @@ import {
 } from "./context";
 import { contextLength, estimateTokens, type DomainDescription } from "./prompt";
 import type { CatalogueModel } from "./types";
+import { createServiceClient } from "@/lib/supabase/service";
 
 export const BATCH_SIZE = 12;
 /** Rough output per requirement (justification, quotes, questions, risks). */
@@ -208,7 +209,9 @@ export async function createRuns(
     .filter((r) => r.version_id !== versionId || newKeys.has(key(r.agent_versions?.agent_id ?? "", r.supplier_id, r.category_id)))
     .map((r) => r.id);
   if (obsoleteRunIds.length > 0) {
-    const { error } = await db
+    // Orchestration write: the service role marks proposals obsolete whatever
+    // the pilot's own assignment on the consultation.
+    const { error } = await createServiceClient()
       .from("agent_findings")
       .update({ status: "obsolete" })
       .in("run_id", obsoleteRunIds)

@@ -25,14 +25,23 @@ export async function GET(request: NextRequest, { params }: { params: { rfpId: s
     const { data: runs, error: runsError } = await supabase
       .from("agent_runs")
       .select(
-        "*, agent_versions(id, version_number, model_id, agents(id, name)), suppliers(id, name), categories(id, code, title), agent_run_batches(*)"
+        "id, rfp_id, version_id, agent_version_id, supplier_id, category_id, status, served_model, prompt_tokens, completion_tokens, cached_tokens, cost, error, launched_by, started_at, completed_at, created_at, " +
+          "agent_versions(id, version_number, model_id, agents(id, name)), suppliers(id, name), categories(id, code, title), " +
+          "agent_run_batches(id, run_id, batch_index, requirement_ids, status, attempts, split_depth, generation_id, served_model, prompt_tokens, completion_tokens, cached_tokens, cost, error, claimed_at, started_at, completed_at, created_at)"
       )
       .eq("rfp_id", params.rfpId)
       .eq("version_id", versionId)
       .order("created_at", { ascending: false });
     if (runsError) throw new Error(runsError.message);
+    type RunRow = {
+      id: string;
+      agent_versions: { agents: { id: string; name: string } | null } | null;
+      agent_run_batches: Array<{ batch_index: number }>;
+      [key: string]: unknown;
+    };
+    const rows = (runs ?? []) as unknown as RunRow[];
 
-    const runIds = (runs ?? []).map((r) => r.id);
+    const runIds = rows.map((r) => r.id);
     let findings: Array<{ run_id: string; status: string; sourced: boolean }> = [];
     if (runIds.length > 0) {
       const { data, error: fError } = await supabase.from("agent_findings").select("run_id, status, sourced").in("run_id", runIds);
@@ -41,7 +50,7 @@ export async function GET(request: NextRequest, { params }: { params: { rfpId: s
     }
 
     const agentOfRun = new Map<string, { id: string; name: string }>();
-    for (const r of (runs ?? []) as Array<{ id: string; agent_versions: { agents: { id: string; name: string } | null } | null }>) {
+    for (const r of rows) {
       const a = r.agent_versions?.agents;
       if (a) agentOfRun.set(r.id, a);
     }
@@ -71,9 +80,9 @@ export async function GET(request: NextRequest, { params }: { params: { rfpId: s
     return NextResponse.json({
       access: access.access,
       versionId,
-      runs: (runs ?? []).map((r) => ({
+      runs: rows.map((r) => ({
         ...r,
-        agent_run_batches: [...(r.agent_run_batches ?? [])].sort((a: { batch_index: number }, b: { batch_index: number }) => a.batch_index - b.batch_index),
+        agent_run_batches: [...(r.agent_run_batches ?? [])].sort((a, b) => a.batch_index - b.batch_index),
         findings: perRun.get(r.id) ?? { produced: 0, unsourced: 0 },
       })),
       summary: Array.from(summary.values()).sort((a, b) => a.agent_name.localeCompare(b.agent_name)),
@@ -98,6 +107,14 @@ export async function POST(request: NextRequest, { params }: { params: { rfpId: 
     }
     const version = await loadActiveVersion(supabase, params.rfpId);
     if (!version) return NextResponse.json({ error: "Aucune version d'évaluation active." }, { status: 409 });
+    const { count: active } = await supabase
+      .from("agent_runs")
+      .select("id", { count: "exact", head: true })
+      .eq("rfp_id", params.rfpId)
+      .in("status", ["pending", "running"]);
+    if (active && active > 0) {
+      return NextResponse.json({ error: "Une analyse est déjà en cours sur cette consultation ; attendez sa fin avant de relancer." }, { status: 409 });
+    }
     const planned = await planRuns(supabase, params.rfpId, version.id);
     if (planned.length === 0) {
       return NextResponse.json({ error: "Rien à analyser : affectez un agent à un domaine qui a des réponses." }, { status: 409 });

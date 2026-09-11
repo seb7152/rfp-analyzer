@@ -70,57 +70,22 @@ export async function POST(request: NextRequest, { params }: { params: { rfpId: 
       return NextResponse.json({ finding: updated });
     }
 
-    // 1. The score and comment the AI now carries.
-    const { error: rError } = await supabase
-      .from("responses")
-      .update({ ai_score: finding.proposed_score, ai_comment: finding.justification, last_modified_by: user.id, updated_at: now })
-      .eq("id", finding.response_id);
-    if (rError) throw new Error(`Note non écrite : ${rError.message}`);
-
-    // 2. The discussion thread, signed by the evaluator, linked to the proposal.
-    const { data: thread, error: tError } = await supabase
-      .from("response_threads")
-      .insert({ response_id: finding.response_id, title: "Proposition d'agent acceptée", priority: "normal", status: "open", created_by: user.id })
-      .select("id")
-      .single();
-    if (tError || !thread) throw new Error(`Fil non créé : ${tError?.message}`);
-    const { error: cError } = await supabase.from("thread_comments").insert({
-      thread_id: thread.id,
-      content: commentContent(finding),
-      author_id: user.id,
-      agent_finding_id: finding.id,
+    // One transaction under the caller's RLS: score, comment, thread, peer
+    // review, decision (see accept_agent_finding in the migration).
+    const { data: threadId, error: acceptError } = await supabase.rpc("accept_agent_finding", {
+      p_finding_id: finding.id,
+      p_comment: commentContent(finding),
     });
-    if (cError) throw new Error(`Commentaire non créé : ${cError.message}`);
-
-    // 3. Peer review: back to "submitted" so a reviewer looks at it again.
-    const { data: rfp } = await supabase.from("rfps").select("peer_review_enabled").eq("id", params.rfpId).maybeSingle();
-    if (rfp?.peer_review_enabled) {
-      const { error: prError } = await supabase.from("requirement_review_status").upsert(
-        {
-          requirement_id: finding.responses.requirement_id,
-          version_id: finding.agent_runs.version_id,
-          status: "submitted",
-          submitted_by: user.id,
-          submitted_at: now,
-          reviewed_by: null,
-          reviewed_at: null,
-          rejection_comment: null,
-          updated_at: now,
-        },
-        { onConflict: "requirement_id,version_id" }
+    if (acceptError) {
+      const forbidden = /évaluateur ou pilote|Non authentifié/.test(acceptError.message);
+      const conflict = /déjà été décidée/.test(acceptError.message);
+      return NextResponse.json(
+        { error: acceptError.message.replace(/^.*?: /, "") },
+        { status: forbidden ? 403 : conflict ? 409 : 500 }
       );
-      if (prError) throw new Error(`Relecture non demandée : ${prError.message}`);
     }
-
-    // 4. The decision itself.
-    const { data: updated, error: uError } = await supabase
-      .from("agent_findings")
-      .update({ status: "accepted", decided_by: user.id, decided_at: now })
-      .eq("id", finding.id)
-      .select("*")
-      .single();
-    if (uError) throw new Error(uError.message);
-    return NextResponse.json({ finding: updated, threadId: thread.id });
+    const { data: updated } = await supabase.from("agent_findings").select("*").eq("id", finding.id).single();
+    return NextResponse.json({ finding: updated, threadId });
   } catch (err) {
     return failure(err);
   }

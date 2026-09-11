@@ -314,6 +314,111 @@ AS $$
     );
 $$;
 
+-- A signed-in user may only decide a proposal (status, decided_by, decided_at,
+-- rejection_reason); its content, quotes and "sourced" flag are the worker's.
+CREATE OR REPLACE FUNCTION public.protect_agent_finding_content()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF auth.uid() IS NOT NULL AND (
+        NEW.run_id IS DISTINCT FROM OLD.run_id
+        OR NEW.response_id IS DISTINCT FROM OLD.response_id
+        OR NEW.requirement_id IS DISTINCT FROM OLD.requirement_id
+        OR NEW.verdict IS DISTINCT FROM OLD.verdict
+        OR NEW.proposed_score IS DISTINCT FROM OLD.proposed_score
+        OR NEW.justification IS DISTINCT FROM OLD.justification
+        OR NEW.quotes IS DISTINCT FROM OLD.quotes
+        OR NEW.questions IS DISTINCT FROM OLD.questions
+        OR NEW.risks IS DISTINCT FROM OLD.risks
+        OR NEW.sourced IS DISTINCT FROM OLD.sourced
+    ) THEN
+        RAISE EXCEPTION 'Seule la décision sur une proposition peut être modifiée.' USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER agent_findings_protect_content
+    BEFORE UPDATE ON public.agent_findings
+    FOR EACH ROW EXECUTE FUNCTION public.protect_agent_finding_content();
+
+-- Accepting a proposal, in one transaction and under the caller's RLS
+-- (SECURITY INVOKER): the proposed score becomes the AI score, the
+-- justification the AI comment, a discussion thread is opened with the full
+-- proposal signed by the evaluator and linked to it, peer review (when
+-- enabled) goes back to "submitted", and the proposal is marked accepted.
+CREATE OR REPLACE FUNCTION public.accept_agent_finding(p_finding_id UUID, p_comment TEXT)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+DECLARE
+    v_finding public.agent_findings%ROWTYPE;
+    v_run public.agent_runs%ROWTYPE;
+    v_requirement_id UUID;
+    v_peer BOOLEAN;
+    v_thread_id UUID;
+    v_now TIMESTAMPTZ := NOW();
+BEGIN
+    IF auth.uid() IS NULL THEN
+        RAISE EXCEPTION 'Non authentifié.' USING ERRCODE = 'insufficient_privilege';
+    END IF;
+
+    SELECT * INTO v_finding FROM public.agent_findings WHERE id = p_finding_id FOR UPDATE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Proposition introuvable.' USING ERRCODE = 'no_data_found';
+    END IF;
+    IF v_finding.status <> 'proposed' THEN
+        RAISE EXCEPTION 'Cette proposition a déjà été décidée.' USING ERRCODE = 'check_violation';
+    END IF;
+    SELECT * INTO v_run FROM public.agent_runs WHERE id = v_finding.run_id;
+
+    UPDATE public.responses
+    SET ai_score = v_finding.proposed_score,
+        ai_comment = v_finding.justification,
+        last_modified_by = auth.uid(),
+        updated_at = v_now
+    WHERE id = v_finding.response_id
+    RETURNING requirement_id INTO v_requirement_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Vous devez être évaluateur ou pilote de la consultation pour accepter une proposition.' USING ERRCODE = 'insufficient_privilege';
+    END IF;
+
+    INSERT INTO public.response_threads (response_id, title, priority, status, created_by)
+    VALUES (v_finding.response_id, 'Proposition d''agent acceptée', 'normal', 'open', auth.uid())
+    RETURNING id INTO v_thread_id;
+
+    INSERT INTO public.thread_comments (thread_id, content, author_id, agent_finding_id)
+    VALUES (v_thread_id, p_comment, auth.uid(), v_finding.id);
+
+    SELECT peer_review_enabled INTO v_peer FROM public.rfps WHERE id = v_run.rfp_id;
+    IF COALESCE(v_peer, false) THEN
+        INSERT INTO public.requirement_review_status
+            (requirement_id, version_id, status, submitted_by, submitted_at, reviewed_by, reviewed_at, rejection_comment, updated_at)
+        VALUES (v_requirement_id, v_run.version_id, 'submitted', auth.uid(), v_now, NULL, NULL, NULL, v_now)
+        ON CONFLICT (requirement_id, version_id) DO UPDATE
+            SET status = 'submitted',
+                submitted_by = auth.uid(),
+                submitted_at = v_now,
+                reviewed_by = NULL,
+                reviewed_at = NULL,
+                rejection_comment = NULL,
+                updated_at = v_now;
+    END IF;
+
+    UPDATE public.agent_findings
+    SET status = 'accepted', decided_by = auth.uid(), decided_at = v_now
+    WHERE id = v_finding.id;
+
+    RETURN v_thread_id;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.accept_agent_finding(UUID, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.accept_agent_finding(UUID, TEXT) TO authenticated;
+
 REVOKE ALL ON FUNCTION public.claim_agent_run_batches(INTEGER) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.requeue_stale_agent_run_batches(INTEGER) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.agent_worker_has_work(INTEGER) FROM PUBLIC, anon, authenticated;

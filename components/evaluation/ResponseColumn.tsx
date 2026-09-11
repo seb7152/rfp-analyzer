@@ -68,6 +68,10 @@ export interface ResponseColumnProps {
   responseLines?: number;
   /** Agents' proposals on this answer, newest first. */
   findings?: AgentFindingWithAgent[];
+  /** Set when the proposals could not be loaded. */
+  findingsError?: string | null;
+  /** Proposals decided offline, waiting to be sent. */
+  queuedFindingIds?: Set<string>;
   onAcceptFinding?: (finding: AgentFindingWithAgent) => void;
   onRejectFinding?: (finding: AgentFindingWithAgent, reason: string) => void;
   decisionPending?: boolean;
@@ -177,6 +181,8 @@ export function ResponseColumn({
   layout,
   responseLines = 8,
   findings = [],
+  findingsError = null,
+  queuedFindingIds,
   onAcceptFinding,
   onRejectFinding,
   decisionPending = false,
@@ -184,7 +190,9 @@ export function ResponseColumn({
 }: ResponseColumnProps) {
   const queryClient = useQueryClient();
   const [activeQuote, setActiveQuote] = useState<string | null>(null);
-  const highlight = activeQuote && response.response_text ? findQuoteRange(response.response_text, activeQuote) : null;
+  // Composed form once, so the highlight offsets match the rendered text.
+  const responseText = response.response_text ? response.response_text.normalize("NFC") : response.response_text;
+  const highlight = activeQuote && responseText ? findQuoteRange(responseText, activeQuote) : null;
   useEffect(() => {
     setActiveQuote(null);
   }, [response.id]);
@@ -346,7 +354,7 @@ export function ResponseColumn({
               </Button>
             </div>
           </div>
-          <ClampedText text={response.response_text} lines={responseLines} empty="Aucune réponse fournie." fixed highlight={highlight} />
+          <ClampedText text={responseText} lines={responseLines} empty="Aucune réponse fournie." fixed highlight={highlight} />
         </div>
 
         {bookmarks.length > 0 && (
@@ -396,6 +404,11 @@ export function ResponseColumn({
           <ClampedText text={response.ai_comment} lines={5} empty="Pas encore d'analyse IA." />
         </div>
 
+        {findingsError && (
+          <p className="text-xs text-muted-foreground" role="status">
+            Propositions des agents indisponibles : {findingsError}
+          </p>
+        )}
         {findings.length > 0 && (
           <div className="space-y-2" aria-label="Propositions des agents">
             {findings.map((f) => (
@@ -403,8 +416,8 @@ export function ResponseColumn({
                 key={f.id}
                 finding={f}
                 currentAiScore={response.ai_score}
-                canDecide={canEdit && !decisionDisabledReason && !!onAcceptFinding}
-                disabledReason={decisionDisabledReason}
+                canDecide={canEdit && !decisionDisabledReason && !!onAcceptFinding && !queuedFindingIds?.has(f.id)}
+                disabledReason={queuedFindingIds?.has(f.id) ? "Décision en attente d'envoi." : decisionDisabledReason}
                 activeQuote={activeQuote}
                 onQuote={setActiveQuote}
                 onAccept={() => onAcceptFinding?.(f)}

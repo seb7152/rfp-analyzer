@@ -136,6 +136,7 @@ export interface CatalogueModel {
   id: string;
   name: string;
   context_length: number;
+  max_completion_tokens: number | null;
   /** USD per token, as OpenRouter reports them. */
   prompt_price: number;
   completion_price: number;

@@ -27,6 +27,7 @@ import { usePeerReviewStatuses, usePeerReviewMutation } from "@/hooks/use-peer-r
 import { useResponseThreads } from "@/hooks/use-response-threads";
 import { useAgentFindings, useFindingDecision } from "@/hooks/use-agent-findings";
 import type { AgentFindingWithAgent } from "@/lib/agents/types";
+import { offlineQueue } from "@/lib/offline-queue";
 import { useRequirementAnnotations } from "@/components/pdf/hooks/useRequirementAnnotations";
 import { useRequirementDocument } from "@/hooks/use-requirement-document";
 import { useOnlineStatus } from "@/hooks/use-online-status";
@@ -229,6 +230,16 @@ export function EvaluationWorkspace({ rfpId }: { rfpId: string }) {
     return map;
   }, [findingsQuery.data]);
   const decision = useFindingDecision(rfpId, versionId ?? null);
+  // Decisions taken offline and not yet sent: their buttons stay disabled.
+  const queuedFindingIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const m of offlineQueue.getAll()) {
+      const match = m.endpoint.match(/\/agents\/findings\/([^/]+)\/decision$/);
+      if (match) ids.add(match[1]);
+    }
+    return ids;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingCount]);
   const decide = (f: AgentFindingWithAgent, action: "accept" | "reject", reason?: string) => {
     if (!selectedId) return;
     decision.mutate(
@@ -509,6 +520,8 @@ export function EvaluationWorkspace({ rfpId }: { rfpId: string }) {
                 onOpenBookmark={(b) => b.supplierId && openSupplierDocuments(b.supplierId, b.documentId, b.pageNumber)}
                 onOpenThreads={() => openThreadsFor(r)}
                 findings={findingsByResponse.get(r.id) ?? []}
+                findingsError={findingsQuery.error?.message ?? null}
+                queuedFindingIds={queuedFindingIds}
                 onAcceptFinding={(f) => decide(f, "accept")}
                 onRejectFinding={(f, reason) => decide(f, "reject", reason)}
                 decisionPending={decision.isPending}

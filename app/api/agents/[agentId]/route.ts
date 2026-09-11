@@ -71,6 +71,16 @@ export async function PATCH(request: NextRequest, { params }: { params: { agentI
     if (input.description !== undefined) update.description = input.description;
     if (input.archived !== undefined) update.archived_at = input.archived ? new Date().toISOString() : null;
 
+    // Optimistic lock on current_version: two concurrent edits cannot both win.
+    const { data: agent, error: updateError } = await supabase
+      .from("agents")
+      .update(update)
+      .eq("id", current.id)
+      .eq("current_version", current.current_version)
+      .select("*")
+      .maybeSingle();
+    if (updateError) throw new Error(updateError.message);
+    if (!agent) return NextResponse.json({ error: "L'agent a été modifié entre-temps ; rechargez la fiche." }, { status: 409 });
     if (versioned) {
       const { error: versionError } = await supabase.from("agent_versions").insert({
         agent_id: current.id,
@@ -80,10 +90,22 @@ export async function PATCH(request: NextRequest, { params }: { params: { agentI
         reasoning_effort: next.reasoning_effort,
         created_by: user.id,
       });
-      if (versionError) throw new Error(versionError.message);
+      if (versionError) {
+        await supabase
+          .from("agents")
+          .update({
+            name: current.name,
+            description: current.description,
+            system_prompt: current.system_prompt,
+            model_id: current.model_id,
+            reasoning_effort: current.reasoning_effort,
+            current_version: current.current_version,
+            archived_at: current.archived_at,
+          })
+          .eq("id", current.id);
+        throw new Error(versionError.message);
+      }
     }
-    const { data: agent, error: updateError } = await supabase.from("agents").update(update).eq("id", current.id).select("*").single();
-    if (updateError || !agent) throw new Error(updateError?.message ?? "Agent non mis à jour.");
     return NextResponse.json({ agent, versioned });
   } catch (err) {
     return failure(err);

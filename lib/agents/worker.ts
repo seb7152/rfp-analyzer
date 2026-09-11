@@ -19,7 +19,13 @@ export const CLAIM_LIMIT = 4;
 /** Past this, a `running` batch is considered lost and goes back to pending. */
 export const STALE_AFTER_SECONDS = 300;
 export const MAX_ATTEMPTS = 3;
-const MAX_TOKENS = 32_000;
+/**
+ * Output budget. Large on purpose: for Anthropic models OpenRouter derives
+ * the thinking budget from max_tokens (about 80 % at "high"), and the JSON
+ * for twelve proposals must still fit after it.
+ */
+const MAX_TOKENS = 100_000;
+const FALLBACK_MAX_TOKENS = 64_000;
 
 const RETRIABLE_HTTP = new Set([408, 429, 500, 502, 503, 524, 529]);
 
@@ -160,9 +166,16 @@ async function runBatch(db: Db, batch: AgentRunBatch): Promise<BatchOutcome> {
 
   const leafById = new Map(ctx.domain.leaves.map((l) => [l.id, l]));
   const targets = batch.requirement_ids.map((id) => leafById.get(id)).filter((l): l is NonNullable<typeof l> => !!l);
+
+  // A re-run of the batch (retry, requeue) never touches a proposal this
+  // analysis already produced: it may have been decided in the meantime.
+  const { data: existing } = await db.from("agent_findings").select("requirement_id").eq("run_id", batch.run_id).in("requirement_id", batch.requirement_ids);
+  const alreadyDone = new Set(((existing ?? []) as Array<{ requirement_id: string }>).map((f) => f.requirement_id));
+
   const findings: FindingInsert[] = [];
   const toAsk: typeof targets = [];
   for (const leaf of targets) {
+    if (alreadyDone.has(leaf.id)) continue;
     const response = ctx.responses.get(leaf.id);
     if (!response) continue; // no response row on this version: nothing to attach a proposal to
     if (!response.response_text || !response.response_text.trim()) {
@@ -176,6 +189,9 @@ async function runBatch(db: Db, batch: AgentRunBatch): Promise<BatchOutcome> {
   if (toAsk.length > 0) {
     const catalogueModel = await findCatalogueModel(agentVersion.model_id);
     const structured = catalogueModel?.structured_outputs ?? false;
+    const maxTokens = catalogueModel?.max_completion_tokens
+      ? Math.min(MAX_TOKENS, catalogueModel.max_completion_tokens)
+      : FALLBACK_MAX_TOKENS;
     const messages = buildMessages({
       systemPrompt: agentVersion.system_prompt,
       modelId: agentVersion.model_id,
@@ -189,7 +205,7 @@ async function runBatch(db: Db, batch: AgentRunBatch): Promise<BatchOutcome> {
       messages,
       reasoning: agentVersion.reasoning_effort,
       jsonSchema: structured ? (BATCH_JSON_SCHEMA as unknown as Record<string, unknown>) : null,
-      maxTokens: MAX_TOKENS,
+      maxTokens,
       timeoutMs: BATCH_TIMEOUT_MS,
     });
     outcome = {
@@ -231,7 +247,7 @@ async function runBatch(db: Db, batch: AgentRunBatch): Promise<BatchOutcome> {
   }
 
   if (findings.length > 0) {
-    const { error } = await db.from("agent_findings").upsert(findings, { onConflict: "run_id,response_id" });
+    const { error } = await db.from("agent_findings").upsert(findings, { onConflict: "run_id,response_id", ignoreDuplicates: true });
     if (error) return { ...outcome, status: "failed", error: `Propositions non enregistrées : ${error.message}` };
   }
   return outcome;
@@ -323,8 +339,10 @@ export async function runWorkerRound(): Promise<WorkerReport> {
   const batches = (claimed ?? []) as AgentRunBatch[];
   for (const b of batches) await refreshRunStatus(db, b.run_id);
   await Promise.all(batches.map((b) => processBatch(db, b)));
-  const { data: remaining } = await db.rpc("agent_worker_has_work", { p_timeout_seconds: STALE_AFTER_SECONDS });
-  return { requeued: Number(requeued ?? 0), claimed: batches.length, remaining: !!remaining };
+  // Only never-attempted batches justify an immediate next round; batches put
+  // back for a retry (rate limit, provider down) wait for the cron minute.
+  const { count } = await db.from("agent_run_batches").select("id", { count: "exact", head: true }).eq("status", "pending").eq("attempts", 0);
+  return { requeued: Number(requeued ?? 0), claimed: batches.length, remaining: (count ?? 0) > 0 };
 }
 
 /** Fires the worker without waiting for it. */

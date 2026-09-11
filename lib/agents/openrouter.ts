@@ -35,7 +35,7 @@ interface RawModel {
   context_length?: number | null;
   pricing?: { prompt?: string; completion?: string };
   supported_parameters?: string[];
-  top_provider?: { context_length?: number | null };
+  top_provider?: { context_length?: number | null; max_completion_tokens?: number | null };
 }
 
 let catalogueCache: { fetchedAt: number; models: CatalogueModel[] } | null = null;
@@ -56,6 +56,7 @@ async function fetchCatalogue(): Promise<CatalogueModel[]> {
       id: m.id,
       name: m.name || m.id,
       context_length: m.context_length ?? m.top_provider?.context_length ?? 0,
+      max_completion_tokens: m.top_provider?.max_completion_tokens ?? null,
       prompt_price: Number(m.pricing?.prompt ?? 0),
       completion_price: Number(m.pricing?.completion ?? 0),
       structured_outputs: (m.supported_parameters ?? []).includes("structured_outputs"),
@@ -203,11 +204,8 @@ export async function streamChatCompletion(req: CompletionRequest): Promise<Comp
     max_tokens: req.maxTokens,
     usage: { include: true },
   };
-  if (req.reasoning !== "none") {
-    body.reasoning = { effort: req.reasoning };
-  } else {
-    body.reasoning = { effort: "none" };
-  }
+  // Models that do not reason ignore this parameter without error.
+  body.reasoning = req.reasoning === "none" ? { enabled: false } : { effort: req.reasoning };
   if (req.jsonSchema) {
     body.response_format = {
       type: "json_schema",

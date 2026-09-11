@@ -61,7 +61,7 @@ export default function AgentPage() {
           agent={agent}
           versions={query.data?.versions ?? []}
           canEdit={!!canEdit}
-          defaultModelId={list.data?.defaultModelId ?? "anthropic/claude-opus-5"}
+          defaultModelId={list.data?.defaultModelId ?? ""}
         />
       </div>
     </div>

@@ -55,7 +55,7 @@ export default function ConsultationAgentsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   if (isLoading || assignments.isLoading) return <PageState kind="loading" title="Chargement des agents" />;
-  if (!preparation) return null;
+  if (!preparation) return <PageState kind="error" title="La consultation n'a pas pu être chargée" />;
   if (assignments.error || !assignments.data) {
     return (
       <PageState
