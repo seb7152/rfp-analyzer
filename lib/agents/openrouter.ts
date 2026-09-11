@@ -122,7 +122,9 @@ export interface CompletionUsage {
   cached_tokens: number;
   cache_write_tokens: number;
   reasoning_tokens: number;
+  /** USD: OpenRouter's charge plus the upstream provider's when the key is the organisation's own. */
   cost: number;
+  byok: boolean;
 }
 
 export interface CompletionResult {
@@ -242,7 +244,7 @@ export async function streamChatCompletion(req: CompletionRequest): Promise<Comp
     model: null,
     content: "",
     finish_reason: null,
-    usage: { prompt_tokens: 0, completion_tokens: 0, cached_tokens: 0, cache_write_tokens: 0, reasoning_tokens: 0, cost: 0 },
+    usage: { prompt_tokens: 0, completion_tokens: 0, cached_tokens: 0, cache_write_tokens: 0, reasoning_tokens: 0, cost: 0, byok: false },
   };
 
   const reader = res.body.getReader();
@@ -261,8 +263,10 @@ export async function streamChatCompletion(req: CompletionRequest): Promise<Comp
         prompt_tokens?: number;
         completion_tokens?: number;
         cost?: number;
+        is_byok?: boolean;
         prompt_tokens_details?: { cached_tokens?: number; cache_write_tokens?: number };
         completion_tokens_details?: { reasoning_tokens?: number };
+        cost_details?: { upstream_inference_cost?: number | null };
       };
     };
     try {
@@ -287,7 +291,10 @@ export async function streamChatCompletion(req: CompletionRequest): Promise<Comp
         cached_tokens: u.prompt_tokens_details?.cached_tokens ?? 0,
         cache_write_tokens: u.prompt_tokens_details?.cache_write_tokens ?? 0,
         reasoning_tokens: u.completion_tokens_details?.reasoning_tokens ?? 0,
-        cost: u.cost ?? 0,
+        // With a provider key of the organisation's own (BYOK), OpenRouter's
+        // `cost` is only its fee; what the provider charges is reported apart.
+        cost: (u.cost ?? 0) + (u.cost_details?.upstream_inference_cost ?? 0),
+        byok: u.is_byok ?? false,
       };
     }
   };

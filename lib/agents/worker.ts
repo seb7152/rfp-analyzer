@@ -215,7 +215,12 @@ async function runBatch(db: Db, batch: AgentRunBatch): Promise<BatchOutcome> {
         prompt_tokens: result.usage.prompt_tokens,
         completion_tokens: result.usage.completion_tokens,
         cached_tokens: result.usage.cached_tokens,
-        cost: result.usage.cost,
+        // A provider key of the organisation's own may report no cost at all:
+        // the catalogue price then gives an estimate rather than 0.
+        cost:
+          result.usage.cost > 0 || !catalogueModel
+            ? result.usage.cost
+            : result.usage.prompt_tokens * catalogueModel.prompt_price + result.usage.completion_tokens * catalogueModel.completion_price,
       },
       served_model: result.model,
       generation_id: result.id,

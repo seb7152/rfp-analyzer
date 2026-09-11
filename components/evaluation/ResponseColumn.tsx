@@ -332,8 +332,8 @@ export function ResponseColumn({
         )}
       </header>
 
-      {/* Réponse */}
-      <div className="flex-1 space-y-3.5 px-3.5 py-3">
+      {/* Réponse : en colonne, ce corps défile seul, l'en-tête et le geste restent en vue */}
+      <div className={cn("flex-1 space-y-3.5 px-3.5 py-3", layout === "column" && "min-h-0 overflow-y-auto")}>
         <div>
           <div className="mb-1 flex items-center justify-between">
             <span className="text-xs font-semibold text-muted-foreground">Réponse</span>
