@@ -46,6 +46,12 @@ export interface AgentVersion {
   created_at: string;
 }
 
+export interface AgentVersionWithMeta extends AgentVersion {
+  author_name: string | null;
+  /** Analyses that referenced this version. */
+  runs: number;
+}
+
 export interface AgentListItem extends Agent {
   consultations: number;
   findings_decided: number;

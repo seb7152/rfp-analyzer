@@ -20,7 +20,25 @@ export async function GET(_request: NextRequest, { params }: { params: { agentId
       .eq("agent_id", agent.id)
       .order("version_number", { ascending: false });
     if (versionsError) throw new Error(versionsError.message);
-    return NextResponse.json({ agent, versions: versions ?? [], role });
+    const rows = (versions ?? []) as Array<{ id: string; created_by: string | null }>;
+    // Who wrote each version, and how many analyses used it.
+    const authorIds = Array.from(new Set(rows.map((v) => v.created_by).filter((id): id is string => !!id)));
+    const [{ data: users }, { data: runs }] = await Promise.all([
+      authorIds.length > 0
+        ? supabase.from("users").select("id, full_name, email").in("id", authorIds)
+        : Promise.resolve({ data: [] as Array<{ id: string; full_name: string | null; email: string }> }),
+      rows.length > 0
+        ? supabase.from("agent_runs").select("agent_version_id").in("agent_version_id", rows.map((v) => v.id))
+        : Promise.resolve({ data: [] as Array<{ agent_version_id: string }> }),
+    ]);
+    const nameOf = new Map((users ?? []).map((u) => [u.id, u.full_name || u.email]));
+    const runsOf = new Map<string, number>();
+    for (const r of (runs ?? []) as Array<{ agent_version_id: string }>) runsOf.set(r.agent_version_id, (runsOf.get(r.agent_version_id) ?? 0) + 1);
+    return NextResponse.json({
+      agent,
+      versions: rows.map((v) => ({ ...v, author_name: v.created_by ? (nameOf.get(v.created_by) ?? null) : null, runs: runsOf.get(v.id) ?? 0 })),
+      role,
+    });
   } catch (err) {
     return failure(err);
   }

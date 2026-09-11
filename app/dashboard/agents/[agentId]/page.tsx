@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/shell/PageHeader";
 import { PageState } from "@/components/shell/PageState";
 import { AgentForm } from "@/components/agents/AgentForm";
 import { useOrganization } from "@/hooks/use-organization";
@@ -44,26 +42,13 @@ export default function AgentPage() {
   const canEdit = isNew ? isAdmin : query.data?.role === "admin";
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-4 pb-8">
-      <PageHeader
-        title={agent ? agent.name : "Nouvel agent"}
-        lead={agent?.description || (isNew ? "Un nom, un modèle du catalogue OpenRouter, un prompt système. Chaque modification du prompt crée une version." : undefined)}
-      >
-        <Link href="/dashboard/agents" className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-3 w-3" />
-          Agents
-        </Link>
-      </PageHeader>
-      <div className="mx-4 md:mx-8">
-        <AgentForm
-          key={agent?.id ?? "new"}
-          organizationId={organizationId}
-          agent={agent}
-          versions={query.data?.versions ?? []}
-          canEdit={!!canEdit}
-          defaultModelId={list.data?.defaultModelId ?? ""}
-        />
-      </div>
-    </div>
+    <AgentForm
+      key={agent?.id ?? "new"}
+      organizationId={organizationId}
+      agent={agent}
+      versions={query.data?.versions ?? []}
+      canEdit={!!canEdit}
+      defaultModelId={list.data?.defaultModelId ?? ""}
+    />
   );
 }

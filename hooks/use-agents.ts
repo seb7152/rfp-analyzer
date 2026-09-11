@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Agent, AgentListItem, AgentVersion, CatalogueModel, ReasoningEffort } from "@/lib/agents/types";
+import type { Agent, AgentListItem, AgentVersionWithMeta, CatalogueModel, ReasoningEffort } from "@/lib/agents/types";
 
 export const agentKeys = {
   list: (organizationId: string) => ["agents", organizationId] as const,
@@ -28,7 +28,7 @@ export function useAgents(organizationId: string | null) {
 }
 
 export function useAgent(agentId: string | null) {
-  return useQuery<{ agent: Agent; versions: AgentVersion[]; role: "admin" | "evaluator" | "viewer" | null }, Error>({
+  return useQuery<{ agent: Agent; versions: AgentVersionWithMeta[]; role: "admin" | "evaluator" | "viewer" | null }, Error>({
     queryKey: agentKeys.detail(agentId ?? ""),
     queryFn: async () => {
       const res = await fetch(`/api/agents/${agentId}`, { credentials: "include" });
