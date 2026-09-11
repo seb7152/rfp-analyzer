@@ -1,15 +1,10 @@
 import type { Metadata } from "next";
-import { Source_Sans_3 } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/toaster";
 import "../styles/globals.css";
 
-const sourceSans = Source_Sans_3({
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  variable: "--font-sans",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "RFP Analyzer",
@@ -23,7 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className={`${sourceSans.variable} font-sans`}>
+      <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans`}>
         <Providers>{children}</Providers>
         <Toaster />
       </body>

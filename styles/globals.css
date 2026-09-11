@@ -9,112 +9,122 @@
 */
 @layer base {
   :root {
-    /* Papier et encre */
-    --background: 40 20% 99%;
-    --foreground: 222 22% 13%;
-    --card: 40 20% 99%;
-    --card-foreground: 222 22% 13%;
+    /* Direction « Atelier » : fond d'application gris clair, panneaux blancs, encre. */
+    --background: 240 6% 97%;
+    --foreground: 240 4% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 4% 9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 22% 13%;
+    --popover-foreground: 240 4% 9%;
+    --rail: 0 0% 98%;
 
-    /* Accent institutionnel : bleu encre. Action primaire et sélection uniquement. */
-    --primary: 216 62% 36%;
+    /* Accent : bleu ardoise. Action primaire, sélection, progression. Rien d'autre. */
+    --primary: 217 38% 48%;
     --primary-foreground: 0 0% 100%;
 
-    /* Second plan (rail, barres, en-têtes de tableau) */
-    --secondary: 222 16% 95%;
-    --secondary-foreground: 222 22% 13%;
-    --muted: 222 16% 95%;
-    --muted-foreground: 222 10% 40%;
-    --accent: 216 55% 94%;
-    --accent-foreground: 216 62% 30%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 4% 9%;
+    --muted: 240 5% 95%;
+    --muted-foreground: 240 4% 40%;
+    --accent: 217 45% 94%;
+    --accent-foreground: 217 40% 34%;
 
-    --destructive: 0 62% 42%;
+    --destructive: 3 62% 46%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 222 14% 86%;
-    --input: 222 14% 80%;
-    --ring: 216 62% 36%;
-    --radius: 4px;
+    --border: 240 5% 90%;
+    --input: 240 5% 85%;
+    --ring: 217 38% 48%;
+    --radius: 8px;
 
-    /* États des réponses : toujours glyphe + libellé, jamais la couleur seule. */
-    --status-pass: 152 52% 30%;
-    --status-pass-soft: 152 40% 93%;
-    --status-partial: 34 78% 34%;
-    --status-partial-soft: 38 70% 92%;
-    --status-fail: 0 62% 42%;
-    --status-fail-soft: 0 60% 95%;
-    --status-roadmap: 264 32% 42%;
-    --status-roadmap-soft: 264 30% 94%;
-    --status-pending: 222 10% 46%;
-    --status-pending-soft: 222 16% 94%;
+    /* Bouton d'action : encre pleine. */
+    --action: 240 4% 9%;
+    --action-foreground: 0 0% 100%;
 
-    /* Échelle séquentielle des notes (0 → 5), du papier vers l'encre bleue. */
-    --scale-0: 222 16% 95%;
-    --scale-1: 224 45% 90%;
-    --scale-2: 224 48% 80%;
-    --scale-3: 224 50% 66%;
-    --scale-4: 224 54% 46%;
-    --scale-5: 224 58% 34%;
+    /* États des réponses : point coloré + libellé, jamais la couleur seule. */
+    --status-pass: 150 50% 34%;
+    --status-pass-soft: 150 40% 94%;
+    --status-partial: 38 80% 38%;
+    --status-partial-soft: 40 70% 93%;
+    --status-fail: 3 62% 46%;
+    --status-fail-soft: 3 60% 95%;
+    --status-roadmap: 258 38% 50%;
+    --status-roadmap-soft: 258 35% 95%;
+    --status-pending: 240 4% 55%;
+    --status-pending-soft: 240 5% 94%;
 
-    --chart-1: 224 58% 34%;
-    --chart-2: 152 52% 30%;
-    --chart-3: 34 78% 34%;
-    --chart-4: 0 62% 42%;
-    --chart-5: 264 32% 42%;
+    /* Échelle séquentielle des notes (0 → 5), du papier vers l'ardoise. */
+    --scale-0: 240 5% 94%;
+    --scale-1: 217 40% 90%;
+    --scale-2: 217 40% 80%;
+    --scale-3: 217 40% 66%;
+    --scale-4: 217 40% 50%;
+    --scale-5: 217 42% 36%;
 
-    --shadow-overlay: 0 12px 32px -12px hsl(222 30% 10% / 0.28);
+    --chart-1: 217 38% 48%;
+    --chart-2: 150 50% 34%;
+    --chart-3: 38 80% 38%;
+    --chart-4: 3 62% 46%;
+    --chart-5: 258 38% 50%;
+
+    --shadow-panel: 0 1px 2px hsl(240 10% 10% / 0.04);
+    --shadow-overlay: 0 12px 32px -12px hsl(240 20% 10% / 0.25);
   }
 
   .dark {
-    --background: 220 4% 9%;
+    --background: 220 6% 7%;
     --foreground: 220 6% 92%;
-    --card: 220 4% 9%;
+    --card: 220 5% 10%;
     --card-foreground: 220 6% 92%;
-    --popover: 220 4% 12%;
+    --popover: 220 5% 12%;
     --popover-foreground: 220 6% 92%;
+    --rail: 220 6% 7%;
 
-    --primary: 214 72% 74%;
-    --primary-foreground: 222 30% 10%;
+    --primary: 214 62% 70%;
+    --primary-foreground: 220 10% 8%;
 
-    --secondary: 220 4% 14%;
+    --secondary: 220 5% 13%;
     --secondary-foreground: 220 6% 92%;
-    --muted: 220 4% 14%;
-    --muted-foreground: 220 4% 66%;
-    --accent: 216 30% 20%;
-    --accent-foreground: 214 70% 80%;
+    --muted: 220 5% 13%;
+    --muted-foreground: 220 4% 64%;
+    --accent: 216 30% 19%;
+    --accent-foreground: 214 62% 78%;
 
-    --destructive: 0 60% 62%;
+    --destructive: 3 62% 64%;
     --destructive-foreground: 0 0% 10%;
 
-    --border: 220 4% 22%;
-    --input: 220 4% 30%;
-    --ring: 214 72% 74%;
+    --border: 220 5% 17%;
+    --input: 220 5% 24%;
+    --ring: 214 62% 70%;
 
-    --status-pass: 152 45% 62%;
-    --status-pass-soft: 152 30% 16%;
-    --status-partial: 38 75% 66%;
-    --status-partial-soft: 38 40% 16%;
-    --status-fail: 0 65% 68%;
-    --status-fail-soft: 0 35% 17%;
-    --status-roadmap: 264 45% 74%;
-    --status-roadmap-soft: 264 25% 18%;
-    --status-pending: 220 4% 62%;
-    --status-pending-soft: 220 4% 16%;
+    --action: 220 6% 92%;
+    --action-foreground: 220 10% 8%;
 
-    --scale-0: 220 4% 14%;
-    --scale-1: 224 30% 22%;
-    --scale-2: 224 40% 32%;
-    --scale-3: 224 50% 44%;
-    --scale-4: 224 60% 58%;
-    --scale-5: 222 70% 74%;
+    --status-pass: 150 45% 60%;
+    --status-pass-soft: 150 30% 15%;
+    --status-partial: 40 75% 64%;
+    --status-partial-soft: 40 40% 15%;
+    --status-fail: 3 65% 66%;
+    --status-fail-soft: 3 35% 16%;
+    --status-roadmap: 258 45% 72%;
+    --status-roadmap-soft: 258 25% 17%;
+    --status-pending: 220 4% 60%;
+    --status-pending-soft: 220 5% 15%;
 
-    --chart-1: 222 70% 74%;
-    --chart-2: 152 45% 62%;
-    --chart-3: 38 75% 66%;
-    --chart-4: 0 65% 68%;
-    --chart-5: 264 45% 74%;
+    --scale-0: 220 5% 13%;
+    --scale-1: 217 30% 22%;
+    --scale-2: 217 38% 32%;
+    --scale-3: 217 45% 44%;
+    --scale-4: 217 55% 58%;
+    --scale-5: 214 62% 72%;
 
+    --chart-1: 214 62% 70%;
+    --chart-2: 150 45% 60%;
+    --chart-3: 40 75% 64%;
+    --chart-4: 3 65% 66%;
+    --chart-5: 258 45% 72%;
+
+    --shadow-panel: none;
     --shadow-overlay: 0 12px 32px -12px hsl(0 0% 0% / 0.6);
   }
 
@@ -129,11 +139,14 @@
 
   body {
     @apply bg-background text-foreground;
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
     margin: 0;
     padding: 0;
     font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.45;
+    letter-spacing: -0.005em;
     font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased;
     caret-color: hsl(var(--primary));
@@ -180,44 +193,38 @@
 }
 
 @layer components {
-  /* Tampons d'état : carré, glyphe + libellé. */
+  /* Pastilles d'état : point coloré + libellé. */
   .stamp {
-    @apply inline-flex h-6 items-center gap-1 border px-1.5 text-xs font-semibold uppercase tracking-wide;
-    border-radius: 2px;
+    @apply inline-flex h-[22px] items-center gap-1.5 rounded-full bg-muted px-2 text-xs font-medium text-foreground;
+    white-space: nowrap;
   }
-  .stamp-pass {
-    color: hsl(var(--status-pass));
-    border-color: hsl(var(--status-pass) / 0.5);
-    background: hsl(var(--status-pass-soft));
+  .stamp::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    flex: none;
+    background: hsl(var(--status-pending));
   }
-  .stamp-partial {
-    color: hsl(var(--status-partial));
-    border-color: hsl(var(--status-partial) / 0.5);
-    background: hsl(var(--status-partial-soft));
-  }
-  .stamp-fail {
-    color: hsl(var(--status-fail));
-    border-color: hsl(var(--status-fail) / 0.5);
-    background: hsl(var(--status-fail-soft));
-  }
-  .stamp-roadmap {
-    color: hsl(var(--status-roadmap));
-    border-color: hsl(var(--status-roadmap) / 0.5);
-    background: hsl(var(--status-roadmap-soft));
-  }
-  .stamp-pending {
-    color: hsl(var(--status-pending));
-    border-color: hsl(var(--border));
-    background: transparent;
+  .stamp-pass::before { background: hsl(var(--status-pass)); }
+  .stamp-partial::before { background: hsl(var(--status-partial)); }
+  .stamp-fail::before { background: hsl(var(--status-fail)); }
+  .stamp-roadmap::before { background: hsl(var(--status-roadmap)); }
+  .stamp-pending::before { background: hsl(var(--status-pending)); }
+
+  /* Panneau : le seul conteneur. Blanc sur le fond gris, filet, rayon 8. */
+  .panel {
+    @apply rounded-lg border border-border bg-card;
+    box-shadow: var(--shadow-panel);
   }
 
-  /* Numéro d'article : identité récurrente du dossier. */
+  /* Numéro d'article / code : identité récurrente du dossier. */
   .article-no {
-    @apply text-xs font-semibold text-muted-foreground;
-    letter-spacing: 0.02em;
+    @apply text-xs font-medium text-muted-foreground;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    letter-spacing: 0;
   }
 
-  /* Filet de section : un seul séparateur, jamais de boîte. */
   .rule {
     @apply border-t border-border;
   }
@@ -225,6 +232,10 @@
 
 @layer utilities {
   .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  .num {
+    font-family: var(--font-mono), ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
   }
   .shadow-overlay {

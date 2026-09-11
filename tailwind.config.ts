@@ -13,6 +13,7 @@ const config = {
     extend: {
       fontFamily: {
         sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans],
+        mono: ["var(--font-mono)", ...defaultTheme.fontFamily.mono],
       },
       colors: {
         slate: {
@@ -59,6 +60,11 @@ const config = {
           foreground: "hsl(var(--destructive-foreground))",
         },
         border: "hsl(var(--border))",
+        rail: "hsl(var(--rail))",
+        action: {
+          DEFAULT: "hsl(var(--action))",
+          foreground: "hsl(var(--action-foreground))",
+        },
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         chart: {
@@ -93,7 +99,7 @@ const config = {
         "2xs": ["11px", { lineHeight: "14px" }],
         xs: ["12px", { lineHeight: "16px" }],
         sm: ["13px", { lineHeight: "18px" }],
-        base: ["14px", { lineHeight: "20px" }],
+        base: ["13px", { lineHeight: "19px" }],
         md: ["15px", { lineHeight: "22px" }],
         lg: ["16px", { lineHeight: "22px" }],
         xl: ["18px", { lineHeight: "24px" }],
@@ -103,6 +109,7 @@ const config = {
       },
       boxShadow: {
         overlay: "var(--shadow-overlay)",
+        panel: "var(--shadow-panel)",
       },
       borderRadius: {
         lg: "var(--radius)",

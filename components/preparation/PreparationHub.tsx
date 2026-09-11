@@ -62,8 +62,8 @@ function Article({
   id?: string;
 }) {
   return (
-    <section id={id} aria-labelledby={`art-${number}`} className="border-b border-border">
-      <div className="flex flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-6">
+    <section id={id} aria-labelledby={`art-${number}`} className="panel scroll-mt-4 overflow-hidden">
+      <div className="flex flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-5">
         <div className="flex min-w-0 items-center gap-3">
           <StateGlyph state={state} />
           <h2 id={`art-${number}`} className="flex items-baseline gap-2 text-lg font-semibold">
@@ -79,7 +79,7 @@ function Article({
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
-      {children && <div className="px-4 pb-4 md:px-6">{children}</div>}
+      {children && <div className="border-t border-border px-4 py-3 md:px-5">{children}</div>}
     </section>
   );
 }
@@ -307,7 +307,7 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
           : "done";
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto flex max-w-5xl flex-col gap-3 pb-8 md:gap-4">
       <PageHeader
         number={1}
         title="Préparation"
@@ -333,6 +333,7 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
         )}
       </PageHeader>
 
+      <div className="flex flex-col gap-3 px-4 md:px-8">
       <Article
         number="1.1"
         title="Cahier des charges et référentiel"
@@ -439,7 +440,7 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
           <div>
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <tr className="text-left text-xs font-medium text-muted-foreground">
                   <th className="py-1 pr-3 font-semibold">Fournisseur</th>
                   <th className="py-1 pr-3 text-right font-semibold">Réponses</th>
                   <th className="hidden py-1 pr-3 text-right font-semibold md:table-cell">Documents</th>
@@ -518,8 +519,9 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
           </Button>
         }
       />
+      </div>
 
-      <p className="px-4 py-3 text-xs text-muted-foreground md:px-6">
+      <p className="px-4 text-xs text-muted-foreground md:px-8">
         Consultation créée le {formatDate(rfp.created_at)}
         {preparation.activeVersion ? ` · version ${preparation.activeVersion.version_name}` : ""}.
       </p>

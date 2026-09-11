@@ -1,17 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { ArrowLeft, ChevronsLeft, ChevronsRight, ChevronsUpDown, Check, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Chapter } from "@/hooks/use-consultation";
+import { useRFPs } from "@/hooks/use-rfps";
+import { useVersion } from "@/contexts/VersionContext";
 import { StateGlyph, stateLabel } from "@/components/shell/StateGlyph";
+import { UserMenu } from "@/components/shell/UserMenu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ConsultationRailProps {
+  rfpId: string;
   title: string | null;
-  statusLine: string | null;
+  statusLabel: string | null;
   chapters: Chapter[];
   isLoading: boolean;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
   onNavigate?: () => void;
   className?: string;
 }
@@ -21,92 +35,167 @@ function isActive(pathname: string, href: string) {
 }
 
 /**
- * The dossier's table of contents. Chapters are numbered; each shows its
- * state as glyph + label, and a short figure when the phase has one.
+ * The consultation's table of contents: numbered chapters with a state dot
+ * and a short figure. Collapses to 56 px (number + dot) with the `[` key.
  */
 export function ConsultationRail({
+  rfpId,
   title,
-  statusLine,
+  statusLabel,
   chapters,
   isLoading,
+  collapsed = false,
+  onToggleCollapsed,
   onNavigate,
   className,
 }: ConsultationRailProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { rfps } = useRFPs();
+  const { versions, activeVersion, setActiveVersionId } = useVersion();
+
+  const settings = chapters.find((c) => c.id === "parametres");
+  const numbered = chapters.filter((c) => c.number !== null);
 
   return (
     <nav
       aria-label="Sommaire de la consultation"
-      className={cn("flex h-full flex-col bg-secondary/60", className)}
+      className={cn("flex h-full flex-col gap-3 bg-rail", collapsed ? "items-stretch p-2" : "p-2.5", className)}
     >
-      <div className="border-b border-border px-4 py-3">
-        {isLoading || !title ? (
-          <div className="space-y-2">
-            <div className="h-4 w-4/5 animate-pulse rounded-sm bg-muted" />
-            <div className="h-3 w-2/5 animate-pulse rounded-sm bg-muted" />
-          </div>
-        ) : (
-          <>
-            <h2 className="line-clamp-2 text-sm font-semibold leading-5 text-foreground">
-              {title}
-            </h2>
-            {statusLine && (
-              <p className="mt-0.5 text-xs text-muted-foreground">{statusLine}</p>
+      {/* En-tête : retour, titre (sélecteur), version */}
+      <div className={cn("flex flex-col gap-2", collapsed && "items-center")}>
+        <div className={cn("flex items-center", collapsed ? "justify-center" : "gap-1")}>
+          {!collapsed && (
+            <Link
+              href="/dashboard"
+              onClick={onNavigate}
+              className="flex h-7 flex-1 items-center gap-1.5 rounded-md px-1.5 text-xs text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Consultations
+            </Link>
+          )}
+          {onToggleCollapsed && (
+            <button
+              type="button"
+              onClick={onToggleCollapsed}
+              aria-label={collapsed ? "Déplier le sommaire" : "Replier le sommaire"}
+              title={`${collapsed ? "Déplier" : "Replier"} le sommaire ([)`}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+            </button>
+          )}
+        </div>
+
+        {!collapsed && (
+          <div className="px-1.5">
+            {isLoading || !title ? (
+              <div className="space-y-1.5">
+                <div className="h-4 w-4/5 animate-pulse rounded-sm bg-muted" />
+                <div className="h-3 w-2/5 animate-pulse rounded-sm bg-muted" />
+              </div>
+            ) : (
+              <>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex w-full items-start gap-1 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label="Changer de consultation"
+                    >
+                      <span className="line-clamp-2 flex-1 text-sm font-semibold leading-[18px]">{title}</span>
+                      <ChevronsUpDown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-72">
+                    <DropdownMenuLabel>Consultations</DropdownMenuLabel>
+                    {rfps.map((r) => (
+                      <DropdownMenuItem key={r.id} className="gap-2" onSelect={() => r.id !== rfpId && router.push(`/dashboard/rfp/${r.id}`)}>
+                        <span className="flex-1 truncate">{r.title}</span>
+                        {r.id === rfpId && <Check className="h-4 w-4 text-primary" />}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {versions.length > 1 ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button type="button" className="mt-0.5 text-xs text-muted-foreground hover:text-foreground" aria-label="Changer de version">
+                        {statusLabel}
+                        {activeVersion ? ` · version ${activeVersion.version_number}` : ""}
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-64">
+                      <DropdownMenuLabel>Versions</DropdownMenuLabel>
+                      {versions.map((v) => (
+                        <DropdownMenuItem key={v.id} className="gap-2" onSelect={() => !v.is_active && setActiveVersionId(v.id)}>
+                          <span className="flex-1 truncate">
+                            {v.version_number}. {v.version_name || "Sans nom"}
+                          </span>
+                          {v.is_active && <Check className="h-4 w-4 text-primary" />}
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href={`/dashboard/rfp/${rfpId}/parametres#versions`}>Gérer les versions</Link>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {statusLabel}
+                    {activeVersion ? ` · version ${activeVersion.version_number}` : ""}
+                  </p>
+                )}
+              </>
             )}
-          </>
+          </div>
         )}
       </div>
 
-      <ol className="flex-1 overflow-y-auto py-2">
+      {/* Chapitres */}
+      <ol className="flex flex-col gap-0.5">
         {isLoading && chapters.length === 0
           ? Array.from({ length: 5 }).map((_, i) => (
-              <li key={i} className="px-4 py-2">
+              <li key={i} className="px-2 py-1.5">
                 <div className="h-4 w-3/4 animate-pulse rounded-sm bg-muted" />
               </li>
             ))
-          : chapters.map((chapter) => {
+          : numbered.map((chapter) => {
               const active = isActive(pathname, chapter.href);
-              const entryActive = chapter.entries.some((e) =>
-                isActive(pathname, e.href)
-              );
+              const entryActive = chapter.entries.some((e) => isActive(pathname, e.href));
               return (
-                <li
-                  key={chapter.id}
-                  className={cn(
-                    chapter.number === null && "mt-2 border-t border-border pt-2"
-                  )}
-                >
+                <li key={chapter.id}>
                   <Link
                     href={chapter.href}
                     onClick={onNavigate}
                     aria-current={active ? "page" : undefined}
+                    title={collapsed ? `${chapter.label}${chapter.figure ? ` · ${chapter.figure}` : ""} · ${stateLabel(chapter.state)}` : undefined}
                     className={cn(
-                      "group flex items-center gap-2 border-l-2 py-1.5 pl-3 pr-3 text-sm transition-colors duration-150",
-                      active
-                        ? "border-primary bg-accent text-accent-foreground"
-                        : "border-transparent text-foreground hover:bg-accent/60"
+                      "relative flex items-center rounded-md text-sm transition-colors duration-150",
+                      collapsed ? "h-9 justify-center" : "h-8 gap-2.5 px-2.5",
+                      active || entryActive
+                        ? "bg-accent font-medium text-foreground"
+                        : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
                     )}
                   >
-                    {chapter.number !== null ? (
-                      <span className="article-no w-4 text-right">
-                        {chapter.number}
+                    <span className={cn("num w-3 text-center text-xs", active ? "text-foreground" : "text-muted-foreground")}>{chapter.number}</span>
+                    {collapsed ? (
+                      <span className="absolute right-1.5 top-1.5">
+                        <StateGlyph state={chapter.state} className="h-1.5 w-1.5" />
                       </span>
                     ) : (
-                      <span className="w-4" />
+                      <>
+                        <span className="flex-1 truncate">{chapter.label}</span>
+                        {chapter.figure && <span className="num text-2xs text-muted-foreground">{chapter.figure}</span>}
+                        <StateGlyph state={chapter.state} />
+                        <span className="sr-only">{stateLabel(chapter.state)}</span>
+                      </>
                     )}
-                    <span className="flex-1 truncate font-medium">
-                      {chapter.label}
-                    </span>
-                    {chapter.figure && (
-                      <span className="text-xs text-muted-foreground">
-                        {chapter.figure}
-                      </span>
-                    )}
-                    <StateGlyph state={chapter.state} />
-                    <span className="sr-only">{stateLabel(chapter.state)}</span>
                   </Link>
-                  {chapter.entries.length > 0 && (active || entryActive) && (
-                    <ul className="pb-1">
+                  {!collapsed && chapter.entries.length > 0 && (active || entryActive) && (
+                    <ul className="mb-1 mt-0.5 flex flex-col gap-0.5">
                       {chapter.entries.map((entry) => {
                         const ea = isActive(pathname, entry.href);
                         return (
@@ -116,10 +205,8 @@ export function ConsultationRail({
                               onClick={onNavigate}
                               aria-current={ea ? "page" : undefined}
                               className={cn(
-                                "flex items-center gap-2 border-l-2 py-1 pl-9 pr-3 text-sm transition-colors duration-150",
-                                ea
-                                  ? "border-primary text-foreground"
-                                  : "border-transparent text-muted-foreground hover:text-foreground"
+                                "flex h-7 items-center rounded-md pl-8 pr-2.5 text-sm transition-colors duration-150",
+                                ea ? "font-medium text-foreground" : "text-muted-foreground hover:text-foreground"
                               )}
                             >
                               {entry.label}
@@ -134,16 +221,27 @@ export function ConsultationRail({
             })}
       </ol>
 
-      <div className="border-t border-border px-3 py-2">
-        <Link
-          href="/dashboard"
-          onClick={onNavigate}
-          className="flex items-center gap-2 py-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Toutes les consultations
-        </Link>
-      </div>
+      {settings && (
+        <div className="border-t border-border pt-2">
+          <Link
+            href={settings.href}
+            onClick={onNavigate}
+            aria-current={isActive(pathname, settings.href) ? "page" : undefined}
+            title={collapsed ? "Paramètres" : undefined}
+            className={cn(
+              "flex items-center rounded-md text-sm transition-colors duration-150",
+              collapsed ? "h-9 justify-center" : "h-8 gap-2.5 px-2.5",
+              isActive(pathname, settings.href) ? "bg-accent font-medium text-foreground" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+            )}
+          >
+            <Settings className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>Paramètres</span>}
+          </Link>
+        </div>
+      )}
+
+      <div className="flex-1" />
+      <UserMenu collapsed={collapsed} />
     </nav>
   );
 }

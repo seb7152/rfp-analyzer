@@ -37,7 +37,7 @@ function Section({
   id: string;
 }) {
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="border-b border-border px-4 py-5 md:px-6 presentation:min-h-screen presentation:py-10">
+    <section id={id} aria-labelledby={`${id}-title`} className="panel mx-4 scroll-mt-4 px-4 py-4 md:mx-8 md:px-5 presentation:min-h-screen presentation:py-10">
       <h2 id={`${id}-title`} className="flex items-baseline gap-2 text-lg font-semibold presentation:text-3xl">
         <span className="article-no presentation:text-lg">{number}</span>
         {title}
@@ -190,7 +190,7 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
     <div
       ref={containerRef}
       data-presentation={presentation || undefined}
-      className={cn("mx-auto max-w-6xl bg-background", presentation && "presentation max-w-none overflow-y-auto")}
+      className={cn("mx-auto flex max-w-6xl flex-col gap-4 bg-background pb-8", presentation && "presentation max-w-none overflow-y-auto")}
     >
       <PageHeader
         number={4}
@@ -231,7 +231,7 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
         <div>
           <table className="w-full text-sm presentation:text-lg">
             <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground presentation:text-sm">
+              <tr className="text-left text-xs font-medium text-muted-foreground presentation:text-sm">
                 <th className="w-8 py-2 font-semibold">#</th>
                 <th className="py-2 font-semibold">Fournisseur</th>
                 <th className="py-2 text-right font-semibold">Note</th>
@@ -291,7 +291,7 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
           <table className="w-full min-w-[560px] border-collapse text-sm presentation:text-lg">
             <thead>
               <tr>
-                <th className="sticky left-0 z-10 bg-background py-2 pr-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground presentation:text-sm">Domaine</th>
+                <th className="sticky left-0 z-10 bg-card py-2 pr-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground presentation:text-sm">Domaine</th>
                 <th className="py-2 pr-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground presentation:text-sm">Poids</th>
                 {suppliers.map((s) => (
                   <th key={s.id} className="min-w-[88px] py-2 px-1 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground presentation:text-sm">
@@ -305,7 +305,7 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
                 const node = data.tree.find((n) => n.id === row.id)!;
                 return (
                   <tr key={row.id} className="border-t border-border">
-                    <td className="sticky left-0 z-10 min-w-[150px] max-w-[320px] bg-background py-1.5 pr-3 md:min-w-[200px]">
+                    <td className="sticky left-0 z-10 min-w-[150px] max-w-[320px] bg-card py-1.5 pr-3 md:min-w-[200px]">
                       <span className="article-no block whitespace-nowrap md:mr-2 md:inline">{row.code}</span>
                       <span className="line-clamp-2">{row.title}</span>
                       <span className="tnum block text-xs text-muted-foreground md:ml-2 md:inline">{row.requirementCount} exig.</span>
@@ -366,7 +366,7 @@ export function DecisionView({ rfpId }: { rfpId: string }) {
             <ScrollX>
               <table className="w-full min-w-[560px] text-sm presentation:text-lg">
                 <thead>
-                  <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground presentation:text-sm">
+                  <tr className="text-left text-xs font-medium text-muted-foreground presentation:text-sm">
                     <th className="py-2 font-semibold">Fournisseur</th>
                     <th className="py-2 text-right font-semibold">Rang technique</th>
                     <th className="py-2 text-right font-semibold">Note</th>

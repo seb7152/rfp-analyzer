@@ -19,7 +19,7 @@ export default function ReferentielPage() {
   const { activeVersion } = useVersion();
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto flex max-w-6xl flex-col gap-4 pb-8">
       <PageHeader
         number="1.1"
         title="Référentiel des exigences"
@@ -30,7 +30,7 @@ export default function ReferentielPage() {
           </Button>
         }
       />
-      <div className="px-4 py-4 md:px-6">
+      <div className="panel mx-4 p-4 md:mx-8 md:p-5">
         <RequirementsTab
           rfpId={rfpId}
           peerReviewEnabled={preparation?.rfp.peer_review_enabled}

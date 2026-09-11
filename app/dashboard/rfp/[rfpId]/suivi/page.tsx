@@ -122,7 +122,7 @@ export default function SuiviPage() {
   const suppliers = preparation.suppliers.items;
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto flex max-w-5xl flex-col gap-4 pb-8">
       <PageHeader
         number="3.1"
         title="Avancement de l'évaluation"
@@ -138,8 +138,9 @@ export default function SuiviPage() {
         }
       />
 
-      <section className="border-b border-border px-4 py-4 md:px-6" aria-labelledby="suivi-suppliers">
-        <h2 id="suivi-suppliers" className="mb-2 text-sm font-semibold">Par fournisseur</h2>
+      <section className="panel mx-4 overflow-hidden md:mx-8" aria-labelledby="suivi-suppliers">
+        <h2 id="suivi-suppliers" className="border-b border-border px-4 py-2.5 text-sm font-semibold md:px-5">Par fournisseur</h2>
+        <div className="px-4 pb-3 md:px-5">
         <table className="w-full text-sm">
           <tbody>
             {suppliers.map((s) => {
@@ -154,10 +155,12 @@ export default function SuiviPage() {
             })}
           </tbody>
         </table>
+        </div>
       </section>
 
-      <section className="border-b border-border px-4 py-4 md:px-6" aria-labelledby="suivi-domains">
-        <h2 id="suivi-domains" className="mb-2 text-sm font-semibold">Par domaine</h2>
+      <section className="panel mx-4 overflow-hidden md:mx-8" aria-labelledby="suivi-domains">
+        <h2 id="suivi-domains" className="border-b border-border px-4 py-2.5 text-sm font-semibold md:px-5">Par domaine</h2>
+        <div className="px-4 pb-3 md:px-5">
         {byDomain.length === 0 ? (
           <p className="text-sm text-muted-foreground">Aucun domaine.</p>
         ) : (
@@ -179,21 +182,23 @@ export default function SuiviPage() {
             </tbody>
           </table>
         )}
+        </div>
       </section>
 
-      <section className="px-4 py-4 md:px-6" aria-labelledby="suivi-analysts">
-        <div className="mb-2 flex items-center justify-between">
+      <section className="panel mx-4 overflow-hidden md:mx-8" aria-labelledby="suivi-analysts">
+        <div className="flex items-center justify-between border-b border-border px-4 py-2.5 md:px-5">
           <h2 id="suivi-analysts" className="text-sm font-semibold">Par analyste</h2>
           <Link href={`/dashboard/rfp/${rfpId}/parametres#analystes`} className="text-xs text-muted-foreground hover:text-foreground">
             Gérer les accès
           </Link>
         </div>
+        <div className="px-4 pb-3 md:px-5">
         {byAnalyst.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucun analyste assigné.</p>
+          <p className="py-3 text-sm text-muted-foreground">Aucun analyste assigné.</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <tr className="text-left text-xs font-medium text-muted-foreground">
                 <th className="py-1 pr-3 font-semibold">Analyste</th>
                 <th className="py-1 pr-3 font-semibold">Accès</th>
                 <th className="py-1 pr-3 text-right font-semibold">Réponses évaluées</th>
@@ -212,6 +217,7 @@ export default function SuiviPage() {
             </tbody>
           </table>
         )}
+        </div>
       </section>
     </div>
   );

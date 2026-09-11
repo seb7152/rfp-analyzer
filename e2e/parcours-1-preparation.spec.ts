@@ -6,7 +6,8 @@ test.describe("Parcours 1 — préparer une consultation (Sophie)", () => {
 
   test("de la création au plan de préparation", async ({ page, request }) => {
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Test & recette");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Consultations");
+    await expect(page.getByText("Aujourd'hui")).toBeVisible();
     await expect(page.getByRole("tab", { name: /Toutes/ })).toBeVisible();
 
     // Créer une consultation

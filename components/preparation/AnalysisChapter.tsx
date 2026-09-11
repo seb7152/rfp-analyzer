@@ -54,7 +54,7 @@ export function AnalysisChapter({ rfpId }: { rfpId: string }) {
             : "Toutes les réponses ont une note IA. Les experts peuvent évaluer.";
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto flex max-w-5xl flex-col gap-4 pb-8">
       <PageHeader
         number={2}
         title="Analyse IA"
@@ -73,7 +73,7 @@ export function AnalysisChapter({ rfpId }: { rfpId: string }) {
         }
       />
 
-      <section className="border-b border-border px-4 py-4 md:px-6" aria-live="polite">
+      <section className="panel mx-4 px-4 py-4 md:mx-8 md:px-5" aria-live="polite">
         <div className="flex items-baseline justify-between">
           <span className="text-sm font-semibold">
             {processing
@@ -116,16 +116,17 @@ export function AnalysisChapter({ rfpId }: { rfpId: string }) {
         </dl>
       </section>
 
-      <section className="px-4 py-4 md:px-6" aria-labelledby="analysis-suppliers">
-        <h2 id="analysis-suppliers" className="mb-2 text-sm font-semibold">
+      <section className="panel mx-4 overflow-hidden md:mx-8" aria-labelledby="analysis-suppliers">
+        <h2 id="analysis-suppliers" className="border-b border-border px-4 py-2.5 text-sm font-semibold md:px-5">
           Par fournisseur
         </h2>
+        <div className="px-4 pb-3 md:px-5">
         {suppliers.length === 0 ? (
           <p className="text-sm text-muted-foreground">Aucun fournisseur déclaré.</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <tr className="text-left text-xs font-medium text-muted-foreground">
                 <th className="py-1 pr-3 font-semibold">Fournisseur</th>
                 <th className="py-1 pr-3 text-right font-semibold">Notées</th>
                 <th className="py-1 pr-3 text-right font-semibold">Réponses</th>
@@ -167,6 +168,7 @@ export function AnalysisChapter({ rfpId }: { rfpId: string }) {
             </tbody>
           </table>
         )}
+        </div>
       </section>
 
       <LaunchAnalysisDialog

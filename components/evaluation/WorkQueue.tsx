@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Search, SlidersHorizontal, MessageSquare, HelpCircle, X } from "lucide-react";
+import { Search, SlidersHorizontal, MessageSquare, HelpCircle, StickyNote, X, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -28,6 +28,8 @@ interface WorkQueueProps {
   reviewStatusOf?: (id: string) => "draft" | "submitted" | "approved" | "rejected" | null;
   openThreadIds: Set<string>;
   className?: string;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
 }
 
 function Progress({ item }: { item: QueueItem }) {
@@ -62,6 +64,8 @@ export function WorkQueue({
   reviewStatusOf,
   openThreadIds,
   className,
+  collapsed = false,
+  onToggleCollapsed,
 }: WorkQueueProps) {
   const { tab, setTab, filters, setFilters, resetFilters, activeFilterCount, groups, counts, domains } = queue;
   const listRef = useRef<HTMLDivElement>(null);
@@ -72,6 +76,30 @@ export function WorkQueue({
     el?.scrollIntoView({ block: "nearest" });
   }, [selectedId]);
 
+  if (collapsed) {
+    const label = tab === "todo" ? "À faire" : tab === "done" ? "Faites" : "Toutes";
+    return (
+      <div className={cn("flex h-full flex-col items-center gap-3 bg-rail py-3", className)}>
+        <button
+          type="button"
+          onClick={onToggleCollapsed}
+          aria-label="Déplier la file de travail"
+          title="Déplier la file de travail (])"
+          className="flex h-8 w-8 items-center justify-center rounded-md border border-input bg-card text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ChevronsRight className="h-4 w-4" />
+        </button>
+        <span className="num inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-accent px-1.5 text-xs font-semibold text-accent-foreground" title={`${counts.todo} exigences à faire`}>
+          {counts.todo}
+        </span>
+        <span className="text-2xs uppercase tracking-wide text-muted-foreground [writing-mode:vertical-rl] rotate-180">
+          {label} · {tab === "todo" ? counts.todo : tab === "done" ? counts.done : counts.all} sur {counts.all}
+        </span>
+      </div>
+    );
+  }
+
+
   const tabs: Array<{ id: typeof tab; label: string; count: number }> = [
     { id: "todo", label: "À faire", count: counts.todo },
     { id: "done", label: "Faites", count: counts.done },
@@ -79,9 +107,9 @@ export function WorkQueue({
   ];
 
   return (
-    <div className={cn("flex h-full flex-col bg-secondary/40", className)}>
-      <div className="border-b border-border px-3 pt-2">
-        <div role="tablist" aria-label="File de travail" className="flex gap-4">
+    <div className={cn("flex h-full flex-col bg-rail", className)}>
+      <div className="flex items-end gap-2 border-b border-border px-3 pt-2">
+        <div role="tablist" aria-label="File de travail" className="flex flex-1 gap-4">
           {tabs.map((t) => (
             <button
               key={t.id}
@@ -97,6 +125,17 @@ export function WorkQueue({
             </button>
           ))}
         </div>
+        {onToggleCollapsed && (
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            aria-label="Replier la file de travail"
+            title="Replier la file de travail (])"
+            className="mb-1.5 flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ChevronsLeft className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       <div className="flex items-center gap-1.5 border-b border-border px-2 py-1.5">
@@ -246,7 +285,7 @@ export function WorkQueue({
         </div>
       )}
 
-      <div ref={listRef} className="flex-1 overflow-y-auto" role="listbox" aria-label="Exigences">
+      <div ref={listRef} className="flex-1 overflow-y-auto px-1.5 pb-2" role="listbox" aria-label="Exigences">
         {groups.length === 0 ? (
           <p className="px-3 py-8 text-sm text-muted-foreground">
             {tab === "todo" && activeFilterCount === 0 && !filters.search
@@ -256,7 +295,7 @@ export function WorkQueue({
         ) : (
           groups.map((g) => (
             <div key={g.id}>
-              <div className="sticky top-0 z-10 flex items-baseline gap-2 border-b border-border bg-secondary px-3 py-1 text-xs">
+              <div className="sticky top-0 z-10 flex items-baseline gap-2 bg-rail px-3 pb-1 pt-2.5 text-xs">
                 <span className="article-no">{g.code}</span>
                 <span className="truncate font-medium">{g.title}</span>
                 <span className="tnum ml-auto text-muted-foreground">{g.items.length}</span>
@@ -273,8 +312,8 @@ export function WorkQueue({
                     data-id={it.id}
                     onClick={() => onSelect(it.id)}
                     className={cn(
-                      "flex w-full items-start gap-2 border-l-2 py-1.5 pl-2.5 pr-3 text-left transition-colors duration-150",
-                      selected ? "border-primary bg-accent" : "border-transparent hover:bg-accent/50"
+                      "flex w-full items-start gap-2 rounded-md py-1.5 pl-2.5 pr-2.5 text-left transition-colors duration-150",
+                      selected ? "bg-accent" : "hover:bg-accent/50"
                     )}
                   >
                     <span className="article-no mt-0.5 w-14 shrink-0 truncate">{it.code}</span>
@@ -283,8 +322,9 @@ export function WorkQueue({
                       <span className="mt-0.5 flex items-center gap-2 text-2xs text-muted-foreground">
                         {it.isMandatory && <span className="font-semibold uppercase">Oblig.</span>}
                         {review && review !== "draft" && <span>{REVIEW_LABEL[review]}</span>}
-                        {openThreadIds.has(it.id) && <MessageSquare className="h-3 w-3" aria-label="Discussion ouverte" />}
-                        {it.hasQuestion && <HelpCircle className="h-3 w-3" aria-label="Question posée" />}
+                        {openThreadIds.has(it.id) && <MessageSquare className="h-3 w-3 text-primary" aria-label="Discussion ouverte" />}
+                        {it.hasComment && <StickyNote className="h-3 w-3 text-primary" aria-label="Commentaire" />}
+                        {it.hasQuestion && <HelpCircle className="h-3 w-3 text-primary" aria-label="Question posée" />}
                       </span>
                     </span>
                     <Progress item={it} />

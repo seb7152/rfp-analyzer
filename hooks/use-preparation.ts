@@ -77,6 +77,8 @@ export interface PreparationData {
     customisedRequirements: number;
   };
   documents: { total: number };
+  /** Évaluations récentes, groupées par personne et par jour. */
+  recentActivity: Array<{ userId: string; userName: string; at: string; evaluated: number }>;
 }
 
 export const preparationQueryKey = (rfpId: string, versionId?: string) => [

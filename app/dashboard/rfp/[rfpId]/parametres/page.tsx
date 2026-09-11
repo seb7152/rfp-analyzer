@@ -42,7 +42,7 @@ export default function ParametresPage() {
   if (!preparation) return null;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto flex max-w-6xl flex-col gap-4 pb-8">
       <PageHeader
         title="Paramètres"
         lead="Réglages structurants de la consultation. Ils se font une fois, puis se revisitent rarement."
@@ -56,7 +56,7 @@ export default function ParametresPage() {
         </nav>
       </PageHeader>
 
-      <section id="consultation" className="scroll-mt-16 border-b border-border px-4 py-5 md:px-6">
+      <section id="consultation" className="panel mx-4 scroll-mt-4 px-4 py-4 md:mx-8 md:px-5">
         <h2 className="mb-3 text-base font-semibold">Consultation</h2>
         {rfp && (
           <SettingsTab
@@ -69,22 +69,22 @@ export default function ParametresPage() {
         )}
       </section>
 
-      <section id="ponderations" className="scroll-mt-16 border-b border-border px-4 py-5 md:px-6">
+      <section id="ponderations" className="panel mx-4 scroll-mt-4 px-4 py-4 md:mx-8 md:px-5">
         <h2 className="mb-3 text-base font-semibold">Pondérations</h2>
         <WeightsTab rfpId={rfpId} />
       </section>
 
-      <section id="analystes" className="scroll-mt-16 border-b border-border px-4 py-5 md:px-6">
+      <section id="analystes" className="panel mx-4 scroll-mt-4 px-4 py-4 md:mx-8 md:px-5">
         <h2 className="mb-3 text-base font-semibold">Analystes et accès</h2>
         <AnalystsTab rfpId={rfpId} />
       </section>
 
-      <section id="fournisseurs" className="scroll-mt-16 border-b border-border px-4 py-5 md:px-6">
+      <section id="fournisseurs" className="panel mx-4 scroll-mt-4 px-4 py-4 md:mx-8 md:px-5">
         <h2 className="mb-3 text-base font-semibold">Fournisseurs et shortlist</h2>
         <SuppliersTab rfpId={rfpId} />
       </section>
 
-      <section id="versions" className="scroll-mt-16 px-4 py-5 md:px-6">
+      <section id="versions" className="panel mx-4 scroll-mt-4 px-4 py-4 md:mx-8 md:px-5">
         <h2 className="mb-3 text-base font-semibold">Versions</h2>
         <VersionsTab rfpId={rfpId} />
       </section>

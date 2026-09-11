@@ -13,6 +13,8 @@ import {
   Check,
   Undo2,
   Maximize2,
+  StickyNote,
+  HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -59,37 +61,47 @@ export interface ResponseColumnProps {
   onOpenBookmark: (bookmark: PDFAnnotation) => void;
   onOpenThreads: () => void;
   layout: "column" | "card";
+  /** Lines of response kept visible before « Lire la suite ». */
+  responseLines?: number;
 }
 
 function ClampedText({
   text,
   lines,
   empty,
+  fixed = false,
 }: {
   text: string | null;
   lines: number;
   empty: string;
+  /** Reserve the full height even for short text, so sibling columns align. */
+  fixed?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLParagraphElement>(null);
   const [overflows, setOverflows] = useState(false);
+  const LINE = 19;
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     setOverflows(el.scrollHeight > el.clientHeight + 1);
-  }, [text, open]);
+  }, [text, open, lines]);
   if (!text || !text.trim()) {
-    return <p className="text-sm italic text-muted-foreground">{empty}</p>;
+    return (
+      <p className="text-sm italic text-muted-foreground" style={fixed ? { minHeight: lines * LINE } : undefined}>
+        {empty}
+      </p>
+    );
   }
   return (
-    <div>
+    <div style={fixed && !open ? { minHeight: lines * LINE + 20 } : undefined}>
       <p
         ref={ref}
-        className={cn("whitespace-pre-wrap text-sm leading-[18px] text-foreground")}
+        className={cn("whitespace-pre-wrap text-sm text-foreground")}
         style={
           open
-            ? undefined
-            : { display: "-webkit-box", WebkitLineClamp: lines, WebkitBoxOrient: "vertical", overflow: "hidden" }
+            ? { lineHeight: `${LINE}px` }
+            : { lineHeight: `${LINE}px`, display: "-webkit-box", WebkitLineClamp: lines, WebkitBoxOrient: "vertical", overflow: "hidden" }
         }
       >
         {text}
@@ -133,6 +145,7 @@ export function ResponseColumn({
   onOpenBookmark,
   onOpenThreads,
   layout,
+  responseLines = 8,
 }: ResponseColumnProps) {
   const queryClient = useQueryClient();
   const analyze = useAnalyzeResponse();
@@ -200,12 +213,12 @@ export function ResponseColumn({
       aria-label={response.supplier.name}
       data-checked={checked}
       className={cn(
-        "flex min-w-0 flex-col bg-background",
-        layout === "column" ? "border-r border-border last:border-r-0" : "border-b border-border"
+        "panel flex min-w-0 flex-col overflow-hidden",
+        layout === "card" && "rounded-none border-x-0 border-t-0 shadow-none"
       )}
     >
       {/* En-tête : fournisseur, note, tampon */}
-      <header className="flex items-center gap-2 border-b border-border px-3 py-2">
+      <header className="flex items-center gap-2.5 border-b border-border px-3.5 py-2.5">
         <h3 className="min-w-0 flex-1 truncate text-sm font-semibold">{response.supplier.name}</h3>
         <HoverCard openDelay={150} closeDelay={80}>
           <HoverCardTrigger asChild>
@@ -218,7 +231,7 @@ export function ResponseColumn({
               }}
               aria-disabled={noDocs && bookmarks.length === 0}
               className={cn(
-                "tnum rounded-sm text-lg font-semibold leading-none underline decoration-border decoration-1 underline-offset-4 transition-colors duration-150 hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-disabled:cursor-default",
+                "num rounded-sm text-lg font-semibold leading-none underline decoration-border decoration-1 underline-offset-4 transition-colors duration-150 hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-disabled:cursor-default",
                 score === null && "text-muted-foreground"
               )}
               aria-label={`Note ${formatScore(score)} sur 5${isManual ? ", manuelle" : ", IA"}. Ouvrir la preuve dans le document`}
@@ -272,7 +285,7 @@ export function ResponseColumn({
       </header>
 
       {/* Réponse */}
-      <div className="flex-1 space-y-3 px-3 py-3">
+      <div className="flex-1 space-y-3.5 px-3.5 py-3">
         <div>
           <div className="mb-1 flex items-center justify-between">
             <span className="text-xs font-semibold text-muted-foreground">Réponse</span>
@@ -293,7 +306,7 @@ export function ResponseColumn({
               </Button>
             </div>
           </div>
-          <ClampedText text={response.response_text} lines={8} empty="Aucune réponse fournie." />
+          <ClampedText text={response.response_text} lines={responseLines} empty="Aucune réponse fournie." fixed />
         </div>
 
         {bookmarks.length > 0 && (
@@ -344,8 +357,8 @@ export function ResponseColumn({
         </div>
       </div>
 
-      {/* Le geste */}
-      <footer className="space-y-2 border-t border-border bg-secondary/40 px-3 py-2">
+      {/* Le geste, puis les signaux */}
+      <footer className="space-y-2 border-t border-border bg-rail px-3.5 py-2.5">
         <div className="flex flex-wrap items-center gap-2">
           <ScoreControl
             value={score}
@@ -358,15 +371,15 @@ export function ResponseColumn({
           />
           {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" aria-label="Enregistrement" />}
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex h-8 items-center gap-1.5">
           {canEdit && !checked && (
-            <Button size="sm" className="h-7 gap-1 px-2 text-xs" onClick={onConfirm} disabled={score === null && status === "pending"}>
+            <Button size="sm" className="h-7 gap-1 px-2.5 text-xs" onClick={onConfirm} disabled={score === null && status === "pending"}>
               <Check className="h-3.5 w-3.5" />
               {score === null ? "Statuer" : "Valider"}
             </Button>
           )}
           {checked && (
-            <span className="inline-flex items-center gap-1 text-xs text-status-pass">
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-status-pass">
               <Check className="h-3.5 w-3.5" />
               Évaluée
               {canEdit && (
@@ -377,25 +390,51 @@ export function ResponseColumn({
             </span>
           )}
           <div className="ml-auto flex items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="xs"
-              className={cn("h-7 gap-1 px-1.5 text-xs", threadStats.hasBlocking && "text-status-fail")}
+            <button
+              type="button"
               onClick={onOpenThreads}
-              aria-label={threadStats.total > 0 ? `${threadStats.open} discussions ouvertes` : "Ouvrir une discussion"}
+              aria-label={threadStats.open > 0 ? `${threadStats.open} discussions ouvertes${threadStats.hasBlocking ? ", dont une bloquante" : ""}` : "Ouvrir une discussion"}
+              title="Discussions"
+              className={cn(
+                "inline-flex h-7 items-center gap-1 rounded-md px-1.5 transition-colors duration-150 hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                threadStats.hasBlocking ? "text-status-fail" : threadStats.open > 0 ? "text-primary" : "text-muted-foreground"
+              )}
             >
-              <MessageSquare className="h-3.5 w-3.5" />
-              {threadStats.total > 0 && <span className="tnum">{threadStats.open}</span>}
-            </Button>
-            <Button
-              variant="ghost"
-              size="xs"
-              className="h-7 px-1.5 text-xs"
-              aria-expanded={showNotes}
+              <MessageSquare className="h-4 w-4" />
+              {threadStats.open > 0 && (
+                <span className={cn("num inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-2xs font-semibold text-white", threadStats.hasBlocking ? "bg-status-fail" : "bg-primary")}>
+                  {threadStats.open}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
               onClick={() => setShowNotes((v) => !v)}
+              aria-expanded={showNotes}
+              aria-label={comment.trim() ? "Commentaire de l'expert" : "Commenter"}
+              title={comment.trim() ? "Commentaire de l'expert" : "Commenter"}
+              className={cn(
+                "relative inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors duration-150 hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                comment.trim() ? "bg-accent text-primary" : "text-muted-foreground"
+              )}
             >
-              {showNotes ? "Masquer" : "Commenter"}
-            </Button>
+              <StickyNote className="h-4 w-4" />
+              {comment.trim() && <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-primary" />}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowNotes((v) => !v)}
+              aria-expanded={showNotes}
+              aria-label={question.trim() ? "Question posée au fournisseur" : "Poser une question au fournisseur"}
+              title={question.trim() ? "Question posée au fournisseur" : "Question au fournisseur"}
+              className={cn(
+                "relative inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors duration-150 hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                question.trim() ? "bg-accent text-primary" : "text-muted-foreground"
+              )}
+            >
+              <HelpCircle className="h-4 w-4" />
+              {question.trim() && <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-primary" />}
+            </button>
           </div>
         </div>
 

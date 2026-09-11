@@ -31,6 +31,7 @@ import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useOfflineQueueStatus } from "@/hooks/use-offline-sync";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEvaluationQueue } from "@/hooks/use-evaluation-queue";
+import { useCollapsed } from "@/hooks/use-collapsed";
 import { WorkQueue } from "@/components/evaluation/WorkQueue";
 import { ResponseColumn } from "@/components/evaluation/ResponseColumn";
 import { PageState } from "@/components/shell/PageState";
@@ -338,6 +339,7 @@ export function EvaluationWorkspace({ rfpId }: { rfpId: string }) {
 
   // Mobile queue sheet on desktop is not needed; on mobile the queue is the page.
   const [mobileQueueOpen, setMobileQueueOpen] = useState(false);
+  const queueCollapse = useCollapsed("evaluation-queue", "]");
 
   if (consultationError || treeError) {
     return (
@@ -388,7 +390,7 @@ export function EvaluationWorkspace({ rfpId }: { rfpId: string }) {
 
   const requirementPane = selectedId && selectedItem ? (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      <header className="border-b border-border px-3 py-2 md:px-4">
+      <header className="px-3 pt-3 md:px-4">
         <div className="flex items-start gap-2">
           {isMobile && (
             <Button variant="ghost" size="sm" mode="icon" aria-label="Retour à la file" onClick={() => setSelectedId(null)}>
@@ -450,7 +452,7 @@ export function EvaluationWorkspace({ rfpId }: { rfpId: string }) {
         <div
           className={cn(
             "min-h-0 min-w-0 flex-1 overflow-auto",
-            !isMobile && "grid auto-cols-[minmax(300px,1fr)] grid-flow-col"
+            !isMobile && "grid auto-cols-[minmax(280px,1fr)] grid-flow-col gap-3 px-4 pb-4 pt-3"
           )}
         >
           {responses.map((r) => {
@@ -468,6 +470,7 @@ export function EvaluationWorkspace({ rfpId }: { rfpId: string }) {
                 threadStats={threadStatsByResponse.get(r.id) ?? { total: 0, open: 0, hasBlocking: false }}
                 isSaving={savingIds.has(r.id)}
                 layout={isMobile ? "card" : "column"}
+                responseLines={!isMobile && queueCollapse.collapsed ? 12 : 8}
                 onScore={(score) => write(r.id, { manual_score: score, status: r.status === "roadmap" ? "roadmap" : deriveStatus(score), is_checked: true })}
                 onResetScore={() => write(r.id, { manual_score: null, status: r.status === "roadmap" ? "roadmap" : deriveStatus(r.ai_score) })}
                 onConfirm={() => write(r.id, { is_checked: true, status: r.status === "pending" ? deriveStatus(finalScore(r)) : r.status })}
@@ -501,9 +504,9 @@ export function EvaluationWorkspace({ rfpId }: { rfpId: string }) {
   );
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] min-w-0 flex-col overflow-hidden">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       {/* Barre d'outils du chapitre */}
-      <div className="flex h-9 items-center gap-2 border-b border-border px-3 md:px-4">
+      <div className="flex h-10 items-center gap-2 border-b border-border bg-rail px-3 md:px-4">
         {isMobile ? (
           <Button variant="ghost" size="sm" className="gap-1 px-1" onClick={() => router.push(`/dashboard/rfp/${rfpId}`)}>
             <ArrowLeft className="h-4 w-4" />
@@ -569,7 +572,7 @@ export function EvaluationWorkspace({ rfpId }: { rfpId: string }) {
           )
         ) : (
           <>
-            <aside className="w-[300px] shrink-0 border-r border-border">
+            <aside className={cn("shrink-0 border-r border-border transition-[width] duration-150", queueCollapse.collapsed ? "w-11" : "w-[300px]")}>
               <WorkQueue
                 queue={queue}
                 suppliers={suppliers}
@@ -577,6 +580,8 @@ export function EvaluationWorkspace({ rfpId }: { rfpId: string }) {
                 onSelect={setSelectedId}
                 reviewStatusOf={(id) => reviewStatuses.get(id)?.status ?? null}
                 openThreadIds={openThreadRequirementIds}
+                collapsed={queueCollapse.collapsed}
+                onToggleCollapsed={queueCollapse.toggle}
               />
             </aside>
             {requirementPane}

@@ -23,12 +23,12 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "flex flex-col gap-3 border-b border-border px-4 py-4 md:flex-row md:items-start md:justify-between md:px-6",
+        "flex flex-col gap-3 px-4 pb-2 pt-5 md:flex-row md:items-start md:justify-between md:px-8",
         className
       )}
     >
       <div className="min-w-0">
-        <h1 className="flex items-baseline gap-2 text-xl font-semibold leading-6 text-foreground">
+        <h1 className="flex items-baseline gap-2 text-2xl font-semibold leading-7 tracking-[-0.01em] text-foreground">
           {number !== undefined && number !== null && (
             <span className="article-no text-sm">{number}</span>
           )}

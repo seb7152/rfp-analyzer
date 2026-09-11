@@ -160,11 +160,13 @@ export async function GET(
       supplier_id: string;
       is_checked: boolean;
       ai_score: number | null;
+      last_modified_by: string | null;
+      updated_at: string;
     }>(
       () => {
         let query = supabase
           .from("responses")
-          .select("supplier_id, is_checked, ai_score, id")
+          .select("supplier_id, is_checked, ai_score, last_modified_by, updated_at, id")
           .eq("rfp_id", rfpId);
         if (activeVersion) {
           query = query.eq("version_id", activeVersion.id);
@@ -233,6 +235,33 @@ export async function GET(
         created_at: document.created_at,
       }));
 
+    // Activité récente : évaluations groupées par personne et par jour, sur
+    // les lignes déjà lues. Les noms viennent d'une seule lecture de users.
+    const byUserDay = new Map<string, { userId: string; day: string; count: number; at: string }>();
+    for (const row of responseRows) {
+      if (!row.last_modified_by || !row.updated_at) continue;
+      const day = row.updated_at.slice(0, 10);
+      const key = `${row.last_modified_by}|${day}`;
+      const entry = byUserDay.get(key) || { userId: row.last_modified_by, day, count: 0, at: row.updated_at };
+      entry.count++;
+      if (row.updated_at > entry.at) entry.at = row.updated_at;
+      byUserDay.set(key, entry);
+    }
+    const recent = Array.from(byUserDay.values())
+      .sort((a, b) => (a.at < b.at ? 1 : -1))
+      .slice(0, 6);
+    const userIds = Array.from(new Set(recent.map((r) => r.userId)));
+    const { data: userRows } = userIds.length
+      ? await supabase.from("users").select("id, full_name, email").in("id", userIds)
+      : { data: [] as Array<{ id: string; full_name: string | null; email: string }> };
+    const userName = new Map((userRows || []).map((u) => [u.id, u.full_name || u.email]));
+    const recentActivity = recent.map((r) => ({
+      userId: r.userId,
+      userName: userName.get(r.userId) ?? "—",
+      at: r.at,
+      evaluated: r.count,
+    }));
+
     const suppliersWithResponses = supplierProgress.filter(
       (supplier) => supplier.responsesTotal > 0
     ).length;
@@ -287,6 +316,7 @@ export async function GET(
         customisedRequirements: weightedRequirementsCount.count ?? 0,
       },
       documents: { total: documents.length },
+      recentActivity,
     });
   } catch (error) {
     console.error("Error in GET /api/rfps/[rfpId]/preparation:", error);
