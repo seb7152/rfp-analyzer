@@ -37,7 +37,7 @@ npx supabase secrets set MY_VAR=value --project-ref ixxmjmxfzipxmlwmqods
 
 ### Agents d'analyse (007-agents)
 
-Les agents appellent OpenRouter depuis l'application (`lib/agents/`, `app/api/agents/**`, `app/api/rfps/[rfpId]/agents/**`), sans N8N ni edge function. Variables d'environnement Vercel : `OPENROUTER_API_KEY`, `OPENROUTER_DEFAULT_MODEL` (défaut `anthropic/claude-opus-5`), `AGENT_WORKER_SECRET`, `NEXT_PUBLIC_APP_URL`. Le travailleur `POST /api/agents/worker` (`maxDuration = 300`, en-tête `x-agent-worker-secret`) est déclenché à chaque lancement et par le job `pg_cron` de `supabase/sql/agent_worker_cron.sql` (à appliquer à la main, placeholders à remplir). Schéma : migration `supabase/migrations/20260911_create_agents.sql`.
+Les agents appellent OpenRouter depuis l'application (`lib/agents/`, `app/api/agents/**`, `app/api/rfps/[rfpId]/agents/**`), sans N8N ni edge function. Variables d'environnement Vercel : `SUPABASE_SECRET_KEY` (clé secrète `sb_secret_…`, ou `SUPABASE_SERVICE_ROLE_KEY` en repli), `OPENROUTER_API_KEY`, `OPENROUTER_DEFAULT_MODEL` (défaut `anthropic/claude-opus-5`), `AGENT_WORKER_SECRET`, `NEXT_PUBLIC_APP_URL`. Le travailleur `POST /api/agents/worker` (`maxDuration = 300`, en-tête `x-agent-worker-secret`) est déclenché à chaque lancement et par le job `pg_cron` de `supabase/sql/agent_worker_cron.sql` (à appliquer à la main, placeholders à remplir). Schéma : migration `supabase/migrations/20260911_create_agents.sql`.
 
 ### Keep-alive Supabase (anti-suspension)
 
