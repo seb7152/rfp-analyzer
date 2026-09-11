@@ -32,6 +32,12 @@ Le brief interdit tout changement de schéma, de contrat d'API ou d'auth. Les po
 ### P-7 — Route `/api/auth/login`
 - **Bug.** Le profil échoue avec « more than one relationship was found for 'users' and 'user_organizations' » (double clé étrangère). La page de connexion n'utilise pas cette route (elle appelle Supabase directement), mais `useAuth().login` oui. Correction : préciser la relation dans le `select` (`user_organizations!user_organizations_user_id_fkey`).
 
+### P-10 — Import : contrôles d'accès inégaux entre les quatre routes
+- `POST /categories/import` et `/requirements/import` vérifient que l'utilisateur appartient à l'organisation de la consultation, mais pas son niveau de droit : un membre « lecteur » au niveau organisation peut écrire par l'API, alors que l'interface le lui interdit. RLS est désactivée sur `categories` et `requirements` : ce contrôle de route est la seule barrière.
+- `POST /suppliers/import` et `/responses/import` ne vérifient que l'authentification, ni l'organisation ni l'affectation. La base rattrape : RLS est active sur `suppliers` et `responses`, avec des politiques réservées aux évaluateurs de la consultation. La barrière tient donc par la base, pas par la route.
+- Proposition : un contrôle d'accès unique et explicite dans les quatre routes (appartenance + niveau requis), et activer RLS sur `categories` et `requirements` avec des politiques équivalentes. Relève du modèle de droits à deux niveaux (P-6), donc documenté et non implémenté ici.
+- L'écran `/import` n'est proposé dans le sommaire qu'au pilote, et se met en lecture seule pour un lecteur. Un évaluateur qui connaît l'adresse y accède et peut importer : c'est le modèle de droits existant, inchangé.
+
 ### P-9 — Import : un rapport ligne à ligne
 - `POST /categories/import`, `/requirements/import`, `/suppliers/import` et `/responses/import` valident le payload en bloc (`lib/supabase/validators.ts`) : une ligne fautive et rien n'est importé, avec un message global en anglais. L'atelier d'import contourne en appliquant les mêmes règles côté client et en n'envoyant que les lignes valides, ce qui écrit les règles à deux endroits. Proposition : renvoyer `{ created, updated, skipped, errors: [{ line, field, reason }] }` et accepter un payload partiel. Les libellés d'erreur gagneraient à être en français, côté serveur comme côté client.
 - Import de tableur : toujours absent. Le « Format attendu » de l'atelier fournit un prompt et un JSON Schema pour convertir un XLSX à l'extérieur ; un import natif reste à arbitrer.
