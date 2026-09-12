@@ -220,6 +220,34 @@ export async function PATCH(
       return NextResponse.json({ rfp: updatedRfp }, { status: 200 });
     }
 
+    // MCP exposure — organisation admins only (an organisation-level setting).
+    if ("mcp_enabled" in requestBody) {
+      if (typeof requestBody.mcp_enabled !== "boolean") {
+        return NextResponse.json({ error: "mcp_enabled doit être un booléen." }, { status: 400 });
+      }
+      const { data: target } = await supabase.from("rfps").select("id, organization_id").eq("id", rfpId).maybeSingle();
+      if (!target) return NextResponse.json({ error: "RFP not found" }, { status: 404 });
+      const { data: membership } = await supabase
+        .from("user_organizations")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("organization_id", target.organization_id)
+        .maybeSingle();
+      if (membership?.role !== "admin") {
+        return NextResponse.json({ error: "Réservé aux administrateurs de l'organisation." }, { status: 403 });
+      }
+      const { data: updatedRfp, error: updateError } = await supabase
+        .from("rfps")
+        .update({ mcp_enabled: requestBody.mcp_enabled, updated_at: new Date().toISOString() })
+        .eq("id", rfpId)
+        .select("id, title, mcp_enabled")
+        .single();
+      if (updateError) {
+        return NextResponse.json({ error: `Failed to update RFP: ${updateError.message}` }, { status: 400 });
+      }
+      return NextResponse.json({ rfp: updatedRfp }, { status: 200 });
+    }
+
     // Status update — requires owner or admin access
     if ("status" in requestBody) {
       const validStatuses = ["in_progress", "completed", "archived"];

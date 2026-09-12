@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronsUpDown, FolderOpen, KeyRound, Users, Check, Bot } from "lucide-react";
+import { ChevronsUpDown, FolderOpen, Users, Check, Bot } from "lucide-react";
 import { useOrganization } from "@/hooks/use-organization";
 import {
   DropdownMenu,
@@ -13,16 +13,33 @@ import {
 import { UserMenu, initialsOf } from "@/components/shell/UserMenu";
 import { cn } from "@/lib/utils";
 
-const NAV = [
+const NAV: Array<{ href: string; label: string; icon: typeof FolderOpen; exact: boolean; entries?: Array<{ href: string; label: string; exact?: boolean }> }> = [
   { href: "/dashboard", label: "Consultations", icon: FolderOpen, exact: true },
   { href: "/dashboard/organizations", label: "Organisation et membres", icon: Users, exact: false },
-  { href: "/dashboard/agents", label: "Agents & IA", icon: Bot, exact: false },
-  { href: "/dashboard/settings/tokens", label: "Jetons d'accès", icon: KeyRound, exact: false },
+  {
+    href: "/dashboard/agents",
+    label: "Agents & IA",
+    icon: Bot,
+    exact: false,
+    entries: [
+      { href: "/dashboard/agents", label: "Agents", exact: true },
+      { href: "/dashboard/agents/assistance", label: "Assistance à la saisie" },
+      { href: "/dashboard/agents/mcp", label: "MCP" },
+    ],
+  },
 ];
 
+/** An agent sheet (/dashboard/agents/<id>) belongs to the Agents entry. */
+function entryActive(pathname: string, entry: { href: string; exact?: boolean }, siblings: Array<{ href: string }>): boolean {
+  if (pathname === entry.href) return true;
+  if (entry.exact) return !siblings.some((s) => s.href !== entry.href && pathname.startsWith(s.href));
+  return pathname.startsWith(entry.href);
+}
+
 /**
- * Organisation-level sidebar: switch organisation, reach the three
- * organisation screens, account at the bottom. 232 px on desktop.
+ * Organisation-level sidebar: switch organisation, reach the organisation
+ * screens (Agents & IA opens its three entries), account at the bottom.
+ * 232 px on desktop.
  */
 export function OrgSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -74,6 +91,28 @@ export function OrgSidebar({ onNavigate }: { onNavigate?: () => void }) {
                 <Icon className="h-4 w-4 shrink-0" />
                 <span className="truncate">{item.label}</span>
               </Link>
+              {item.entries && active && (
+                <ul className="mb-1 mt-0.5 flex flex-col gap-0.5">
+                  {item.entries.map((entry) => {
+                    const ea = entryActive(pathname, entry, item.entries!);
+                    return (
+                      <li key={entry.href}>
+                        <Link
+                          href={entry.href}
+                          onClick={onNavigate}
+                          aria-current={ea ? "page" : undefined}
+                          className={cn(
+                            "flex h-7 items-center rounded-md pl-9 pr-2.5 text-sm transition-colors duration-150",
+                            ea ? "font-medium text-foreground" : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          {entry.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </li>
           );
         })}

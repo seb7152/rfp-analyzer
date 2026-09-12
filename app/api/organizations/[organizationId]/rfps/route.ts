@@ -57,7 +57,8 @@ export async function GET(
           created_at,
           updated_at,
           created_by,
-          organization_id
+          organization_id,
+          mcp_enabled
         `
         )
         .eq("organization_id", params.organizationId)
@@ -119,7 +120,8 @@ export async function GET(
               created_at,
               updated_at,
               created_by,
-              organization_id
+              organization_id,
+              mcp_enabled
             `
             )
             .in("id", rfpIds)

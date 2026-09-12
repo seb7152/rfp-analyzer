@@ -357,7 +357,7 @@ export function ImportWorkspace({ rfpId }: { rfpId: string }) {
                 <Terminal className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 Un agent peut écrire ces mêmes jeux.
               </p>
-              <Link href="/dashboard/settings/tokens" className="mt-1 block text-accent-foreground hover:underline">
+              <Link href="/dashboard/agents/mcp" className="mt-1 block text-accent-foreground hover:underline">
                 Jeton d&apos;accès et connecteur
               </Link>
             </div>

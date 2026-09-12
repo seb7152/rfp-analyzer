@@ -8,7 +8,6 @@ import { PageHeader } from "@/components/shell/PageHeader";
 import { PageState } from "@/components/shell/PageState";
 import { useOrganization } from "@/hooks/use-organization";
 import { useAgents } from "@/hooks/use-agents";
-import { AiAssistSettings } from "@/components/agents/AiAssistSettings";
 import { formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -45,8 +44,8 @@ export default function AgentsPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4 pb-8">
       <PageHeader
-        title="Agents & IA"
-        lead="Des relecteurs spécialisés, définis une fois pour l'organisation et affectés aux domaines de chaque consultation, et les aides à la saisie de l'évaluation. Tout passe par OpenRouter."
+        title="Agents"
+        lead="Des relecteurs spécialisés, définis une fois pour l'organisation et affectés aux domaines de chaque consultation. Leurs propositions sont acceptées ou rejetées par les évaluateurs."
         actions={
           isAdmin ? (
             <Button asChild>
@@ -157,10 +156,6 @@ export default function AgentsPage() {
           </>
         )}
       </section>
-
-      <div className="mx-4 md:mx-8">
-        <AiAssistSettings organizationId={currentOrg.id} canEdit={isAdmin} />
-      </div>
     </div>
   );
 }

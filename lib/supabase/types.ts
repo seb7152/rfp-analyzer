@@ -63,6 +63,8 @@ export interface RFP {
   created_by: string;
   analysis_settings?: Record<string, unknown> | null;
   peer_review_enabled: boolean;
+  /** Exposée aux outils MCP (réglage d'organisation, Agents & IA › MCP). */
+  mcp_enabled?: boolean;
 }
 
 export interface RFPUserAssignment {

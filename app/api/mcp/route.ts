@@ -10,6 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { z } from "zod";
 import { httpLogger } from "@/lib/mcp/utils/logger";
 import { authenticateMCPRequest, unauthorizedResponse } from "@/lib/mcp/auth";
@@ -611,6 +612,19 @@ async function handleToolCall(
       id,
       error: { code: -32602, message: "Tool name is required" },
     };
+  }
+
+  // A consultation can be withdrawn from the MCP (Agents & IA › MCP): every
+  // tool that names one is refused there, whatever the token's rights.
+  if (typeof toolArgs.rfp_id === "string" && toolArgs.rfp_id) {
+    const { data: rfp } = await createServiceClient().from("rfps").select("mcp_enabled").eq("id", toolArgs.rfp_id).maybeSingle();
+    if (rfp && rfp.mcp_enabled === false) {
+      return {
+        jsonrpc: "2.0",
+        id,
+        error: { code: -32003, message: "MCP disabled for this RFP by the organisation (Agents & IA › MCP)." },
+      };
+    }
   }
 
   let result;

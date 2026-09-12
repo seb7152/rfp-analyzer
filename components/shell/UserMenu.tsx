@@ -100,7 +100,7 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
         ))}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/dashboard/settings/tokens" className="gap-2">
+          <Link href="/dashboard/agents/mcp" className="gap-2">
             <KeyRound className="h-4 w-4 text-muted-foreground" />
             Jetons d'accès
           </Link>
