@@ -38,6 +38,7 @@ export async function GET(request: NextRequest, { params }: { params: { rfpId: s
       const { agent_runs, ...finding } = row;
       return {
         ...(finding as unknown as AgentFindingWithAgent),
+        evidence: Array.isArray((finding as { evidence?: unknown }).evidence) ? (finding as unknown as AgentFindingWithAgent).evidence : [],
         supplier_id: agent_runs.supplier_id,
         agent: {
           id: agent_runs.agent_versions?.agents?.id ?? "",

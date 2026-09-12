@@ -3,6 +3,7 @@ import { z } from "zod";
 import { failure, orgRole, requireUser } from "@/lib/agents/auth";
 import { DEFAULT_MODEL_ID } from "@/lib/agents/openrouter";
 import { REASONING_EFFORTS, type AgentListItem } from "@/lib/agents/types";
+import { DEFAULT_TOOLS, TOOL_IDS, parseTools } from "@/lib/agents/tools";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const toolsSchema = z
+  .object({
+    enabled: z.array(z.enum(TOOL_IDS as unknown as [string, ...string[]])).default([]),
+    web_max_uses: z.number().int().min(1).max(20).default(DEFAULT_TOOLS.web_max_uses),
+    web_allowed_domains: z.array(z.string().trim().min(1).max(200)).max(50).default([]),
+  })
+  .transform((t) => parseTools(t));
+
 const createSchema = z.object({
   organization_id: z.string().uuid(),
   name: z.string().trim().min(1, "Le nom est requis.").max(120),
@@ -65,6 +74,7 @@ const createSchema = z.object({
   system_prompt: z.string().trim().min(1, "Le prompt système est requis."),
   model_id: z.string().trim().min(1).default(DEFAULT_MODEL_ID),
   reasoning_effort: z.enum(REASONING_EFFORTS as [string, ...string[]]).default("high"),
+  tools: toolsSchema.default(DEFAULT_TOOLS),
 });
 
 /** POST /api/agents — creates an agent and its version 1 (organisation admins). */
@@ -89,6 +99,7 @@ export async function POST(request: NextRequest) {
         system_prompt: input.system_prompt,
         model_id: input.model_id,
         reasoning_effort: input.reasoning_effort,
+        tools: input.tools,
         current_version: 1,
         created_by: user.id,
       })
@@ -102,6 +113,7 @@ export async function POST(request: NextRequest) {
       system_prompt: agent.system_prompt,
       model_id: agent.model_id,
       reasoning_effort: agent.reasoning_effort,
+      tools: agent.tools,
       created_by: user.id,
     });
     if (versionError) throw new Error(versionError.message);

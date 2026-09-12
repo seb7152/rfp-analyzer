@@ -1,3 +1,4 @@
+import type { AgentTools } from "./tools";
 /**
  * Shared types for the analysis agents (007-agents).
  */
@@ -28,6 +29,8 @@ export interface Agent {
   system_prompt: string;
   model_id: string;
   reasoning_effort: ReasoningEffort;
+  /** Tools enabled and their bounds; see lib/agents/tools.ts. */
+  tools: AgentTools;
   current_version: number;
   archived_at: string | null;
   created_by: string | null;
@@ -42,6 +45,7 @@ export interface AgentVersion {
   system_prompt: string;
   model_id: string;
   reasoning_effort: ReasoningEffort;
+  tools: AgentTools;
   created_by: string | null;
   created_at: string;
 }
@@ -71,6 +75,10 @@ export interface FindingQuote {
   verified: boolean;
 }
 
+export type FindingEvidence =
+  | { type: "calcul"; expression: string; result: string; verified: boolean }
+  | { type: "url"; url: string; title: string | null; verified: boolean };
+
 export interface AgentFinding {
   id: string;
   run_id: string;
@@ -83,6 +91,8 @@ export interface AgentFinding {
   questions: string[];
   risks: string[];
   sourced: boolean;
+  /** Calculations and web pages the proposal relies on, each verified or not. */
+  evidence: FindingEvidence[];
   status: FindingStatus;
   decided_by: string | null;
   decided_at: string | null;
@@ -111,6 +121,9 @@ export interface AgentRunBatch {
   cached_tokens: number;
   cost: number;
   error: string | null;
+  /** Messages exchanged so far when the batch was checkpointed between two worker rounds. */
+  conversation: unknown[] | null;
+  turns: number;
   claimed_at: string | null;
   started_at: string | null;
   completed_at: string | null;

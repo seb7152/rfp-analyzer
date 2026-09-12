@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { DEFAULT_TOOLS, TOOL_IDS, parseTools, toolsEqual } from "@/lib/agents/tools";
 import { failure, orgRole, requireUser } from "@/lib/agents/auth";
 import { REASONING_EFFORTS } from "@/lib/agents/types";
 
@@ -44,12 +45,21 @@ export async function GET(_request: NextRequest, { params }: { params: { agentId
   }
 }
 
+const toolsSchema = z
+  .object({
+    enabled: z.array(z.enum(TOOL_IDS as unknown as [string, ...string[]])).default([]),
+    web_max_uses: z.number().int().min(1).max(20).default(DEFAULT_TOOLS.web_max_uses),
+    web_allowed_domains: z.array(z.string().trim().min(1).max(200)).max(50).default([]),
+  })
+  .transform((t) => parseTools(t));
+
 const patchSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
   description: z.string().trim().max(500).optional(),
   system_prompt: z.string().trim().min(1).optional(),
   model_id: z.string().trim().min(1).optional(),
   reasoning_effort: z.enum(REASONING_EFFORTS as [string, ...string[]]).optional(),
+  tools: toolsSchema.optional(),
   archived: z.boolean().optional(),
 });
 
@@ -73,15 +83,18 @@ export async function PATCH(request: NextRequest, { params }: { params: { agentI
     if (role !== "admin") return NextResponse.json({ error: "Réservé aux administrateurs de l'organisation." }, { status: 403 });
 
     const input = parsed.data;
+    const currentTools = parseTools(current.tools);
     const next = {
       system_prompt: input.system_prompt ?? current.system_prompt,
       model_id: input.model_id ?? current.model_id,
       reasoning_effort: input.reasoning_effort ?? current.reasoning_effort,
+      tools: input.tools ?? currentTools,
     };
     const versioned =
       next.system_prompt !== current.system_prompt ||
       next.model_id !== current.model_id ||
-      next.reasoning_effort !== current.reasoning_effort;
+      next.reasoning_effort !== current.reasoning_effort ||
+      !toolsEqual(next.tools, currentTools);
     const version = versioned ? current.current_version + 1 : current.current_version;
 
     const update: Record<string, unknown> = { ...next, current_version: version };
@@ -106,6 +119,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { agentI
         system_prompt: next.system_prompt,
         model_id: next.model_id,
         reasoning_effort: next.reasoning_effort,
+        tools: next.tools,
         created_by: user.id,
       });
       if (versionError) {
@@ -117,6 +131,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { agentI
             system_prompt: current.system_prompt,
             model_id: current.model_id,
             reasoning_effort: current.reasoning_effort,
+            tools: current.tools,
             current_version: current.current_version,
             archived_at: current.archived_at,
           })

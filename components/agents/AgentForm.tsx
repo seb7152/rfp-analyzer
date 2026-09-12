@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Archive, ArchiveRestore, ArrowLeft, Eye, RotateCcw, Sparkles } from "lucide-react";
+import { DEFAULT_TOOLS, TOOL_IDS, TOOL_META, parseTools, toolsEqual, type ToolId } from "@/lib/agents/tools";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ function versionSummary(v: AgentVersionWithMeta, previous: AgentVersionWithMeta 
   if (v.system_prompt !== previous.system_prompt) changes.push("Prompt modifié");
   if (v.model_id !== previous.model_id) changes.push("Modèle changé");
   if (v.reasoning_effort !== previous.reasoning_effort) changes.push("Raisonnement changé");
+  if (!toolsEqual(parseTools(v.tools), parseTools(previous.tools))) changes.push("Outils changés");
   return changes.join(", ") || "Sans changement";
 }
 
@@ -61,7 +63,9 @@ export function AgentForm({
     system_prompt: agent?.system_prompt ?? "",
     model_id: agent?.model_id ?? defaultModelId,
     reasoning_effort: agent?.reasoning_effort ?? "high",
+    tools: agent ? parseTools(agent.tools) : DEFAULT_TOOLS,
   });
+  const [domainsText, setDomainsText] = useState((agent ? parseTools(agent.tools) : DEFAULT_TOOLS).web_allowed_domains.join(", "));
   const [contextOpen, setContextOpen] = useState(false);
   const [proposal, setProposal] = useState<{ prompt: string; cost: number } | null>(null);
   const [reading, setReading] = useState<AgentVersionWithMeta | null>(null);
@@ -75,7 +79,9 @@ export function AgentForm({
       system_prompt: agent.system_prompt,
       model_id: agent.model_id,
       reasoning_effort: agent.reasoning_effort,
+      tools: parseTools(agent.tools),
     });
+    setDomainsText(parseTools(agent.tools).web_allowed_domains.join(", "));
   }, [agent]);
 
   const dirty =
@@ -84,10 +90,28 @@ export function AgentForm({
     form.description !== agent.description ||
     form.system_prompt !== agent.system_prompt ||
     form.model_id !== agent.model_id ||
-    form.reasoning_effort !== agent.reasoning_effort;
+    form.reasoning_effort !== agent.reasoning_effort ||
+    !toolsEqual(form.tools, parseTools(agent.tools));
   const willVersion =
     !!agent &&
-    (form.system_prompt !== agent.system_prompt || form.model_id !== agent.model_id || form.reasoning_effort !== agent.reasoning_effort);
+    (form.system_prompt !== agent.system_prompt ||
+      form.model_id !== agent.model_id ||
+      form.reasoning_effort !== agent.reasoning_effort ||
+      !toolsEqual(form.tools, parseTools(agent.tools)));
+  const webEnabled = form.tools.enabled.includes("web_search") || form.tools.enabled.includes("web_fetch");
+
+  const toggleTool = (id: ToolId, on: boolean) => {
+    const enabled = on ? Array.from(new Set([...form.tools.enabled, id])) : form.tools.enabled.filter((t) => t !== id);
+    setForm({ ...form, tools: { ...form.tools, enabled } });
+  };
+  const commitDomains = () => {
+    const web_allowed_domains = domainsText
+      .split(/[,\s]+/)
+      .map((d) => d.trim().toLowerCase())
+      .filter(Boolean);
+    setForm({ ...form, tools: { ...form.tools, web_allowed_domains } });
+    setDomainsText(web_allowed_domains.join(", "));
+  };
   const nextVersion = agent ? agent.current_version + 1 : 1;
   const disabled = !canEdit || save.isPending;
   const promptChars = form.system_prompt.length;
@@ -143,7 +167,7 @@ export function AgentForm({
     try {
       const result = await save.mutateAsync({
         agentId: agent.id,
-        input: { system_prompt: v.system_prompt, model_id: v.model_id, reasoning_effort: v.reasoning_effort },
+        input: { system_prompt: v.system_prompt, model_id: v.model_id, reasoning_effort: v.reasoning_effort, tools: parseTools(v.tools) },
       });
       toast.success(result.versioned ? `Version ${v.version_number} restaurée en version ${result.agent.current_version}.` : "La version courante a déjà ce contenu.");
     } catch (err) {
@@ -235,6 +259,60 @@ export function AgentForm({
               </div>
             </div>
             <p className="text-2xs text-muted-foreground">Transmis par le paramètre de raisonnement d&apos;OpenRouter ; ignoré sans erreur par les modèles qui ne raisonnent pas.</p>
+          </section>
+
+          <section className="panel flex flex-col gap-3 px-4 py-4 md:px-5">
+            <div>
+              <h2 className="text-base font-semibold">Outils</h2>
+              <p className="text-xs text-muted-foreground">Ce que l&apos;agent peut faire en plus de lire. Chaque usage est journalisé ; ce qu&apos;il en cite est vérifié et joint à la proposition.</p>
+            </div>
+            <ul className="flex flex-col gap-2">
+              {TOOL_IDS.map((id) => {
+                const meta = TOOL_META[id];
+                const on = form.tools.enabled.includes(id);
+                return (
+                  <li key={id}>
+                    <label className={cn("flex cursor-pointer items-start gap-2.5 rounded-md border px-3 py-2 transition-colors duration-150", on ? "border-primary/40 bg-accent/40" : "border-border hover:bg-accent/30", disabled && "cursor-default opacity-70")}>
+                      <input type="checkbox" checked={on} disabled={disabled} onChange={(e) => toggleTool(id, e.target.checked)} className="mt-1 h-3.5 w-3.5" />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{meta.label}</span>
+                          <span className="text-2xs text-muted-foreground">{meta.kind === "server" ? "exécuté par OpenRouter" : "exécuté par l'application"} · {meta.cost}</span>
+                        </span>
+                        <span className="block text-xs text-muted-foreground">{meta.description}</span>
+                      </span>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+            {webEnabled && (
+              <div className="grid gap-3 sm:grid-cols-[110px_minmax(0,1fr)]">
+                <div className="space-y-1.5">
+                  <Label htmlFor="agent-web-max">Usages par lot</Label>
+                  <Input
+                    id="agent-web-max"
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={form.tools.web_max_uses}
+                    disabled={disabled}
+                    onChange={(e) => setForm({ ...form, tools: { ...form.tools, web_max_uses: Math.max(1, Math.min(20, Number(e.target.value) || 1)) } })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="agent-web-domains">Domaines autorisés</Label>
+                  <Input
+                    id="agent-web-domains"
+                    value={domainsText}
+                    disabled={disabled}
+                    onChange={(e) => setDomainsText(e.target.value)}
+                    onBlur={commitDomains}
+                    placeholder="Vide : tout le web. Sinon : legifrance.gouv.fr, cnil.fr"
+                  />
+                </div>
+              </div>
+            )}
           </section>
 
           {agent && (
@@ -420,7 +498,8 @@ export function AgentForm({
                   {reading.version_number === agent?.current_version ? " · courante" : ""}
                 </DialogTitle>
                 <DialogDescription>
-                  <span className="num">{reading.model_id}</span> · {REASONING_LABEL[reading.reasoning_effort]} · {formatDateTime(reading.created_at)}
+                  <span className="num">{reading.model_id}</span> · {REASONING_LABEL[reading.reasoning_effort]} · Outils :{" "}
+                  {parseTools(reading.tools).enabled.length > 0 ? parseTools(reading.tools).enabled.map((t) => TOOL_META[t].label).join(", ") : "aucun"} · {formatDateTime(reading.created_at)}
                   {reading.author_name ? ` · ${reading.author_name}` : ""}
                 </DialogDescription>
               </DialogHeader>

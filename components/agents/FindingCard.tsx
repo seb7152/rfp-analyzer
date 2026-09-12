@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Bot, Check, ChevronDown, ChevronRight, Quote, X } from "lucide-react";
+import { AlertTriangle, Bot, Calculator, Check, ChevronDown, ChevronRight, Globe, Quote, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { VERDICT_LABEL, type AgentFindingWithAgent } from "@/lib/agents/types";
@@ -136,6 +136,37 @@ export function FindingCard({
                   <span className="shrink-0 text-status-partial">non retrouvé</span>
                 </li>
               ))}
+            </ul>
+          )}
+
+          {finding.evidence.some((e) => e.type === "calcul") && (
+            <ul className="space-y-1" aria-label="Calculs">
+              {finding.evidence
+                .filter((e): e is Extract<typeof e, { type: "calcul" }> => e.type === "calcul")
+                .map((e, i) => (
+                  <li key={i} className="flex items-start gap-1.5 text-xs">
+                    <Calculator className={cn("mt-0.5 h-3 w-3 shrink-0", e.verified ? "text-muted-foreground" : "text-status-partial")} />
+                    <span className="num min-w-0">
+                      {e.expression} = <span className="font-semibold">{e.result}</span>
+                    </span>
+                    {!e.verified && <span className="shrink-0 text-status-partial">non vérifié</span>}
+                  </li>
+                ))}
+            </ul>
+          )}
+          {finding.evidence.some((e) => e.type === "url") && (
+            <ul className="space-y-1" aria-label="Sources web">
+              {finding.evidence
+                .filter((e): e is Extract<typeof e, { type: "url" }> => e.type === "url")
+                .map((e, i) => (
+                  <li key={i} className="flex items-start gap-1.5 text-xs">
+                    <Globe className={cn("mt-0.5 h-3 w-3 shrink-0", e.verified ? "text-muted-foreground" : "text-status-partial")} />
+                    <a href={e.url} target="_blank" rel="noreferrer noopener" className="min-w-0 truncate text-accent-foreground hover:underline underline-offset-2" title={e.url}>
+                      {e.title || e.url}
+                    </a>
+                    {!e.verified && <span className="shrink-0 text-status-partial" title="Adresse non renvoyée par les outils web de ce lot">non consultée</span>}
+                  </li>
+                ))}
             </ul>
           )}
 

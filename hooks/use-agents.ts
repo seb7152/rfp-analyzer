@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Agent, AgentListItem, AgentVersionWithMeta, CatalogueModel, ReasoningEffort } from "@/lib/agents/types";
+import type { AgentTools } from "@/lib/agents/tools";
 
 export const agentKeys = {
   list: (organizationId: string) => ["agents", organizationId] as const,
@@ -60,6 +61,7 @@ export interface AgentInput {
   system_prompt: string;
   model_id: string;
   reasoning_effort: ReasoningEffort;
+  tools: AgentTools;
 }
 
 export function useSaveAgent(organizationId: string) {

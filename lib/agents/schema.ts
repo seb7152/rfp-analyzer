@@ -15,6 +15,10 @@ export const findingOutputSchema = z.object({
   quotes: z.array(z.string()),
   questions: z.array(z.string()),
   risks: z.array(z.string()),
+  /** Calculations the model made with the tool and wants to cite (re-evaluated here). */
+  calculations: z.array(z.object({ expression: z.string(), result: z.string() })).default([]),
+  /** Web pages the model relied on (checked against the pages the server tools actually returned). */
+  sources: z.array(z.object({ url: z.string(), title: z.string().nullable().default(null) })).default([]),
 });
 
 export const batchOutputSchema = z.object({
@@ -65,6 +69,43 @@ export const BATCH_JSON_SCHEMA = {
           },
           questions: { type: "array", items: { type: "string" } },
           risks: { type: "array", items: { type: "string" } },
+        },
+      },
+    },
+  },
+} as const;
+
+/** The same schema with evidence fields, sent when the agent has tools. */
+export const BATCH_JSON_SCHEMA_WITH_TOOLS = {
+  ...BATCH_JSON_SCHEMA,
+  properties: {
+    findings: {
+      ...BATCH_JSON_SCHEMA.properties.findings,
+      items: {
+        ...BATCH_JSON_SCHEMA.properties.findings.items,
+        required: [...BATCH_JSON_SCHEMA.properties.findings.items.required, "calculations", "sources"],
+        properties: {
+          ...BATCH_JSON_SCHEMA.properties.findings.items.properties,
+          calculations: {
+            type: "array",
+            description: "Calculs faits avec l'outil calculer et cités dans la justification : expression et résultat tels que rendus par l'outil. Vide sinon.",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["expression", "result"],
+              properties: { expression: { type: "string" }, result: { type: "string" } },
+            },
+          },
+          sources: {
+            type: "array",
+            description: "Pages web consultées par les outils et utilisées pour cette exigence : adresse exacte et titre. Vide sinon.",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["url", "title"],
+              properties: { url: { type: "string" }, title: { type: ["string", "null"] } },
+            },
+          },
         },
       },
     },

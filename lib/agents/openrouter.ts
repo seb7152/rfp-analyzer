@@ -121,10 +121,29 @@ export interface AudioPart {
 
 export type ContentPart = TextPart | AudioPart;
 
-export interface ChatMessage {
-  role: "system" | "user";
-  content: string | ContentPart[];
+export interface ToolCall {
+  id: string;
+  type: "function";
+  function: { name: string; arguments: string };
 }
+
+/** A web citation reported by an OpenRouter server tool (web_search, web_fetch). */
+export interface UrlCitation {
+  url: string;
+  title: string | null;
+  content: string | null;
+}
+
+export type ChatMessage =
+  | { role: "system" | "user"; content: string | ContentPart[] }
+  | {
+      role: "assistant";
+      content: string | null;
+      tool_calls?: ToolCall[];
+      /** Passed back unmodified so the model resumes its reasoning after a tool result. */
+      reasoning_details?: unknown[];
+    }
+  | { role: "tool"; tool_call_id: string; content: string };
 
 export interface CompletionUsage {
   prompt_tokens: number;
@@ -135,6 +154,8 @@ export interface CompletionUsage {
   /** USD: OpenRouter's charge plus the upstream provider's when the key is the organisation's own. */
   cost: number;
   byok: boolean;
+  /** Server tool invocations OpenRouter ran inside this request. */
+  web_search_requests: number;
 }
 
 export interface CompletionResult {
@@ -143,6 +164,12 @@ export interface CompletionResult {
   content: string;
   finish_reason: string | null;
   usage: CompletionUsage;
+  /** Client tools the model asks to run; empty when it answered. */
+  tool_calls: ToolCall[];
+  /** Reasoning blocks to pass back with the assistant message on the next turn. */
+  reasoning_details: unknown[];
+  /** Web pages the server tools cited. */
+  citations: UrlCitation[];
 }
 
 export class OpenRouterError extends Error {
@@ -171,6 +198,9 @@ export interface CompletionRequest {
   timeoutMs: number;
   /** Called with each piece of text as it arrives, for callers that relay the stream. */
   onDelta?: (text: string) => void;
+  /** Client tool definitions (OpenAI shape) and OpenRouter server tools, as sent. */
+  tools?: unknown[];
+  toolChoice?: "auto" | "none";
 }
 
 function describeHttpError(status: number, body: string): string {
@@ -234,6 +264,10 @@ async function runCompletion(req: CompletionRequest): Promise<CompletionResult> 
   };
   // Models that do not reason ignore this parameter without error.
   if (req.reasoning !== null) body.reasoning = req.reasoning === "none" ? { enabled: false } : { effort: req.reasoning };
+  if (req.tools && req.tools.length > 0) {
+    body.tools = req.tools;
+    body.tool_choice = req.toolChoice ?? "auto";
+  }
   if (req.jsonSchema) {
     body.response_format = {
       type: "json_schema",
@@ -270,8 +304,15 @@ async function runCompletion(req: CompletionRequest): Promise<CompletionResult> 
     model: null,
     content: "",
     finish_reason: null,
-    usage: { prompt_tokens: 0, completion_tokens: 0, cached_tokens: 0, cache_write_tokens: 0, reasoning_tokens: 0, cost: 0, byok: false },
+    usage: { prompt_tokens: 0, completion_tokens: 0, cached_tokens: 0, cache_write_tokens: 0, reasoning_tokens: 0, cost: 0, byok: false, web_search_requests: 0 },
+    tool_calls: [],
+    reasoning_details: [],
+    citations: [],
   };
+  // Streamed tool calls arrive in pieces keyed by index; reasoning details too.
+  const toolCallsByIndex = new Map<number, ToolCall>();
+  const reasoningByIndex = new Map<number, Record<string, unknown>>();
+  const citationUrls = new Set<string>();
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -284,7 +325,17 @@ async function runCompletion(req: CompletionRequest): Promise<CompletionResult> 
       id?: string;
       model?: string;
       error?: { message?: string; code?: number };
-      choices?: Array<{ delta?: { content?: string | null }; finish_reason?: string | null; error?: { message?: string } }>;
+      choices?: Array<{
+        delta?: {
+          content?: string | null;
+          tool_calls?: Array<{ index?: number; id?: string; type?: string; function?: { name?: string; arguments?: string } }>;
+          reasoning_details?: Array<Record<string, unknown>>;
+          annotations?: Array<{ type?: string; url_citation?: { url?: string; title?: string; content?: string } }>;
+        };
+        message?: { annotations?: Array<{ type?: string; url_citation?: { url?: string; title?: string; content?: string } }> };
+        finish_reason?: string | null;
+        error?: { message?: string };
+      }>;
       usage?: {
         prompt_tokens?: number;
         completion_tokens?: number;
@@ -293,6 +344,7 @@ async function runCompletion(req: CompletionRequest): Promise<CompletionResult> 
         prompt_tokens_details?: { cached_tokens?: number; cache_write_tokens?: number };
         completion_tokens_details?: { reasoning_tokens?: number };
         cost_details?: { upstream_inference_cost?: number | null };
+        server_tool_use?: { web_search_requests?: number };
       };
     };
     try {
@@ -310,6 +362,34 @@ async function runCompletion(req: CompletionRequest): Promise<CompletionResult> 
       result.content += choice.delta.content;
       req.onDelta?.(choice.delta.content);
     }
+    for (const tc of choice?.delta?.tool_calls ?? []) {
+      const index = tc.index ?? toolCallsByIndex.size;
+      const current = toolCallsByIndex.get(index) ?? { id: "", type: "function" as const, function: { name: "", arguments: "" } };
+      if (tc.id) current.id = tc.id;
+      if (tc.function?.name) current.function.name += tc.function.name;
+      if (tc.function?.arguments) current.function.arguments += tc.function.arguments;
+      toolCallsByIndex.set(index, current);
+    }
+    for (const rd of choice?.delta?.reasoning_details ?? []) {
+      const index = typeof rd.index === "number" ? rd.index : reasoningByIndex.size;
+      const current = reasoningByIndex.get(index);
+      if (!current) {
+        reasoningByIndex.set(index, { ...rd });
+        continue;
+      }
+      // Text and summaries stream in pieces; encrypted data and signatures arrive whole.
+      for (const [k, v] of Object.entries(rd)) {
+        if ((k === "text" || k === "summary") && typeof v === "string") current[k] = `${(current[k] as string) ?? ""}${v}`;
+        else if (v !== null && v !== undefined) current[k] = v;
+      }
+    }
+    for (const a of [...(choice?.delta?.annotations ?? []), ...(choice?.message?.annotations ?? [])]) {
+      const c = a.url_citation;
+      if (a.type === "url_citation" && c?.url && !citationUrls.has(c.url)) {
+        citationUrls.add(c.url);
+        result.citations.push({ url: c.url, title: c.title ?? null, content: c.content ?? null });
+      }
+    }
     if (choice?.finish_reason) result.finish_reason = choice.finish_reason;
     if (choice?.error?.message) streamError = choice.error.message;
     if (chunk.usage) {
@@ -324,6 +404,7 @@ async function runCompletion(req: CompletionRequest): Promise<CompletionResult> 
         // `cost` is only its fee; what the provider charges is reported apart.
         cost: (u.cost ?? 0) + (u.cost_details?.upstream_inference_cost ?? 0),
         byok: u.is_byok ?? false,
+        web_search_requests: u.server_tool_use?.web_search_requests ?? 0,
       };
     }
   };
@@ -350,5 +431,12 @@ async function runCompletion(req: CompletionRequest): Promise<CompletionResult> 
   }
 
   if (streamError) throw new OpenRouterError(`Erreur du fournisseur pendant la génération : ${streamError}`, 502);
+  result.tool_calls = Array.from(toolCallsByIndex.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([, tc]) => tc)
+    .filter((tc) => tc.function.name);
+  result.reasoning_details = Array.from(reasoningByIndex.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([, rd]) => rd);
   return result;
 }

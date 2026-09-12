@@ -19,6 +19,7 @@ import {
 } from "./context";
 import { contextLength, estimateTokens, type DomainDescription } from "./prompt";
 import type { CatalogueModel, ReasoningEffort } from "./types";
+import { parseTools, type AgentTools } from "./tools";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const BATCH_SIZE = 12;
@@ -70,16 +71,16 @@ export async function planRuns(db: Db, rfpId: string, versionId: string): Promis
   const agentIds = Array.from(new Set(active.map((a) => a.agent_id)));
   const { data: versions, error: vError } = await db
     .from("agent_versions")
-    .select("id, agent_id, version_number, system_prompt")
+    .select("id, agent_id, version_number, system_prompt, tools")
     .in("agent_id", agentIds);
   if (vError) throw new Error(`Versions d'agent illisibles : ${vError.message}`);
-  const versionOf = new Map<string, { id: string; system_prompt: string }>();
+  const versionOf = new Map<string, { id: string; system_prompt: string; tools: AgentTools }>();
   for (const a of active) {
     const v = (versions ?? []).find(
       (row: { agent_id: string; version_number: number }) =>
         row.agent_id === a.agent_id && row.version_number === a.agents!.current_version
     );
-    if (v) versionOf.set(a.agent_id, { id: v.id, system_prompt: v.system_prompt });
+    if (v) versionOf.set(a.agent_id, { id: v.id, system_prompt: v.system_prompt, tools: parseTools((v as { tools?: unknown }).tools) });
   }
 
   const runs: PlannedRun[] = [];
@@ -117,6 +118,7 @@ export async function planRuns(db: Db, rfpId: string, versionId: string): Promis
         batches: chunk(withResponse, BATCH_SIZE),
         contextChars: contextLength({
           systemPrompt: version.system_prompt,
+          tools: version.tools,
           domain,
           supplierName: supplier.name,
           responseText: (id) => responses.get(id)?.response_text ?? null,
