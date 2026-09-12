@@ -10,6 +10,8 @@ export interface Response {
   response_text: string | null;
   ai_score: number | null;
   ai_comment: string | null;
+  /** Questions au fournisseur proposées par l'IA (agent accepté). */
+  ai_question: string | null;
   manual_score: number | null;
   status: ResponseStatus;
   is_checked: boolean;

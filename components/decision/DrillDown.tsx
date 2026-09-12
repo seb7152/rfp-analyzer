@@ -185,6 +185,12 @@ export function DrillDown({ rfpId, versionId, target, onClose, responsesOf, weig
                         <p className="whitespace-pre-wrap text-sm">{response.ai_comment}</p>
                       </section>
                     )}
+                    {response.ai_question && (
+                      <section>
+                        <h3 className="mb-1 text-xs font-semibold text-muted-foreground">Question IA</h3>
+                        <p className="whitespace-pre-wrap text-sm">{response.ai_question}</p>
+                      </section>
+                    )}
                     {response.manual_comment && (
                       <section>
                         <h3 className="mb-1 text-xs font-semibold text-muted-foreground">Commentaire de l'expert</h3>

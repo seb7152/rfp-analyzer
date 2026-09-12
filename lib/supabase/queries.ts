@@ -1155,6 +1155,7 @@ export async function getResponsesForRequirement(
     response_text: string | null;
     ai_score: number | null;
     ai_comment: string | null;
+    ai_question: string | null;
     manual_score: number | null;
     status: "pending" | "pass" | "partial" | "fail" | "roadmap";
     is_checked: boolean;
@@ -1188,6 +1189,7 @@ export async function getResponsesForRequirement(
       response_text,
       ai_score,
       ai_comment,
+      ai_question,
       manual_score,
       status,
       is_checked,
@@ -1248,6 +1250,7 @@ export async function getResponsesForRFP(
     response_text: string | null;
     ai_score: number | null;
     ai_comment: string | null;
+    ai_question: string | null;
     manual_score: number | null;
     status: "pending" | "pass" | "partial" | "fail" | "roadmap";
     is_checked: boolean;
@@ -1309,6 +1312,7 @@ export async function getResponsesForRFP(
     response_text,
     ai_score,
     ai_comment,
+    ai_question,
     manual_score,
     status,
     is_checked,
@@ -1410,6 +1414,7 @@ export async function getResponse(responseId: string): Promise<{
       response_text,
       ai_score,
       ai_comment,
+      ai_question,
       manual_score,
       status,
       is_checked,
@@ -1455,6 +1460,7 @@ export async function importResponses(
     response_text?: string;
     ai_score?: number;
     ai_comment?: string;
+    ai_question?: string;
     manual_score?: number;
     manual_comment?: string;
     question?: string;
@@ -1521,7 +1527,7 @@ export async function importResponses(
     const { data: existingResponses, error: existingError } = await supabase
       .from("responses")
       .select(
-        "id, requirement_id, supplier_id, version_id, response_text, ai_score, ai_comment, manual_score, manual_comment, question, status, is_checked"
+        "id, requirement_id, supplier_id, version_id, response_text, ai_score, ai_comment, ai_question, manual_score, manual_comment, question, status, is_checked"
       )
       .eq("rfp_id", rfpId)
       .eq("version_id", activeVersion.id);
@@ -1579,6 +1585,8 @@ export async function importResponses(
           updatePayload.ai_score = response.ai_score;
         if (response.ai_comment !== undefined)
           updatePayload.ai_comment = response.ai_comment;
+        if (response.ai_question !== undefined)
+          updatePayload.ai_question = response.ai_question;
         if (response.manual_score !== undefined)
           updatePayload.manual_score = response.manual_score;
         if (response.manual_comment !== undefined)
@@ -1605,6 +1613,7 @@ export async function importResponses(
           response_text: response.response_text || null,
           ai_score: response.ai_score || null,
           ai_comment: response.ai_comment || null,
+          ai_question: response.ai_question || null,
           manual_score: response.manual_score || null,
           manual_comment: response.manual_comment || null,
           question: response.question || null,

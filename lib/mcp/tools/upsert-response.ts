@@ -41,6 +41,11 @@ export const UpsertResponseInputSchema = z.object({
     .nullable()
     .optional()
     .describe("AI-generated comment"),
+  ai_question: z
+    .string()
+    .nullable()
+    .optional()
+    .describe("Questions to the supplier proposed by the AI"),
   manual_score: z
     .number()
     .min(0)
@@ -142,6 +147,7 @@ export async function handleUpsertResponse(
   if (input.response_text !== undefined) payload.response_text = input.response_text;
   if (input.ai_score !== undefined) payload.ai_score = input.ai_score;
   if (input.ai_comment !== undefined) payload.ai_comment = input.ai_comment;
+  if (input.ai_question !== undefined) payload.ai_question = input.ai_question;
   if (input.manual_score !== undefined) payload.manual_score = input.manual_score;
   if (input.manual_comment !== undefined) payload.manual_comment = input.manual_comment;
   if (input.status !== undefined) payload.status = input.status;

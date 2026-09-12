@@ -18,6 +18,7 @@ import { importResponses } from "@/lib/supabase/queries";
  *       response_text: "...",                        // Optional - if not provided, existing value preserved
  *       ai_score: 4,                                 // Optional (0-5 or 0.5 increments)
  *       ai_comment: "...",                           // Optional
+ *       ai_question: "...",                          // Optional (questions proposées par l'IA)
  *       manual_score: 3,                             // Optional (0-5 or 0.5 increments)
  *       manual_comment: "...",                       // Optional
  *       question: "...",                             // Optional

@@ -529,6 +529,7 @@ const TOOL_DEFINITIONS = [
         response_text: { type: "string" },
         ai_score: { type: "number", minimum: 0, maximum: 5 },
         ai_comment: { type: ["string", "null"] },
+        ai_question: { type: ["string", "null"], description: "Questions to the supplier proposed by the AI" },
         manual_score: { type: "number", minimum: 0, maximum: 5 },
         manual_comment: { type: ["string", "null"] },
         status: { type: "string", enum: ["pending", "pass", "partial", "fail", "roadmap"] },
@@ -946,6 +947,7 @@ async function handleToolCall(
           response_text: z.string().optional(),
           ai_score: z.number().min(0).max(5).optional(),
           ai_comment: z.string().nullable().optional(),
+          ai_question: z.string().nullable().optional(),
           manual_score: z.number().min(0).max(5).optional(),
           manual_comment: z.string().nullable().optional(),
           status: z

@@ -9,6 +9,7 @@ export interface ResponseWithSupplier {
   response_text: string | null;
   ai_score: number | null;
   ai_comment: string | null;
+  ai_question: string | null;
   manual_score: number | null;
   status: "pending" | "pass" | "partial" | "fail" | "roadmap";
   is_checked: boolean;

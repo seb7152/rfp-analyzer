@@ -246,7 +246,7 @@ export function EvaluationWorkspace({ rfpId }: { rfpId: string }) {
       {
         onSuccess: () => {
           if (!isOnline) toast.info("Décision enregistrée hors ligne ; elle sera envoyée au retour du réseau.");
-          else toast.success(action === "accept" ? "Proposition acceptée : note IA et fil de discussion mis à jour." : "Proposition rejetée.");
+          else toast.success(action === "accept" ? "Proposition acceptée : note, commentaire et question IA mis à jour." : "Proposition rejetée.");
         },
       }
     );

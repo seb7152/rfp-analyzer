@@ -168,6 +168,9 @@ export async function PUT(
         .update({
           ai_score: result.ai_score,
           ai_comment: result.ai_comment,
+          // The questions of a previously accepted agent belonged to the
+          // opinion this analysis replaces.
+          ai_question: null,
           updated_at: new Date().toISOString(),
         })
         .eq("requirement_id", requirementInternalId)

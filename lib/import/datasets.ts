@@ -140,6 +140,7 @@ export const DATASETS: Record<DatasetId, DatasetSpec> = {
       { name: "response_text", required: false, type: "chaîne", description: "Réponse du fournisseur, telle qu'écrite" },
       { name: "ai_score", required: false, type: "nombre de 0 à 5, par demi-points", description: "Note proposée, si elle vient d'une analyse" },
       { name: "ai_comment", required: false, type: "chaîne", description: "Commentaire d'analyse" },
+      { name: "ai_question", required: false, type: "chaîne", description: "Questions au fournisseur proposées par l'IA" },
       { name: "manual_score", required: false, type: "nombre de 0 à 5, par demi-points", description: "Note d'un évaluateur" },
       { name: "manual_comment", required: false, type: "chaîne", description: "Commentaire d'un évaluateur" },
       { name: "question", required: false, type: "chaîne", description: "Question posée au fournisseur" },
@@ -422,7 +423,7 @@ function previewReponses(rows: unknown[], ctx: ImportContext): Preview {
     if (seen.has(code)) return err("exigence répétée dans le fichier");
     seen.add(code);
 
-    const content = [r.response_text, r.ai_comment, r.manual_comment, r.question].some(isNonEmptyString);
+    const content = [r.response_text, r.ai_comment, r.ai_question, r.manual_comment, r.question].some(isNonEmptyString);
     const scored = r.ai_score !== undefined || r.manual_score !== undefined || r.status !== undefined;
     if (!content && !scored) {
       return { line, state: "skip", reason: "ligne vide, ignorée", cells };
@@ -438,6 +439,7 @@ function previewReponses(rows: unknown[], ctx: ImportContext): Preview {
         ...(isNonEmptyString(r.response_text) ? { response_text: r.response_text } : {}),
         ...(typeof r.ai_score === "number" ? { ai_score: r.ai_score } : {}),
         ...(isNonEmptyString(r.ai_comment) ? { ai_comment: r.ai_comment } : {}),
+        ...(isNonEmptyString(r.ai_question) ? { ai_question: r.ai_question } : {}),
         ...(typeof r.manual_score === "number" ? { manual_score: r.manual_score } : {}),
         ...(isNonEmptyString(r.manual_comment) ? { manual_comment: r.manual_comment } : {}),
         ...(isNonEmptyString(r.question) ? { question: r.question } : {}),

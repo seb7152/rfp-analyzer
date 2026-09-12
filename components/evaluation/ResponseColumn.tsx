@@ -401,6 +401,32 @@ export function ResponseColumn({
           <ClampedText text={response.ai_comment} lines={5} empty="Pas encore d'analyse IA." />
         </div>
 
+        {response.ai_question && (
+          <div>
+            <div className="mb-1 flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground">Question IA</span>
+              {canEdit && (
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  className="h-6 gap-1 px-1.5 text-xs"
+                  title="Ajouter ces questions à votre question au fournisseur"
+                  onClick={() => {
+                    const merged = question.trim() ? `${question.trim()}\n\n${response.ai_question}` : response.ai_question!;
+                    setQuestion(merged);
+                    setShowNotes(true);
+                    onQuestion(merged);
+                  }}
+                >
+                  <HelpCircle className="h-3 w-3" />
+                  Reprendre
+                </Button>
+              )}
+            </div>
+            <ClampedText text={response.ai_question} lines={4} empty="" />
+          </div>
+        )}
+
         {findingsError && (
           <p className="text-xs text-muted-foreground" role="status">
             Propositions des agents indisponibles : {findingsError}

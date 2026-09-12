@@ -184,6 +184,7 @@ export interface Response {
   response_text: string | null;
   ai_score: number | null; // Now supports decimal values (0.5 increments)
   ai_comment: string | null;
+  ai_question: string | null;
   manual_score: number | null; // Now supports decimal values (0.5 increments)
   status: "pending" | "pass" | "partial" | "fail" | "roadmap";
   is_checked: boolean;
