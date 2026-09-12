@@ -7,9 +7,44 @@ import { VERDICTS } from "./types";
  * written, whatever the model or the provider promised.
  */
 
+/**
+ * Models sometimes answer with the product's status vocabulary ("partial",
+ * "pass") or a spaced variant ("non conforme"): brought back to the verdict
+ * before validation, so that a batch does not fail on a synonym.
+ */
+const VERDICT_SYNONYMS: Record<string, string> = {
+  partial: "partiel",
+  partially_compliant: "partiel",
+  pass: "conforme",
+  compliant: "conforme",
+  conform: "conforme",
+  fail: "non_conforme",
+  non_compliant: "non_conforme",
+  noncompliant: "non_conforme",
+  not_compliant: "non_conforme",
+  not_answered: "non_repondu",
+  unanswered: "non_repondu",
+  no_answer: "non_repondu",
+  pending: "non_repondu",
+  off_topic: "hors_sujet",
+  irrelevant: "hors_sujet",
+};
+
+export function normaliseVerdict(raw: unknown): unknown {
+  if (typeof raw !== "string") return raw;
+  const key = raw
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\s-]+/g, "_");
+  if ((VERDICTS as string[]).includes(key)) return key;
+  return VERDICT_SYNONYMS[key] ?? raw;
+}
+
 export const findingOutputSchema = z.object({
   requirement_id_external: z.string().min(1),
-  verdict: z.enum(VERDICTS as [string, ...string[]]),
+  verdict: z.preprocess(normaliseVerdict, z.enum(VERDICTS as [string, ...string[]])),
   proposed_score: z.number().min(0).max(5),
   justification: z.string(),
   quotes: z.array(z.string()),

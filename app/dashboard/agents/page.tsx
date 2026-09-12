@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/shell/PageHeader";
 import { PageState } from "@/components/shell/PageState";
 import { useOrganization } from "@/hooks/use-organization";
 import { useAgents } from "@/hooks/use-agents";
+import { AGENT_KIND_LABEL } from "@/lib/agents/types";
 import { formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -125,6 +126,7 @@ export default function AgentsPage() {
                           <span className="flex items-center gap-2">
                             <span className="truncate text-[15px] font-semibold leading-5">{a.name}</span>
                             <span className="num text-xs text-muted-foreground">v{a.current_version}</span>
+                            {a.kind !== "analysis" && <span className="stamp stamp-roadmap">{AGENT_KIND_LABEL[a.kind]}</span>}
                           </span>
                           <span className="block truncate text-sm text-muted-foreground">{a.description || "Sans description"}</span>
                         </span>

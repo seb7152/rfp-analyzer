@@ -13,6 +13,9 @@ import { verifyQuote } from "./quotes";
 import { parseTools, toolDefinitions, type AgentTools } from "./tools";
 import { runClientTool, verifyCalculation } from "./calculator";
 import type { AgentRunBatch, FindingEvidence, FindingQuote, ReasoningEffort, RunStatus } from "./types";
+import { runSoutenanceBatch, type SoutenanceRunRow } from "@/lib/soutenance/batch";
+import { JOB_CLAIM_LIMIT, runJob } from "@/lib/soutenance/jobs";
+import type { AiJobRow } from "@/lib/soutenance/types";
 
 /** Well under Vercel's 300 s: leaves time to persist the result. */
 export const BATCH_TIMEOUT_MS = 240_000;
@@ -208,7 +211,7 @@ export async function refreshRunStatus(db: Db, runId: string): Promise<RunStatus
   return status;
 }
 
-interface BatchOutcome {
+export interface BatchOutcome {
   status: "completed" | "failed" | "pending";
   error: string | null;
   usage?: { prompt_tokens: number; completion_tokens: number; cached_tokens: number; cost: number };
@@ -249,7 +252,7 @@ function addUsage(total: ConversationResult["usage"], u: CompletionUsage, price:
  * journaled, server tool citations collected. Stops before the invocation
  * runs out of time and hands the conversation to the next round.
  */
-async function runConversation(
+export async function runConversation(
   db: Db,
   batch: AgentRunBatch,
   params: {
@@ -378,6 +381,15 @@ async function runConversation(
 }
 
 async function runBatch(db: Db, batch: AgentRunBatch): Promise<BatchOutcome> {
+  // A soutenance analysis reads a transcript, not a domain: its own engine.
+  const { data: runRow } = await db
+    .from("agent_runs")
+    .select("id, rfp_id, version_id, supplier_id, category_id, session_id, kind, agent_versions(id, system_prompt, model_id, reasoning_effort, tools), suppliers(name)")
+    .eq("id", batch.run_id)
+    .maybeSingle();
+  if (runRow && (runRow as { kind?: string }).kind === "soutenance") {
+    return runSoutenanceBatch(db, batch, runRow as unknown as SoutenanceRunRow, BATCH_TIMEOUT_MS);
+  }
   const ctx = await loadRunContext(db, batch.run_id);
   const agentVersion = ctx.run.agent_versions;
   if (!agentVersion) return { status: "failed", error: "Version d'agent introuvable." };
@@ -566,15 +578,18 @@ export async function runWorkerRound(): Promise<WorkerReport> {
   if (error) throw new Error(`Réclamation des lots impossible : ${error.message}`);
   const batches = (claimed ?? []) as AgentRunBatch[];
   for (const b of batches) await refreshRunStatus(db, b.run_id);
-  await Promise.all(batches.map((b) => processBatch(db, b)));
+  // The chapter's documents (brief, synthèse, compte rendu) share the round.
+  await db.rpc("requeue_stale_ai_jobs", { p_timeout_seconds: STALE_AFTER_SECONDS });
+  const { data: claimedJobs } = await db.rpc("claim_ai_jobs", { p_limit: JOB_CLAIM_LIMIT });
+  const jobs = (claimedJobs ?? []) as AiJobRow[];
+  await Promise.all([...batches.map((b) => processBatch(db, b)), ...jobs.map((j) => runJob(db, j))]);
   // Only never-attempted batches justify an immediate next round; batches put
   // back for a retry (rate limit, provider down) wait for the cron minute.
-  const { count } = await db
-    .from("agent_run_batches")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "pending")
-    .or("attempts.eq.0,conversation.not.is.null");
-  return { requeued: Number(requeued ?? 0), claimed: batches.length, remaining: (count ?? 0) > 0 };
+  const [{ count }, { count: jobCount }] = await Promise.all([
+    db.from("agent_run_batches").select("id", { count: "exact", head: true }).eq("status", "pending").or("attempts.eq.0,conversation.not.is.null"),
+    db.from("ai_jobs").select("id", { count: "exact", head: true }).eq("status", "pending").eq("attempts", 0),
+  ]);
+  return { requeued: Number(requeued ?? 0), claimed: batches.length + jobs.length, remaining: (count ?? 0) > 0 || (jobCount ?? 0) > 0 };
 }
 
 /** Fires the worker without waiting for it. */

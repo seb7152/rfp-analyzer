@@ -24,6 +24,7 @@ const NAV: Array<{ href: string; label: string; icon: typeof FolderOpen; exact: 
     entries: [
       { href: "/dashboard/agents", label: "Agents", exact: true },
       { href: "/dashboard/agents/assistance", label: "Assistance à la saisie" },
+      { href: "/dashboard/agents/connecteurs", label: "Connecteurs" },
       { href: "/dashboard/agents/mcp", label: "MCP" },
     ],
   },

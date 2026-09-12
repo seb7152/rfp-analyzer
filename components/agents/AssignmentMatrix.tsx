@@ -27,7 +27,8 @@ export function AssignmentMatrix({
   const busy = assign.isPending || unassign.isPending;
 
   const byCategory = new Map(data.assignments.map((a) => [a.category_id, a]));
-  const activeAgents = agents.filter((a) => !a.archived_at);
+  // System agents (soutenances, synthèse) are never assigned to a domain.
+  const activeAgents = agents.filter((a) => !a.archived_at && a.kind === "analysis");
   // Archived agents that still hold an assignment stay visible so they can be removed.
   const assignedArchived = agents.filter((a) => a.archived_at && data.assignments.some((x) => x.agent_id === a.id));
   const columns = [...activeAgents, ...assignedArchived];

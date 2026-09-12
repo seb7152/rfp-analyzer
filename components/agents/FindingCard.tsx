@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Bot, Calculator, Check, ChevronDown, ChevronRight, Globe, Quote, X } from "lucide-react";
+import { AlertTriangle, Bot, Calculator, Check, ChevronDown, ChevronRight, Globe, Mic, Quote, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { VERDICT_LABEL, type AgentFindingWithAgent } from "@/lib/agents/types";
@@ -47,8 +47,12 @@ export function FindingCard({
   const [open, setOpen] = useState(!decided);
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
-  const verifiedQuotes = finding.quotes.filter((q) => q.verified);
-  const missingQuotes = finding.quotes.filter((q) => !q.verified);
+  const fromSoutenance = finding.run_kind === "soutenance";
+  // A séance proposal's quotes come from the transcript: shown with their
+  // time and voice, never searched in the written answer.
+  const verifiedQuotes = fromSoutenance ? [] : finding.quotes.filter((q) => q.verified);
+  const missingQuotes = fromSoutenance ? [] : finding.quotes.filter((q) => !q.verified);
+  const transcriptEvidence = finding.evidence.filter((e): e is Extract<typeof e, { type: "transcript" }> => e.type === "transcript");
 
   return (
     <section
@@ -62,19 +66,19 @@ export function FindingCard({
         className="flex w-full items-center gap-2 px-3 py-2 text-left"
       >
         {open ? <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
-        <Bot className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        {fromSoutenance ? <Mic className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : <Bot className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
         <span className="min-w-0 flex-1 truncate text-xs font-semibold text-muted-foreground">
-          Proposition de l&apos;agent {finding.agent.name}
-          <span className="num font-normal"> v{finding.agent.version_number}</span>
+          {fromSoutenance ? "Proposition issue de la soutenance" : `Proposition de l'agent ${finding.agent.name}`}
+          {!fromSoutenance && <span className="num font-normal"> v{finding.agent.version_number}</span>}
         </span>
         {finding.status === "accepted" && (
-          <span className="stamp stamp-pass">Acceptée</span>
+          <span className="stamp stamp-pass">{fromSoutenance ? "Reprise" : "Acceptée"}</span>
         )}
         {finding.status === "rejected" && (
-          <span className="stamp stamp-pending">Rejetée</span>
+          <span className="stamp stamp-pending">{fromSoutenance ? "Écartée" : "Rejetée"}</span>
         )}
         {!finding.sourced && (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-status-partial" title="Aucun extrait cité n'a été retrouvé mot pour mot dans la réponse">
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-status-partial" title={fromSoutenance ? "Aucun extrait cité n'a été retrouvé mot pour mot dans le transcript" : "Aucun extrait cité n'a été retrouvé mot pour mot dans la réponse"}>
             <AlertTriangle className="h-3.5 w-3.5" />
             Non sourcée
           </span>
@@ -100,8 +104,24 @@ export function FindingCard({
 
           {!finding.sourced && finding.verdict !== "non_repondu" && (
             <p className="rounded-sm border border-status-partial/40 bg-status-partial-soft px-2 py-1.5 text-xs text-status-partial">
-              Non sourcée : aucun extrait n&apos;a été retrouvé mot pour mot dans la réponse. À vérifier avant d&apos;accepter.
+              Non sourcée : aucun extrait n&apos;a été retrouvé mot pour mot dans {fromSoutenance ? "le transcript" : "la réponse"}. À vérifier avant {fromSoutenance ? "de reprendre" : "d'accepter"}.
             </p>
+          )}
+
+          {transcriptEvidence.length > 0 && (
+            <ul className="space-y-1" aria-label="Extraits du transcript">
+              {transcriptEvidence.map((e, i) => (
+                <li key={i} className="flex items-start gap-1.5 text-xs">
+                  <Quote className={cn("mt-0.5 h-3 w-3 shrink-0", e.verified ? "text-accent-foreground" : "text-status-partial")} />
+                  <span className={cn("min-w-0", e.verified ? "text-accent-foreground" : "text-muted-foreground line-through decoration-status-partial/60")}>« {e.text} »</span>
+                  <span className="num shrink-0 text-muted-foreground">
+                    {e.at ?? ""}
+                    {e.voice ? ` · ${e.voice}` : ""}
+                  </span>
+                  {!e.verified && <span className="shrink-0 text-status-partial">non retrouvé</span>}
+                </li>
+              ))}
+            </ul>
           )}
 
           {verifiedQuotes.length > 0 && (
@@ -172,7 +192,7 @@ export function FindingCard({
 
           {finding.questions.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-muted-foreground">Questions au fournisseur</p>
+              <p className="text-xs font-semibold text-muted-foreground">{fromSoutenance ? "À demander par écrit" : "Questions au fournisseur"}</p>
               <ul className="mt-0.5 list-disc space-y-0.5 pl-4 text-xs">
                 {finding.questions.map((q, i) => (
                   <li key={i}>{q}</li>
@@ -193,7 +213,7 @@ export function FindingCard({
 
           {decided ? (
             <p className="text-xs text-muted-foreground">
-              {finding.status === "accepted" ? "Acceptée" : "Rejetée"} le {formatDateTime(finding.decided_at)}
+              {finding.status === "accepted" ? (fromSoutenance ? "Reprise" : "Acceptée") : fromSoutenance ? "Écartée" : "Rejetée"} le {formatDateTime(finding.decided_at)}
               {finding.status === "rejected" && finding.rejection_reason ? ` : ${finding.rejection_reason}` : ""}
             </p>
           ) : rejecting ? (
@@ -207,7 +227,7 @@ export function FindingCard({
               />
               <div className="flex gap-1.5">
                 <Button size="xs" variant="outline" disabled={pending} onClick={() => onReject(reason.trim())}>
-                  Confirmer le rejet
+                  {fromSoutenance ? "Confirmer" : "Confirmer le rejet"}
                 </Button>
                 <Button size="xs" variant="ghost" disabled={pending} onClick={() => setRejecting(false)}>
                   Annuler
@@ -218,11 +238,11 @@ export function FindingCard({
             <div className="flex flex-wrap items-center gap-1.5">
               <Button size="xs" disabled={!canDecide || pending} onClick={onAccept} title={disabledReason ?? undefined}>
                 <Check className="h-3.5 w-3.5" />
-                Accepter
+                {fromSoutenance ? "Reprendre" : "Accepter"}
               </Button>
               <Button size="xs" variant="outline" disabled={!canDecide || pending} onClick={() => setRejecting(true)} title={disabledReason ?? undefined}>
                 <X className="h-3.5 w-3.5" />
-                Rejeter
+                {fromSoutenance ? "Écarter" : "Rejeter"}
               </Button>
               {disabledReason && <span className="text-xs text-muted-foreground">{disabledReason}</span>}
             </div>

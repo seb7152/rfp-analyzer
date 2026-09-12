@@ -31,6 +31,7 @@ export async function GET(request: NextRequest, { params }: { params: { rfpId: s
       )
       .eq("rfp_id", params.rfpId)
       .eq("version_id", versionId)
+      .eq("kind", "analysis")
       .order("created_at", { ascending: false });
     if (runsError) throw new Error(runsError.message);
     type RunRow = {
@@ -111,6 +112,7 @@ export async function POST(request: NextRequest, { params }: { params: { rfpId: 
       .from("agent_runs")
       .select("id", { count: "exact", head: true })
       .eq("rfp_id", params.rfpId)
+      .eq("kind", "analysis")
       .in("status", ["pending", "running"]);
     if (active && active > 0) {
       return NextResponse.json({ error: "Une analyse est déjà en cours sur cette consultation ; attendez sa fin avant de relancer." }, { status: 409 });

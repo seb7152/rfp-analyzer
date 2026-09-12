@@ -6,6 +6,7 @@ import {
   ClipboardList,
   FileOutput,
   ListChecks,
+  Presentation,
   Scale,
   Settings,
   Sparkles,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 import { usePreparation, type PreparationData } from "@/hooks/use-preparation";
 import { useAnalyzeStatus } from "@/hooks/use-analyze-status";
+import { useSoutenanceSummary } from "@/hooks/use-soutenances";
 import { useVersion } from "@/contexts/VersionContext";
 
 export type ChapterState =
@@ -26,6 +28,7 @@ export type ChapterId =
   | "preparation"
   | "analyse"
   | "evaluation"
+  | "soutenances"
   | "arbitrage"
   | "restitution"
   | "parametres";
@@ -72,11 +75,18 @@ function preparationState(p: PreparationData): ChapterState {
   return "partial";
 }
 
+export interface SoutenanceSummary {
+  held: number;
+  total: number;
+  exploited: number;
+}
+
 export function buildChapters(
   rfpId: string,
   p: PreparationData,
   analysis: AnalysisProgress,
-  access: AccessLevel
+  access: AccessLevel,
+  soutenances: SoutenanceSummary | null = null
 ): Chapter[] {
   const canPilot = access === "owner" || access === "admin";
   const canEvaluate = canPilot || access === "evaluator";
@@ -152,6 +162,20 @@ export function buildChapters(
     });
   }
 
+  // A phase in its own right: the point de synthèse with the client, then
+  // one séance per retained supplier. Its figure: séances held / retained.
+  const held = soutenances?.held ?? 0;
+  const retained = soutenances?.total ?? 0;
+  chapters.push({
+    id: "soutenances",
+    icon: Presentation,
+    label: "Soutenances",
+    href: rfpHref(rfpId, "soutenances"),
+    state: retained === 0 ? "empty" : held === 0 ? "empty" : held < retained ? "partial" : "done",
+    figure: retained > 0 ? `${held}/${retained}` : null,
+    entries: [],
+  });
+
   chapters.push({
     id: "arbitrage",
     icon: Scale,
@@ -159,10 +183,7 @@ export function buildChapters(
     href: rfpHref(rfpId, "decision"),
     state: evaluationDone ? "done" : p.responses.answered > 0 ? "partial" : "empty",
     figure: null,
-    entries: [
-      { label: "Financier", href: rfpHref(rfpId, "financial-grid") },
-      { label: "Soutenances", href: rfpHref(rfpId, "soutenances") },
-    ],
+    entries: [{ label: "Financier", href: rfpHref(rfpId, "financial-grid") }],
   });
 
   chapters.push({
@@ -290,13 +311,14 @@ export function useConsultation(rfpId: string | null) {
   );
 
   const access: AccessLevel = preparation?.userAccessLevel ?? "viewer";
+  const soutenances = useSoutenanceSummary(rfpId);
 
   const chapters = useMemo(
     () =>
       preparation && rfpId
-        ? buildChapters(rfpId, preparation, analysis, access)
+        ? buildChapters(rfpId, preparation, analysis, access, soutenances.data ?? null)
         : [],
-    [preparation, rfpId, analysis, access]
+    [preparation, rfpId, analysis, access, soutenances.data]
   );
 
   const landing =

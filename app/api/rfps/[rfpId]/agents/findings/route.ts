@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, { params }: { params: { rfpId: s
 
     const { data, error: fError } = await supabase
       .from("agent_findings")
-      .select("*, agent_runs!inner(rfp_id, version_id, supplier_id, agent_versions(version_number, agents(id, name)))")
+      .select("*, agent_runs!inner(rfp_id, version_id, supplier_id, kind, agent_versions(version_number, agents(id, name)))")
       .eq("requirement_id", requirementId)
       .eq("agent_runs.rfp_id", params.rfpId)
       .eq("agent_runs.version_id", versionId)
@@ -33,13 +33,14 @@ export async function GET(request: NextRequest, { params }: { params: { rfpId: s
     if (fError) throw new Error(fError.message);
 
     const findings: AgentFindingWithAgent[] = ((data ?? []) as unknown as Array<Record<string, unknown> & {
-      agent_runs: { supplier_id: string; agent_versions: { version_number: number; agents: { id: string; name: string } | null } | null };
+      agent_runs: { supplier_id: string; kind?: string; agent_versions: { version_number: number; agents: { id: string; name: string } | null } | null };
     }>).map((row) => {
       const { agent_runs, ...finding } = row;
       return {
         ...(finding as unknown as AgentFindingWithAgent),
         evidence: Array.isArray((finding as { evidence?: unknown }).evidence) ? (finding as unknown as AgentFindingWithAgent).evidence : [],
         supplier_id: agent_runs.supplier_id,
+        run_kind: agent_runs.kind === "soutenance" ? "soutenance" : "analysis",
         agent: {
           id: agent_runs.agent_versions?.agents?.id ?? "",
           name: agent_runs.agent_versions?.agents?.name ?? "Agent",

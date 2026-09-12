@@ -21,9 +21,22 @@ export const VERDICT_LABEL: Record<Verdict, string> = {
   hors_sujet: "Hors sujet",
 };
 
+/**
+ * analysis: assigned to domains, proposes on written answers. soutenance and
+ * synthese: one per organisation, created on first use, never assigned.
+ */
+export type AgentKind = "analysis" | "soutenance" | "synthese";
+
+export const AGENT_KIND_LABEL: Record<AgentKind, string> = {
+  analysis: "Analyse des réponses",
+  soutenance: "Soutenances",
+  synthese: "Point de synthèse",
+};
+
 export interface Agent {
   id: string;
   organization_id: string;
+  kind: AgentKind;
   name: string;
   description: string;
   system_prompt: string;
@@ -77,7 +90,9 @@ export interface FindingQuote {
 
 export type FindingEvidence =
   | { type: "calcul"; expression: string; result: string; verified: boolean }
-  | { type: "url"; url: string; title: string | null; verified: boolean };
+  | { type: "url"; url: string; title: string | null; verified: boolean }
+  /** A passage of a soutenance transcript, with the time and voice of the turn it sits in. */
+  | { type: "transcript"; text: string; at: string | null; voice: string | null; verified: boolean };
 
 export interface AgentFinding {
   id: string;
@@ -104,6 +119,8 @@ export interface AgentFinding {
 export interface AgentFindingWithAgent extends AgentFinding {
   agent: { id: string; name: string; version_number: number };
   supplier_id: string;
+  /** "soutenance" when the proposal comes from a séance's transcript. */
+  run_kind: "analysis" | "soutenance";
 }
 
 export interface AgentRunBatch {
@@ -137,6 +154,8 @@ export interface AgentRun {
   agent_version_id: string;
   supplier_id: string;
   category_id: string;
+  kind: "analysis" | "soutenance";
+  session_id: string | null;
   status: RunStatus;
   served_model: string | null;
   prompt_tokens: number;
