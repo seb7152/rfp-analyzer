@@ -3,6 +3,7 @@ import { z } from "zod";
 import { PILOT, failure, requireRfpAccess, requireUser } from "@/lib/agents/auth";
 import { loadActiveSuppliers, loadActiveVersion } from "@/lib/agents/context";
 import { triggerWorker } from "@/lib/agents/worker";
+import { createServiceClient } from "@/lib/supabase/service";
 import { ensureSystemAgent } from "@/lib/soutenance/agents";
 import type { SoutenanceSyntheseRow, SyntheseData, SyntheseDomain } from "@/lib/soutenance/types";
 
@@ -43,6 +44,8 @@ export async function POST(_request: NextRequest, { params }: { params: { rfpId:
       .single();
     if (sError || !row) throw new Error(`Synthèse non créée : ${sError?.message ?? "inconnue"}`);
     const synthese = row as SoutenanceSyntheseRow;
+    // A regeneration replaces the previous jobs: the synthèse's cost is the cost of this generation.
+    await createServiceClient().from("ai_jobs").delete().eq("kind", "synthese").filter("payload->>synthese_id", "eq", synthese.id);
     const { error: jError } = await supabase.from("ai_jobs").insert(
       suppliers.map((s) => ({
         rfp_id: params.rfpId,
