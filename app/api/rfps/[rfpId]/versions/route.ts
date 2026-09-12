@@ -180,6 +180,13 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Only the pilots of the consultation (owner, organisation admin).
+    {
+      const { requireRfpAccess, PILOT } = await import("@/lib/agents/auth");
+      const access = await requireRfpAccess(rfpId, user.id, PILOT);
+      if (access.error) return access.error;
+    }
+
     const body: CreateVersionRequest = await request.json();
     const {
       version_name,

@@ -485,7 +485,7 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
         }
         actions={
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/dashboard/rfp/${rfpId}/parametres#ponderations`}>
+            <Link href={`/dashboard/rfp/${rfpId}/tree-view`}>
               {weights.state === "done" ? "Ajuster les pondérations" : "Régler les pondérations"}
             </Link>
           </Button>
