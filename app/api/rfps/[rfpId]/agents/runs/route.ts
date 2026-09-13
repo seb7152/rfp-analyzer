@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { creditsGuard } from "@/lib/agents/credits";
 import { waitUntil } from "@vercel/functions";
 import { PILOT, READER, failure, requireRfpAccess, requireUser } from "@/lib/agents/auth";
 import { loadActiveVersion } from "@/lib/agents/context";
@@ -106,6 +107,8 @@ export async function POST(request: NextRequest, { params }: { params: { rfpId: 
     if (!process.env.OPENROUTER_API_KEY || !process.env.AGENT_WORKER_SECRET) {
       return NextResponse.json({ error: "La clé OpenRouter ou le secret du travailleur n'est pas configuré sur le serveur." }, { status: 503 });
     }
+    const credits = await creditsGuard();
+    if (credits) return credits;
     const version = await loadActiveVersion(supabase, params.rfpId);
     if (!version) return NextResponse.json({ error: "Aucune version d'évaluation active." }, { status: 409 });
     const { count: active } = await supabase

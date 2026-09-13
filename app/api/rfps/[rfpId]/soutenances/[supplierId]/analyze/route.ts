@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { creditsGuard } from "@/lib/agents/credits";
 import { PILOT, failure, requireRfpAccess, requireUser } from "@/lib/agents/auth";
 import { triggerWorker } from "@/lib/agents/worker";
 import { ensureSystemAgent } from "@/lib/soutenance/agents";
@@ -21,6 +22,8 @@ export async function POST(request: NextRequest, { params }: { params: { rfpId: 
     if (!process.env.OPENROUTER_API_KEY || !process.env.AGENT_WORKER_SECRET) {
       return NextResponse.json({ error: "La clé OpenRouter ou le secret du travailleur n'est pas configuré sur le serveur." }, { status: 503 });
     }
+    const credits = await creditsGuard();
+    if (credits) return credits;
     const { data: sessionRow } = await supabase.from("soutenance_sessions").select("*").eq("rfp_id", params.rfpId).eq("supplier_id", params.supplierId).maybeSingle();
     const session = (sessionRow as SoutenanceSessionRow | null) ?? null;
     if (!session || !session.transcript_source || !Array.isArray(session.transcript_segments) || session.transcript_segments.length === 0) {

@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { chunk, type Db } from "@/lib/agents/context";
 import { CompletionTimeoutError, OpenRouterError, findCatalogueModel, streamChatCompletion, type ChatMessage, type CompletionUsage } from "@/lib/agents/openrouter";
+import { forgetCredits } from "@/lib/agents/credits";
 import { extractJson } from "@/lib/agents/schema";
 import type { ReasoningEffort } from "@/lib/agents/types";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -158,8 +159,9 @@ async function refreshSyntheseStatus(db: Db, syntheseId: string): Promise<void> 
   const failed = rows.filter((j) => j.status === "failed").length;
   const completed = rows.filter((j) => j.status === "completed").length;
   const status = pending > 0 ? "running" : failed === 0 ? "completed" : completed > 0 ? "partial" : "failed";
-  const { data: sums } = await db.from("ai_jobs").select("prompt_tokens, completion_tokens, cost, served_model").eq("kind", "synthese").filter("payload->>synthese_id", "eq", syntheseId);
-  const s = (sums ?? []) as Array<{ prompt_tokens: number; completion_tokens: number; cost: number; served_model: string | null }>;
+  const { data: sums } = await db.from("ai_jobs").select("prompt_tokens, completion_tokens, cost, served_model, error").eq("kind", "synthese").filter("payload->>synthese_id", "eq", syntheseId);
+  const s = (sums ?? []) as Array<{ prompt_tokens: number; completion_tokens: number; cost: number; served_model: string | null; error: string | null }>;
+  const firstError = s.map((j) => j.error).find((e) => !!e) ?? null;
   await db
     .from("soutenance_syntheses")
     .update({
@@ -168,7 +170,8 @@ async function refreshSyntheseStatus(db: Db, syntheseId: string): Promise<void> 
       completion_tokens: s.reduce((n, j) => n + (j.completion_tokens ?? 0), 0),
       cost: s.reduce((n, j) => n + Number(j.cost ?? 0), 0),
       model_id: s.map((j) => j.served_model).filter(Boolean).pop() ?? null,
-      generated_at: pending === 0 ? new Date().toISOString() : null,
+      generated_at: pending === 0 && completed > 0 ? new Date().toISOString() : null,
+      error: failed > 0 ? firstError : null,
     })
     .eq("id", syntheseId);
 }
@@ -469,6 +472,7 @@ export async function runJob(db: Db, job: AiJobRow): Promise<void> {
     if (job.kind === "synthese") await refreshSyntheseStatus(db, (job.payload as { synthese_id: string }).synthese_id);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    if (err instanceof OpenRouterError && err.status === 402) forgetCredits();
     const retriable = (err instanceof OpenRouterError && RETRIABLE_HTTP.has(err.status)) || err instanceof CompletionTimeoutError;
     if (retriable && job.attempts < JOB_MAX_ATTEMPTS) {
       await settleJob(db, job, { status: "pending", error: `${message} Nouvelle tentative prévue.`, claimed_at: null });

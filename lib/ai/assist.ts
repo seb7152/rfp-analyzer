@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { EVALUATOR, requireRfpAccess } from "@/lib/agents/auth";
+import { creditsGuard } from "@/lib/agents/credits";
 import { CompletionTimeoutError, OpenRouterError, streamChatCompletion, type ContentPart } from "@/lib/agents/openrouter";
 import { loadGlossaryTerms } from "@/lib/soutenance/glossary";
 import type { GlossaryTerm } from "@/lib/soutenance/types";
@@ -31,6 +32,8 @@ export async function resolveAssistContext(
 ): Promise<{ ctx: AssistContext; error: null } | { ctx: null; error: NextResponse }> {
   const access = await requireRfpAccess(rfpId, userId, EVALUATOR);
   if (access.error) return { ctx: null, error: access.error };
+  const credits = await creditsGuard();
+  if (credits) return { ctx: null, error: credits };
 
   const [{ data: rfp, error: rfpError }, { data: suppliers, error: supError }] = await Promise.all([
     db.from("rfps").select("id, title, organization_id").eq("id", rfpId).maybeSingle(),

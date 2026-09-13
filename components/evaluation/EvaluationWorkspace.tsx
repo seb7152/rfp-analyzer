@@ -23,7 +23,7 @@ import { useRequirementsTree, useRequirement } from "@/hooks/use-requirements";
 import { useResponsesLight, responsesLightKey, type ResponseLight } from "@/hooks/use-responses-light";
 import { useResponses, type ResponseWithSupplier } from "@/hooks/use-responses";
 import { useResponseMutation } from "@/hooks/use-response-mutation";
-import { usePeerReviewStatuses, usePeerReviewMutation } from "@/hooks/use-peer-review";
+import { peerReviewKeys, usePeerReviewStatuses } from "@/hooks/use-peer-review";
 import { useResponseThreads } from "@/hooks/use-response-threads";
 import { useAgentFindings, useFindingDecision } from "@/hooks/use-agent-findings";
 import type { AgentFindingWithAgent } from "@/lib/agents/types";
@@ -293,23 +293,35 @@ export function EvaluationWorkspace({ rfpId }: { rfpId: string }) {
     [mutation, queryClient, rfpId, versionId]
   );
 
-  // Peer review: when every answer is checked, submit (or approve for owners).
-  const reviewMutation = usePeerReviewMutation({ rfpId, versionId: versionId ?? "" });
-  const autoReviewed = useRef<string | null>(null);
+  // Peer review: a requirement whose answers are all checked leaves « draft »
+  // (approved for a pilot, submitted for an evaluator) without being opened.
+  // One call for all of them; the server checks again before writing.
+  const syncedKey = useRef("");
   useEffect(() => {
-    if (!peerReviewEnabled || !versionId || !selectedId || responses.length === 0) return;
-    const all = responses.every((r) => r.is_checked);
-    const current = reviewStatuses.get(selectedId)?.status ?? "draft";
-    if (all && current === "draft" && autoReviewed.current !== selectedId) {
-      autoReviewed.current = selectedId;
-      reviewMutation.mutate({
-        requirementId: selectedId,
-        status: access === "owner" || access === "admin" ? "approved" : "submitted",
-        version_id: versionId,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [responses, peerReviewEnabled, versionId, selectedId, reviewStatuses, access]);
+    if (!peerReviewEnabled || !versionId || access === "viewer" || lightQuery.isLoading) return;
+    const ids = queue.items
+      .filter((it) => it.total > 0 && it.checked === it.total)
+      .filter((it) => {
+        const current = reviewStatuses.get(it.id)?.status ?? "draft";
+        return current === "draft" || (current === "submitted" && (access === "owner" || access === "admin"));
+      })
+      .map((it) => it.id)
+      .sort();
+    if (ids.length === 0) return;
+    const key = `${versionId}:${ids.join(",")}`;
+    if (syncedKey.current === key) return;
+    syncedKey.current = key;
+    fetch(`/api/rfps/${rfpId}/review-statuses/sync`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ versionId, requirementIds: ids }),
+    })
+      .then((res) => {
+        if (res.ok) queryClient.invalidateQueries({ queryKey: peerReviewKeys.statuses(rfpId, versionId) });
+      })
+      .catch(() => undefined);
+  }, [peerReviewEnabled, versionId, access, queue.items, reviewStatuses, rfpId, lightQuery.isLoading, queryClient]);
 
   // Proof: the PDF sheet on desktop, a new tab on mobile.
   const [pdfOpen, setPdfOpen] = useState(false);

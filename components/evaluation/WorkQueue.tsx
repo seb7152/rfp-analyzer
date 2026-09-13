@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Search, SlidersHorizontal, MessageSquare, HelpCircle, StickyNote, X, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Search, SlidersHorizontal, MessageSquare, HelpCircle, StickyNote, X, ChevronsLeft, ChevronsRight, ChevronDown, CheckCircle2, CircleDashed, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -45,12 +45,19 @@ function Progress({ item }: { item: QueueItem }) {
   );
 }
 
-const REVIEW_LABEL = {
-  draft: "",
-  submitted: "Soumise",
-  approved: "Validée",
-  rejected: "Rejetée",
-};
+/** The peer-review state as a glyph: a check reads faster than a word in a dense row. */
+function ReviewMark({ status }: { status: "submitted" | "approved" | "rejected" }) {
+  if (status === "approved") return <CheckCircle2 className="h-3.5 w-3.5 text-status-pass" aria-label="Validée" />;
+  if (status === "rejected") {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-status-fail">
+        <XCircle className="h-3.5 w-3.5" aria-hidden />
+        Rejetée
+      </span>
+    );
+  }
+  return <CircleDashed className="h-3.5 w-3.5 text-muted-foreground" aria-label="Soumise à relecture" />;
+}
 
 /**
  * The expert's work queue: what remains, what is done, filtered to what is
@@ -69,6 +76,14 @@ export function WorkQueue({
 }: WorkQueueProps) {
   const { tab, setTab, filters, setFilters, resetFilters, activeFilterCount, groups, counts, domains } = queue;
   const listRef = useRef<HTMLDivElement>(null);
+  const [folded, setFolded] = useState<Set<string>>(new Set());
+  const toggleGroup = (id: string) =>
+    setFolded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   useEffect(() => {
     if (!selectedId || !listRef.current) return;
@@ -295,12 +310,18 @@ export function WorkQueue({
         ) : (
           groups.map((g) => (
             <div key={g.id}>
-              <div className="sticky top-0 z-10 flex items-baseline gap-2 bg-rail px-3 pb-1 pt-2.5 text-xs">
-                <span className="article-no">{g.code}</span>
-                <span className="truncate font-medium">{g.title}</span>
+              <button
+                type="button"
+                onClick={() => toggleGroup(g.id)}
+                aria-expanded={!folded.has(g.id)}
+                className="sticky top-0 z-10 flex w-full items-center gap-2 border-b border-border bg-rail px-2 pb-1.5 pt-2.5 text-left text-xs"
+              >
+                <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-150", folded.has(g.id) && "-rotate-90")} aria-hidden />
+                <span className="article-no shrink-0 font-semibold text-foreground">{g.code}</span>
+                <span className="truncate font-semibold text-foreground">{g.title}</span>
                 <span className="tnum ml-auto text-muted-foreground">{g.items.length}</span>
-              </div>
-              {g.items.map((it) => {
+              </button>
+              {folded.has(g.id) ? null : g.items.map((it) => {
                 const selected = it.id === selectedId;
                 const review = reviewStatusOf?.(it.id) ?? null;
                 return (
@@ -321,10 +342,10 @@ export function WorkQueue({
                       <span className="line-clamp-2 text-sm leading-[18px] text-foreground">{it.title}</span>
                       <span className="mt-0.5 flex items-center gap-2 text-2xs text-muted-foreground">
                         {it.isMandatory && <span className="font-medium">Obligatoire</span>}
-                        {review && review !== "draft" && <span>{REVIEW_LABEL[review]}</span>}
-                        {openThreadIds.has(it.id) && <MessageSquare className="h-3 w-3 text-primary" aria-label="Discussion ouverte" />}
-                        {it.hasComment && <StickyNote className="h-3 w-3 text-primary" aria-label="Commentaire" />}
-                        {it.hasQuestion && <HelpCircle className="h-3 w-3 text-primary" aria-label="Question posée" />}
+                        {review && review !== "draft" && <ReviewMark status={review} />}
+                        {openThreadIds.has(it.id) && <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" aria-label="Discussion ouverte" />}
+                        {it.hasComment && <StickyNote className="h-3.5 w-3.5 text-muted-foreground" aria-label="Commentaire" />}
+                        {it.hasQuestion && <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" aria-label="Question posée" />}
                       </span>
                     </span>
                     <Progress item={it} />

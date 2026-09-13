@@ -8,6 +8,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { describeDomain, loadCategories, loadLeaves, loadResponses, subtreeIds, type Db } from "./context";
 import { buildMessages, type DomainDescription } from "./prompt";
 import { BATCH_JSON_SCHEMA, BATCH_JSON_SCHEMA_WITH_TOOLS, batchOutputSchema, extractJson, toHalfStep, type FindingOutput } from "./schema";
+import { forgetCredits } from "./credits";
 import { CompletionTimeoutError, OpenRouterError, findCatalogueModel, streamChatCompletion, type ChatMessage, type CompletionUsage, type UrlCitation } from "./openrouter";
 import { verifyQuote } from "./quotes";
 import { parseTools, toolDefinitions, type AgentTools } from "./tools";
@@ -546,6 +547,7 @@ async function processBatch(db: Db, batch: AgentRunBatch): Promise<void> {
     await settleBatch(db, batch, outcome);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    if (err instanceof OpenRouterError && err.status === 402) forgetCredits();
     if (err instanceof CompletionTimeoutError && batch.requirement_ids.length >= 2 && batch.split_depth === 0) {
       await splitBatch(db, batch, `${message} Lot scindé en deux moitiés.`);
     } else if (

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PILOT, failure, requireRfpAccess, requireUser } from "@/lib/agents/auth";
+import { creditsGuard } from "@/lib/agents/credits";
 import { CompletionTimeoutError, OpenRouterError, streamChatCompletion } from "@/lib/agents/openrouter";
 import { loadAiSettings } from "@/lib/ai/settings";
 import { loadGlossaryTerms, vocabularyLine } from "@/lib/soutenance/glossary";
@@ -29,6 +30,8 @@ export async function POST(request: NextRequest, { params }: { params: { rfpId: 
     if (error) return error;
     const access = await requireRfpAccess(params.rfpId, user.id, PILOT);
     if (access.error) return access.error;
+    const credits = await creditsGuard();
+    if (credits) return credits;
     const form = await request.formData().catch(() => null);
     if (!form) return NextResponse.json({ error: "Formulaire illisible." }, { status: 400 });
     const audio = form.get("audio");

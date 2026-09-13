@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { creditsGuard } from "@/lib/agents/credits";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { PILOT, failure, requireRfpAccess, requireUser } from "@/lib/agents/auth";
@@ -28,6 +29,8 @@ export async function POST(request: NextRequest, { params }: { params: { rfpId: 
     if (!process.env.OPENROUTER_API_KEY || !process.env.AGENT_WORKER_SECRET) {
       return NextResponse.json({ error: "La clé OpenRouter ou le secret du travailleur n'est pas configuré sur le serveur." }, { status: 503 });
     }
+    const credits = await creditsGuard();
+    if (credits) return credits;
     const session = await loadSession(supabase, params.rfpId, params.supplierId);
     if (!session || !Array.isArray(session.transcript_segments) || session.transcript_segments.length === 0) {
       return NextResponse.json({ error: "Chargez d'abord le transcript de la séance." }, { status: 409 });
