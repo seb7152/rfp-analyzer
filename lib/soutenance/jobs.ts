@@ -1,7 +1,8 @@
 /**
  * The AI jobs of the Soutenances chapter, run by the agents' worker: a brief
  * for a séance, a supplier's part of the point de synthèse, the compte rendu
- * of a transcript (which then plans the proposals as a soutenance analysis).
+ * of a transcript (which then plans the proposals as a soutenance analysis),
+ * the vocabulary of a consultation, the targeted corrections of a transcript.
  */
 
 import { z } from "zod";
@@ -11,10 +12,13 @@ import { extractJson } from "@/lib/agents/schema";
 import type { ReasoningEffort } from "@/lib/agents/types";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { TranscriptSegment } from "@/lib/connectors/granola";
+import { loadAiSettings } from "@/lib/ai/settings";
 import { ensureSystemAgent, type SystemAgentKind } from "./agents";
 import { loadRfpEvalContext, normaliseCode, responseOf, type RfpEvalContext } from "./context";
+import { GLOSSARY_JSON_SCHEMA, TRANSCRIPT_FIX_JSON_SCHEMA, buildGlossaryMessages, buildTranscriptFixMessages, chunkSegments, cleanTerms, loadGlossary, loadGlossaryTerms, vocabularyFor } from "./glossary";
 import { REPORT_JSON_SCHEMA, SYNTHESE_JSON_SCHEMA, buildBriefMessages, buildReportMessages, buildSyntheseMessages, cleanMarkdown } from "./prompts";
-import type { AiJobRow, BriefStatus, SoutenanceSessionRow, SyntheseData, SyntheseDomain } from "./types";
+import { correctedSegments, glossaryCorrections, type TranscriptCorrection } from "./transcript";
+import type { AiJobRow, BriefStatus, GlossaryTerm, SoutenanceSessionRow, SyntheseData, SyntheseDomain } from "./types";
 
 /** Jobs taken per worker round, alongside the batches. */
 export const JOB_CLAIM_LIMIT = 2;
@@ -105,6 +109,7 @@ async function runBrief(db: Db, job: AiJobRow): Promise<{ usage: Usage; served_m
     supplierId: p.supplier_id,
     statuses: p.statuses as BriefStatus[],
     synthese: ((synth as { data?: SyntheseData } | null)?.data as SyntheseData | undefined) ?? null,
+    vocabulary: await vocabularyFor(db, job.rfp_id, ctx.rfp.organization_id),
   });
   await db.from("soutenance_briefs").update({ status: "processing", started_at: new Date().toISOString(), model_id: agent.model_id }).eq("id", p.brief_id);
   if (count === 0) {
@@ -259,8 +264,9 @@ async function runReport(db: Db, job: AiJobRow): Promise<{ usage: Usage; served_
   const { data: sessionRow, error: sError } = await db.from("soutenance_sessions").select("*").eq("id", p.session_id).maybeSingle();
   if (sError || !sessionRow) throw new Error(`Séance illisible : ${sError?.message ?? "introuvable"}`);
   const session = sessionRow as SoutenanceSessionRow;
-  const segments: TranscriptSegment[] = Array.isArray(session.transcript_segments) ? session.transcript_segments : [];
-  if (segments.length === 0) throw new Error("La séance n'a pas de transcript.");
+  const raw: TranscriptSegment[] = Array.isArray(session.transcript_segments) ? session.transcript_segments : [];
+  if (raw.length === 0) throw new Error("La séance n'a pas de transcript.");
+  const segments = correctedSegments(raw, Array.isArray(session.transcript_corrections) ? session.transcript_corrections : []);
   const agent = await agentFor(db, job.rfp_id, "soutenance", job.created_by);
   const ctx = await loadRfpEvalContext(db, job.rfp_id, p.version_id);
   const { data: brief } = await db
@@ -279,6 +285,7 @@ async function runReport(db: Db, job: AiJobRow): Promise<{ usage: Usage; served_
     brief: (brief as { report_markdown: string | null } | null)?.report_markdown ?? null,
     segments,
     voiceNames: session.voice_names ?? {},
+    vocabulary: await vocabularyFor(db, job.rfp_id, ctx.rfp.organization_id),
   });
   const out = await complete({ model: agent.model_id, reasoning: agent.reasoning_effort, messages, jsonSchema: REPORT_JSON_SCHEMA as unknown as Record<string, unknown> });
   const parsed = reportOutput.parse(extractJson(out.content));
@@ -295,6 +302,124 @@ async function runReport(db: Db, job: AiJobRow): Promise<{ usage: Usage; served_
   await db.from("ai_jobs").update({ result: { addressed: parsed.addressed.slice(0, 40) } }).eq("id", job.id);
   const planned = await planSoutenanceRuns(db, job, session, ctx, agent.agent_version_id, p.version_id, parsed.addressed.slice(0, 40).map((a) => a.code));
   return { usage: out.usage, served_model: out.served_model, result: { addressed: parsed.addressed.slice(0, 40), planned } };
+}
+
+// ---------------------------------------------------------------------------
+// glossary (the vocabulary of the consultation)
+// ---------------------------------------------------------------------------
+
+const glossaryPayload = z.object({ version_id: z.string().uuid() });
+
+const glossaryOutput = z.object({
+  terms: z.array(z.object({ term: z.string(), aliases: z.array(z.string()).default([]), note: z.string().default("") })),
+});
+
+/** The agent's terms replace the previous agent's terms; hand-kept terms stay and gain the agent's aliases. */
+export function mergeGlossary(existing: GlossaryTerm[], proposed: GlossaryTerm[]): GlossaryTerm[] {
+  const out: GlossaryTerm[] = existing.filter((t) => t.source === "manual").map((t) => ({ ...t, aliases: [...t.aliases] }));
+  for (const p of proposed) {
+    const kept = out.find((t) => t.term.toLowerCase() === p.term.trim().toLowerCase());
+    if (kept) {
+      kept.aliases.push(...p.aliases);
+      if (!kept.note && p.note) kept.note = p.note;
+      continue;
+    }
+    out.push({ ...p, source: "agent" });
+  }
+  return cleanTerms(out);
+}
+
+async function runGlossary(db: Db, job: AiJobRow): Promise<{ usage: Usage; served_model: string; result: Record<string, unknown> }> {
+  const p = glossaryPayload.parse(job.payload);
+  const agent = await agentFor(db, job.rfp_id, "vocabulaire", job.created_by);
+  const ctx = await loadRfpEvalContext(db, job.rfp_id, p.version_id);
+  const { data: rfp } = await db.from("rfps").select("description").eq("id", job.rfp_id).maybeSingle();
+  const existing = (await loadGlossary(db, job.rfp_id))?.terms ?? [];
+  const messages = buildGlossaryMessages({
+    systemPrompt: agent.system_prompt,
+    modelId: agent.model_id,
+    ctx,
+    description: (rfp as { description: string | null } | null)?.description ?? null,
+    existing: existing.filter((t) => t.source === "manual"),
+  });
+  const out = await complete({ model: agent.model_id, reasoning: agent.reasoning_effort, messages, jsonSchema: GLOSSARY_JSON_SCHEMA as unknown as Record<string, unknown> });
+  const parsed = glossaryOutput.parse(extractJson(out.content));
+  const terms = mergeGlossary(existing, parsed.terms.map((t) => ({ ...t, source: "agent" as const })));
+  const { error } = await db
+    .from("rfp_glossaries")
+    .upsert({ rfp_id: job.rfp_id, terms, job_id: job.id, generated_at: new Date().toISOString(), generated_by: job.created_by, model_id: out.served_model, cost: out.usage.cost, error: null }, { onConflict: "rfp_id" });
+  if (error) throw new Error(`Vocabulaire non enregistré : ${error.message}`);
+  return { usage: out.usage, served_model: out.served_model, result: { terms: terms.length, proposed: parsed.terms.length } };
+}
+
+// ---------------------------------------------------------------------------
+// transcript_fix (targeted corrections of a séance's transcript)
+// ---------------------------------------------------------------------------
+
+const fixPayload = z.object({ session_id: z.string().uuid(), supplier_id: z.string().uuid() });
+
+const fixOutput = z.object({
+  replacements: z.array(z.object({ i: z.number().int(), from: z.string(), to: z.string(), n: z.number().int().nullable().default(0) })),
+});
+
+const MAX_REPLACEMENTS_PER_CHUNK = 400;
+
+async function runTranscriptFix(db: Db, job: AiJobRow): Promise<{ usage: Usage; served_model: string; result: Record<string, unknown> }> {
+  const p = fixPayload.parse(job.payload);
+  const { data: sessionRow, error: sError } = await db.from("soutenance_sessions").select("*").eq("id", p.session_id).maybeSingle();
+  if (sError || !sessionRow) throw new Error(`Séance illisible : ${sError?.message ?? "introuvable"}`);
+  const session = sessionRow as SoutenanceSessionRow;
+  const raw: TranscriptSegment[] = Array.isArray(session.transcript_segments) ? session.transcript_segments : [];
+  if (raw.length === 0) throw new Error("La séance n'a pas de transcript.");
+  const agent = await agentFor(db, job.rfp_id, "vocabulaire", job.created_by);
+  const organizationId = await organizationOf(db, job.rfp_id);
+  const [terms, settings, { data: rfp }, { data: supplier }] = await Promise.all([
+    loadGlossaryTerms(db, job.rfp_id),
+    loadAiSettings(db, organizationId),
+    db.from("rfps").select("title").eq("id", job.rfp_id).maybeSingle(),
+    db.from("suppliers").select("name").eq("id", p.supplier_id).maybeSingle(),
+  ]);
+  // Hand edits survive a new pass; the previous glossary and agent corrections are redone.
+  const previous = Array.isArray(session.transcript_corrections) ? session.transcript_corrections : [];
+  const manual = previous.filter((c) => c.by === "manual");
+  const fromGlossary = glossaryCorrections(raw, terms);
+  const base = correctedSegments(raw, fromGlossary);
+  const agentCorrections: TranscriptCorrection[] = [];
+  const usage: Usage = { prompt_tokens: 0, completion_tokens: 0, cached_tokens: 0, cost: 0 };
+  let served = agent.model_id;
+  for (const piece of chunkSegments(base)) {
+    const messages = buildTranscriptFixMessages({
+      systemPrompt: agent.system_prompt,
+      modelId: agent.model_id,
+      terms,
+      orgVocabulary: settings.vocabulary,
+      supplierName: (supplier as { name: string } | null)?.name ?? "Fournisseur",
+      consultationTitle: (rfp as { title: string } | null)?.title ?? "",
+      segments: piece.segments,
+      offset: piece.offset,
+      voiceNames: session.voice_names ?? {},
+    });
+    const out = await complete({ model: agent.model_id, reasoning: agent.reasoning_effort, messages, jsonSchema: TRANSCRIPT_FIX_JSON_SCHEMA as unknown as Record<string, unknown> });
+    usage.prompt_tokens += out.usage.prompt_tokens;
+    usage.completion_tokens += out.usage.completion_tokens;
+    usage.cached_tokens += out.usage.cached_tokens;
+    usage.cost += out.usage.cost;
+    served = out.served_model;
+    const parsed = fixOutput.parse(extractJson(out.content));
+    for (const r of parsed.replacements.slice(0, MAX_REPLACEMENTS_PER_CHUNK)) {
+      const from = r.from;
+      const to = r.to.trim();
+      const seg = base[r.i];
+      if (!seg || !from.trim() || !to || from === to) continue;
+      if (r.i < piece.offset || r.i >= piece.offset + piece.segments.length) continue;
+      if (!seg.text.includes(from)) continue;
+      agentCorrections.push({ i: r.i, from, to, n: Math.max(0, r.n ?? 0), by: "agent" });
+    }
+  }
+  const corrections: TranscriptCorrection[] = [...fromGlossary, ...agentCorrections, ...manual];
+  const { error: uError } = await db.from("soutenance_sessions").update({ transcript_corrections: corrections }).eq("id", session.id);
+  if (uError) throw new Error(`Corrections non enregistrées : ${uError.message}`);
+  return { usage, served_model: served, result: { glossary: fromGlossary.length, agent: agentCorrections.length, manual: manual.length } };
 }
 
 // ---------------------------------------------------------------------------
@@ -316,16 +441,27 @@ async function markFailure(db: Db, job: AiJobRow, message: string): Promise<void
       await db.rpc("set_synthese_supplier", { p_synthese_id: p.synthese_id, p_supplier_id: p.supplier_id, p_value: { domains: {}, generated_at: null, edited_at: null, error: message } });
       await refreshSyntheseStatus(db, p.synthese_id);
     }
+  } else if (job.kind === "glossary") {
+    await db.from("rfp_glossaries").upsert({ rfp_id: job.rfp_id, error: message }, { onConflict: "rfp_id" });
   }
 }
 
 export async function runJob(db: Db, job: AiJobRow): Promise<void> {
   try {
-    const out = job.kind === "brief" ? await runBrief(db, job) : job.kind === "synthese" ? await runSynthese(db, job) : await runReport(db, job);
+    const out =
+      job.kind === "brief"
+        ? await runBrief(db, job)
+        : job.kind === "synthese"
+          ? await runSynthese(db, job)
+          : job.kind === "glossary"
+            ? await runGlossary(db, job)
+            : job.kind === "transcript_fix"
+              ? await runTranscriptFix(db, job)
+              : await runReport(db, job);
     await settleJob(db, job, {
       status: "completed",
       error: null,
-      result: { ...(job.kind === "soutenance_report" ? {} : {}), ...out.result },
+      result: out.result,
       ...out.usage,
       served_model: out.served_model,
       completed_at: new Date().toISOString(),

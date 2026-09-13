@@ -71,6 +71,8 @@ export async function POST(request: NextRequest, { params }: { params: { rfpId: 
         transcript_segments: segments,
         transcript_meta: meta,
         voice_names: {},
+        transcript_corrections: [],
+        transcript_fix_job_id: null,
       })
       .eq("id", session.id)
       .select("id, transcript_source, transcript_meta, transcript_segments, voice_names")
@@ -91,7 +93,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: { rfpI
     if (access.error) return access.error;
     const { error: uError } = await supabase
       .from("soutenance_sessions")
-      .update({ transcript_source: null, transcript_text: null, transcript_segments: null, transcript_meta: {}, voice_names: {} })
+      .update({ transcript_source: null, transcript_text: null, transcript_segments: null, transcript_meta: {}, voice_names: {}, transcript_corrections: [], transcript_fix_job_id: null })
       .eq("rfp_id", params.rfpId)
       .eq("supplier_id", params.supplierId);
     if (uError) throw new Error(uError.message);

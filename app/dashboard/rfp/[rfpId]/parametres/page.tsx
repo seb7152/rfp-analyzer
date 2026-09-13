@@ -7,6 +7,7 @@ import { ConsultationSettings } from "@/components/parametres/ConsultationSettin
 import { AnalystsSettings } from "@/components/parametres/AnalystsSettings";
 import { SuppliersSettings } from "@/components/parametres/SuppliersSettings";
 import { VersionsSettings } from "@/components/parametres/VersionsSettings";
+import { GlossarySettings } from "@/components/parametres/GlossarySettings";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { PageState } from "@/components/shell/PageState";
 import { useConsultation } from "@/hooks/use-consultation";
@@ -18,6 +19,7 @@ const SECTIONS = [
   { id: "analystes", label: "Analystes" },
   { id: "fournisseurs", label: "Fournisseurs" },
   { id: "versions", label: "Versions" },
+  { id: "vocabulaire", label: "Vocabulaire" },
 ];
 
 /**
@@ -78,6 +80,11 @@ export default function ParametresPage() {
       <section id="versions" className="panel mx-4 scroll-mt-4 px-4 py-4 md:mx-8 md:px-5">
         <h2 className="mb-3 text-base font-semibold">Versions d&apos;évaluation</h2>
         <VersionsSettings rfpId={rfpId} canEdit={canEdit} />
+      </section>
+
+      <section id="vocabulaire" className="panel mx-4 scroll-mt-4 px-4 py-4 md:mx-8 md:px-5">
+        <h2 className="mb-3 text-base font-semibold">Vocabulaire de la consultation</h2>
+        <GlossarySettings rfpId={rfpId} canEdit={canEdit} />
       </section>
 
       <p className="mx-4 text-xs text-muted-foreground md:mx-8">

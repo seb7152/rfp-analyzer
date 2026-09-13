@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Overview } from "@/lib/soutenance/api";
 import type { SessionFinding } from "@/app/api/rfps/[rfpId]/soutenances/[supplierId]/route";
+import type { TranscriptCorrection } from "@/lib/soutenance/transcript";
 import type { BriefStatus, SoutenanceBriefRow, SoutenanceSessionRow, SyntheseItem } from "@/lib/soutenance/types";
 
 export type { Overview, SessionFinding };
@@ -56,6 +57,8 @@ export interface SessionDetail {
   session: SoutenanceSessionRow | null;
   brief: SoutenanceBriefRow | null;
   reportJob: { id: string; status: string; error: string | null; cost: number; result: unknown } | null;
+  /** The targeted correction pass of the transcript, when one was launched. */
+  fixJob: { id: string; status: string; error: string | null; cost: number; result: unknown } | null;
   findings: SessionFinding[];
 }
 
@@ -63,6 +66,7 @@ export function sessionBusy(d: SessionDetail | undefined): boolean {
   if (!d) return false;
   if (d.brief?.status === "pending" || d.brief?.status === "processing") return true;
   if (d.reportJob?.status === "pending" || d.reportJob?.status === "running") return true;
+  if (d.fixJob?.status === "pending" || d.fixJob?.status === "running") return true;
   const mine = d.overview.sessions.find((s) => s.supplier.id === d.supplier.id);
   return mine?.analysis.status === "pending" || mine?.analysis.status === "running";
 }
@@ -130,6 +134,14 @@ export function useSoutenanceMutations(rfpId: string) {
     }),
     deleteTranscript: useMutation<unknown, Error, { supplierId: string }>({
       mutationFn: ({ supplierId }) => call(`${base}/${supplierId}/transcript`, { method: "DELETE" }, "Le transcript n'a pas pu être retiré."),
+      onSettled: invalidate,
+    }),
+    fixTranscript: useMutation<unknown, Error, { supplierId: string }>({
+      mutationFn: ({ supplierId }) => call(`${base}/${supplierId}/transcript/corrections`, { method: "POST" }, "La correction n'a pas pu être lancée."),
+      onSettled: invalidate,
+    }),
+    setCorrections: useMutation<unknown, Error, { supplierId: string; corrections: TranscriptCorrection[] }>({
+      mutationFn: ({ supplierId, corrections }) => call(`${base}/${supplierId}/transcript/corrections`, { method: "PATCH", body: JSON.stringify({ corrections }) }, "La correction n'a pas été enregistrée."),
       onSettled: invalidate,
     }),
     analyze: useMutation<unknown, Error, { supplierId: string }>({

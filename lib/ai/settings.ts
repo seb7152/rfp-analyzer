@@ -6,6 +6,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { GlossaryTerm } from "@/lib/soutenance/types";
 
 export type AssistField = "comment" | "question";
 
@@ -22,7 +23,7 @@ export const DEFAULT_REWRITE_MODEL_ID = process.env.OPENROUTER_REWRITE_MODEL || 
  * Placeholders replaced at run time: {{champ}} (commentaire d'évaluation /
  * question au fournisseur), {{consultation}} (its title), {{fournisseurs}}
  * (names of the suppliers of the consultation, the current one first),
- * {{vocabulaire}} (the organisation's own terms).
+ * {{vocabulaire}} (the consultation's glossary and the organisation's own terms).
  */
 export const DEFAULT_TRANSCRIPTION_PROMPT = `Tu transcris la dictée d'un évaluateur d'appel d'offres. Il dicte un {{champ}} sur la consultation « {{consultation}} ».
 
@@ -92,10 +93,12 @@ export interface PromptContext {
   /** The supplier the text is about first, then the others. */
   supplierNames: string[];
   vocabulary: string;
+  /** The consultation's glossary, when it has one. */
+  terms?: GlossaryTerm[];
 }
 
 export function renderPrompt(template: string, ctx: PromptContext): string {
-  const vocabulary = ctx.vocabulary.trim() ? `Vocabulaire de l'organisation à respecter : ${ctx.vocabulary.trim()}` : "";
+  const vocabulary = vocabularyLine(ctx.terms ?? [], ctx.vocabulary);
   return template
     .replace(/\{\{champ\}\}/g, FIELD_LABEL[ctx.field])
     .replace(/\{\{consultation\}\}/g, ctx.consultationTitle || "sans titre")
@@ -103,4 +106,15 @@ export function renderPrompt(template: string, ctx: PromptContext): string {
     .replace(/\{\{vocabulaire\}\}/g, vocabulary)
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+/** The one-line vocabulary of the prompts: the consultation's terms with their mistaken forms, then the organisation's. */
+export function vocabularyLine(terms: GlossaryTerm[], orgVocabulary: string): string {
+  const parts: string[] = [];
+  if (terms.length > 0) {
+    const names = terms.map((t) => (t.aliases.length > 0 ? `${t.term} (entendu : ${t.aliases.join(", ")})` : t.term));
+    parts.push(`Vocabulaire de la consultation, à orthographier exactement : ${names.join(" ; ")}.`);
+  }
+  if (orgVocabulary.trim()) parts.push(`Vocabulaire de l'organisation à respecter : ${orgVocabulary.trim()}`);
+  return parts.join("\n");
 }

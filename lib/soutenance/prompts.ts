@@ -92,6 +92,8 @@ export function buildBriefMessages(input: {
   supplierId: string;
   statuses: BriefStatus[];
   synthese: SyntheseData | null;
+  /** The consultation's vocabulary block, empty when there is none. */
+  vocabulary?: string;
 }): { messages: ChatMessage[]; count: number } {
   const supplier = input.ctx.suppliers.find((s) => s.id === input.supplierId);
   const items = briefRequirements(input.ctx, input.supplierId, input.statuses);
@@ -125,6 +127,10 @@ export function buildBriefMessages(input: {
         lines.push(`- ${q.code}${req ? ` — ${req.title}` : ""} : ${q.text}`);
       }
     }
+  }
+  if (input.vocabulary?.trim()) {
+    lines.push("");
+    lines.push(input.vocabulary.trim());
   }
   const system: ContentPart[] = [{ type: "text", text: `${BRIEF_PREAMBLE}\n\n${consignes(input.systemPrompt)}` }];
   const user: ContentPart[] = [{ type: "text", text: lines.join("\n"), ...cached(input.modelId) }, { type: "text", text: "Rédige le brief de cette séance." }];
@@ -274,6 +280,7 @@ export function buildReportMessages(input: {
   brief: string | null;
   segments: TranscriptSegment[];
   voiceNames: VoiceNames;
+  vocabulary?: string;
 }): ChatMessage[] {
   const supplier = input.ctx.suppliers.find((s) => s.id === input.supplierId);
   const head = [
@@ -284,6 +291,7 @@ export function buildReportMessages(input: {
     "## Index des exigences et état de l'évaluation avant la séance",
     "",
     requirementIndex(input.ctx, input.supplierId),
+    ...(input.vocabulary?.trim() ? ["", input.vocabulary.trim()] : []),
   ].join("\n");
   const brief = input.brief?.trim() ? `## Brief préparé avant la séance\n\n${input.brief.trim()}` : "## Brief préparé avant la séance\n\n(aucun brief)";
   const transcript = `## Transcript de la séance\n\n${renderTranscript(input.segments, input.voiceNames, true)}`;
@@ -331,8 +339,10 @@ export function buildSoutenanceBatchMessages(input: {
   items: SoutenanceBatchItem[];
   ctx: RfpEvalContext;
   supplierId: string;
+  vocabulary?: string;
 }): ChatMessage[] {
-  const transcript = `## Transcript de la séance\n\nFournisseur reçu : ${input.supplierName}\n\n${renderTranscript(input.segments, input.voiceNames, true)}`;
+  const vocabulary = input.vocabulary?.trim() ? `${input.vocabulary.trim()}\n\n` : "";
+  const transcript = `${vocabulary}## Transcript de la séance\n\nFournisseur reçu : ${input.supplierName}\n\n${renderTranscript(input.segments, input.voiceNames, true)}`;
   const lines: string[] = ["## Exigences à traiter"];
   for (const { req, resp, why, at } of input.items) {
     lines.push("");

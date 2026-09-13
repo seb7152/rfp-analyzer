@@ -4,6 +4,7 @@
  */
 
 import type { TranscriptSegment, VoiceNames } from "@/lib/connectors/granola";
+import type { TranscriptCorrection } from "./transcript";
 
 export type TranscriptSource = "granola" | "pasted" | "audio";
 
@@ -27,6 +28,9 @@ export interface SoutenanceSessionRow {
   transcript_segments: TranscriptSegment[] | null;
   transcript_meta: TranscriptMeta;
   voice_names: VoiceNames;
+  /** Applied in order over transcript_segments; the raw stays intact. */
+  transcript_corrections: TranscriptCorrection[];
+  transcript_fix_job_id: string | null;
   report_markdown: string | null;
   report_generated_at: string | null;
   report_edited_at: string | null;
@@ -46,7 +50,7 @@ export const SESSION_STATE_LABEL: Record<SessionState, string> = {
   exploitee: "Exploitée",
 };
 
-export type JobKind = "brief" | "synthese" | "soutenance_report";
+export type JobKind = "brief" | "synthese" | "soutenance_report" | "glossary" | "transcript_fix";
 export type JobStatus = "pending" | "running" | "completed" | "failed";
 
 export interface AiJobRow {
@@ -130,6 +134,29 @@ export interface SoutenanceSyntheseRow {
   error: string | null;
   generated_at: string | null;
   generated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** A term of the consultation's vocabulary, with the forms a transcription mistakes it for. */
+export interface GlossaryTerm {
+  term: string;
+  aliases: string[];
+  /** What it is: fournisseur, produit, sigle, client… free, short. */
+  note: string;
+  source: "agent" | "manual";
+}
+
+export interface RfpGlossaryRow {
+  rfp_id: string;
+  terms: GlossaryTerm[];
+  job_id: string | null;
+  generated_at: string | null;
+  generated_by: string | null;
+  model_id: string | null;
+  cost: number;
+  error: string | null;
+  edited_at: string | null;
   created_at: string;
   updated_at: string;
 }

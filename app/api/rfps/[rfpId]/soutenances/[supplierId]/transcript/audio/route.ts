@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PILOT, failure, requireRfpAccess, requireUser } from "@/lib/agents/auth";
 import { CompletionTimeoutError, OpenRouterError, streamChatCompletion } from "@/lib/agents/openrouter";
 import { loadAiSettings } from "@/lib/ai/settings";
+import { loadGlossaryTerms, vocabularyLine } from "@/lib/soutenance/glossary";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -39,13 +40,13 @@ export async function POST(request: NextRequest, { params }: { params: { rfpId: 
       supabase.from("suppliers").select("id, name").eq("rfp_id", params.rfpId),
     ]);
     if (!rfp) return NextResponse.json({ error: "Consultation introuvable." }, { status: 404 });
-    const settings = await loadAiSettings(supabase, (rfp as { organization_id: string }).organization_id);
+    const [settings, terms] = await Promise.all([loadAiSettings(supabase, (rfp as { organization_id: string }).organization_id), loadGlossaryTerms(supabase, params.rfpId)]);
     const list = (suppliers ?? []) as Array<{ id: string; name: string }>;
     const current = list.find((s) => s.id === params.supplierId)?.name ?? "le fournisseur";
     const system = PROMPT.replace("{{consultation}}", (rfp as { title: string }).title)
       .replace("{{fournisseur}}", current)
       .replace("{{fournisseurs}}", list.map((s) => s.name).join(", ") || "aucun")
-      .replace("{{vocabulaire}}", settings.vocabulary.trim() ? `Vocabulaire de l'organisation à respecter : ${settings.vocabulary.trim()}` : "")
+      .replace("{{vocabulaire}}", vocabularyLine(terms, settings.vocabulary))
       .replace(/\n{3,}/g, "\n\n");
     const data = Buffer.from(await audio.arrayBuffer()).toString("base64");
     try {

@@ -14,7 +14,9 @@ import type { Db } from "@/lib/agents/context";
 import type { AgentRunBatch, FindingEvidence, FindingQuote, ReasoningEffort } from "@/lib/agents/types";
 import { formatAt, transcriptPlainText, voiceLabel, type TranscriptSegment, type VoiceNames } from "@/lib/connectors/granola";
 import { loadRfpEvalContext, normaliseCode, responseOf } from "./context";
+import { vocabularyFor } from "./glossary";
 import { buildSoutenanceBatchMessages, type SoutenanceBatchItem } from "./prompts";
+import { correctedSegments } from "./transcript";
 import type { SoutenanceSessionRow } from "./types";
 
 const MAX_TOKENS = 64_000;
@@ -99,8 +101,10 @@ export async function runSoutenanceBatch(db: Db, batch: AgentRunBatch, run: Sout
   const { data: session, error: sError } = await db.from("soutenance_sessions").select("*").eq("id", run.session_id).maybeSingle();
   if (sError || !session) return { status: "failed", error: `Séance illisible : ${sError?.message ?? "introuvable"}` };
   const s = session as SoutenanceSessionRow;
-  const segments = Array.isArray(s.transcript_segments) ? s.transcript_segments : [];
-  if (segments.length === 0) return { status: "failed", error: "La séance n'a pas de transcript." };
+  const raw = Array.isArray(s.transcript_segments) ? s.transcript_segments : [];
+  if (raw.length === 0) return { status: "failed", error: "La séance n'a pas de transcript." };
+  // The agent reads, and the quotes are verified against, the corrected transcript.
+  const segments = correctedSegments(raw, Array.isArray(s.transcript_corrections) ? s.transcript_corrections : []);
 
   const ctx = await loadRfpEvalContext(db, run.rfp_id, run.version_id);
   const { data: jobRow } = s.report_job_id ? await db.from("ai_jobs").select("result").eq("id", s.report_job_id).maybeSingle() : { data: null };
@@ -133,6 +137,7 @@ export async function runSoutenanceBatch(db: Db, batch: AgentRunBatch, run: Sout
     supplierName: run.suppliers?.name ?? "Fournisseur",
     segments,
     voiceNames: s.voice_names ?? {},
+    vocabulary: await vocabularyFor(db, run.rfp_id, ctx.rfp.organization_id),
     items,
     ctx,
     supplierId: run.supplier_id,

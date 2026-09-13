@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ClipboardPaste, FileAudio, FileText, Loader2, Replace, Search, Trash2, Users } from "lucide-react";
+import Link from "next/link";
+import { ClipboardPaste, FileAudio, FileText, Loader2, Replace, Search, SpellCheck, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,28 +16,226 @@ import { formatAt, voiceLabel, type TranscriptSegment } from "@/lib/connectors/g
 import { transcribeRecording, type AudioImportProgress } from "@/lib/soutenance/audio";
 import { formatDateTime, formatDuration, formatUsd } from "@/lib/format";
 import { toDateAndTime } from "@/lib/soutenance/dates";
+import { applyCorrections, findMatches, occurrenceAt, type CorrectedSegment, type CorrectedSpan, type CorrectionSource, type TranscriptCorrection } from "@/lib/soutenance/transcript";
 import { cn } from "@/lib/utils";
 import { StepPanel } from "./DocPanel";
 
-function Turn({ s, names, highlighted }: { s: TranscriptSegment; names: Record<string, string>; highlighted?: boolean }) {
+type Piece = { span: CorrectedSpan | null; parts: Array<{ text: string; match: boolean }> };
+
+function cut(text: string, offset: number, matches: Array<{ start: number; end: number }>): Array<{ text: string; match: boolean }> {
+  const points = new Set<number>([0, text.length]);
+  for (const m of matches) {
+    const a = Math.max(0, m.start - offset);
+    const b = Math.min(text.length, m.end - offset);
+    if (a < b) {
+      points.add(a);
+      points.add(b);
+    }
+  }
+  const sorted = Array.from(points).sort((x, y) => x - y);
+  const out: Array<{ text: string; match: boolean }> = [];
+  for (let k = 0; k + 1 < sorted.length; k++) {
+    const [a, b] = [sorted[k], sorted[k + 1]];
+    if (a < b) out.push({ text: text.slice(a, b), match: matches.some((m) => m.start - offset <= a && m.end - offset >= b) });
+  }
+  return out;
+}
+
+/** Cuts a corrected turn at the edges of its corrections; inside each piece, at the edges of the search matches. */
+function piecesOf(seg: CorrectedSegment, query: string): Piece[] {
+  const matches = findMatches(seg.text, query);
+  const out: Piece[] = [];
+  let cursor = 0;
+  for (const sp of seg.spans) {
+    if (sp.start > cursor) out.push({ span: null, parts: cut(seg.text.slice(cursor, sp.start), cursor, matches) });
+    out.push({ span: sp, parts: cut(seg.text.slice(sp.start, sp.end), sp.start, matches) });
+    cursor = sp.end;
+  }
+  if (cursor < seg.text.length) out.push({ span: null, parts: cut(seg.text.slice(cursor), cursor, matches) });
+  return out;
+}
+
+/** Offset, in the turn's text, of the start of the current selection inside `container`. */
+function selectionOffset(container: HTMLElement): { offset: number; text: string } | null {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return null;
+  const range = sel.getRangeAt(0);
+  if (!container.contains(range.startContainer)) return null;
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  let offset = 0;
+  let node = walker.nextNode();
+  while (node) {
+    if (node === range.startContainer) return { offset: offset + range.startOffset, text: sel.toString() };
+    offset += node.textContent?.length ?? 0;
+    node = walker.nextNode();
+  }
+  return null;
+}
+
+export interface TurnEdit {
+  i: number;
+  from: string;
+  n: number;
+  /** The raw text when the passage is already a correction; null for a plain word. */
+  raw: string | null;
+}
+
+const BY_LABEL: Record<CorrectionSource, string> = { glossary: "vocabulaire", agent: "agent", manual: "à la main" };
+
+function Turn({
+  s,
+  names,
+  highlighted,
+  query = "",
+  canEdit = false,
+  onEdit,
+}: {
+  s: CorrectedSegment;
+  names: Record<string, string>;
+  highlighted?: boolean;
+  query?: string;
+  canEdit?: boolean;
+  onEdit?: (edit: TurnEdit) => void;
+}) {
+  const pieces = piecesOf(s, query);
+  const startEdit = (span: CorrectedSpan) => {
+    if (!onEdit) return;
+    const from = s.text.slice(span.start, span.end);
+    onEdit({ i: 0, from, n: occurrenceAt(s.text, from, span.start), raw: span.raw });
+  };
+  const onDoubleClick = (e: React.MouseEvent<HTMLSpanElement>) => {
+    if (!onEdit || !canEdit) return;
+    const found = selectionOffset(e.currentTarget);
+    const word = found?.text.trim() ?? "";
+    if (!found || !word || /\s/.test(word) || word.length > 80) return;
+    const at = found.offset + found.text.indexOf(word);
+    const span = s.spans.find((sp) => sp.start <= at && sp.end >= at + word.length);
+    if (span) return startEdit(span);
+    onEdit({ i: 0, from: word, n: occurrenceAt(s.text, word, at), raw: null });
+  };
   return (
     <div className={cn("grid grid-cols-[60px_110px_minmax(0,1fr)] gap-2.5 py-0.5 text-sm leading-[19px]", highlighted && "-mx-3 rounded-sm bg-accent px-3 text-accent-foreground")}>
       <span className="num pt-0.5 text-xs text-muted-foreground">{formatAt(s.t)}</span>
       <span className={cn("truncate pt-px text-xs font-medium", highlighted ? "text-accent-foreground" : "text-muted-foreground")}>{voiceLabel(s.voice, names)}</span>
-      <span>{s.text}</span>
+      <span onDoubleClick={onDoubleClick} title={canEdit && onEdit ? "Double-clic sur un mot pour le corriger" : undefined}>
+        {pieces.map((piece, k) => {
+          const inner = piece.parts.map((part, j) => (part.match ? <mark key={j} className="rounded-sm bg-accent px-0.5 text-foreground ring-1 ring-primary/40">{part.text}</mark> : <span key={j}>{part.text}</span>));
+          if (!piece.span) return <span key={k}>{inner}</span>;
+          const span = piece.span;
+          const text = piece.parts.map((part) => part.text).join("");
+          const label = `Brut : « ${span.raw} » · corrigé (${BY_LABEL[span.by]})`;
+          return canEdit && onEdit ? (
+            <button
+              key={k}
+              type="button"
+              onClick={() => startEdit(span)}
+              title={label}
+              aria-label={`${text}, ${label}, retoucher`}
+              className="rounded-sm border-b border-dotted border-accent-foreground bg-accent/40 text-inherit hover:bg-accent"
+            >
+              {inner}
+            </button>
+          ) : (
+            <span key={k} title={label} className="rounded-sm border-b border-dotted border-accent-foreground bg-accent/40">
+              {inner}
+            </span>
+          );
+        })}
+      </span>
     </div>
   );
 }
 
-/** The whole transcript, in a side panel, opened at a time when asked. */
-export function TranscriptSheet({ open, onOpenChange, segments, names, at, title }: { open: boolean; onOpenChange: (o: boolean) => void; segments: TranscriptSegment[]; names: Record<string, string>; at: string | null; title: string }) {
+function CorrectionEditor({ edit, onSave, onRestore, onCancel, pending }: { edit: TurnEdit; onSave: (to: string) => void; onRestore: () => void; onCancel: () => void; pending: boolean }) {
+  const [draft, setDraft] = useState(edit.from);
+  useEffect(() => setDraft(edit.from), [edit]);
+  const changed = draft.trim() && draft.trim() !== edit.from;
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (changed) onSave(draft.trim());
+      }}
+      className="ml-[172px] mb-1 flex flex-wrap items-center gap-2 rounded-md border border-border bg-background p-2 text-xs"
+    >
+      <span className="text-muted-foreground">
+        {edit.raw !== null ? (
+          <>
+            Brut : « {edit.raw} »
+          </>
+        ) : (
+          <>Corriger « {edit.from} »</>
+        )}
+      </span>
+      <Input value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus aria-label="Texte corrigé" className="h-7 w-56 text-xs" />
+      <Button type="submit" size="sm" className="h-7" disabled={!changed || pending}>
+        {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+        Enregistrer
+      </Button>
+      {edit.raw !== null && edit.raw !== edit.from && (
+        <Button type="button" size="sm" variant="ghost" className="h-7" onClick={onRestore} disabled={pending}>
+          Rétablir le brut
+        </Button>
+      )}
+      <Button type="button" size="sm" variant="ghost" className="h-7" onClick={onCancel} disabled={pending}>
+        Annuler
+      </Button>
+    </form>
+  );
+}
+
+/** The whole transcript, in a side panel, opened at a time when asked; corrected passages retouchable there. */
+export function TranscriptSheet({
+  open,
+  onOpenChange,
+  segments,
+  corrections,
+  names,
+  at,
+  title,
+  canEdit,
+  onSaveCorrections,
+  saving,
+  rfpId,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  segments: CorrectedSegment[];
+  corrections: TranscriptCorrection[];
+  names: Record<string, string>;
+  at: string | null;
+  title: string;
+  canEdit: boolean;
+  onSaveCorrections: (corrections: TranscriptCorrection[]) => Promise<void>;
+  saving: boolean;
+  rfpId: string;
+}) {
   const [filter, setFilter] = useState("");
+  const [edit, setEdit] = useState<TurnEdit | null>(null);
   const targetRef = useRef<HTMLDivElement>(null);
   const targetIndex = useMemo(() => (at ? segments.findIndex((s) => formatAt(s.t) === at) : -1), [segments, at]);
   useEffect(() => {
     if (open && targetIndex >= 0) setTimeout(() => targetRef.current?.scrollIntoView({ block: "center" }), 50);
   }, [open, targetIndex]);
-  const visible = filter.trim() ? segments.filter((s) => s.text.toLowerCase().includes(filter.toLowerCase())) : segments;
+  useEffect(() => {
+    if (!open) setEdit(null);
+  }, [open]);
+  const q = filter.trim();
+  // A passage still matches by its raw text: a wrong correction stays findable.
+  const visible = q ? segments.filter((s) => findMatches(s.text, q).length > 0 || findMatches(s.raw, q).length > 0) : segments;
+  const corrected = segments.reduce((n, s) => n + s.spans.length, 0);
+
+  const commit = async (next: TranscriptCorrection[]) => {
+    try {
+      await onSaveCorrections(next);
+      setEdit(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "La correction n'a pas été enregistrée.");
+    }
+  };
+  const save = (to: string) => edit && commit([...corrections, { i: edit.i, from: edit.from, to, n: edit.n, by: "manual" }]);
+  const restore = () => edit && edit.raw !== null && commit([...corrections, { i: edit.i, from: edit.from, to: edit.raw, n: edit.n, by: "manual" }]);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="flex w-full flex-col gap-3 sm:max-w-xl">
@@ -47,12 +246,21 @@ export function TranscriptSheet({ open, onOpenChange, segments, names, at, title
           <Search className="h-3.5 w-3.5 text-muted-foreground" />
           <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Chercher dans le transcript" className="h-full flex-1 bg-transparent text-sm outline-none" aria-label="Chercher dans le transcript" />
         </div>
+        <p className="text-xs text-muted-foreground">
+          {corrected > 0 ? `${corrected} passage${corrected > 1 ? "s" : ""} corrigé${corrected > 1 ? "s" : ""}, soulignés : le brut au survol` : "Aucun passage corrigé"}
+          {canEdit ? `${corrected > 0 ? ", clic pour retoucher" : ""} · double-clic sur un mot pour le corriger` : ""}
+          {" · "}
+          <Link href={`/dashboard/rfp/${rfpId}/parametres#vocabulaire`} className="text-accent-foreground hover:underline underline-offset-2">
+            Vocabulaire
+          </Link>
+        </p>
         <div className="-mx-1 flex-1 overflow-y-auto px-1">
           {visible.map((s, i) => {
             const idx = segments.indexOf(s);
             return (
               <div key={`${s.t}-${i}`} ref={idx === targetIndex ? targetRef : undefined}>
-                <Turn s={s} names={names} highlighted={idx === targetIndex} />
+                <Turn s={s} names={names} highlighted={idx === targetIndex} query={q} canEdit={canEdit} onEdit={canEdit ? (e) => setEdit({ ...e, i: idx }) : undefined} />
+                {edit && edit.i === idx && <CorrectionEditor edit={edit} onSave={save} onRestore={restore} onCancel={() => setEdit(null)} pending={saving} />}
               </div>
             );
           })}
@@ -69,9 +277,13 @@ export function TranscriptSheet({ open, onOpenChange, segments, names, at, title
  * chosen in a list) or pasted. Voices can be named, it is optional.
  */
 export function TranscriptPanel({ rfpId, detail, canEdit, openAt, onOpenAtHandled }: { rfpId: string; detail: SessionDetail; canEdit: boolean; openAt: string | null; onOpenAtHandled: () => void }) {
-  const { loadTranscript, deleteTranscript, patchSession } = useSoutenanceMutations(rfpId);
+  const { loadTranscript, deleteTranscript, patchSession, fixTranscript, setCorrections } = useSoutenanceMutations(rfpId);
   const session = detail.session;
   const segments = (session?.transcript_segments ?? []) as TranscriptSegment[];
+  const corrections = useMemo(() => (Array.isArray(session?.transcript_corrections) ? session.transcript_corrections : []), [session?.transcript_corrections]);
+  const corrected = useMemo(() => applyCorrections(segments, corrections), [segments, corrections]);
+  const fixJob = detail.fixJob;
+  const fixing = fixJob?.status === "pending" || fixJob?.status === "running";
   const names = session?.voice_names ?? {};
   const meta = session?.transcript_meta ?? {};
   const has = segments.length > 0;
@@ -157,6 +369,17 @@ export function TranscriptPanel({ rfpId, detail, canEdit, openAt, onOpenAtHandle
       toast.error(err instanceof Error ? err.message : "Non enregistré.");
     }
   };
+  const fix = async () => {
+    try {
+      await fixTranscript.mutateAsync({ supplierId: detail.supplier.id });
+      toast.success("Correction lancée : le vocabulaire d'abord, puis l'agent relit le transcript.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "La correction n'a pas pu être lancée.");
+    }
+  };
+  const saveCorrections = async (next: TranscriptCorrection[]) => {
+    await setCorrections.mutateAsync({ supplierId: detail.supplier.id, corrections: next });
+  };
   const remove = async () => {
     try {
       await deleteTranscript.mutateAsync({ supplierId: detail.supplier.id });
@@ -171,6 +394,21 @@ export function TranscriptPanel({ rfpId, detail, canEdit, openAt, onOpenAtHandle
   const state = has
     ? `${sourceLabel}${meta.title ? ` · « ${meta.title} »` : ""}${meta.imported_at ? ` · récupéré le ${formatDateTime(meta.imported_at)}` : ""}${voices.length ? ` · ${voices.length} voix distinguée${voices.length > 1 ? "s" : ""}` : ""}${meta.words ? ` · ${meta.words.toLocaleString("fr-FR")} mots` : ""}${meta.duration_seconds ? ` · ${formatDuration(meta.duration_seconds)}` : ""}`
     : "Ce qui a été dit en séance, depuis Granola ou un texte collé. Il nourrit le compte rendu et les propositions.";
+  const correctedCount = corrected.reduce((n, seg) => n + seg.spans.length, 0);
+  const fixResult = (fixJob?.result ?? null) as { glossary?: number; agent?: number } | null;
+  const proposed = (fixResult?.glossary ?? 0) + (fixResult?.agent ?? 0);
+  const plural = (n: number) => `${n} passage${n > 1 ? "s" : ""} corrigé${n > 1 ? "s" : ""}`;
+  const fixState = fixing
+    ? "Fiabilisation en cours : les formes entendues du vocabulaire sont remplacées, puis l'agent relit le transcript…"
+    : fixJob?.status === "failed"
+      ? `La fiabilisation a échoué : ${fixJob.error ?? "erreur inconnue"}.`
+      : fixJob?.status === "completed"
+        ? `Transcript fiabilisé : ${plural(correctedCount)}${fixResult && proposed !== correctedCount ? ` (la passe en proposait ${proposed})` : fixResult ? ` (${fixResult.glossary ?? 0} par le vocabulaire, ${fixResult.agent ?? 0} par l'agent)` : ""}${fixJob.cost > 0 ? ` · ${formatUsd(fixJob.cost)}` : ""}. Lisez-le en entier pour voir le brut et retoucher.`
+        : correctedCount > 0
+          ? `${plural(correctedCount)} à la main.`
+          : canEdit
+            ? "« Fiabiliser » corrige les noms mal entendus avec le vocabulaire de la consultation, sans toucher au brut."
+            : "";
   const visibleMeetings = (meetings.data?.meetings ?? []).filter((m) => {
     const q = filter.trim().toLowerCase();
     return !q || [m.title, m.folder ?? "", m.snippet ?? "", ...m.attendees].join(" ").toLowerCase().includes(q);
@@ -190,6 +428,12 @@ export function TranscriptPanel({ rfpId, detail, canEdit, openAt, onOpenAtHandle
               <FileText className="h-4 w-4" />
               Lire en entier
             </Button>
+            {canEdit && (
+              <Button type="button" variant="ghost" size="sm" onClick={fix} disabled={fixing || fixTranscript.isPending}>
+                {fixing || fixTranscript.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <SpellCheck className="h-4 w-4" />}
+                Fiabiliser
+              </Button>
+            )}
             {canEdit && (
               <Button
                 type="button"
@@ -256,7 +500,7 @@ export function TranscriptPanel({ rfpId, detail, canEdit, openAt, onOpenAtHandle
       {has ? (
         <>
           <div className="rounded-md border border-border bg-background px-3 py-2">
-            {segments.slice(0, 4).map((s, i) => (
+            {corrected.slice(0, 4).map((s, i) => (
               <Turn key={i} s={s} names={names} />
             ))}
             {segments.length > 4 && (
@@ -265,6 +509,7 @@ export function TranscriptPanel({ rfpId, detail, canEdit, openAt, onOpenAtHandle
               </button>
             )}
           </div>
+          <p className={cn("max-w-[70ch] text-xs", fixJob?.status === "failed" ? "text-destructive" : "text-muted-foreground")}>{fixState}</p>
           <p className="max-w-[70ch] text-xs text-muted-foreground">
             Granola distingue les voix (Moi, Intervenant, A, B…) sans les nommer. Les nommer est facultatif : l&apos;agent identifie le fournisseur au contexte et les extraits de preuve gardent l&apos;horodatage.
           </p>
@@ -279,7 +524,19 @@ export function TranscriptPanel({ rfpId, detail, canEdit, openAt, onOpenAtHandle
         </p>
       )}
 
-      <TranscriptSheet open={sheet} onOpenChange={setSheet} segments={segments} names={names} at={openAt} title={`Transcript · ${detail.supplier.name}`} />
+      <TranscriptSheet
+        open={sheet}
+        onOpenChange={setSheet}
+        segments={corrected}
+        corrections={corrections}
+        names={names}
+        at={openAt}
+        title={`Transcript · ${detail.supplier.name}`}
+        canEdit={canEdit}
+        onSaveCorrections={saveCorrections}
+        saving={setCorrections.isPending}
+        rfpId={rfpId}
+      />
 
       <Dialog open={granola} onOpenChange={setGranola}>
         <DialogContent>

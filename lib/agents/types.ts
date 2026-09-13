@@ -22,15 +22,17 @@ export const VERDICT_LABEL: Record<Verdict, string> = {
 };
 
 /**
- * analysis: assigned to domains, proposes on written answers. soutenance and
- * synthese: one per organisation, created on first use, never assigned.
+ * analysis: assigned to domains, proposes on written answers. soutenance,
+ * synthese and vocabulaire: one per organisation, created on first use,
+ * never assigned.
  */
-export type AgentKind = "analysis" | "soutenance" | "synthese";
+export type AgentKind = "analysis" | "soutenance" | "synthese" | "vocabulaire";
 
 export const AGENT_KIND_LABEL: Record<AgentKind, string> = {
   analysis: "Analyse des réponses",
   soutenance: "Soutenances",
   synthese: "Point de synthèse",
+  vocabulaire: "Vocabulaire et transcripts",
 };
 
 export interface Agent {

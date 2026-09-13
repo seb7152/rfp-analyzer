@@ -43,10 +43,15 @@ export async function GET(_request: NextRequest, { params }: { params: { rfpId: 
 
     let findings: SessionFinding[] = [];
     let reportJob: { id: string; status: string; error: string | null; cost: number; result: unknown } | null = null;
+    let fixJob: typeof reportJob = null;
     if (session) {
       if (session.report_job_id) {
         const { data: job } = await supabase.from("ai_jobs").select("id, status, error, cost, result").eq("id", session.report_job_id).maybeSingle();
         reportJob = (job as typeof reportJob) ?? null;
+      }
+      if (session.transcript_fix_job_id) {
+        const { data: job } = await supabase.from("ai_jobs").select("id, status, error, cost, result").eq("id", session.transcript_fix_job_id).maybeSingle();
+        fixJob = (job as typeof reportJob) ?? null;
       }
       const { data: rows, error: fError } = await supabase
         .from("agent_findings")
@@ -95,7 +100,7 @@ export async function GET(_request: NextRequest, { params }: { params: { rfpId: 
         };
       });
     }
-    return NextResponse.json({ overview, supplier, session, brief, reportJob, findings });
+    return NextResponse.json({ overview, supplier, session, brief, reportJob, fixJob, findings });
   } catch (err) {
     return failure(err);
   }

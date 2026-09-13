@@ -7,12 +7,16 @@ import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { EVALUATOR, requireRfpAccess } from "@/lib/agents/auth";
 import { CompletionTimeoutError, OpenRouterError, streamChatCompletion, type ContentPart } from "@/lib/agents/openrouter";
+import { loadGlossaryTerms } from "@/lib/soutenance/glossary";
+import type { GlossaryTerm } from "@/lib/soutenance/types";
 import { loadAiSettings, renderPrompt, type AiSettings, type AssistField } from "./settings";
 
 export interface AssistContext {
   settings: AiSettings;
   consultationTitle: string;
   supplierNames: string[];
+  /** The consultation's own vocabulary, spelt right by the dictation too. */
+  terms: GlossaryTerm[];
 }
 
 /**
@@ -39,8 +43,8 @@ export async function resolveAssistContext(
   const names = ((suppliers ?? []) as Array<{ id: string; name: string }>).map((s) => s.name);
   const current = ((suppliers ?? []) as Array<{ id: string; name: string }>).find((s) => s.id === supplierId)?.name;
   const supplierNames = current ? [current, ...names.filter((n) => n !== current)] : names;
-  const settings = await loadAiSettings(db, (rfp as { organization_id: string }).organization_id);
-  return { ctx: { settings, consultationTitle: (rfp as { title: string }).title ?? "", supplierNames }, error: null };
+  const [settings, terms] = await Promise.all([loadAiSettings(db, (rfp as { organization_id: string }).organization_id), loadGlossaryTerms(db, rfpId)]);
+  return { ctx: { settings, consultationTitle: (rfp as { title: string }).title ?? "", supplierNames, terms }, error: null };
 }
 
 export function systemPromptFor(kind: "transcription" | "rewrite", ctx: AssistContext, field: AssistField): string {
@@ -50,6 +54,7 @@ export function systemPromptFor(kind: "transcription" | "rewrite", ctx: AssistCo
     consultationTitle: ctx.consultationTitle,
     supplierNames: ctx.supplierNames,
     vocabulary: ctx.settings.vocabulary,
+    terms: ctx.terms,
   });
 }
 
