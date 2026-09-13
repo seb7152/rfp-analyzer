@@ -7,16 +7,18 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { useGlossary, useGlossaryMutations } from "@/hooks/use-glossary";
 import { useGranolaMeetings, useSoutenanceMutations, type SessionDetail } from "@/hooks/use-soutenances";
 import { formatAt, voiceLabel, type TranscriptSegment } from "@/lib/connectors/granola";
 import { transcribeRecording, type AudioImportProgress } from "@/lib/soutenance/audio";
 import { formatDateTime, formatDuration, formatUsd } from "@/lib/format";
 import { toDateAndTime } from "@/lib/soutenance/dates";
-import { applyCorrections, findMatches, occurrenceAt, type CorrectedSegment, type CorrectedSpan, type CorrectionSource, type TranscriptCorrection } from "@/lib/soutenance/transcript";
+import { applyCorrections, cleanTerms, findMatches, occurrenceAt, similarWords, type CorrectedSegment, type SimilarWord, type CorrectedSpan, type CorrectionSource, type TranscriptCorrection } from "@/lib/soutenance/transcript";
 import { cn } from "@/lib/utils";
 import { StepPanel } from "./DocPanel";
 
@@ -106,9 +108,15 @@ function Turn({
   const onDoubleClick = (e: React.MouseEvent<HTMLSpanElement>) => {
     if (!onEdit || !canEdit) return;
     const found = selectionOffset(e.currentTarget);
-    const word = found?.text.trim() ?? "";
+    let word = found?.text.trim() ?? "";
     if (!found || !word || /\s/.test(word) || word.length > 80) return;
-    const at = found.offset + found.text.indexOf(word);
+    let at = found.offset + found.text.indexOf(word);
+    // A double-click selects « l'astreinte » whole: the elision stays, the word is corrected.
+    const elision = word.match(/^(?:[ldjnmstc]|qu)['’](.+)$/iu);
+    if (elision) {
+      at += word.length - elision[1].length;
+      word = elision[1];
+    }
     const span = s.spans.find((sp) => sp.start <= at && sp.end >= at + word.length);
     if (span) return startEdit(span);
     onEdit({ i: 0, from: word, n: occurrenceAt(s.text, word, at), raw: null });
@@ -167,7 +175,22 @@ function CorrectionEditor({ edit, onSave, onRestore, onCancel, pending }: { edit
           <>Corriger « {edit.from} »</>
         )}
       </span>
-      <Input value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus aria-label="Texte corrigé" className="h-7 w-56 text-xs" />
+      <Input
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && changed) {
+            e.preventDefault();
+            onSave(draft.trim());
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            onCancel();
+          }
+        }}
+        autoFocus
+        aria-label="Texte corrigé"
+        className="h-7 w-56 text-xs"
+      />
       <Button type="submit" size="sm" className="h-7" disabled={!changed || pending}>
         {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
         Enregistrer
@@ -233,7 +256,56 @@ export function TranscriptSheet({
       toast.error(err instanceof Error ? err.message : "La correction n'a pas été enregistrée.");
     }
   };
-  const save = (to: string) => edit && commit([...corrections, { i: edit.i, from: edit.from, to, n: edit.n, by: "manual" }]);
+  const [extend, setExtend] = useState<{ from: string; to: string; except: { i: number; n: number }; saved: TranscriptCorrection[]; groups: SimilarWord[]; chosen: Set<string> } | null>(null);
+  const [toGlossary, setToGlossary] = useState(true);
+  const glossary = useGlossary(open && canEdit ? rfpId : null);
+  const { save: saveGlossary } = useGlossaryMutations(rfpId);
+  /** The term and the forms just corrected, added to the consultation's vocabulary for the next transcripts. */
+  const rememberTerm = async (term: string, forms: string[]) => {
+    const current = glossary.data?.glossary?.terms ?? [];
+    const existing = current.find((t) => t.term.toLowerCase() === term.toLowerCase());
+    const next = existing
+      ? current.map((t) => (t === existing ? { ...t, aliases: [...t.aliases, ...forms], source: "manual" as const } : t))
+      : [...current, { term, aliases: forms, note: "", source: "manual" as const }];
+    await saveGlossary.mutateAsync(cleanTerms(next));
+  };
+  const save = async (to: string) => {
+    if (!edit) return;
+    const done: TranscriptCorrection = { i: edit.i, from: edit.from, to, n: edit.n, by: "manual" };
+    const saved = [...corrections, done];
+    // The same text elsewhere, and the look-alikes a transcription makes of a name: offered once.
+    const groups = similarWords(segments, edit.from, to, { i: edit.i, n: edit.n });
+    await commit(saved);
+    if (groups.length > 0) setExtend({ from: edit.from, to, except: { i: edit.i, n: edit.n }, saved, groups, chosen: new Set(groups.map((g) => g.word)) });
+  };
+  const extendAll = async () => {
+    if (!extend) return;
+    const more: TranscriptCorrection[] = [];
+    for (const g of extend.groups) {
+      if (!extend.chosen.has(g.word)) continue;
+      // Corrections apply in order: once an earlier occurrence in the same turn is replaced,
+      // the later ones move up one rank (unless the new text still contains the old one).
+      const shift = extend.to.includes(g.word) ? 0 : 1;
+      const sorted = [...g.occurrences].sort((a, b) => a.i - b.i || a.n - b.n);
+      for (const r of sorted) {
+        const before = sorted.filter((o) => o.i === r.i && o.n < r.n).length + (g.exact && r.i === extend.except.i && extend.except.n < r.n ? 1 : 0);
+        more.push({ i: r.i, from: g.word, to: extend.to, n: r.n - before * shift, by: "manual" });
+      }
+    }
+    const count = more.length;
+    setExtend(null);
+    if (count > 0) await commit([...extend.saved, ...more]);
+    if (toGlossary) {
+      const forms = [extend.from, ...extend.groups.filter((g) => extend.chosen.has(g.word)).map((g) => g.word)];
+      try {
+        await rememberTerm(extend.to, forms);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Le vocabulaire n'a pas été enregistré.");
+      }
+    }
+    if (count > 0) toast.success(`${count} occurrence${count > 1 ? "s" : ""} remplacée${count > 1 ? "s" : ""} par « ${extend.to} »${toGlossary ? ", vocabulaire enrichi" : ""}.`);
+    else if (toGlossary) toast.success(`« ${extend.to} » ajouté au vocabulaire.`);
+  };
   const restore = () => edit && edit.raw !== null && commit([...corrections, { i: edit.i, from: edit.from, to: edit.raw, n: edit.n, by: "manual" }]);
 
   return (
@@ -266,6 +338,56 @@ export function TranscriptSheet({
           })}
           {visible.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Aucun passage ne contient « {filter} ».</p>}
         </div>
+        <Dialog open={!!extend} onOpenChange={(o) => !o && setExtend(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Étendre la correction</DialogTitle>
+              <DialogDescription>
+                « {extend?.from} » est corrigé en « {extend?.to} ». Le transcript contient d&apos;autres formes proches : cochez celles qui désignent la même chose.
+              </DialogDescription>
+            </DialogHeader>
+            <ul className="flex flex-col gap-1.5">
+              {extend?.groups.map((g) => (
+                <li key={g.word} className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    id={`extend-${g.word}`}
+                    checked={extend.chosen.has(g.word)}
+                    onCheckedChange={(v) =>
+                      setExtend((cur) => {
+                        if (!cur) return cur;
+                        const chosen = new Set(cur.chosen);
+                        if (v) chosen.add(g.word);
+                        else chosen.delete(g.word);
+                        return { ...cur, chosen };
+                      })
+                    }
+                  />
+                  <Label htmlFor={`extend-${g.word}`} className="flex flex-1 cursor-pointer items-baseline gap-2 font-normal">
+                    <span>« {g.word} »</span>
+                    <span className="text-xs text-muted-foreground">
+                      {g.occurrences.length} fois{g.exact ? " · même texte" : " · forme proche"}
+                    </span>
+                  </Label>
+                </li>
+              ))}
+            </ul>
+            <div className="flex items-center gap-2 border-t border-border pt-3 text-sm">
+              <Checkbox id="extend-glossary" checked={toGlossary} onCheckedChange={(v) => setToGlossary(!!v)} />
+              <Label htmlFor="extend-glossary" className="cursor-pointer font-normal">
+                Retenir « {extend?.to} » et ces formes dans le vocabulaire de la consultation
+              </Label>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setExtend(null)}>
+                Laisser tel quel
+              </Button>
+              <Button type="button" onClick={extendAll} disabled={saving || saveGlossary.isPending || !extend || (extend.chosen.size === 0 && !toGlossary)}>
+                {(saving || saveGlossary.isPending) && <Loader2 className="h-4 w-4 animate-spin" />}
+                {extend && extend.chosen.size > 0 ? `Remplacer par « ${extend.to} »` : "Retenir le terme"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </SheetContent>
     </Sheet>
   );

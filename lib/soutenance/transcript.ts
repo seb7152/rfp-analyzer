@@ -7,6 +7,10 @@
  */
 
 import type { TranscriptSegment } from "@/lib/connectors/granola";
+import type { GlossaryTerm } from "./types";
+
+export const MAX_TERMS = 120;
+export const MAX_ALIASES = 8;
 
 export type CorrectionSource = "glossary" | "agent" | "manual";
 
@@ -243,3 +247,119 @@ function countOccurrences(text: string, needle: string): number {
 export function occurrenceAt(text: string, needle: string, offset: number): number {
   return countOccurrences(text.slice(0, offset), needle);
 }
+
+/**
+ * Where else `text` appears, as a whole word, in the corrected segments:
+ * what a hand correction can be extended to. The occurrence numbers are
+ * those applyCorrections expects (plain occurrences, before the match).
+ */
+export function otherOccurrences(segments: TranscriptSegment[], text: string, except: { i: number; n: number }): Array<{ i: number; n: number }> {
+  const needle = text.trim();
+  if (!needle) return [];
+  const re = new RegExp(`(?<![${WORD}])${escapeRegExp(needle)}(?![${WORD}])`, "gu");
+  const out: Array<{ i: number; n: number }> = [];
+  segments.forEach((s, i) => {
+    re.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(s.text))) {
+      const n = occurrenceAt(s.text, needle, m.index);
+      if (i === except.i && n === except.n) continue;
+      out.push({ i, n });
+    }
+  });
+  return out;
+}
+
+/** Words, hyphens kept, elisions split: « l'astreinte » yields « astreinte ». */
+const TOKEN = new RegExp(`[${WORD}][${WORD}-]*`, "gu");
+
+/** Damerau-Levenshtein distance, capped: beyond `max` the exact value does not matter. */
+export function editDistance(a: string, b: string, max: number): number {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  let before: number[] = [];
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    let rowMin = i;
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      let v = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) v = Math.min(v, before[j - 2] + 1);
+      cur.push(v);
+      if (v < rowMin) rowMin = v;
+    }
+    if (rowMin > max) return max + 1;
+    before = prev;
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+function tolerance(length: number): number {
+  return length <= 5 ? 1 : length <= 9 ? 2 : 3;
+}
+
+export interface SimilarWord {
+  /** The surface form, as it reads in the transcript. */
+  word: string;
+  occurrences: Array<{ i: number; n: number }>;
+  /** True when the word is exactly the corrected text (not a look-alike). */
+  exact: boolean;
+}
+
+/**
+ * The words of the transcript that look like the corrected text or like
+ * its correction (a transcription hears the same name several ways: Covivio
+ * as colivio, cosisio, covisio): what a hand correction can be extended to.
+ * Grouped by surface form, the occurrence already corrected left out.
+ */
+export function similarWords(segments: TranscriptSegment[], from: string, to: string, except: { i: number; n: number }): SimilarWord[] {
+  const targets = [fold(from.trim()), fold(to.trim())].filter((t) => t.length >= 3);
+  if (targets.length === 0) return [];
+  const groups = new Map<string, SimilarWord>();
+  segments.forEach((s, i) => {
+    TOKEN.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = TOKEN.exec(s.text))) {
+      const word = m[0];
+      if (word === to) continue;
+      const key = fold(word);
+      const exact = word === from;
+      const close = exact || targets.some((t) => key === t || editDistance(key, t, tolerance(Math.max(key.length, t.length))) <= tolerance(Math.max(key.length, t.length)));
+      if (!close) continue;
+      const n = occurrenceAt(s.text, word, m.index);
+      if (exact && i === except.i && n === except.n) continue;
+      const g = groups.get(word) ?? { word, occurrences: [], exact };
+      g.occurrences.push({ i, n });
+      groups.set(word, g);
+    }
+  });
+  return Array.from(groups.values()).sort((a, b) => Number(b.exact) - Number(a.exact) || b.occurrences.length - a.occurrences.length);
+}
+
+/** Trims, drops empties and duplicates (same folded term), caps the lists. */
+export function cleanTerms(terms: GlossaryTerm[]): GlossaryTerm[] {
+  const seen = new Set<string>();
+  const out: GlossaryTerm[] = [];
+  for (const t of terms) {
+    const term = (t.term ?? "").trim().slice(0, 80);
+    if (!term) continue;
+    const key = fold(term);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const aliases: string[] = [];
+    const aseen = new Set<string>([key]);
+    for (const a of Array.isArray(t.aliases) ? t.aliases : []) {
+      const alias = String(a ?? "").trim().slice(0, 80);
+      const k = fold(alias);
+      if (!alias || aseen.has(k)) continue;
+      aseen.add(k);
+      aliases.push(alias);
+      if (aliases.length >= MAX_ALIASES) break;
+    }
+    out.push({ term, aliases, note: (t.note ?? "").trim().slice(0, 120), source: t.source === "manual" ? "manual" : "agent" });
+    if (out.length >= MAX_TERMS) break;
+  }
+  return out;
+}
+

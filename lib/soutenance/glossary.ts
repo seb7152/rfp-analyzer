@@ -15,11 +15,10 @@ import { loadAiSettings, vocabularyLine } from "@/lib/ai/settings";
 
 export { vocabularyLine };
 import { excerpt, type RfpEvalContext } from "./context";
-import { fold } from "./transcript";
-import type { GlossaryTerm, RfpGlossaryRow } from "./types";
+import { MAX_ALIASES, MAX_TERMS, cleanTerms } from "./transcript";
 
-export const MAX_TERMS = 120;
-export const MAX_ALIASES = 8;
+export { MAX_ALIASES, MAX_TERMS, cleanTerms };
+import type { GlossaryTerm, RfpGlossaryRow } from "./types";
 
 export async function loadGlossary(db: Db | SupabaseClient, rfpId: string): Promise<RfpGlossaryRow | null> {
   const { data, error } = await db.from("rfp_glossaries").select("*").eq("rfp_id", rfpId).maybeSingle();
@@ -31,32 +30,6 @@ export async function loadGlossary(db: Db | SupabaseClient, rfpId: string): Prom
 
 export async function loadGlossaryTerms(db: Db | SupabaseClient, rfpId: string): Promise<GlossaryTerm[]> {
   return (await loadGlossary(db, rfpId))?.terms ?? [];
-}
-
-/** Trims, drops empties and duplicates (same folded term), caps the lists. */
-export function cleanTerms(terms: GlossaryTerm[]): GlossaryTerm[] {
-  const seen = new Set<string>();
-  const out: GlossaryTerm[] = [];
-  for (const t of terms) {
-    const term = (t.term ?? "").trim().slice(0, 80);
-    if (!term) continue;
-    const key = fold(term);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const aliases: string[] = [];
-    const aseen = new Set<string>([key]);
-    for (const a of Array.isArray(t.aliases) ? t.aliases : []) {
-      const alias = String(a ?? "").trim().slice(0, 80);
-      const k = fold(alias);
-      if (!alias || aseen.has(k)) continue;
-      aseen.add(k);
-      aliases.push(alias);
-      if (aliases.length >= MAX_ALIASES) break;
-    }
-    out.push({ term, aliases, note: (t.note ?? "").trim().slice(0, 120), source: t.source === "manual" ? "manual" : "agent" });
-    if (out.length >= MAX_TERMS) break;
-  }
-  return out;
 }
 
 /**
