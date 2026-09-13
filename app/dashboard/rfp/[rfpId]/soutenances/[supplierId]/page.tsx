@@ -16,7 +16,8 @@ import { ReportPanel } from "@/components/soutenances/ReportPanel";
 import { ProposalsPanel } from "@/components/soutenances/ProposalsPanel";
 import { downloadDocx, useSession } from "@/hooks/use-soutenances";
 import { sessionMarkdown, sessionTitle } from "@/lib/soutenance/documents";
-import { formatDateTime, formatDuration } from "@/lib/format";
+import { formatSessionDate } from "@/lib/soutenance/dates";
+import { formatDuration } from "@/lib/format";
 
 /**
  * One séance: brief, transcript, compte rendu, propositions, in the order
@@ -66,7 +67,7 @@ export default function SessionPage() {
   };
 
   const lead = [
-    session?.scheduled_at ? `Soutenance du ${formatDateTime(session.scheduled_at)}` : "Séance non datée",
+    session?.scheduled_at ? `Soutenance du ${formatSessionDate(session.scheduled_at)}` : "Séance non datée",
     meta.duration_seconds ? formatDuration(meta.duration_seconds) : null,
     `propositions vers ${target ? `V${target.version_number} · ${target.version_name}` : "la version active"}`,
   ]

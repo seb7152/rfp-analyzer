@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Calendar, ChevronRight, Layers, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSoutenanceMutations, type Overview } from "@/hooks/use-soutenances";
 import { SESSION_STATE_LABEL, type SessionState } from "@/lib/soutenance/types";
+import { formatSessionDate, fromDateAndTime, toDateAndTime } from "@/lib/soutenance/dates";
 import { formatDateTime, formatDuration } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -25,12 +27,9 @@ export function SessionStamp({ state, className }: { state: SessionState; classN
   return <span className={cn("stamp", STATE_STAMP[state], className)}>{SESSION_STATE_LABEL[state]}</span>;
 }
 
-function toLocalInput(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+type Planned = { date: string; time: string };
+
+const epoch = (iso: string | null) => (iso ? new Date(iso).getTime() : null);
 
 /**
  * One line per supplier retained in the version: the date, the brief, the
@@ -38,27 +37,31 @@ function toLocalInput(iso: string | null): string {
  * band above says which version receives the reprises.
  */
 export function SessionsPanel({ rfpId, overview, canEdit }: { rfpId: string; overview: Overview; canEdit: boolean }) {
+  const router = useRouter();
   const { setTargetVersion, patchSession } = useSoutenanceMutations(rfpId);
   const retained = overview.sessions.filter((s) => !s.supplier.removed);
   const removed = overview.sessions.filter((s) => s.supplier.removed);
   const held = retained.filter((s) => s.state === "tenue" || s.state === "exploitee").length;
   const exploited = retained.filter((s) => s.state === "exploitee").length;
   const [planning, setPlanning] = useState(false);
-  const [dates, setDates] = useState<Record<string, string>>({});
+  const [dates, setDates] = useState<Record<string, Planned>>({});
   const target = overview.targetVersion;
   const active = overview.versions.find((v) => v.is_active);
 
   const openPlanning = () => {
-    setDates(Object.fromEntries(retained.map((s) => [s.supplier.id, toLocalInput(s.session?.scheduled_at ?? null)])));
+    setDates(Object.fromEntries(retained.map((s) => [s.supplier.id, toDateAndTime(s.session?.scheduled_at ?? null)])));
     setPlanning(true);
   };
+  const setPlanned = (supplierId: string, patch: Partial<Planned>) => setDates((prev) => ({ ...prev, [supplierId]: { ...(prev[supplierId] ?? { date: "", time: "" }), ...patch } }));
 
   const savePlanning = async () => {
-    const changes = retained.filter((s) => (dates[s.supplier.id] ?? "") !== toLocalInput(s.session?.scheduled_at ?? null));
+    // A time without a date is nothing; a date without a time is the day (kept at local midnight).
+    const changes = retained
+      .map((s) => ({ s, value: fromDateAndTime(dates[s.supplier.id]?.date ?? "", dates[s.supplier.id]?.time ?? "") }))
+      .filter(({ s, value }) => epoch(value) !== epoch(s.session?.scheduled_at ?? null));
     try {
-      for (const s of changes) {
-        const v = dates[s.supplier.id];
-        await patchSession.mutateAsync({ supplierId: s.supplier.id, scheduled_at: v ? new Date(v).toISOString() : null });
+      for (const { s, value } of changes) {
+        await patchSession.mutateAsync({ supplierId: s.supplier.id, scheduled_at: value });
       }
       setPlanning(false);
       toast.success(changes.length === 0 ? "Aucune date modifiée." : `${changes.length} séance${changes.length > 1 ? "s" : ""} planifiée${changes.length > 1 ? "s" : ""}.`);
@@ -145,13 +148,21 @@ export function SessionsPanel({ rfpId, overview, canEdit }: { rfpId: string; ove
                 const meta = s.session?.transcript_meta ?? {};
                 const proposals = s.analysis.proposed + s.analysis.accepted + s.analysis.rejected;
                 return (
-                  <tr key={s.supplier.id} className="group border-t border-border hover:bg-accent/40">
+                  <tr
+                    key={s.supplier.id}
+                    className="group cursor-pointer border-t border-border hover:bg-accent/40"
+                    onClick={(e) => {
+                      // The whole line opens the séance; the name stays a real link for the keyboard and the middle click.
+                      if ((e.target as HTMLElement).closest("a")) return;
+                      router.push(`/dashboard/rfp/${rfpId}/soutenances/${s.supplier.id}`);
+                    }}
+                  >
                     <td className="relative px-4 py-2.5 md:px-5">
                       <Link href={`/dashboard/rfp/${rfpId}/soutenances/${s.supplier.id}`} className="font-semibold group-hover:underline group-hover:underline-offset-4">
                         {s.supplier.name}
                       </Link>
                     </td>
-                    <td className="tnum py-2.5 pr-3">{s.session?.scheduled_at ? formatDateTime(s.session.scheduled_at) : <span className="text-muted-foreground">—</span>}</td>
+                    <td className="tnum py-2.5 pr-3">{s.session?.scheduled_at ? formatSessionDate(s.session.scheduled_at) : <span className="text-muted-foreground">—</span>}</td>
                     <td className="py-2.5 pr-3">
                       {s.brief?.status === "completed" ? (
                         <>
@@ -205,8 +216,8 @@ export function SessionsPanel({ rfpId, overview, canEdit }: { rfpId: string; ove
                     <td className="py-2.5 pr-3">
                       <SessionStamp state={s.state} />
                     </td>
-                    <td className="py-2.5 pr-3 text-muted-foreground">
-                      <ChevronRight className="h-4 w-4" />
+                    <td className="py-2.5 pr-3 text-muted-foreground group-hover:text-foreground">
+                      <ChevronRight className="h-4 w-4" aria-hidden />
                     </td>
                   </tr>
                 );
@@ -233,15 +244,29 @@ export function SessionsPanel({ rfpId, overview, canEdit }: { rfpId: string; ove
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Planifier les séances</DialogTitle>
-            <DialogDescription>La date sert à retrouver la réunion dans Granola et à dater le compte rendu. Une case vide retire la date.</DialogDescription>
+            <DialogDescription>La date sert à retrouver la réunion dans Granola et à dater le compte rendu. L&apos;heure est facultative ; une date vide retire la séance du calendrier.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_150px_96px] items-center gap-3 text-xs font-medium text-muted-foreground">
+              <span>Fournisseur</span>
+              <span>Date</span>
+              <span>Heure</span>
+            </div>
             {retained.map((s) => (
-              <div key={s.supplier.id} className="grid grid-cols-[minmax(0,1fr)_200px] items-center gap-3">
+              <div key={s.supplier.id} className="grid grid-cols-[minmax(0,1fr)_150px_96px] items-center gap-3">
                 <Label htmlFor={`date-${s.supplier.id}`} className="truncate">
                   {s.supplier.name}
                 </Label>
-                <Input id={`date-${s.supplier.id}`} type="datetime-local" value={dates[s.supplier.id] ?? ""} onChange={(e) => setDates({ ...dates, [s.supplier.id]: e.target.value })} className="h-9" />
+                <Input id={`date-${s.supplier.id}`} type="date" value={dates[s.supplier.id]?.date ?? ""} onChange={(e) => setPlanned(s.supplier.id, { date: e.target.value })} className="h-9" />
+                <Input
+                  id={`time-${s.supplier.id}`}
+                  type="time"
+                  aria-label={`Heure, ${s.supplier.name}`}
+                  value={dates[s.supplier.id]?.time ?? ""}
+                  disabled={!dates[s.supplier.id]?.date}
+                  onChange={(e) => setPlanned(s.supplier.id, { time: e.target.value })}
+                  className="h-9"
+                />
               </div>
             ))}
           </div>

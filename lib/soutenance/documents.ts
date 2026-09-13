@@ -4,6 +4,7 @@
  */
 
 import type { Overview } from "./api";
+import { SERVER_TIME_ZONE, formatSessionDate } from "./dates";
 import type { SoutenanceBriefRow, SoutenanceSessionRow, SyntheseDomain } from "./types";
 
 function score(v: number | null | undefined): string {
@@ -83,7 +84,7 @@ export function sessionMarkdown(input: {
   const lines: string[] = [];
   lines.push(`# Soutenance ${input.supplierName} — ${input.overview.rfp.title}`);
   lines.push("");
-  if (input.session?.scheduled_at) lines.push(`Séance du ${new Date(input.session.scheduled_at).toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" })}`);
+  if (input.session?.scheduled_at) lines.push(`Séance du ${formatSessionDate(input.session.scheduled_at, { long: true, timeZone: SERVER_TIME_ZONE })}`);
   lines.push("");
   if (input.brief?.report_markdown) {
     lines.push("# Brief");

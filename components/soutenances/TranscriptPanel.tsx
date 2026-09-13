@@ -14,6 +14,7 @@ import { useGranolaMeetings, useSoutenanceMutations, type SessionDetail } from "
 import { formatAt, voiceLabel, type TranscriptSegment } from "@/lib/connectors/granola";
 import { transcribeRecording, type AudioImportProgress } from "@/lib/soutenance/audio";
 import { formatDateTime, formatDuration, formatUsd } from "@/lib/format";
+import { formatSessionDate } from "@/lib/soutenance/dates";
 import { cn } from "@/lib/utils";
 import { StepPanel } from "./DocPanel";
 
@@ -276,7 +277,7 @@ export function TranscriptPanel({ rfpId, detail, canEdit, openAt, onOpenAtHandle
           <DialogHeader>
             <DialogTitle>Récupérer le transcript depuis Granola</DialogTitle>
             <DialogDescription>
-              Réunions {around ? `autour du ${formatDateTime(around)}` : "des dix derniers jours"}
+              Réunions {around ? `autour du ${formatSessionDate(around)}` : "des dix derniers jours"}
               {meetings.data?.scope === "user" ? ", avec votre clé personnelle" : meetings.data?.scope === "organization" ? ", avec la clé de l'organisation" : ""}. Le transcript complet n&apos;est chargé qu&apos;une fois la réunion choisie.
             </DialogDescription>
           </DialogHeader>

@@ -73,8 +73,9 @@ export async function listNotesAround(key: string, around: Date, days = 10): Pro
   const to = new Date(around.getTime() + days * 86_400_000);
   const notes: GranolaNote[] = [];
   let cursor: string | undefined;
-  for (let page = 0; page < 6; page++) {
-    const query = new URLSearchParams({ created_after: from.toISOString() });
+  for (let page = 0; page < 12; page++) {
+    // Newest first, ten per page: both bounds are needed, or an old séance sits behind a year of meetings.
+    const query = new URLSearchParams({ created_after: from.toISOString(), created_before: to.toISOString() });
     if (cursor) query.set("cursor", cursor);
     const res = await call<{ notes: GranolaNote[]; hasMore: boolean; cursor?: string }>(key, `/notes?${query}`);
     notes.push(...res.notes);
