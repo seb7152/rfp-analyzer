@@ -88,8 +88,69 @@ export async function listNotesAround(key: string, around: Date, days = 10): Pro
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 }
 
-export async function getNote(key: string, noteId: string): Promise<GranolaNote> {
-  return call<GranolaNote>(key, `/notes/${encodeURIComponent(noteId)}`);
+export async function getNote(key: string, noteId: string): Promise<GranolaNoteDetail> {
+  return call<GranolaNoteDetail>(key, `/notes/${encodeURIComponent(noteId)}`);
+}
+
+export interface GranolaNoteDetail extends GranolaNote {
+  folder_membership?: Array<{ name?: string | null }> | null;
+  summary_text?: string | null;
+  private_notes_text?: string | null;
+}
+
+export interface EnrichedNote extends GranolaNote {
+  folder: string | null;
+  /** The search terms found in the title, the summary or the private notes. */
+  mentions: string[];
+  /** A line of context around the first mention, else the start of the summary. */
+  snippet: string | null;
+}
+
+const MAX_ENRICHED = 30;
+const CONCURRENCY = 4;
+
+function fold(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+/**
+ * The list endpoint only gives titles: the meeting of a séance is usually
+ * titled after the consultation, not the supplier. Each note's detail
+ * (summary, private notes, folder) is read to spot the terms — a supplier's
+ * name — and to show a line of context. Five calls per second at most.
+ */
+export async function enrichNotes(key: string, notes: GranolaNote[], terms: string[]): Promise<EnrichedNote[]> {
+  const wanted = terms.map((t) => t.trim()).filter((t) => t.length >= 2);
+  const slice = notes.slice(0, MAX_ENRICHED);
+  const out: EnrichedNote[] = notes.map((n) => ({ ...n, folder: null, mentions: [], snippet: null }));
+  let next = 0;
+  const worker = async () => {
+    while (next < slice.length) {
+      const i = next++;
+      try {
+        const d = await getNote(key, slice[i].id);
+        const summary = (d.summary_text ?? "").replace(/\s+/g, " ").trim();
+        const haystacks = [d.title ?? "", summary, (d.private_notes_text ?? "").replace(/\s+/g, " ").trim()];
+        const mentions = wanted.filter((t) => haystacks.some((h) => fold(h).includes(fold(t))));
+        let snippet: string | null = summary ? summary.slice(0, 140) : null;
+        const first = mentions[0];
+        if (first) {
+          const source = haystacks.slice(1).find((h) => fold(h).includes(fold(first))) ?? "";
+          const at = fold(source).indexOf(fold(first));
+          if (at >= 0) snippet = `${at > 40 ? "… " : ""}${source.slice(Math.max(0, at - 40), at + 100).trim()}${at + 100 < source.length ? " …" : ""}`;
+        }
+        out[i] = { ...out[i], attendees: d.attendees ?? out[i].attendees, folder: d.folder_membership?.[0]?.name ?? null, mentions, snippet };
+      } catch {
+        // A detail that cannot be read leaves the note as listed.
+      }
+      await new Promise((r) => setTimeout(r, PAGE_DELAY_MS));
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, slice.length) }, worker));
+  return out;
 }
 
 /** The whole transcript, page after page. */

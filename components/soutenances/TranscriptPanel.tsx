@@ -14,7 +14,7 @@ import { useGranolaMeetings, useSoutenanceMutations, type SessionDetail } from "
 import { formatAt, voiceLabel, type TranscriptSegment } from "@/lib/connectors/granola";
 import { transcribeRecording, type AudioImportProgress } from "@/lib/soutenance/audio";
 import { formatDateTime, formatDuration, formatUsd } from "@/lib/format";
-import { formatSessionDate } from "@/lib/soutenance/dates";
+import { toDateAndTime } from "@/lib/soutenance/dates";
 import { cn } from "@/lib/utils";
 import { StepPanel } from "./DocPanel";
 
@@ -89,7 +89,12 @@ export function TranscriptPanel({ rfpId, detail, canEdit, openAt, onOpenAtHandle
   const [filter, setFilter] = useState("");
   const canFetch = detail.overview.granola.canFetch;
   const around = session?.scheduled_at ?? null;
-  const meetings = useGranolaMeetings(rfpId, around, granola);
+  // The window can be moved from the dialog when the séance's date is unknown or wrong.
+  const [aroundDraft, setAroundDraft] = useState<string>("");
+  const aroundQuery = aroundDraft ? new Date(`${aroundDraft}T12:00`).toISOString() : around;
+  const listed = useGranolaMeetings(rfpId, aroundQuery, detail.supplier.id, granola);
+  const enriched = useGranolaMeetings(rfpId, aroundQuery, detail.supplier.id, granola && !!listed.data, true);
+  const meetings = enriched.data ? enriched : listed;
 
   useEffect(() => {
     if (openAt) {
@@ -166,7 +171,11 @@ export function TranscriptPanel({ rfpId, detail, canEdit, openAt, onOpenAtHandle
   const state = has
     ? `${sourceLabel}${meta.title ? ` · « ${meta.title} »` : ""}${meta.imported_at ? ` · récupéré le ${formatDateTime(meta.imported_at)}` : ""}${voices.length ? ` · ${voices.length} voix distinguée${voices.length > 1 ? "s" : ""}` : ""}${meta.words ? ` · ${meta.words.toLocaleString("fr-FR")} mots` : ""}${meta.duration_seconds ? ` · ${formatDuration(meta.duration_seconds)}` : ""}`
     : "Ce qui a été dit en séance, depuis Granola ou un texte collé. Il nourrit le compte rendu et les propositions.";
-  const visibleMeetings = (meetings.data?.meetings ?? []).filter((m) => !filter.trim() || m.title.toLowerCase().includes(filter.toLowerCase()) || m.attendees.join(" ").toLowerCase().includes(filter.toLowerCase()));
+  const visibleMeetings = (meetings.data?.meetings ?? []).filter((m) => {
+    const q = filter.trim().toLowerCase();
+    return !q || [m.title, m.folder ?? "", m.snippet ?? "", ...m.attendees].join(" ").toLowerCase().includes(q);
+  });
+  const mentioned = (meetings.data?.meetings ?? []).filter((m) => m.mentions.length > 0).length;
 
   return (
     <StepPanel
@@ -277,14 +286,29 @@ export function TranscriptPanel({ rfpId, detail, canEdit, openAt, onOpenAtHandle
           <DialogHeader>
             <DialogTitle>Récupérer le transcript depuis Granola</DialogTitle>
             <DialogDescription>
-              Réunions {around ? `autour du ${formatSessionDate(around)}` : "des dix derniers jours"}
-              {meetings.data?.scope === "user" ? ", avec votre clé personnelle" : meetings.data?.scope === "organization" ? ", avec la clé de l'organisation" : ""}. Le transcript complet n&apos;est chargé qu&apos;une fois la réunion choisie.
+              Dix jours avant et après la date{meetings.data?.scope === "user" ? ", avec votre clé personnelle" : meetings.data?.scope === "organization" ? ", avec la clé de l'organisation" : ""}. Les réunions dont le titre, le résumé ou les notes citent « {detail.supplier.name} » viennent en premier. Le transcript complet n&apos;est chargé qu&apos;une fois la réunion choisie.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex h-9 items-center gap-2 rounded-md border border-input bg-background px-3">
-            <Search className="h-3.5 w-3.5 text-muted-foreground" />
-            <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Rechercher une réunion" className="h-full flex-1 bg-transparent text-sm outline-none" aria-label="Rechercher une réunion" />
+          <div className="grid grid-cols-[minmax(0,1fr)_150px] gap-2">
+            <div className="flex h-9 items-center gap-2 rounded-md border border-input bg-background px-3">
+              <Search className="h-3.5 w-3.5 text-muted-foreground" />
+              <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filtrer titre, dossier, résumé" className="h-full flex-1 bg-transparent text-sm outline-none" aria-label="Filtrer les réunions" />
+            </div>
+            <Input
+              type="date"
+              aria-label="Autour du"
+              value={aroundDraft || (around ? toDateAndTime(around).date : "")}
+              onChange={(e) => setAroundDraft(e.target.value)}
+              className="h-9"
+            />
           </div>
+          {listed.data && enriched.isFetching && !enriched.data ? (
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Lecture des résumés pour repérer « {detail.supplier.name} »…
+            </p>
+          ) : enriched.data ? (
+            <p className="text-xs text-muted-foreground">{mentioned > 0 ? `${mentioned} réunion${mentioned > 1 ? "s" : ""} cite${mentioned > 1 ? "nt" : ""} « ${detail.supplier.name} » dans son titre, son résumé ou ses notes.` : `Aucun titre ni résumé ne cite « ${detail.supplier.name} » sur cette période.`}</p>
+          ) : null}
           <div className="max-h-[320px] overflow-y-auto rounded-md border border-border bg-card" role="radiogroup" aria-label="Réunions">
             {meetings.isLoading ? (
               <p className="flex items-center gap-2 px-3 py-6 text-sm text-muted-foreground">
@@ -293,25 +317,34 @@ export function TranscriptPanel({ rfpId, detail, canEdit, openAt, onOpenAtHandle
             ) : meetings.error ? (
               <p className="px-3 py-6 text-sm text-status-fail">{meetings.error.message}</p>
             ) : visibleMeetings.length === 0 ? (
-              <p className="px-3 py-6 text-sm text-muted-foreground">Aucune réunion trouvée sur cette période.</p>
+              <p className="px-3 py-6 text-sm text-muted-foreground">
+                {meetings.data?.meetings.length ? "Aucune réunion ne correspond au filtre." : "Aucune réunion sur cette période : changez la date, ou cherchez la réunion dans Granola pour retrouver son jour."}
+              </p>
             ) : (
-              visibleMeetings.map((m) => (
+              visibleMeetings.map((m, i) => (
                 <button
                   key={m.id}
                   type="button"
                   role="radio"
                   aria-checked={chosen === m.id}
                   onClick={() => setChosen(m.id)}
-                  className={cn("grid w-full grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-border px-3 py-2 text-left last:border-0", chosen === m.id ? "bg-accent" : "hover:bg-accent/50")}
+                  className={cn(
+                    "grid w-full grid-cols-[18px_minmax(0,1fr)_auto] items-start gap-2.5 border-b border-border px-3 py-2 text-left last:border-0",
+                    chosen === m.id ? "bg-accent" : "hover:bg-accent/50",
+                    mentioned > 0 && i === mentioned && !filter.trim() && "border-t-2 border-t-input"
+                  )}
                 >
-                  <span className={cn("h-3.5 w-3.5 rounded-full border-[1.5px] border-input", chosen === m.id && "border-4 border-primary")} aria-hidden />
+                  <span className={cn("mt-1 h-3.5 w-3.5 rounded-full border-[1.5px] border-input", chosen === m.id && "border-4 border-primary")} aria-hidden />
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-medium">{m.title}</span>
                     <span className="block truncate text-xs text-muted-foreground">
                       {formatDateTime(m.created_at)}
-                      {m.attendees.length > 0 ? ` · ${m.attendees.slice(0, 3).join(", ")}${m.attendees.length > 3 ? `, +${m.attendees.length - 3}` : ""}` : ""}
+                      {m.folder ? ` · ${m.folder}` : ""}
+                      {m.attendees.length > 1 ? ` · ${m.attendees.slice(0, 3).join(", ")}${m.attendees.length > 3 ? `, +${m.attendees.length - 3}` : ""}` : ""}
                     </span>
+                    {m.snippet ? <span className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{m.snippet}</span> : null}
                   </span>
+                  {m.mentions.length > 0 ? <span className="stamp stamp-pass mt-0.5">Cite {m.mentions[0]}</span> : null}
                 </button>
               ))
             )}

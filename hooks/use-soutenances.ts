@@ -164,12 +164,26 @@ export interface GranolaMeeting {
   title: string;
   created_at: string;
   attendees: string[];
+  folder: string | null;
+  /** The search terms (the supplier's name first) found in the title, summary or notes. */
+  mentions: string[];
+  snippet: string | null;
 }
 
-export function useGranolaMeetings(rfpId: string, around: string | null, enabled: boolean) {
-  return useQuery<{ scope: string; meetings: GranolaMeeting[] }, Error>({
-    queryKey: soutenanceKeys.meetings(rfpId, around),
-    queryFn: () => call(`/api/connectors/granola/meetings?rfpId=${rfpId}${around ? `&around=${encodeURIComponent(around)}` : ""}`, undefined, "Les réunions n'ont pas pu être listées."),
+/**
+ * The meetings around a date: the list comes at once; with `enrich`, each
+ * note's summary is read to spot the supplier, which takes a few seconds, so
+ * the dialog runs both and shows the list while the mentions arrive.
+ */
+export function useGranolaMeetings(rfpId: string, around: string | null, supplierId: string | null, enabled: boolean, enrich = false) {
+  return useQuery<{ scope: string; terms: string[]; meetings: GranolaMeeting[] }, Error>({
+    queryKey: [...soutenanceKeys.meetings(rfpId, around), supplierId, enrich],
+    queryFn: () =>
+      call(
+        `/api/connectors/granola/meetings?rfpId=${rfpId}${around ? `&around=${encodeURIComponent(around)}` : ""}${supplierId ? `&supplierId=${supplierId}` : ""}${enrich ? "&enrich=1" : ""}`,
+        undefined,
+        "Les réunions n'ont pas pu être listées."
+      ),
     enabled,
     staleTime: 60_000,
     retry: false,
