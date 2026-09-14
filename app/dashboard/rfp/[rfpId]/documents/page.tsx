@@ -18,7 +18,7 @@ export default async function RFPDocumentsPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/auth/login");
+    redirect("/login");
   }
 
   const { rfpId } = params;

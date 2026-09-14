@@ -1,15 +1,17 @@
-import { ImportWithStepper } from "@/components/ImportWithStepper";
+"use client";
 
-interface ImportPageProps {
-  params: {
-    rfpId: string;
-  };
-}
+import { Suspense } from "react";
+import { useParams } from "next/navigation";
+import { ImportWorkspace } from "@/components/import/ImportWorkspace";
+import { PageState } from "@/components/shell/PageState";
 
-export default function ImportPage({ params }: ImportPageProps) {
+/** Chapitre 1 · Import : les quatre jeux de données et leur lecture. */
+export default function ImportPage() {
+  const params = useParams();
+  const rfpId = params.rfpId as string;
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-8">
-      <ImportWithStepper rfpId={params.rfpId} />
-    </div>
+    <Suspense fallback={<PageState kind="loading" title="Chargement des jeux de données" />}>
+      <ImportWorkspace rfpId={rfpId} />
+    </Suspense>
   );
 }

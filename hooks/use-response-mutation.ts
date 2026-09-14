@@ -38,6 +38,9 @@ export function useResponseMutation(): UseMutationResult<
   const { activeVersion } = useVersion();
 
   return useMutation({
+    // React Query pauses mutations while the browser is offline; here the
+    // mutation itself must run offline so the gesture lands in the local queue.
+    networkMode: "always",
     mutationFn: async (input: UpdateResponseInput) => {
       const { responseId, ...updateData } = input;
 
@@ -88,10 +91,12 @@ export function useResponseMutation(): UseMutationResult<
     onMutate: async (variables) => {
       const { responseId } = variables;
 
-      // Cancel any outgoing refetches to avoid overwriting our optimistic update
-      await queryClient.cancelQueries({ queryKey: ["response", responseId] });
-      await queryClient.cancelQueries({ queryKey: ["responses"] });
-      await queryClient.cancelQueries({ queryKey: ["all-responses"] });
+      // Cancel any outgoing refetches to avoid overwriting our optimistic update.
+      // Not awaited: offline, a retrying fetch would hold the mutation until the
+      // network is back, and the gesture would never reach the queue.
+      void queryClient.cancelQueries({ queryKey: ["response", responseId] });
+      void queryClient.cancelQueries({ queryKey: ["responses"] });
+      void queryClient.cancelQueries({ queryKey: ["all-responses"] });
 
       // Snapshot the previous value for rollback
       const previousResponse = queryClient.getQueryData<{

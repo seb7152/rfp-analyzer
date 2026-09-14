@@ -9,7 +9,9 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:e2e": "playwright test",
+    "test:e2e:desktop": "playwright test --project=setup --project=desktop"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -55,6 +57,7 @@
     "exceljs": "^4.4.0",
     "fast-xml-parser": "^5.3.2",
     "formidable": "^3.5.4",
+    "geist": "^1.7.2",
     "html-to-docx": "^1.8.0",
     "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",
@@ -82,6 +85,7 @@
     "zod": "^4.3.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/busboy": "^1.5.4",
     "@types/html-to-docx": "^1.8.0",
     "@types/lodash": "^4.17.21",

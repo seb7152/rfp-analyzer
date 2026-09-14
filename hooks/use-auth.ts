@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
 
 interface User {
@@ -23,53 +24,38 @@ interface User {
   }>;
 }
 
+const AUTH_KEY = ["auth", "me"] as const;
+
+async function fetchMe(): Promise<User | null> {
+  const response = await fetch("/api/auth/me", { credentials: "include" });
+  if (response.status === 401) return null;
+  if (!response.ok) {
+    throw new Error(`Failed to fetch user: ${response.statusText}`);
+  }
+  const data = await response.json();
+  return data.user as User;
+}
+
+/**
+ * The signed-in user. One request per session for every component that asks
+ * (React Query dedupes and caches), instead of one request per mount.
+ */
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<Error | null>(null);
+  const [isMutating, setIsMutating] = useState(false);
 
-  // Fetch user only once on mount
-  useEffect(() => {
-    let isMounted = true;
-
-    async function fetchUser() {
-      try {
-        setIsLoading(true);
-        const response = await fetch("/api/auth/me", {
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            setUser(null);
-            return;
-          }
-          throw new Error(`Failed to fetch user: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        if (isMounted) {
-          setUser(data.user);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err instanceof Error ? err : new Error("Unknown error"));
-          console.error("Auth error:", err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    fetchUser();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const query = useQuery<User | null, Error>({
+    queryKey: AUTH_KEY,
+    queryFn: fetchMe,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  const user = query.data ?? null;
+  const isLoading = query.isLoading || isMutating;
+  const setUser = (next: User | null) => queryClient.setQueryData(AUTH_KEY, next);
+  const setIsLoading = setIsMutating;
 
   const logout = async () => {
     try {
@@ -168,7 +154,7 @@ export function useAuth() {
   return {
     user,
     isLoading,
-    error,
+    error: error ?? query.error ?? null,
     isAuthenticated: !!user,
     login,
     logout,
