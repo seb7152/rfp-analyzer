@@ -12,7 +12,8 @@ import {
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
-import { usePreparation, type PreparationData } from "@/hooks/use-preparation";
+import { preparationQueryKey, usePreparation, type PreparationData } from "@/hooks/use-preparation";
+import type { PreparationProgress } from "@/app/api/rfps/[rfpId]/preparation/progress/route";
 import { useAnalyzeStatus } from "@/hooks/use-analyze-status";
 import { useSoutenanceSummary } from "@/hooks/use-soutenances";
 import { useVersion } from "@/contexts/VersionContext";
@@ -244,14 +245,43 @@ export function useConsultation(rfpId: string | null) {
     (liveStatus === null && storedStatus === "processing");
 
   // While an analysis runs, the counts are the only truthful progress signal:
-  // the callbacks do not write processedResponses. Refresh them every 5 s.
+  // the callbacks do not write processedResponses. Every 5 s, the aggregated
+  // counters alone are read and patched into the preparation data.
   useEffect(() => {
     if (!rfpId || !processing) return;
-    const id = window.setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: ["preparation", rfpId] });
-    }, 5000);
-    return () => window.clearInterval(id);
-  }, [rfpId, processing, queryClient]);
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const url = `/api/rfps/${rfpId}/preparation/progress${activeVersion?.id ? `?versionId=${activeVersion.id}` : ""}`;
+        const res = await fetch(url, { credentials: "include" });
+        if (!res.ok || cancelled) return;
+        const progress = (await res.json()) as PreparationProgress;
+        queryClient.setQueryData<PreparationData>(preparationQueryKey(rfpId, activeVersion?.id), (old) => {
+          if (!old) return old;
+          const bySupplier = new Map(progress.suppliers.map((s) => [s.id, s]));
+          return {
+            ...old,
+            suppliers: {
+              ...old.suppliers,
+              items: old.suppliers.items.map((item) => {
+                const c = bySupplier.get(item.id);
+                return c ? { ...item, responsesTotal: c.total, responsesAnswered: c.answered, responsesScored: c.scored } : item;
+              }),
+            },
+            responses: { ...old.responses, total: progress.total, answered: progress.answered },
+            analysis: { ...old.analysis, responsesTotal: progress.total, responsesScored: progress.scored },
+          };
+        });
+      } catch {
+        // A missed tick is harmless: the next one, or the completion, refreshes.
+      }
+    };
+    const id = window.setInterval(tick, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [rfpId, processing, queryClient, activeVersion?.id]);
 
   // When realtime reports completion, refresh everything once.
   const lastLive = useRef<string | null>(null);

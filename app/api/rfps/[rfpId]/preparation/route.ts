@@ -66,11 +66,13 @@ export async function GET(
         .eq("id", rfpId)
         .maybeSingle(),
       checkRFPAccess(rfpId, user.id),
+      // A version named by the client is only read within the consultation the access check covers.
       versionIdParam
         ? supabase
             .from("evaluation_versions")
             .select("id, version_name, version_number")
             .eq("id", versionIdParam)
+            .eq("rfp_id", rfpId)
             .maybeSingle()
         : supabase
             .from("evaluation_versions")
@@ -92,6 +94,9 @@ export async function GET(
       return NextResponse.json({ error: "RFP not found" }, { status: 404 });
     }
 
+    if (versionIdParam && !activeVersionResult.data) {
+      return NextResponse.json({ error: "Version not found" }, { status: 404 });
+    }
     const activeVersion = activeVersionResult.data ?? null;
 
     const [
