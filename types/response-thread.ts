@@ -58,6 +58,13 @@ export interface ThreadCommentWithAuthor extends ThreadComment {
     email: string;
     display_name: string | null;
   };
+  /** Set when the comment was created by accepting an agent's proposal. */
+  agent_finding_id?: string | null;
+  agent_origin?: {
+    agent_name: string;
+    version_number: number | null;
+    accepted_at: string;
+  } | null;
 }
 
 // ─── API Requests ───────────────────────────────────────────────────────────

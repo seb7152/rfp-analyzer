@@ -139,7 +139,7 @@ function ImportMenu({
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild className="items-start gap-2.5 py-2">
-          <Link href="/dashboard/settings/tokens">
+          <Link href="/dashboard/agents/mcp">
             <Terminal className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="flex flex-col gap-0.5">
               <span className="font-medium">Agent externe</span>
@@ -485,7 +485,7 @@ export function PreparationHub({ rfpId }: PreparationHubProps) {
         }
         actions={
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/dashboard/rfp/${rfpId}/parametres#ponderations`}>
+            <Link href={`/dashboard/rfp/${rfpId}/tree-view`}>
               {weights.state === "done" ? "Ajuster les pondérations" : "Régler les pondérations"}
             </Link>
           </Button>

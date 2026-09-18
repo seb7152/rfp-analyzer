@@ -63,6 +63,8 @@ export interface RFP {
   created_by: string;
   analysis_settings?: Record<string, unknown> | null;
   peer_review_enabled: boolean;
+  /** Exposée aux outils MCP (réglage d'organisation, Agents & IA › MCP). */
+  mcp_enabled?: boolean;
 }
 
 export interface RFPUserAssignment {
@@ -184,6 +186,7 @@ export interface Response {
   response_text: string | null;
   ai_score: number | null; // Now supports decimal values (0.5 increments)
   ai_comment: string | null;
+  ai_question: string | null;
   manual_score: number | null; // Now supports decimal values (0.5 increments)
   status: "pending" | "pass" | "partial" | "fail" | "roadmap";
   is_checked: boolean;

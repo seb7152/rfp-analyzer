@@ -60,9 +60,11 @@ This document lists all available fields that can be mapped when configuring exp
 
 ### Review Fields
 
-| Field Name | Description                       | Type   | Example                                  |
-| ---------- | --------------------------------- | ------ | ---------------------------------------- |
-| `question` | Questions or doubts from reviewer | string | "Need clarification on deployment model" |
+| Field Name       | Description                                                                 | Type   | Example                                  |
+| ---------------- | --------------------------------------------------------------------------- | ------ | ---------------------------------------- |
+| `question`       | Questions or doubts from reviewer                                           | string | "Need clarification on deployment model" |
+| `ai_question`    | Questions to the supplier proposed by the AI (accepted agent proposal)      | string | "Quelle est la date de livraison ?"      |
+| `smart_question` | **Smart question** - Reviewer question if available, otherwise AI question  | string | "Need clarification on deployment model" |
 
 ### Future Fields
 

@@ -1,177 +1,90 @@
 "use client";
 
-import React, { useState } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { Loader2, Sparkles, Undo2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { rewriteText, type AssistTarget } from "@/hooks/use-ai-assist";
 import { cn } from "@/lib/utils";
-import type { RFPAccessLevel } from "@/types/user";
-import { canUseAIFeatures } from "@/lib/permissions/ai-permissions";
 
-interface TextEnhancerProps {
-  currentText: string;
-  responseText: string;
-  requirementText: string;
-  supplierName: string;
-  supplierNames?: string[];
-  userAccessLevel?: RFPAccessLevel;
-  onEnhancementComplete: (enhancedText: string) => void;
-  className?: string;
-  disabled?: boolean;
-}
-
+/**
+ * Rewrites the text of a comment or question with the organisation's
+ * rewriting model: spelling, punctuation, clearer sentences, same content.
+ * The result streams into the field; an undo restores the original text
+ * until the field changes again.
+ */
 export function TextEnhancer({
-  currentText,
-  responseText,
-  requirementText,
-  supplierName,
-  supplierNames = [],
-  userAccessLevel,
-  onEnhancementComplete,
+  target,
+  text,
+  onText,
+  onDone,
   className,
   disabled = false,
-}: TextEnhancerProps) {
-  // Hide TextEnhancer if user doesn't have AI access
-  const hasAIAccess = canUseAIFeatures(userAccessLevel);
-  if (!hasAIAccess) {
-    return null;
-  }
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showRevert, setShowRevert] = useState(false);
-  const [originalText, setOriginalText] = useState("");
-  const { toast } = useToast();
+}: {
+  target: AssistTarget;
+  text: string;
+  onText: (text: string) => void;
+  onDone: (text: string) => void;
+  className?: string;
+  disabled?: boolean;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [original, setOriginal] = useState<string | null>(null);
+  const lastResult = useRef<string | null>(null);
 
-  const handleEnhance = async () => {
-    if (!currentText.trim()) {
-      toast({
-        title: "Aucun texte à améliorer",
-        description: "Veuillez d'abord saisir du texte.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Save original text for revert option
-    setOriginalText(currentText);
-    setIsProcessing(true);
-
+  const run = async () => {
+    if (!text.trim()) return;
+    const before = text;
+    setBusy(true);
     try {
-      const formData = new FormData();
-      // Create a dummy audio file to satisfy the API (we're using the same endpoint)
-      const blob = new Blob([""], { type: "text/plain" });
-      formData.append("audio", blob, "dummy.txt");
-      formData.append("mode", "enhance");
-      formData.append("currentText", currentText);
-      formData.append("responseText", responseText);
-      formData.append("requirementText", requirementText);
-      formData.append("supplierName", supplierName);
-      formData.append("supplierNames", JSON.stringify(supplierNames));
-
-      const response = await fetch("/api/transcribe", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Échec de l'amélioration");
-      }
-
-      const data = await response.json();
-      if (data.text) {
-        onEnhancementComplete(data.text);
-        toast({
-          title: "Texte amélioré",
-          description: "Le texte a été reformulé et complété par l'IA.",
-        });
-
-        // Show revert button for 5 seconds
-        setShowRevert(true);
-        setTimeout(() => {
-          setShowRevert(false);
-        }, 5000);
+      const result = await rewriteText(target, before, onText);
+      if (result.trim()) {
+        setOriginal(before);
+        lastResult.current = result;
+        onDone(result);
       } else {
-        throw new Error("Aucun texte retourné");
+        onText(before);
+        toast.error("Le modèle n'a rien renvoyé ; le texte est inchangé.");
       }
     } catch (err) {
-      console.error("Error enhancing text:", err);
-      toast({
-        title: "Échec de l'amélioration",
-        description:
-          "Une erreur s'est produite lors de l'amélioration du texte.",
-        variant: "destructive",
-      });
+      onText(before);
+      toast.error(err instanceof Error ? err.message : "La remise en forme a échoué.");
     } finally {
-      setIsProcessing(false);
+      setBusy(false);
     }
   };
 
-  const handleRevert = () => {
-    onEnhancementComplete(originalText);
-    setShowRevert(false);
-    toast({
-      title: "Annulation",
-      description: "Le texte original a été restauré.",
-    });
+  const undo = () => {
+    if (original === null) return;
+    onText(original);
+    onDone(original);
+    setOriginal(null);
+    lastResult.current = null;
   };
 
+  // The undo is offered only while the field still holds the rewritten text.
+  const canUndo = original !== null && lastResult.current === text;
+
   return (
-    <div className={cn("relative flex items-center gap-0.5", className)}>
-      {/* Revert button - visible for 5 seconds after enhancement, positioned to the left */}
-      {showRevert && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={handleRevert}
-          className="h-7 w-7 rounded-full transition-all animate-in fade-in slide-in-from-right-2 duration-200"
-          title="Annuler l'amélioration"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-          >
-            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-            <path d="M3 3v5h5" />
-          </svg>
+    <div className={cn("flex items-center gap-0.5", className)}>
+      {canUndo && (
+        <Button type="button" variant="ghost" size="xs" mode="icon" onClick={undo} aria-label="Revenir au texte d'origine" title="Revenir au texte d'origine" className="h-7 w-7 rounded-full">
+          <Undo2 className="h-3.5 w-3.5" />
         </Button>
       )}
-
       <Button
         type="button"
         variant="ghost"
-        size="icon"
-        onClick={handleEnhance}
-        disabled={disabled || isProcessing}
-        className={cn(
-          "h-8 w-8 rounded-full transition-all",
-          isProcessing && "opacity-50 cursor-not-allowed"
-        )}
-        title="Améliorer avec l'IA"
+        size="xs"
+        mode="icon"
+        onClick={run}
+        disabled={disabled || busy || !text.trim()}
+        aria-label="Remettre en forme avec l'IA"
+        title={busy ? "Remise en forme en cours" : "Remettre en forme avec l'IA"}
+        className="h-7 w-7 rounded-full"
       >
-        {isProcessing ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Sparkles className="h-4 w-4 text-purple-500" />
-        )}
+        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-accent-foreground" />}
       </Button>
-
-      {/* Processing animation */}
-      {isProcessing && (
-        <div className="absolute -top-1 -right-1">
-          <span className="flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
-          </span>
-        </div>
-      )}
     </div>
   );
 }

@@ -102,6 +102,16 @@ const EXPORT_FIELDS = [
     description: "Questions et doutes de l'évaluateur",
   },
   {
+    value: "ai_question",
+    label: "Question IA",
+    description: "Questions au fournisseur proposées par l'IA (agent accepté)",
+  },
+  {
+    value: "smart_question",
+    label: "Question Intelligent",
+    description: "Question de l'évaluateur si disponible, sinon question IA",
+  },
+  {
     value: "status",
     label: "Status",
     description: "Pass/Partial/Fail/Pending",

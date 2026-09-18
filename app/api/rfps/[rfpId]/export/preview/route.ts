@@ -151,6 +151,7 @@ export async function POST(
         ai_score,
         manual_score,
         ai_comment,
+        ai_question,
         manual_comment,
         question,
         status
@@ -272,6 +273,12 @@ export async function POST(
             break;
           case "question":
             rowData[column] = response?.question || "";
+            break;
+          case "ai_question":
+            rowData[column] = response?.ai_question || "";
+            break;
+          case "smart_question":
+            rowData[column] = response?.question && response.question !== "" ? response.question : response?.ai_question || "";
             break;
           case "status":
             rowData[column] = response?.status || "pending";

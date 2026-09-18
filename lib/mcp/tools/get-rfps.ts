@@ -42,6 +42,7 @@ export async function handleGetRFPs(
     .select("id, title, description, status, organization_id, created_at", {
       count: "exact",
     })
+    .eq("mcp_enabled", true)
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 

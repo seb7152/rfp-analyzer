@@ -2,7 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { ReactNode } from "react";
 import { PDFAnnotationProvider } from "@/components/pdf/contexts/PDFAnnotationContext";
 import { useOfflineSync } from "@/hooks/use-offline-sync";
@@ -49,7 +49,7 @@ export function Providers({ children }: { children: ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <OfflineSyncProvider>
           <PDFAnnotationProvider>
-            <Toaster position="top-right" richColors closeButton />
+            <Toaster />
             {children}
           </PDFAnnotationProvider>
         </OfflineSyncProvider>

@@ -130,7 +130,7 @@ export async function PUT(
     // Vérifier que l'utilisateur a accès à l'organisation du RFP
     const { data: rfp, error: rfpError } = await supabase
       .from("rfps")
-      .select("organization_id")
+      .select("organization_id, created_by")
       .eq("id", rfpId)
       .single();
 
@@ -149,12 +149,18 @@ export async function PUT(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    // Seuls les admins peuvent modifier les poids
-    if (userOrg.role !== "admin") {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+    // Pilotes de la consultation : propriétaire ou administrateur de l'organisation.
+    if (userOrg.role !== "admin" && rfp.created_by !== user.id) {
+      const { data: owner } = await supabase
+        .from("rfp_user_assignments")
+        .select("access_level")
+        .eq("rfp_id", rfpId)
+        .eq("user_id", user.id)
+        .eq("access_level", "owner")
+        .maybeSingle();
+      if (!owner) {
+        return NextResponse.json({ error: "Seuls les pilotes de la consultation modifient les pondérations." }, { status: 403 });
+      }
     }
 
     const body = await request.json();

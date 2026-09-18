@@ -35,6 +35,13 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Only the pilots of the consultation (owner, organisation admin).
+    {
+      const { requireRfpAccess, PILOT } = await import("@/lib/agents/auth");
+      const access = await requireRfpAccess(rfpId, user.id, PILOT);
+      if (access.error) return access.error;
+    }
+
     const body: UpdateSupplierStatusRequest = await request.json();
     const { shortlist_status, removal_reason } = body;
 

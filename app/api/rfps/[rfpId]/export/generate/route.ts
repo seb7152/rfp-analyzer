@@ -207,6 +207,7 @@ export async function POST(
           ai_score,
           manual_score,
           ai_comment,
+          ai_question,
           manual_comment,
           question,
           status
@@ -273,6 +274,10 @@ export async function POST(
               : response?.ai_comment || "";
           case "question":
             return response?.question || "";
+          case "ai_question":
+            return response?.ai_question || "";
+          case "smart_question":
+            return response?.question && response.question !== "" ? response.question : response?.ai_question || "";
           case "status":
             return response?.status || "pending";
           case "annotations":

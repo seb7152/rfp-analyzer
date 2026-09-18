@@ -28,8 +28,7 @@ import {
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { ScoreControl } from "@/components/evaluation/ScoreControl";
 import { StatusStamp } from "@/components/evaluation/StatusStamp";
-import { AudioRecorder } from "@/components/AudioRecorder";
-import { TextEnhancer } from "@/components/TextEnhancer";
+import { FieldAssist } from "@/components/evaluation/FieldAssist";
 import { ResponseFocusModal } from "@/components/ResponseFocusModal";
 import type { ResponseWithSupplier } from "@/hooks/use-responses";
 import type { PDFAnnotation } from "@/components/pdf/types/annotation.types";
@@ -39,12 +38,14 @@ import type { RFPAccessLevel } from "@/types/user";
 import { finalScore, STATUS_META, STATUS_ORDER, type ResponseStatus } from "@/lib/scoring";
 import { formatScore } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { FindingCard } from "@/components/agents/FindingCard";
+import { findQuoteRange } from "@/lib/agents/quotes";
+import type { AgentFindingWithAgent } from "@/lib/agents/types";
 
 export interface ResponseColumnProps {
   rfpId: string;
   response: ResponseWithSupplier;
   requirement: { id: string; title: string; description: string };
-  supplierNames: string[];
   access: RFPAccessLevel;
   canEdit: boolean;
   bookmarks: PDFAnnotation[];
@@ -63,6 +64,17 @@ export interface ResponseColumnProps {
   layout: "column" | "card";
   /** Lines of response kept visible before « Lire la suite ». */
   responseLines?: number;
+  /** Agents' proposals on this answer, newest first. */
+  findings?: AgentFindingWithAgent[];
+  /** Set when the proposals could not be loaded. */
+  findingsError?: string | null;
+  /** Proposals decided offline, waiting to be sent. */
+  queuedFindingIds?: Set<string>;
+  onAcceptFinding?: (finding: AgentFindingWithAgent) => void;
+  onRejectFinding?: (finding: AgentFindingWithAgent, reason: string) => void;
+  decisionPending?: boolean;
+  /** When set, Accept / Reject are disabled and this says why. */
+  decisionDisabledReason?: string | null;
 }
 
 function ClampedText({
@@ -70,15 +82,19 @@ function ClampedText({
   lines,
   empty,
   fixed = false,
+  highlight = null,
 }: {
   text: string | null;
   lines: number;
   empty: string;
   /** Reserve the full height even for short text, so sibling columns align. */
   fixed?: boolean;
+  /** Range of the text to mark (a quoted passage); opens the text. */
+  highlight?: { start: number; end: number } | null;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLParagraphElement>(null);
+  const markRef = useRef<HTMLElement>(null);
   const [overflows, setOverflows] = useState(false);
   const LINE = 19;
   useEffect(() => {
@@ -86,6 +102,12 @@ function ClampedText({
     if (!el) return;
     setOverflows(el.scrollHeight > el.clientHeight + 1);
   }, [text, open, lines]);
+  useEffect(() => {
+    if (!highlight) return;
+    setOpen(true);
+    const id = window.setTimeout(() => markRef.current?.scrollIntoView({ block: "center", behavior: "smooth" }), 50);
+    return () => window.clearTimeout(id);
+  }, [highlight]);
   if (!text || !text.trim()) {
     return (
       <p className="text-sm italic text-muted-foreground" style={fixed ? { minHeight: lines * LINE } : undefined}>
@@ -104,7 +126,17 @@ function ClampedText({
             : { lineHeight: `${LINE}px`, display: "-webkit-box", WebkitLineClamp: lines, WebkitBoxOrient: "vertical", overflow: "hidden" }
         }
       >
-        {text}
+        {highlight && highlight.start < highlight.end ? (
+          <>
+            {text.slice(0, highlight.start)}
+            <mark ref={markRef} className="rounded-sm bg-accent px-0.5 text-foreground ring-1 ring-primary/40">
+              {text.slice(highlight.start, highlight.end)}
+            </mark>
+            {text.slice(highlight.end)}
+          </>
+        ) : (
+          text
+        )}
       </p>
       {(overflows || open) && (
         <button
@@ -128,7 +160,6 @@ export function ResponseColumn({
   rfpId,
   response,
   requirement,
-  supplierNames,
   access,
   canEdit,
   bookmarks,
@@ -146,8 +177,22 @@ export function ResponseColumn({
   onOpenThreads,
   layout,
   responseLines = 8,
+  findings = [],
+  findingsError = null,
+  queuedFindingIds,
+  onAcceptFinding,
+  onRejectFinding,
+  decisionPending = false,
+  decisionDisabledReason = null,
 }: ResponseColumnProps) {
   const queryClient = useQueryClient();
+  const [activeQuote, setActiveQuote] = useState<string | null>(null);
+  // Composed form once, so the highlight offsets match the rendered text.
+  const responseText = response.response_text ? response.response_text.normalize("NFC") : response.response_text;
+  const highlight = activeQuote && responseText ? findQuoteRange(responseText, activeQuote) : null;
+  useEffect(() => {
+    setActiveQuote(null);
+  }, [response.id]);
   const analyze = useAnalyzeResponse();
   const hasAI = canUseAIFeatures(access);
   const [comment, setComment] = useState(response.manual_comment ?? "");
@@ -284,8 +329,8 @@ export function ResponseColumn({
         )}
       </header>
 
-      {/* Réponse */}
-      <div className="flex-1 space-y-3.5 px-3.5 py-3">
+      {/* Réponse : en colonne, ce corps défile seul, l'en-tête et le geste restent en vue */}
+      <div className={cn("flex-1 space-y-3.5 px-3.5 py-3", layout === "column" && "min-h-0 overflow-y-auto")}>
         <div>
           <div className="mb-1 flex items-center justify-between">
             <span className="text-xs font-semibold text-muted-foreground">Réponse</span>
@@ -306,7 +351,7 @@ export function ResponseColumn({
               </Button>
             </div>
           </div>
-          <ClampedText text={response.response_text} lines={responseLines} empty="Aucune réponse fournie." fixed />
+          <ClampedText text={responseText} lines={responseLines} empty="Aucune réponse fournie." fixed highlight={highlight} />
         </div>
 
         {bookmarks.length > 0 && (
@@ -355,6 +400,56 @@ export function ResponseColumn({
           </div>
           <ClampedText text={response.ai_comment} lines={5} empty="Pas encore d'analyse IA." />
         </div>
+
+        {response.ai_question && (
+          <div>
+            <div className="mb-1 flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground">Question IA</span>
+              {canEdit && (
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  className="h-6 gap-1 px-1.5 text-xs"
+                  title="Ajouter ces questions à votre question au fournisseur"
+                  onClick={() => {
+                    const merged = question.trim() ? `${question.trim()}\n\n${response.ai_question}` : response.ai_question!;
+                    setQuestion(merged);
+                    setShowNotes(true);
+                    onQuestion(merged);
+                  }}
+                >
+                  <HelpCircle className="h-3 w-3" />
+                  Reprendre
+                </Button>
+              )}
+            </div>
+            <ClampedText text={response.ai_question} lines={4} empty="" />
+          </div>
+        )}
+
+        {findingsError && (
+          <p className="text-xs text-muted-foreground" role="status">
+            Propositions des agents indisponibles : {findingsError}
+          </p>
+        )}
+        {findings.length > 0 && (
+          <div className="space-y-2" aria-label="Propositions des agents">
+            {findings.map((f) => (
+              <FindingCard
+                key={f.id}
+                finding={f}
+                currentAiScore={response.ai_score}
+                canDecide={canEdit && !decisionDisabledReason && !!onAcceptFinding && !queuedFindingIds?.has(f.id)}
+                disabledReason={queuedFindingIds?.has(f.id) ? "Décision en attente d'envoi." : decisionDisabledReason}
+                activeQuote={activeQuote}
+                onQuote={setActiveQuote}
+                onAccept={() => onAcceptFinding?.(f)}
+                onReject={(reason) => onRejectFinding?.(f, reason)}
+                pending={decisionPending}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Le geste, puis les signaux */}
@@ -450,24 +545,16 @@ export function ResponseColumn({
                 onBlur={() => {
                   if (comment !== (response.manual_comment ?? "")) onComment(comment);
                 }}
-                className="min-h-[56px] pr-9 text-sm"
+                className="min-h-[56px] pr-16 text-sm"
               />
               {canEdit && (
-                <div className="absolute bottom-1.5 right-1.5">
-                  {!comment.trim() ? (
-                    <AudioRecorder onTranscriptionComplete={(t) => { setComment(t); onComment(t); }} />
-                  ) : (
-                    <TextEnhancer
-                      currentText={comment}
-                      responseText={response.response_text ?? ""}
-                      requirementText={`${requirement.title}\n\n${requirement.description}`}
-                      supplierName={response.supplier.name}
-                      supplierNames={supplierNames}
-                      userAccessLevel={access}
-                      onEnhancementComplete={(t) => { setComment(t); onComment(t); }}
-                    />
-                  )}
-                </div>
+                <FieldAssist
+                  className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5"
+                  target={{ rfpId, supplierId: response.supplier_id, field: "comment" }}
+                  value={comment}
+                  onChange={setComment}
+                  onCommit={onComment}
+                />
               )}
             </div>
             <div className="relative">
@@ -480,24 +567,16 @@ export function ResponseColumn({
                 onBlur={() => {
                   if (question !== (response.question ?? "")) onQuestion(question);
                 }}
-                className="min-h-[56px] pr-9 text-sm"
+                className="min-h-[56px] pr-16 text-sm"
               />
               {canEdit && (
-                <div className="absolute bottom-1.5 right-1.5">
-                  {!question.trim() ? (
-                    <AudioRecorder onTranscriptionComplete={(t) => { setQuestion(t); onQuestion(t); }} />
-                  ) : (
-                    <TextEnhancer
-                      currentText={question}
-                      responseText={response.response_text ?? ""}
-                      requirementText={`${requirement.title}\n\n${requirement.description}`}
-                      supplierName={response.supplier.name}
-                      supplierNames={supplierNames}
-                      userAccessLevel={access}
-                      onEnhancementComplete={(t) => { setQuestion(t); onQuestion(t); }}
-                    />
-                  )}
-                </div>
+                <FieldAssist
+                  className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5"
+                  target={{ rfpId, supplierId: response.supplier_id, field: "question" }}
+                  value={question}
+                  onChange={setQuestion}
+                  onCommit={onQuestion}
+                />
               )}
             </div>
           </div>

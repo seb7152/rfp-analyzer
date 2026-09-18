@@ -146,6 +146,9 @@ export function useOfflineSync(): SyncStatus {
         queryKey: ["category-requirements"],
       });
       await queryClient.invalidateQueries({ queryKey: ["rfp-completion"] });
+      // Agent proposals decided offline: their state and side effects (threads).
+      await queryClient.invalidateQueries({ queryKey: ["agent-findings"] });
+      await queryClient.invalidateQueries({ queryKey: ["response-threads"] });
     }
 
     console.log(

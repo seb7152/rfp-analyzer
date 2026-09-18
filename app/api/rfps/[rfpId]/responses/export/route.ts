@@ -57,6 +57,7 @@ export async function GET(
         response_text,
         ai_score,
         ai_comment,
+        ai_question,
         manual_score,
         manual_comment,
         question,

@@ -10,6 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { z } from "zod";
 import { httpLogger } from "@/lib/mcp/utils/logger";
 import { authenticateMCPRequest, unauthorizedResponse } from "@/lib/mcp/auth";
@@ -529,6 +530,7 @@ const TOOL_DEFINITIONS = [
         response_text: { type: "string" },
         ai_score: { type: "number", minimum: 0, maximum: 5 },
         ai_comment: { type: ["string", "null"] },
+        ai_question: { type: ["string", "null"], description: "Questions to the supplier proposed by the AI" },
         manual_score: { type: "number", minimum: 0, maximum: 5 },
         manual_comment: { type: ["string", "null"] },
         status: { type: "string", enum: ["pending", "pass", "partial", "fail", "roadmap"] },
@@ -610,6 +612,19 @@ async function handleToolCall(
       id,
       error: { code: -32602, message: "Tool name is required" },
     };
+  }
+
+  // A consultation can be withdrawn from the MCP (Agents & IA › MCP): every
+  // tool that names one is refused there, whatever the token's rights.
+  if (typeof toolArgs.rfp_id === "string" && toolArgs.rfp_id) {
+    const { data: rfp } = await createServiceClient().from("rfps").select("mcp_enabled").eq("id", toolArgs.rfp_id).maybeSingle();
+    if (rfp && rfp.mcp_enabled === false) {
+      return {
+        jsonrpc: "2.0",
+        id,
+        error: { code: -32003, message: "MCP disabled for this RFP by the organisation (Agents & IA › MCP)." },
+      };
+    }
   }
 
   let result;
@@ -946,6 +961,7 @@ async function handleToolCall(
           response_text: z.string().optional(),
           ai_score: z.number().min(0).max(5).optional(),
           ai_comment: z.string().nullable().optional(),
+          ai_question: z.string().nullable().optional(),
           manual_score: z.number().min(0).max(5).optional(),
           manual_comment: z.string().nullable().optional(),
           status: z

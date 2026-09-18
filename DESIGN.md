@@ -467,4 +467,4 @@ Dialogue : fond `fond`, filet, coins 8 px, 24 px de padding, ombre overlay, 512 
 - **Don't** utiliser une valeur de couleur brute (`slate-*`, `gray-*`, `zinc-*`, hex) dans un écran refondu ; toute couleur passe par les variables de `styles/globals.css`.
 - **Don't** ajouter une séquence d'entrée, un survol par translation ou une animation décorative.
 - **Don't** montrer un score sans son renvoi : un score est un lien vers l'extrait cité et le document à la page.
-- **Don't** appliquer ce système aux écrans hérités hébergés sous le shell (grille financière, vue arborescente, documents, onglets de paramètres : `WeightsTab`, `AnalystsTab`, `SettingsTab`, `VersionsTab`, `SuppliersTab`, `RequirementsTab`, `ExportTab`) : ils gardent leur style d'origine (D-06, D-14) jusqu'à leur refonte.
+- **Don't** appliquer ce système aux écrans hérités hébergés sous le shell (grille financière, vue arborescente, documents, `RequirementsTab`, `ExportTab`) : ils gardent leur style d'origine (D-06, D-14) jusqu'à leur refonte. Les paramètres de consultation (`components/parametres/*`) sont refondus depuis le 12 septembre 2026.

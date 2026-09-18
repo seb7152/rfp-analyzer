@@ -111,3 +111,35 @@ export async function DELETE(
     );
   }
 }
+
+/**
+ * PATCH /api/rfps/[rfpId]/assignments/[userId] — change the access level of
+ * an analyst on the consultation (owner, evaluator, viewer). Pilots only.
+ */
+export async function PATCH(request: NextRequest, { params }: { params: { rfpId: string; userId: string } }) {
+  const { rfpId, userId } = params;
+  const supabase = await createServerClient();
+  const {
+    data: { user: currentUser },
+  } = await supabase.auth.getUser();
+  if (!currentUser) return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
+  const { requireRfpAccess, PILOT } = await import("@/lib/agents/auth");
+  const access = await requireRfpAccess(rfpId, currentUser.id, PILOT);
+  if (access.error) return access.error;
+
+  const body = (await request.json().catch(() => null)) as { access_level?: string } | null;
+  const level = body?.access_level;
+  if (level !== "owner" && level !== "evaluator" && level !== "viewer") {
+    return NextResponse.json({ error: "Niveau d'accès invalide." }, { status: 400 });
+  }
+  const { data: updated, error } = await supabase
+    .from("rfp_user_assignments")
+    .update({ access_level: level })
+    .eq("rfp_id", rfpId)
+    .eq("user_id", userId)
+    .select("id, rfp_id, user_id, access_level, assigned_at, assigned_by")
+    .maybeSingle();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!updated) return NextResponse.json({ error: "Affectation introuvable." }, { status: 404 });
+  return NextResponse.json({ assignment: updated });
+}

@@ -84,6 +84,7 @@ export interface SupplierResponse {
   responseText: string | null;
   score?: number | null;
   iaComment?: string | null;
+  iaQuestion?: string | null;
   reviewerComment?: string | null;
   status: string;
   isChecked: boolean;
@@ -229,6 +230,7 @@ export async function handleGetResponses(
     "updated_at",
     include_score ? "ai_score, manual_score, manual_comment" : "",
     include_ia_comment ? "ai_comment" : "",
+    include_ia_comment ? "ai_question" : "",
     "requirements!inner(id, requirement_id_external, title, category_id)",
     "suppliers!inner(id, supplier_id_external, name)",
   ]
@@ -323,6 +325,7 @@ export async function handleGetResponses(
       responseText: row.response_text,
       score: include_score ? (row.manual_score !== null ? row.manual_score : (row.ai_score ?? null)) : undefined,
       iaComment: include_ia_comment ? (row.ai_comment ?? null) : undefined,
+      iaQuestion: include_ia_comment ? (row.ai_question ?? null) : undefined,
       reviewerComment: include_score ? (row.manual_comment ?? null) : undefined,
       status: row.status,
       isChecked: row.is_checked ?? false,
