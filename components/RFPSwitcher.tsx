@@ -82,7 +82,7 @@ export function RFPSwitcher() {
                     key={rfp.id}
                     value={rfp.id}
                     onSelect={(selectedId) => {
-                      router.push(`/dashboard/rfp/${selectedId}/summary`);
+                      router.push(`/dashboard/rfp/${selectedId}`);
                       setOpen(false);
                     }}
                   >

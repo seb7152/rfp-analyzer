@@ -12,13 +12,14 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronLeft, Loader2, Plus } from "lucide-react";
+import { ChevronLeft, Plus } from "lucide-react";
 import { CreateTemplateModal } from "@/components/financial/CreateTemplateModal";
 import { TemplateEditor } from "@/components/financial/TemplateEditor";
 import { FinancialGrid } from "@/components/financial/FinancialGrid";
 import { FinancialTemplateLine } from "@/lib/financial/calculations";
 import { useSuppliers } from "@/hooks/use-financial-data";
 import { useVersion } from "@/contexts/VersionContext";
+import { PageState } from "@/components/shell/PageState";
 
 interface FinancialTemplate {
   id: string;
@@ -125,11 +126,7 @@ export default function FinancialGridPage() {
   };
 
   if (authLoading || isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <PageState kind="loading" title="Chargement de la grille financière" />;
   }
 
   if (!user) {

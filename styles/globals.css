@@ -2,58 +2,254 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Fondations du système visuel — « le dossier de consultation ».
+  Papier + encre, un seul accent (bleu encre), quatre couleurs d'état.
+  Toute couleur passe par ces variables ; aucune valeur brute dans les écrans refondus.
+*/
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    /* Direction « Atelier » : fond d'application gris clair, panneaux blancs, encre. */
+    --background: 240 6% 97%;
+    --foreground: 240 4% 9%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 240 4% 9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --radius: 0.5rem;
+    --popover-foreground: 240 4% 9%;
+    --rail: 0 0% 98%;
+
+    /* Accent : bleu ardoise. Action primaire, sélection, progression. Rien d'autre. */
+    --primary: 217 38% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 4% 9%;
+    --muted: 240 5% 95%;
+    --muted-foreground: 240 4% 40%;
+    --accent: 217 45% 94%;
+    --accent-foreground: 217 40% 34%;
+
+    --destructive: 3 62% 46%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 5% 90%;
+    --input: 240 5% 85%;
+    --ring: 217 38% 48%;
+    --radius: 8px;
+
+    /* Bouton d'action : encre pleine. */
+    --action: 240 4% 9%;
+    --action-foreground: 0 0% 100%;
+
+    /* États des réponses : point coloré + libellé, jamais la couleur seule. */
+    --status-pass: 150 50% 34%;
+    --status-pass-soft: 150 40% 94%;
+    --status-partial: 38 80% 38%;
+    --status-partial-soft: 40 70% 93%;
+    --status-fail: 3 62% 46%;
+    --status-fail-soft: 3 60% 95%;
+    --status-roadmap: 258 38% 50%;
+    --status-roadmap-soft: 258 35% 95%;
+    --status-pending: 240 4% 55%;
+    --status-pending-soft: 240 5% 94%;
+
+    /* Échelle séquentielle des notes (0 → 5), du papier vers l'ardoise. */
+    --scale-0: 240 5% 94%;
+    --scale-1: 217 40% 90%;
+    --scale-2: 217 40% 80%;
+    --scale-3: 217 40% 66%;
+    --scale-4: 217 40% 50%;
+    --scale-5: 217 42% 36%;
+
+    --chart-1: 217 38% 48%;
+    --chart-2: 150 50% 34%;
+    --chart-3: 38 80% 38%;
+    --chart-4: 3 62% 46%;
+    --chart-5: 258 38% 50%;
+
+    --shadow-panel: 0 1px 2px hsl(240 10% 10% / 0.04);
+    --shadow-overlay: 0 12px 32px -12px hsl(240 20% 10% / 0.25);
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --background: 220 6% 7%;
+    --foreground: 220 6% 92%;
+    --card: 220 5% 10%;
+    --card-foreground: 220 6% 92%;
+    --popover: 220 5% 12%;
+    --popover-foreground: 220 6% 92%;
+    --rail: 220 6% 7%;
+
+    --primary: 214 62% 70%;
+    --primary-foreground: 220 10% 8%;
+
+    --secondary: 220 5% 13%;
+    --secondary-foreground: 220 6% 92%;
+    --muted: 220 5% 13%;
+    --muted-foreground: 220 4% 64%;
+    --accent: 216 30% 19%;
+    --accent-foreground: 214 62% 78%;
+
+    --destructive: 3 62% 64%;
+    --destructive-foreground: 0 0% 10%;
+
+    --border: 220 5% 17%;
+    --input: 220 5% 24%;
+    --ring: 214 62% 70%;
+
+    --action: 220 6% 92%;
+    --action-foreground: 220 10% 8%;
+
+    --status-pass: 150 45% 60%;
+    --status-pass-soft: 150 30% 15%;
+    --status-partial: 40 75% 64%;
+    --status-partial-soft: 40 40% 15%;
+    --status-fail: 3 65% 66%;
+    --status-fail-soft: 3 35% 16%;
+    --status-roadmap: 258 45% 72%;
+    --status-roadmap-soft: 258 25% 17%;
+    --status-pending: 220 4% 60%;
+    --status-pending-soft: 220 5% 15%;
+
+    --scale-0: 220 5% 13%;
+    --scale-1: 217 30% 22%;
+    --scale-2: 217 38% 32%;
+    --scale-3: 217 45% 44%;
+    --scale-4: 217 55% 58%;
+    --scale-5: 214 62% 72%;
+
+    --chart-1: 214 62% 70%;
+    --chart-2: 150 45% 60%;
+    --chart-3: 40 75% 64%;
+    --chart-4: 3 65% 66%;
+    --chart-5: 258 45% 72%;
+
+    --shadow-panel: none;
+    --shadow-overlay: 0 12px 32px -12px hsl(0 0% 0% / 0.6);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.45;
+    letter-spacing: -0.005em;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    caret-color: hsl(var(--primary));
+    accent-color: hsl(var(--primary));
+  }
+
+  ::selection {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Ascenseurs : fins, dans la palette. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 4px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
-html {
-  scroll-behavior: smooth;
+@layer components {
+  /* Pastilles d'état : point coloré + libellé. */
+  .stamp {
+    @apply inline-flex h-[22px] items-center gap-1.5 rounded-full bg-muted px-2 text-xs font-medium text-foreground;
+    white-space: nowrap;
+  }
+  .stamp::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    flex: none;
+    background: hsl(var(--status-pending));
+  }
+  .stamp-pass::before { background: hsl(var(--status-pass)); }
+  .stamp-partial::before { background: hsl(var(--status-partial)); }
+  .stamp-fail::before { background: hsl(var(--status-fail)); }
+  .stamp-roadmap::before { background: hsl(var(--status-roadmap)); }
+  .stamp-pending::before { background: hsl(var(--status-pending)); }
+
+  /* Panneau : le seul conteneur. Blanc sur le fond gris, filet, rayon 8. */
+  .panel {
+    @apply rounded-lg border border-border bg-card;
+    box-shadow: var(--shadow-panel);
+  }
+
+  /* Numéro d'article / code : identité récurrente du dossier. */
+  .article-no {
+    @apply text-xs font-medium text-muted-foreground;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    letter-spacing: 0;
+  }
+
+  .rule {
+    @apply border-t border-border;
+  }
 }
 
-body {
-  margin: 0;
-  padding: 0;
+@layer utilities {
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  .num {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .shadow-overlay {
+    box-shadow: var(--shadow-overlay);
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+    color: black;
+    font-size: 12px;
+  }
 }

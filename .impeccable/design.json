@@ -1,0 +1,218 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-11T00:00:00Z",
+  "title": "Design System: RFP Analyzer",
+  "extensions": {
+    "colorMeta": {
+      "ardoise": {
+        "role": "primary",
+        "displayName": "Ardoise",
+        "canonical": "hsl(217 38% 48%)",
+        "dark": "hsl(214 62% 70%)",
+        "tonalRamp": ["hsl(217 42% 15%)", "hsl(217 42% 26%)", "hsl(217 42% 36%)", "hsl(217 38% 48%)", "hsl(217 40% 60%)", "hsl(217 40% 72%)", "hsl(217 40% 84%)", "hsl(217 45% 94%)"]
+      },
+      "ardoise-texte": {
+        "role": "primary",
+        "displayName": "Ardoise texte",
+        "canonical": "hsl(217 40% 34%)",
+        "dark": "hsl(214 62% 78%)",
+        "tonalRamp": ["hsl(217 40% 15%)", "hsl(217 40% 24%)", "hsl(217 40% 34%)", "hsl(217 40% 46%)", "hsl(217 40% 58%)", "hsl(217 40% 70%)", "hsl(217 40% 82%)", "hsl(217 45% 94%)"]
+      },
+      "lavis-ardoise": {
+        "role": "primary",
+        "displayName": "Lavis ardoise",
+        "canonical": "hsl(217 45% 94%)",
+        "dark": "hsl(216 30% 19%)",
+        "tonalRamp": ["hsl(217 45% 15%)", "hsl(217 45% 28%)", "hsl(217 45% 40%)", "hsl(217 45% 55%)", "hsl(217 45% 70%)", "hsl(217 45% 82%)", "hsl(217 45% 90%)", "hsl(217 45% 96%)"]
+      },
+      "echelle-0": { "role": "secondary", "displayName": "Échelle 0", "canonical": "hsl(240 5% 94%)", "dark": "hsl(220 5% 13%)", "tonalRamp": ["hsl(240 5% 94%)", "hsl(217 40% 90%)", "hsl(217 40% 80%)", "hsl(217 40% 66%)", "hsl(217 40% 50%)", "hsl(217 42% 36%)"] },
+      "echelle-1": { "role": "secondary", "displayName": "Échelle 1", "canonical": "hsl(217 40% 90%)", "dark": "hsl(217 30% 22%)", "tonalRamp": ["hsl(240 5% 94%)", "hsl(217 40% 90%)", "hsl(217 40% 80%)", "hsl(217 40% 66%)", "hsl(217 40% 50%)", "hsl(217 42% 36%)"] },
+      "echelle-2": { "role": "secondary", "displayName": "Échelle 2", "canonical": "hsl(217 40% 80%)", "dark": "hsl(217 38% 32%)", "tonalRamp": ["hsl(240 5% 94%)", "hsl(217 40% 90%)", "hsl(217 40% 80%)", "hsl(217 40% 66%)", "hsl(217 40% 50%)", "hsl(217 42% 36%)"] },
+      "echelle-3": { "role": "secondary", "displayName": "Échelle 3", "canonical": "hsl(217 40% 66%)", "dark": "hsl(217 45% 44%)", "tonalRamp": ["hsl(240 5% 94%)", "hsl(217 40% 90%)", "hsl(217 40% 80%)", "hsl(217 40% 66%)", "hsl(217 40% 50%)", "hsl(217 42% 36%)"] },
+      "echelle-4": { "role": "secondary", "displayName": "Échelle 4", "canonical": "hsl(217 40% 50%)", "dark": "hsl(217 55% 58%)", "tonalRamp": ["hsl(240 5% 94%)", "hsl(217 40% 90%)", "hsl(217 40% 80%)", "hsl(217 40% 66%)", "hsl(217 40% 50%)", "hsl(217 42% 36%)"] },
+      "echelle-5": { "role": "secondary", "displayName": "Échelle 5", "canonical": "hsl(217 42% 36%)", "dark": "hsl(214 62% 72%)", "tonalRamp": ["hsl(240 5% 94%)", "hsl(217 40% 90%)", "hsl(217 40% 80%)", "hsl(217 40% 66%)", "hsl(217 40% 50%)", "hsl(217 42% 36%)"] },
+      "conforme": { "role": "tertiary", "displayName": "Conforme", "canonical": "hsl(150 50% 34%)", "dark": "hsl(150 45% 60%)", "tonalRamp": ["hsl(150 50% 15%)", "hsl(150 50% 24%)", "hsl(150 50% 34%)", "hsl(150 45% 46%)", "hsl(150 45% 60%)", "hsl(150 40% 74%)", "hsl(150 40% 86%)", "hsl(150 40% 94%)"] },
+      "conforme-lavis": { "role": "tertiary", "displayName": "Conforme lavis", "canonical": "hsl(150 40% 94%)", "dark": "hsl(150 30% 15%)", "tonalRamp": ["hsl(150 40% 15%)", "hsl(150 40% 28%)", "hsl(150 40% 40%)", "hsl(150 40% 55%)", "hsl(150 40% 70%)", "hsl(150 40% 82%)", "hsl(150 40% 90%)", "hsl(150 40% 96%)"] },
+      "partiel": { "role": "tertiary", "displayName": "Partiel", "canonical": "hsl(38 80% 38%)", "dark": "hsl(40 75% 64%)", "tonalRamp": ["hsl(38 80% 15%)", "hsl(38 80% 26%)", "hsl(38 80% 38%)", "hsl(38 78% 50%)", "hsl(40 75% 64%)", "hsl(40 72% 76%)", "hsl(40 70% 86%)", "hsl(40 70% 93%)"] },
+      "partiel-lavis": { "role": "tertiary", "displayName": "Partiel lavis", "canonical": "hsl(40 70% 93%)", "dark": "hsl(40 40% 15%)", "tonalRamp": ["hsl(40 70% 15%)", "hsl(40 70% 28%)", "hsl(40 70% 40%)", "hsl(40 70% 55%)", "hsl(40 70% 70%)", "hsl(40 70% 82%)", "hsl(40 70% 90%)", "hsl(40 70% 96%)"] },
+      "non-conforme": { "role": "tertiary", "displayName": "Non conforme", "canonical": "hsl(3 62% 46%)", "dark": "hsl(3 65% 66%)", "tonalRamp": ["hsl(3 62% 15%)", "hsl(3 62% 30%)", "hsl(3 62% 46%)", "hsl(3 62% 56%)", "hsl(3 65% 66%)", "hsl(3 62% 78%)", "hsl(3 60% 88%)", "hsl(3 60% 95%)"] },
+      "non-conforme-lavis": { "role": "tertiary", "displayName": "Non conforme lavis", "canonical": "hsl(3 60% 95%)", "dark": "hsl(3 35% 16%)", "tonalRamp": ["hsl(3 60% 15%)", "hsl(3 60% 28%)", "hsl(3 60% 40%)", "hsl(3 60% 55%)", "hsl(3 60% 70%)", "hsl(3 60% 82%)", "hsl(3 60% 90%)", "hsl(3 60% 96%)"] },
+      "roadmap": { "role": "tertiary", "displayName": "Roadmap", "canonical": "hsl(258 38% 50%)", "dark": "hsl(258 45% 72%)", "tonalRamp": ["hsl(258 38% 15%)", "hsl(258 38% 30%)", "hsl(258 38% 40%)", "hsl(258 38% 50%)", "hsl(258 40% 62%)", "hsl(258 45% 72%)", "hsl(258 40% 85%)", "hsl(258 35% 95%)"] },
+      "roadmap-lavis": { "role": "tertiary", "displayName": "Roadmap lavis", "canonical": "hsl(258 35% 95%)", "dark": "hsl(258 25% 17%)", "tonalRamp": ["hsl(258 35% 15%)", "hsl(258 35% 28%)", "hsl(258 35% 40%)", "hsl(258 35% 55%)", "hsl(258 35% 70%)", "hsl(258 35% 82%)", "hsl(258 35% 90%)", "hsl(258 35% 96%)"] },
+      "a-evaluer": { "role": "tertiary", "displayName": "À évaluer", "canonical": "hsl(240 4% 55%)", "dark": "hsl(220 4% 60%)", "tonalRamp": ["hsl(240 4% 15%)", "hsl(240 4% 26%)", "hsl(240 4% 40%)", "hsl(240 4% 55%)", "hsl(240 4% 66%)", "hsl(240 4% 78%)", "hsl(240 5% 88%)", "hsl(240 5% 94%)"] },
+      "a-evaluer-lavis": { "role": "tertiary", "displayName": "À évaluer lavis", "canonical": "hsl(240 5% 94%)", "dark": "hsl(220 5% 15%)", "tonalRamp": ["hsl(240 5% 15%)", "hsl(240 5% 28%)", "hsl(240 5% 40%)", "hsl(240 5% 55%)", "hsl(240 5% 70%)", "hsl(240 5% 82%)", "hsl(240 5% 90%)", "hsl(240 5% 96%)"] },
+      "alerte": { "role": "tertiary", "displayName": "Alerte", "canonical": "hsl(3 62% 46%)", "dark": "hsl(3 62% 64%)", "tonalRamp": ["hsl(3 62% 15%)", "hsl(3 62% 30%)", "hsl(3 62% 46%)", "hsl(3 62% 56%)", "hsl(3 62% 64%)", "hsl(3 62% 78%)", "hsl(3 60% 88%)", "hsl(3 60% 95%)"] },
+      "fond": { "role": "neutral", "displayName": "Fond", "canonical": "hsl(240 6% 97%)", "dark": "hsl(220 6% 7%)", "tonalRamp": ["hsl(240 4% 9%)", "hsl(240 5% 20%)", "hsl(240 4% 40%)", "hsl(240 4% 55%)", "hsl(240 5% 75%)", "hsl(240 5% 90%)", "hsl(240 5% 95%)", "hsl(240 6% 97%)"] },
+      "panneau": { "role": "neutral", "displayName": "Panneau", "canonical": "hsl(0 0% 100%)", "dark": "hsl(220 5% 10%)", "tonalRamp": ["hsl(220 5% 10%)", "hsl(220 5% 20%)", "hsl(220 5% 35%)", "hsl(220 5% 50%)", "hsl(220 5% 70%)", "hsl(220 5% 85%)", "hsl(0 0% 96%)", "hsl(0 0% 100%)"] },
+      "rail": { "role": "neutral", "displayName": "Rail", "canonical": "hsl(0 0% 98%)", "dark": "hsl(220 6% 7%)", "tonalRamp": ["hsl(220 6% 7%)", "hsl(220 6% 18%)", "hsl(220 5% 32%)", "hsl(220 5% 48%)", "hsl(220 5% 66%)", "hsl(220 5% 82%)", "hsl(0 0% 94%)", "hsl(0 0% 98%)"] },
+      "encre": { "role": "neutral", "displayName": "Encre", "canonical": "hsl(240 4% 9%)", "dark": "hsl(220 6% 92%)", "tonalRamp": ["hsl(240 4% 9%)", "hsl(240 4% 20%)", "hsl(240 4% 30%)", "hsl(240 4% 40%)", "hsl(240 4% 55%)", "hsl(240 4% 70%)", "hsl(240 5% 85%)", "hsl(240 6% 97%)"] },
+      "encre-grise": { "role": "neutral", "displayName": "Encre grise", "canonical": "hsl(240 4% 40%)", "dark": "hsl(220 4% 64%)", "tonalRamp": ["hsl(240 4% 15%)", "hsl(240 4% 25%)", "hsl(240 4% 40%)", "hsl(240 4% 50%)", "hsl(240 4% 64%)", "hsl(240 4% 76%)", "hsl(240 5% 88%)", "hsl(240 5% 95%)"] },
+      "second-plan": { "role": "neutral", "displayName": "Second plan", "canonical": "hsl(240 5% 95%)", "dark": "hsl(220 5% 13%)", "tonalRamp": ["hsl(220 5% 13%)", "hsl(240 5% 22%)", "hsl(240 5% 35%)", "hsl(240 5% 50%)", "hsl(240 5% 68%)", "hsl(240 5% 82%)", "hsl(240 5% 90%)", "hsl(240 5% 95%)"] },
+      "filet": { "role": "neutral", "displayName": "Filet", "canonical": "hsl(240 5% 90%)", "dark": "hsl(220 5% 17%)", "tonalRamp": ["hsl(220 5% 17%)", "hsl(240 5% 24%)", "hsl(240 5% 36%)", "hsl(240 5% 50%)", "hsl(240 5% 65%)", "hsl(240 5% 78%)", "hsl(240 5% 85%)", "hsl(240 5% 90%)"] },
+      "filet-saisie": { "role": "neutral", "displayName": "Filet de saisie", "canonical": "hsl(240 5% 85%)", "dark": "hsl(220 5% 24%)", "tonalRamp": ["hsl(220 5% 24%)", "hsl(240 5% 32%)", "hsl(240 5% 42%)", "hsl(240 5% 55%)", "hsl(240 5% 66%)", "hsl(240 5% 76%)", "hsl(240 5% 85%)", "hsl(240 5% 90%)"] },
+      "action": { "role": "neutral", "displayName": "Action (encre pleine)", "canonical": "hsl(240 4% 9%)", "dark": "hsl(220 6% 92%)", "tonalRamp": ["hsl(240 4% 9%)", "hsl(240 4% 20%)", "hsl(240 4% 30%)", "hsl(240 4% 40%)", "hsl(240 4% 55%)", "hsl(240 4% 70%)", "hsl(240 5% 85%)", "hsl(220 6% 92%)"] },
+      "fond-charbon": { "role": "neutral", "displayName": "Fond charbon (sombre)", "canonical": "hsl(220 6% 7%)", "tonalRamp": ["hsl(220 6% 7%)", "hsl(220 5% 10%)", "hsl(220 5% 13%)", "hsl(220 5% 17%)", "hsl(220 5% 24%)", "hsl(220 4% 40%)", "hsl(220 4% 64%)", "hsl(220 6% 92%)"] },
+      "panneau-charbon": { "role": "neutral", "displayName": "Panneau charbon (sombre)", "canonical": "hsl(220 5% 10%)", "tonalRamp": ["hsl(220 6% 7%)", "hsl(220 5% 10%)", "hsl(220 5% 13%)", "hsl(220 5% 17%)", "hsl(220 5% 24%)", "hsl(220 4% 40%)", "hsl(220 4% 64%)", "hsl(220 6% 92%)"] },
+      "encre-claire": { "role": "neutral", "displayName": "Encre claire (sombre)", "canonical": "hsl(220 6% 92%)", "tonalRamp": ["hsl(220 6% 7%)", "hsl(220 5% 17%)", "hsl(220 5% 24%)", "hsl(220 4% 40%)", "hsl(220 4% 52%)", "hsl(220 4% 64%)", "hsl(220 5% 78%)", "hsl(220 6% 92%)"] },
+      "ardoise-claire": { "role": "primary", "displayName": "Ardoise claire (sombre)", "canonical": "hsl(214 62% 70%)", "tonalRamp": ["hsl(216 30% 19%)", "hsl(217 30% 22%)", "hsl(217 38% 32%)", "hsl(217 45% 44%)", "hsl(217 55% 58%)", "hsl(214 62% 70%)", "hsl(214 62% 78%)", "hsl(214 62% 88%)"] },
+      "lavis-ardoise-sombre": { "role": "primary", "displayName": "Lavis ardoise sombre", "canonical": "hsl(216 30% 19%)", "tonalRamp": ["hsl(216 30% 10%)", "hsl(216 30% 19%)", "hsl(217 30% 26%)", "hsl(217 34% 36%)", "hsl(217 40% 48%)", "hsl(217 45% 60%)", "hsl(216 50% 74%)", "hsl(216 55% 88%)"] },
+      "filet-charbon": { "role": "neutral", "displayName": "Filet charbon (sombre)", "canonical": "hsl(220 5% 17%)", "tonalRamp": ["hsl(220 6% 7%)", "hsl(220 5% 13%)", "hsl(220 5% 17%)", "hsl(220 5% 24%)", "hsl(220 5% 34%)", "hsl(220 4% 48%)", "hsl(220 4% 64%)", "hsl(220 6% 92%)"] }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Titre de chapitre", "purpose": "PageHeader et titre de l'accueil, seul sur sa ligne, sans numéro ; 28 px en mode Présenter." },
+      "title": { "displayName": "Titre d'article", "purpose": "Sections de la Décision, étapes de la préparation, titre de l'exigence sélectionnée, titre de panneau latéral." },
+      "subtitle": { "displayName": "Titre de carte", "purpose": "Titre d'une carte de consultation sur l'accueil." },
+      "body": { "displayName": "Texte courant", "purpose": "Tout texte d'interface, navigation, cellules, champs ; chiffres tabulaires." },
+      "reading": { "displayName": "Texte de lecture", "purpose": "Réponses de fournisseur et analyses IA, interligne 19 px, tronqué à 8 / 12 / 5 lignes." },
+      "label": { "displayName": "Libellé", "purpose": "En-têtes de colonnes, pastilles, libellés de section, onglets de filtre ; casse normale, sans interlettrage." },
+      "meta": { "displayName": "Méta", "purpose": "Chiffres courts, compteurs 1/6, dernière activité, raccourci ⌘K, sous-compte de heatmap." },
+      "article-no": { "displayName": "Code de référentiel (mono)", "purpose": "Code de domaine ou d'exigence du référentiel client (REQ-FUN, R-12), à gauche du titre, de la ligne ou de la cellule qu'il identifie, jamais seul." },
+      "figure": { "displayName": "Note (mono)", "purpose": "Note en tête de colonne de réponse, soulignée d'un filet, avec /5 en 12 px gris." }
+    },
+    "shadows": [
+      { "name": "shadow-panel", "value": "0 1px 2px hsl(240 10% 10% / 0.04)", "dark": "none", "purpose": "La seule ombre au repos, portée par .panel ; disparaît en thème sombre." },
+      { "name": "shadow-overlay", "value": "0 12px 32px -12px hsl(240 20% 10% / 0.25)", "dark": "0 12px 32px -12px hsl(0 0% 0% / 0.6)", "purpose": "Dialogues, panneaux latéraux, popovers, cartes au survol, listes déroulantes." }
+    ],
+    "motion": [
+      { "name": "state", "value": "150ms", "purpose": "Transition de couleur, bordure ou contour sur changement d'état (survol, sélection, focus)." },
+      { "name": "rail-collapse", "value": "width 150ms", "purpose": "Repli du sommaire (232 → 56 px) et de la file (300 → 44 px)." },
+      { "name": "overlay-in", "value": "200ms ease-in-out", "purpose": "Entrée d'un dialogue (fondu + zoom 95 %) ou d'un panneau latéral (glissement)." },
+      { "name": "overlay-out", "value": "150ms ease-in-out", "purpose": "Sortie d'un panneau latéral." },
+      { "name": "progress", "value": "width 500ms", "purpose": "Barre de progression de la bande d'analyse et du chapitre Analyse IA." },
+      { "name": "spin", "value": "1s linear infinite", "purpose": "Chargeur ardoise (bande d'analyse, sommaire en analyse, PageState, enregistrement)." },
+      { "name": "reduced-motion", "value": "0.01ms", "purpose": "prefers-reduced-motion neutralise toute animation et transition." }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Bouton primaire",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "L'unique action pleine d'un écran, en encre.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>Nouvelle consultation</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 0; border-radius: 6px; background: hsl(var(--action, 240 4% 9%)); color: hsl(var(--action-foreground, 0 0% 100%)); font-family: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif); font-size: 13px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; transition: color 150ms, box-shadow 150ms, background-color 150ms; } .ds-btn-primary:hover { background: hsl(var(--action, 240 4% 9%) / 0.9); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--background, 240 6% 97%)), 0 0 0 4px hsl(var(--ring, 217 38% 48%)); } .ds-btn-primary:disabled { opacity: 0.6; pointer-events: none; }"
+    },
+    {
+      "name": "Bouton outline",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Action secondaire : fond de page, filet de saisie, texte ardoise, survol lavis.",
+      "html": "<button class=\"ds-btn-outline\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"opacity:.6\"><path d=\"M6 18h8\"/><path d=\"M3 22h18\"/><path d=\"M14 22a7 7 0 1 0 0-14h-1\"/><path d=\"M9 14h2\"/><path d=\"M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z\"/><path d=\"M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3\"/></svg>Présenter</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid hsl(var(--input, 240 5% 85%)); border-radius: 6px; background: hsl(var(--background, 240 6% 97%)); color: hsl(var(--accent-foreground, 217 40% 34%)); font-family: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif); font-size: 13px; font-weight: 500; cursor: pointer; transition: background-color 150ms, color 150ms; } .ds-btn-outline:hover { background: hsl(var(--accent, 217 45% 94%)); } .ds-btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--background, 240 6% 97%)), 0 0 0 4px hsl(var(--ring, 217 38% 48%)); }"
+    },
+    {
+      "name": "Bouton ghost",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Sans fond ni bordure, texte ardoise, survol lavis ; boutons d'icône de barre et de colonne.",
+      "html": "<button class=\"ds-btn-ghost\">Réessayer</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; color: hsl(var(--accent-foreground, 217 40% 34%)); font-family: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif); font-size: 13px; font-weight: 500; cursor: pointer; transition: background-color 150ms, color 150ms; } .ds-btn-ghost:hover { background: hsl(var(--accent, 217 45% 94%)); } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--background, 240 6% 97%)), 0 0 0 4px hsl(var(--ring, 217 38% 48%)); }"
+    },
+    {
+      "name": "Champ de saisie",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "36 px, filet de saisie, fond de page, focus en bordure ardoise et anneau à 25 %.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Code ou intitulé\" />",
+      "css": ".ds-input { display: flex; width: 100%; height: 36px; padding: 4px 12px; border: 1px solid hsl(var(--input, 240 5% 85%)); border-radius: 6px; background: hsl(var(--background, 240 6% 97%)); color: hsl(var(--foreground, 240 4% 9%)); font-family: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif); font-size: 13px; line-height: 19px; transition: border-color 150ms, box-shadow 150ms; } .ds-input::placeholder { color: hsl(var(--muted-foreground, 240 4% 40%)); } .ds-input:focus-visible { outline: none; border-color: hsl(var(--ring, 217 38% 48%)); box-shadow: 0 0 0 2px hsl(var(--ring, 217 38% 48%) / 0.25); } .ds-input:disabled { opacity: 0.6; cursor: not-allowed; } .ds-input[aria-invalid=\"true\"] { border-color: hsl(var(--destructive, 3 62% 46%)); }"
+    },
+    {
+      "name": "Pastille d'état",
+      "kind": "chip",
+      "refersTo": "stamp",
+      "description": "Pilule grise de 22 px ; seul le point de 7 px prend la couleur d'état.",
+      "html": "<span class=\"ds-stamp ds-stamp-pass\">Conforme</span> <span class=\"ds-stamp ds-stamp-partial\">Partiel</span> <span class=\"ds-stamp ds-stamp-fail\">Non conforme</span> <span class=\"ds-stamp ds-stamp-roadmap\">Roadmap</span> <span class=\"ds-stamp ds-stamp-pending\">À évaluer</span>",
+      "css": ".ds-stamp { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 999px; background: hsl(var(--muted, 240 5% 95%)); color: hsl(var(--foreground, 240 4% 9%)); font-family: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif); font-size: 12px; font-weight: 500; white-space: nowrap; } .ds-stamp::before { content: \"\"; width: 7px; height: 7px; border-radius: 999px; flex: none; background: hsl(var(--status-pending, 240 4% 55%)); } .ds-stamp-pass::before { background: hsl(var(--status-pass, 150 50% 34%)); } .ds-stamp-partial::before { background: hsl(var(--status-partial, 38 80% 38%)); } .ds-stamp-fail::before { background: hsl(var(--status-fail, 3 62% 46%)); } .ds-stamp-roadmap::before { background: hsl(var(--status-roadmap, 258 38% 50%)); } .ds-stamp-pending::before { background: hsl(var(--status-pending, 240 4% 55%)); }"
+    },
+    {
+      "name": "Panneau",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "L'unique conteneur : blanc sur le fond gris, coins 8 px, filet, ombre d'un pixel ; ici un article numéroté.",
+      "html": "<section class=\"ds-panel\"><h2 class=\"ds-panel-title\"><span class=\"ds-article-no\">4.1</span>Classement technique</h2><p class=\"ds-panel-lead\">Moyenne pondérée des notes par exigence, sur 5.</p></section>",
+      "css": ".ds-panel { border-radius: 8px; border: 1px solid hsl(var(--border, 240 5% 90%)); background: hsl(var(--card, 0 0% 100%)); color: hsl(var(--card-foreground, 240 4% 9%)); box-shadow: var(--shadow-panel, 0 1px 2px hsl(240 10% 10% / 0.04)); padding: 16px 20px; font-family: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif); } .ds-panel-title { display: flex; align-items: baseline; gap: 8px; margin: 0; font-size: 16px; line-height: 22px; font-weight: 600; } .ds-article-no { font-family: var(--font-geist-mono, ui-monospace, monospace); font-size: 12px; font-weight: 500; letter-spacing: 0; color: hsl(var(--muted-foreground, 240 4% 40%)); } .ds-panel-lead { margin: 4px 0 0; max-width: 70ch; font-size: 13px; line-height: 18px; color: hsl(var(--muted-foreground, 240 4% 40%)); }"
+    },
+    {
+      "name": "Sommaire de consultation",
+      "kind": "nav",
+      "refersTo": "rail-item",
+      "description": "Chapitres à icône Lucide avec point d'état ; actif en lavis, survol en lavis 60 %. Aucune numérotation d'interface.",
+      "html": "<nav class=\"ds-rail\"><a class=\"ds-rail-item\" href=\"#\"><svg class=\"ds-rail-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m3 17 2 2 4-4\"/><path d=\"m3 7 2 2 4-4\"/><path d=\"M13 6h8\"/><path d=\"M13 12h8\"/><path d=\"M13 18h8\"/></svg><span class=\"ds-rail-label\">Évaluation</span><span class=\"ds-rail-fig\">90 %</span><span class=\"ds-dot ds-dot-partial\"></span></a><a class=\"ds-rail-item ds-rail-item-active\" aria-current=\"page\" href=\"#\"><svg class=\"ds-rail-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z\"/><path d=\"m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z\"/><path d=\"M7 21h10\"/><path d=\"M12 3v18\"/><path d=\"M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2\"/></svg><span class=\"ds-rail-label\">Décision</span><span class=\"ds-dot ds-dot-partial\"></span></a><a class=\"ds-rail-sub\" href=\"#\">Financier</a><a class=\"ds-rail-item\" href=\"#\"><svg class=\"ds-rail-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4\"/><polyline points=\"14 2 14 8 20 8\"/><path d=\"M2 15h10\"/><path d=\"m5 12-3 3 3 3\"/></svg><span class=\"ds-rail-label\">Restitution</span><span class=\"ds-dot ds-dot-empty\"></span></a></nav>",
+      "css": ".ds-rail { display: flex; flex-direction: column; gap: 2px; width: 232px; padding: 10px; background: hsl(var(--rail, 0 0% 98%)); border-right: 1px solid hsl(var(--border, 240 5% 90%)); font-family: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif); } .ds-rail-item { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 6px; color: hsl(var(--muted-foreground, 240 4% 40%)); font-size: 13px; text-decoration: none; transition: background-color 150ms, color 150ms; } .ds-rail-item:hover { background: hsl(var(--accent, 217 45% 94%) / 0.6); color: hsl(var(--foreground, 240 4% 9%)); } .ds-rail-item-active { background: hsl(var(--accent, 217 45% 94%)); color: hsl(var(--foreground, 240 4% 9%)); font-weight: 500; } .ds-rail-item:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--ring, 217 38% 48%)); } .ds-rail-icon { width: 16px; height: 16px; flex: none; } .ds-rail-item-active .ds-rail-icon { color: hsl(var(--foreground, 240 4% 9%)); } .ds-rail-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-rail-fig { font-family: var(--font-geist-mono, ui-monospace, monospace); font-size: 11px; color: hsl(var(--muted-foreground, 240 4% 40%)); } .ds-dot { width: 8px; height: 8px; border-radius: 999px; flex: none; } .ds-dot-done { background: hsl(var(--status-pass, 150 50% 34%)); } .ds-dot-partial { background: hsl(var(--status-partial, 38 80% 38%)); } .ds-dot-empty { border: 1.5px solid hsl(var(--input, 240 5% 85%)); box-sizing: border-box; } .ds-rail-sub { display: flex; align-items: center; height: 28px; padding: 0 10px 0 36px; border-radius: 6px; color: hsl(var(--muted-foreground, 240 4% 40%)); font-size: 13px; text-decoration: none; transition: color 150ms; } .ds-rail-sub:hover { color: hsl(var(--foreground, 240 4% 9%)); }"
+    },
+    {
+      "name": "Onglets",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "Liste à filet bas ; l'onglet actif porte un filet de 2 px ardoise et passe en encre.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab ds-tab-active\" role=\"tab\" aria-selected=\"true\">À faire <span class=\"ds-tab-count\">3</span></button><button class=\"ds-tab\" role=\"tab\">Faites <span class=\"ds-tab-count\">19</span></button><button class=\"ds-tab\" role=\"tab\">Toutes <span class=\"ds-tab-count\">22</span></button></div>",
+      "css": ".ds-tabs { display: inline-flex; align-items: flex-end; gap: 16px; height: 36px; border-bottom: 1px solid hsl(var(--border, 240 5% 90%)); font-family: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif); } .ds-tab { display: inline-flex; align-items: center; gap: 4px; height: 36px; margin-bottom: -1px; padding: 0 2px; border: 0; border-bottom: 2px solid transparent; background: none; color: hsl(var(--muted-foreground, 240 4% 40%)); font-size: 13px; font-weight: 500; cursor: pointer; transition: color 150ms, border-color 150ms; } .ds-tab:hover { color: hsl(var(--foreground, 240 4% 9%)); } .ds-tab-active { border-bottom-color: hsl(var(--primary, 217 38% 48%)); color: hsl(var(--foreground, 240 4% 9%)); } .ds-tab:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--ring, 217 38% 48%)); } .ds-tab-count { font-family: var(--font-geist-mono, ui-monospace, monospace); font-size: 12px; font-weight: 400; color: hsl(var(--muted-foreground, 240 4% 40%)); }"
+    },
+    {
+      "name": "Rail de notation 0–5",
+      "kind": "custom",
+      "refersTo": "score-cell",
+      "description": "Le geste unique de l'expert : six cellules, note manuelle en ardoise pleine, proposition IA marquée d'un trait.",
+      "html": "<div class=\"ds-score\" role=\"group\" aria-label=\"Note sur 5\"><div class=\"ds-score-rail\"><button class=\"ds-score-cell\">0</button><button class=\"ds-score-cell\">1</button><button class=\"ds-score-cell\">2</button><button class=\"ds-score-cell\">3</button><button class=\"ds-score-cell ds-score-cell-manual\" aria-pressed=\"true\">4</button><button class=\"ds-score-cell ds-score-cell-ai-mark\">5</button></div><button class=\"ds-score-half\" aria-pressed=\"false\">½</button><button class=\"ds-score-reset\">IA 5,0</button></div>",
+      "css": ".ds-score { display: flex; align-items: center; gap: 4px; font-family: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif); } .ds-score-rail { display: inline-flex; overflow: hidden; border: 1px solid hsl(var(--input, 240 5% 85%)); border-radius: 6px; } .ds-score-cell { position: relative; height: 32px; min-width: 34px; border: 0; border-right: 1px solid hsl(var(--input, 240 5% 85%)); background: hsl(var(--background, 240 6% 97%)); color: hsl(var(--foreground, 240 4% 9%)); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; transition: background-color 150ms, color 150ms; } .ds-score-cell:last-child { border-right: 0; } .ds-score-cell:hover { background: hsl(var(--accent, 217 45% 94%) / 0.6); } .ds-score-cell-manual, .ds-score-cell-manual:hover { background: hsl(var(--primary, 217 38% 48%)); color: hsl(var(--primary-foreground, 0 0% 100%)); } .ds-score-cell-ai { background: hsl(var(--accent, 217 45% 94%)); color: hsl(var(--accent-foreground, 217 40% 34%)); } .ds-score-cell-ai-mark::after { content: \"\"; position: absolute; left: 4px; right: 4px; bottom: 2px; height: 2px; border-radius: 4px; background: hsl(var(--primary, 217 38% 48%) / 0.6); } .ds-score-cell:focus-visible, .ds-score-half:focus-visible { outline: none; box-shadow: inset 0 0 0 2px hsl(var(--ring, 217 38% 48%)); } .ds-score-half { height: 32px; padding: 0 6px; border: 1px solid hsl(var(--input, 240 5% 85%)); border-radius: 6px; background: hsl(var(--background, 240 6% 97%)); color: hsl(var(--muted-foreground, 240 4% 40%)); font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color 150ms, color 150ms; } .ds-score-half:hover { background: hsl(var(--accent, 217 45% 94%) / 0.6); } .ds-score-half[aria-pressed=\"true\"] { background: hsl(var(--accent, 217 45% 94%)); color: hsl(var(--accent-foreground, 217 40% 34%)); } .ds-score-reset { margin-left: 4px; border: 0; background: none; color: hsl(var(--muted-foreground, 240 4% 40%)); font-size: 12px; cursor: pointer; text-underline-offset: 2px; } .ds-score-reset:hover { color: hsl(var(--foreground, 240 4% 9%)); text-decoration: underline; }"
+    },
+    {
+      "name": "Cellule de heatmap",
+      "kind": "custom",
+      "refersTo": "heatmap-cell",
+      "description": "Note de domaine sur l'échelle 0 → 5 ; survol et focus en contour de 2 px ardoise ; le clic ouvre le panneau de renvois.",
+      "html": "<div class=\"ds-heat\"><button class=\"ds-heat-cell ds-scale-3\">3,8</button><button class=\"ds-heat-cell ds-scale-2\">3,4 <span class=\"ds-heat-sub\">11/12</span></button><button class=\"ds-heat-cell ds-scale-5\">5,0</button><button class=\"ds-heat-cell ds-scale-0\">— <span class=\"ds-heat-sub\">0/3</span></button><button class=\"ds-heat-cell ds-scale-4\">4,0</button><button class=\"ds-heat-cell ds-scale-1\">1,0</button></div>",
+      "css": ".ds-heat { display: grid; grid-template-columns: repeat(6, 88px); gap: 4px; } .ds-heat-cell { display: flex; align-items: center; justify-content: center; gap: 4px; height: 36px; width: 100%; border: 0; border-radius: 4px; font-family: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; transition: outline 150ms; } .ds-heat-cell:hover, .ds-heat-cell:focus-visible { outline: 2px solid hsl(var(--primary, 217 38% 48%)); outline-offset: 0; } .ds-heat-sub { font-size: 11px; font-weight: 400; opacity: 0.8; } .ds-scale-0 { background: hsl(var(--scale-0, 240 5% 94%)); color: hsl(var(--muted-foreground, 240 4% 40%)); } .ds-scale-1 { background: hsl(var(--scale-1, 217 40% 90%)); color: hsl(var(--foreground, 240 4% 9%)); } .ds-scale-2 { background: hsl(var(--scale-2, 217 40% 80%)); color: hsl(var(--foreground, 240 4% 9%)); } .ds-scale-3 { background: hsl(var(--scale-3, 217 40% 66%)); color: hsl(var(--foreground, 240 4% 9%)); } .ds-scale-4 { background: hsl(var(--scale-4, 217 40% 50%)); color: hsl(var(--background, 240 6% 97%)); } .ds-scale-5 { background: hsl(var(--scale-5, 217 42% 36%)); color: hsl(var(--background, 240 6% 97%)); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "L'atelier",
+    "overview": "L'interface est un plan de travail : un fond gris clair sur lequel sont posés des panneaux blancs, chacun un objet net (rayon 8 px, filet de 1 px, ombre d'un pixel). La structure du dossier de consultation est conservée (D-05, D-07, D-08, D-09, D-12) : une consultation reste un sommaire de chapitres (Préparation, Analyse IA, Évaluation, Décision, Restitution), ses domaines et ses exigences restent des articles à code mono (`REQ-FUN`, `R-12`). L'interface ne se numérote plus elle-même (D-16) : chaque chapitre porte une icône Lucide qui l'identifie, jusque dans le sommaire replié, et le mono est rendu aux seuls codes du référentiel client. Ce qui a changé avec la direction « Atelier » (D-15), c'est la surface : les filets pleine largeur ont laissé place au panneau comme unique conteneur, les tampons carrés à des pastilles à point coloré, Source Sans 3 à Geist Sans et Geist Mono, la barre supérieure à une barre latérale de 232 px qui porte l'organisation, la navigation et le compte.\n\nUn seul accent, le bleu ardoise : sélection courante, progression, liens de renvoi, note manuelle. Le bouton d'action primaire n'est pas bleu : il est en encre pleine, ce qui le rend visible sans concurrencer la sélection. Les quatre couleurs d'état existent en teinte et en lavis mais ne portent jamais un fond de pastille : la pastille reste grise, seul son point de 7 px prend la couleur. La hiérarchie tient à la taille, à la graisse (400 / 500 / 600) et au mono : tout ce qui est code ou chiffre passe en Geist Mono à chiffres tabulaires. La densité est celle d'un outil utilisé plusieurs heures par jour : corps 13 px, lignes de 28 à 36 px, panneaux latéraux repliables au clavier (`[` et `]`) pour rendre l'écran aux colonnes de réponse.\n\nLe mouvement est réduit à ce qui informe : 150 ms de couleur ou de bordure sur changement d'état, 150 ms de largeur quand un rail se replie, 150 à 200 ms de fondu et de glissement pour ce qui flotte, 500 ms de largeur pour une barre de progression. Aucune séquence d'entrée, aucune translation au survol ; `prefers-reduced-motion` neutralise tout. Refus confirmés par D-15 et par le code : plus de tampons carrés, plus de capitales espacées en en-tête de tableau, plus de barre supérieure, plus de numérotation que l'interface se donne à elle-même (D-16), pas de dégradés ni d'ombre portée sur une surface au repos, pas de couleur seule pour un état, pas de ton promotionnel.",
+    "keyCharacteristics": [
+      "Fond gris `fond` et panneaux blancs `.panel` (rayon 8 px, filet, ombre 1 px) comme unique conteneur ; barre latérale et pieds de colonne sur `rail`.",
+      "Un accent, l'ardoise, pour la sélection (`lavis-ardoise`), la progression et la note manuelle ; le bouton d'action est en encre pleine.",
+      "Geist Sans 13 px pour le texte, Geist Mono pour les codes du référentiel client (`.article-no`, 12 px 500 gris) et les chiffres (`.num`, tabulaires).",
+      "Pastilles d'état `.stamp` : pilule grise de 22 px, point coloré de 7 px, libellé 12 px 500 ; points d'état de 8 px dans le sommaire.",
+      "Chapitres identifiés par une icône Lucide de 16 px, titre 22 px seul sur sa ligne ; articles de la préparation et sections de la Décision en panneaux titrés 16 px.",
+      "Rails repliables et mémorisés : sommaire 232 → 56 px (`[`), file de travail 300 → 44 px (`]`).",
+      "Chiffres tabulaires et formats français (`4,0`, `52 %`, `11 sept., 12:26`, `—` pour l'absence) via `lib/format.ts`."
+    ],
+    "rules": [
+      { "name": "La règle de l'ardoise unique", "body": "L'ardoise est la couleur de ce qui est choisi ou en cours : sélection, progression, note manuelle, lien de preuve. Elle n'est jamais le fond d'un bouton d'action, qui est en encre. Aucune deuxième teinte d'accent n'existe.", "section": "colors" },
+      { "name": "La règle du point", "body": "Une couleur d'état vit dans un point de 7 ou 8 px accompagné d'un libellé ou d'un chiffre ; la pastille qui le porte reste grise. Les répartitions en barre gardent leur légende textuelle et leurs compteurs `20 · 0 · 0 · 0`.", "section": "colors" },
+      { "name": "La règle de l'échelle", "body": "Une note se lit sur les six pas de l'échelle, jamais en rouge/vert ; les couleurs d'état sont réservées aux statuts.", "section": "colors" },
+      { "name": "La règle du code de référentiel", "body": "Le mono `article-no` appartient aux codes que le client a écrits — domaines et exigences — placés à gauche du titre ou de la ligne qu'ils identifient, séparés de 8 px. L'interface ne se numérote pas elle-même : un chapitre s'identifie par son icône et son libellé, une étape ou une section par son titre.", "section": "typography" },
+      { "name": "La règle du chiffre mono", "body": "Toute donnée numérique est en Geist Mono tabulaire (`.num` ou `.tnum`), alignée à droite dans les tableaux, formatée en français par `lib/format.ts`.", "section": "typography" },
+      { "name": "La règle de la casse normale", "body": "Un en-tête de colonne est en 12 px 500 gris, en casse normale ; les capitales espacées n'appartiennent plus au système.", "section": "typography" },
+      { "name": "La règle du pixel", "body": "Un panneau porte une ombre d'un pixel et pas davantage ; une ligne, un bouton, un champ ou une cellule n'en portent aucune. Seul ce qui flotte prend `shadow-overlay`.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do poser tout contenu dans un `.panel` (blanc, coins 8 px, filet, ombre d'un pixel) sur le fond gris ; un article est un panneau titré, pas une suite de filets pleine largeur.",
+      "Do placer le code de référentiel d'un domaine ou d'une exigence en `article-no` (mono 12 px 500 gris) à gauche du titre, de la ligne ou de la cellule qu'il identifie, séparé de 8 px ; identifier un chapitre par son icône Lucide et son libellé.",
+      "Do réserver l'ardoise à la sélection (lavis), à la progression, à la note manuelle et aux liens de preuve ; le bouton d'action primaire est en encre `action`, un seul par écran.",
+      "Do signifier un état par une pastille `.stamp` grise à point coloré et libellé, ou par un point de 8 px doublé d'un libellé ; lire les notes sur l'échelle 0 → 5.",
+      "Do écrire tout nombre en Geist Mono tabulaire (`.num`) et au format français via `lib/format.ts` (`4,0`, `52 %`, `11 sept., 12:26`, `—` pour l'absence).",
+      "Do écrire les en-têtes de colonnes en 12 px 500 gris et en casse normale.",
+      "Do limiter le mouvement à 150 ms de couleur ou de bordure sur changement d'état, 150 ms de largeur pour un rail qui se replie, 150 à 200 ms pour ce qui flotte, 500 ms pour une barre de progression ; honorer `prefers-reduced-motion`.",
+      "Do rendre les rails repliables (sommaire 56 px, file 44 px) au clavier et mémoriser l'état ; réserver la hauteur du texte de réponse pour que les colonnes s'alignent.",
+      "Do rendre chaque état vide, en chargement ou en erreur par `PageState` — bloc centré de 448 px sur 45 vh de hauteur utile — ou par une phrase grise à sa place ; une seule action par état, jamais un chargeur plein écran.",
+      "Do utiliser le vocabulaire métier (consultation, exigence, domaine, fournisseur, pondération, soutenance, référentiel, livrable) dans un ton neutre, sans point d'exclamation."
+    ],
+    "donts": [
+      "Don't colorer le fond ou le texte d'une pastille avec une couleur d'état ; seule sa pointe est colorée.",
+      "Don't introduire une deuxième couleur d'accent, un bouton d'action bleu, un dégradé, ou une ombre au-delà de `shadow-panel` sur une surface au repos ; `shadow-overlay` n'existe que pour ce qui flotte.",
+      "Don't dépasser 8 px de rayon hors pilules (pastilles, avatars, points, barres de progression, compteurs).",
+      "Don't écrire un en-tête de tableau ou un libellé en capitales espacées ; ni revenir aux tampons carrés ou à Source Sans 3.",
+      "Don't redonner à l'interface une numérotation à elle-même (chapitres 1 à 5, articles 1.1 à 1.5, sections 4.1 à 4.3, en-tête « 3 Évaluation ») : `article-no` n'écrit que les codes du référentiel client (D-16).",
+      "Don't réintroduire une barre supérieure ou une barre d'onglets de chapitres ; la barre latérale de 232 px est la seule navigation.",
+      "Don't utiliser une valeur de couleur brute (`slate-*`, `gray-*`, `zinc-*`, hex) dans un écran refondu ; toute couleur passe par les variables de `styles/globals.css`.",
+      "Don't ajouter une séquence d'entrée, un survol par translation ou une animation décorative.",
+      "Don't montrer un score sans son renvoi : un score est un lien vers l'extrait cité et le document à la page.",
+      "Don't appliquer ce système aux écrans hérités hébergés sous le shell (grille financière, vue arborescente, documents, onglets de paramètres : `WeightsTab`, `AnalystsTab`, `SettingsTab`, `VersionsTab`, `SuppliersTab`, `RequirementsTab`, `ExportTab`) : ils gardent leur style d'origine (D-06, D-14) jusqu'à leur refonte."
+    ]
+  }
+}

@@ -1,29 +1,37 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, X } from "lucide-react";
 
 interface CreateRFPDialogProps {
   organizationId: string;
-  onSuccess?: (rfp: any) => void;
+  onSuccess?: (rfp: { id: string; title: string }) => void;
   onClose: () => void;
 }
 
+/**
+ * Creating a consultation asks for two facts and lands on its preparation
+ * hub, where the next action is stated.
+ */
 export function CreateRFPDialog({
   organizationId,
   onSuccess,
   onClose,
 }: CreateRFPDialogProps) {
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -33,123 +41,79 @@ export function CreateRFPDialog({
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-
     try {
       const response = await fetch("/api/rfps/create", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title,
-          description,
-          organizationId,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description, organizationId }),
       });
-
       const data = await response.json();
-
       if (!response.ok) {
-        setError(data.error || "Failed to create RFP");
+        setError(data.error || "La consultation n'a pas pu être créée.");
         return;
       }
-
       onSuccess?.(data.rfp);
       onClose();
+      if (data.rfp?.id) {
+        router.push(`/dashboard/rfp/${data.rfp.id}/preparation`);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(
+        err instanceof Error ? err.message : "La consultation n'a pas pu être créée."
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <Card className="w-full max-w-md rounded-2xl border border-slate-200 bg-white/90 shadow-lg dark:border-slate-800 dark:bg-slate-900/60">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-slate-900 dark:text-slate-50">
-              Create New RFP
-            </CardTitle>
-            <CardDescription className="text-slate-500 dark:text-slate-400">
-              Add a new Request for Proposal
-            </CardDescription>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <DialogHeader>
+            <DialogTitle>Nouvelle consultation</DialogTitle>
+            <DialogDescription>
+              Le cahier des charges, les fournisseurs et les réponses se déposent ensuite,
+              depuis le plan de préparation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="rfp-title">Titre</Label>
+            <Input
+              id="rfp-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex. Gestion technique du patrimoine"
+              required
+              autoFocus
+            />
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </CardHeader>
-
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                RFP Title *
-              </label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., Cloud Migration 2025"
-                disabled={isLoading}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Description (Optional)
-              </label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Add any additional details about this RFP..."
-                disabled={isLoading}
-                className="min-h-24"
-              />
-            </div>
-
-            {error && (
-              <div className="flex items-start gap-3 rounded border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3">
-                <p className="text-sm text-red-700 dark:text-red-200">
-                  {error}
-                </p>
-              </div>
-            )}
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="mono"
-                radius="lg"
-                onClick={onClose}
-                disabled={isLoading}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                radius="lg"
-                disabled={!title.trim() || isLoading}
-                className="flex-1"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  "Create RFP"
-                )}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="rfp-description">Description</Label>
+            <Textarea
+              id="rfp-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Objet, périmètre, calendrier"
+              rows={3}
+            />
+          </div>
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Annuler
+            </Button>
+            <Button type="submit" disabled={isLoading || !title.trim()}>
+              {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+              Créer la consultation
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
